@@ -1,6 +1,12 @@
 "use client";
 import Link from "next/link";
 
+const floatingStats = [
+  { value: "30 hrs", label: "saved/week", color: "var(--purple)" },
+  { value: "$39K", label: "cost offset", color: "var(--teal)" },
+  { value: "$315/hr", label: "dev ROI", color: "var(--gold-light)" },
+];
+
 export default function Hero() {
   return (
     <section
@@ -15,7 +21,7 @@ export default function Hero() {
         paddingTop: "68px",
       }}
     >
-      {/* Background elements */}
+      {/* Background */}
       <div className="hero-grid-overlay" />
       <div className="hero-glow-purple" />
       <div className="hero-glow-teal" />
@@ -24,24 +30,24 @@ export default function Hero() {
         style={{
           position: "relative",
           zIndex: 1,
-          maxWidth: "900px",
+          maxWidth: "960px",
           margin: "0 auto",
           padding: "4rem 1.5rem",
           textAlign: "center",
         }}
       >
-        {/* Status badge */}
+        {/* Phase badge */}
         <div
           className="animate-fade-up"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            background: "rgba(33, 184, 187, 0.12)",
-            border: "1px solid rgba(33, 184, 187, 0.3)",
+            background: "rgba(33, 184, 187, 0.1)",
+            border: "1px solid rgba(33, 184, 187, 0.28)",
             borderRadius: "var(--radius-pill)",
-            padding: "7px 18px",
-            marginBottom: "2.5rem",
+            padding: "7px 20px",
+            marginBottom: "3rem",
           }}
         >
           <span
@@ -56,39 +62,74 @@ export default function Hero() {
           />
           <span
             style={{
-              fontSize: "13px",
+              fontSize: "12px",
               color: "var(--teal-light)",
-              fontWeight: 600,
-              letterSpacing: "0.04em",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
               fontFamily: "'Montserrat', sans-serif",
+              textTransform: "uppercase",
             }}
           >
             Phase 1: Research & Discovery — Underway
           </span>
         </div>
 
-        {/* Headline */}
+        {/* Main headline — larger, tighter */}
         <h1
-          className="text-hero animate-fade-up delay-100"
-          style={{ marginBottom: "1.5rem", color: "#ffffff" }}
+          className="animate-fade-up delay-100"
+          style={{
+            fontSize: "clamp(2.8rem, 7vw, 5.5rem)",
+            fontWeight: 900,
+            lineHeight: 1.0,
+            letterSpacing: "-0.03em",
+            marginBottom: "0.5rem",
+            color: "#ffffff",
+            fontFamily: "'Montserrat', sans-serif",
+          }}
         >
-          Reducing Administrative
-          <br />
-          <span className="gradient-text">Burden</span>{" "}
-          in the
-          <br />
-          Cultural Sector
+          Reducing
+        </h1>
+        <h1
+          className="animate-fade-up delay-100"
+          style={{
+            fontSize: "clamp(2.8rem, 7vw, 5.5rem)",
+            fontWeight: 900,
+            lineHeight: 1.0,
+            letterSpacing: "-0.03em",
+            marginBottom: "0.5rem",
+            fontFamily: "'Montserrat', sans-serif",
+            background: "var(--gradient-brand)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          Administrative Burden
+        </h1>
+        <h1
+          className="animate-fade-up delay-100"
+          style={{
+            fontSize: "clamp(2.8rem, 7vw, 5.5rem)",
+            fontWeight: 900,
+            lineHeight: 1.0,
+            letterSpacing: "-0.03em",
+            marginBottom: "2rem",
+            color: "#ffffff",
+            fontFamily: "'Montserrat', sans-serif",
+          }}
+        >
+          in the Cultural Sector
         </h1>
 
         {/* Subheading */}
         <p
           className="animate-fade-up delay-200"
           style={{
-            fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
-            color: "rgba(255,255,255,0.7)",
-            maxWidth: "620px",
+            fontSize: "clamp(1rem, 2.2vw, 1.15rem)",
+            color: "rgba(255,255,255,0.6)",
+            maxWidth: "560px",
             margin: "0 auto 3rem",
-            lineHeight: 1.75,
+            lineHeight: 1.8,
           }}
         >
           A research-driven pilot by the{" "}
@@ -100,13 +141,13 @@ export default function Hero() {
               color: "var(--teal-light)",
               textDecoration: "none",
               fontWeight: 600,
-              borderBottom: "1px solid rgba(104,204,209,0.4)",
+              borderBottom: "1px solid rgba(104,204,209,0.35)",
             }}
           >
             NWCT Arts Council
           </a>{" "}
-          exploring how responsible, human-centered automation can free up
-          staff time for mission-driven work.
+          exploring how responsible, human-centered automation can free staff
+          time for mission-driven work.
         </p>
 
         {/* CTAs */}
@@ -117,9 +158,10 @@ export default function Hero() {
             gap: "1rem",
             justifyContent: "center",
             flexWrap: "wrap",
+            marginBottom: "4rem",
           }}
         >
-          <Link href="/tools" className="btn-primary">
+          <Link href="/tools" className="btn-primary" style={{ fontSize: "15px", padding: "15px 32px" }}>
             🛠️ Try Our Tools
           </Link>
           <a
@@ -127,36 +169,75 @@ export default function Hero() {
             target="_blank"
             rel="noopener noreferrer"
             className="btn-outline"
-            style={{ color: "#fff", borderColor: "rgba(255,255,255,0.22)" }}
+            style={{ color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: "15px", padding: "15px 32px" }}
           >
             Join the Research →
           </a>
+        </div>
+
+        {/* Floating stat chips */}
+        <div
+          className="animate-fade-up delay-400"
+          style={{
+            display: "flex",
+            gap: "1rem",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          {floatingStats.map((s) => (
+            <div
+              key={s.label}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "var(--radius-md)",
+                padding: "10px 18px",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "1.4rem",
+                  fontWeight: 900,
+                  color: s.color,
+                  fontFamily: "'Montserrat', sans-serif",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {s.value}
+              </span>
+              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {s.label}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Scroll indicator */}
         <div
           className="animate-fade-in delay-500"
           style={{
-            marginTop: "5rem",
+            marginTop: "4.5rem",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: "8px",
-            opacity: 0.35,
+            opacity: 0.3,
           }}
         >
-          <span
-            className="text-label"
-            style={{ color: "#fff", fontSize: "11px" }}
-          >
+          <span style={{ fontSize: "10px", color: "#fff", letterSpacing: "0.18em", fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
             SCROLL
           </span>
           <div
             style={{
               width: "1px",
-              height: "40px",
+              height: "36px",
               background: "linear-gradient(to bottom, #fff, transparent)",
-              animation: "scrollLine 2s ease-in-out infinite",
+              animation: "scrollLine 2.2s ease-in-out infinite",
             }}
           />
         </div>

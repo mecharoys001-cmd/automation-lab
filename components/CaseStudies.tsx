@@ -48,14 +48,14 @@ export default function CaseStudies() {
     <section id="case-studies" className="section section-light">
       <div className="container">
         {/* Header */}
-        <div className="section-header animate-fade-up">
+        <div className="section-header" data-reveal="fade">
           <div
             className="tag-purple"
             style={{ display: "inline-block", marginBottom: "1.25rem" }}
           >
             Proven Results
           </div>
-          <h2 className="text-section-heading">Case Studies</h2>
+          <h2 className="section-heading-decorated">Case Studies</h2>
           <p className="text-section-sub">
             Real automation projects with measurable results for the cultural sector.
           </p>
@@ -72,12 +72,13 @@ export default function CaseStudies() {
           {cases.map((c, i) => (
             <div
               key={c.title}
-              className="card-light animate-fade-up"
+              className="card-light"
+              data-reveal
+              data-delay={i * 120}
               style={{
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
-                animationDelay: `${i * 0.12}s`,
               }}
             >
               {/* Accent bar */}

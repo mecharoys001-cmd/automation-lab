@@ -58,14 +58,14 @@ export default function ToolsPreview() {
     <section id="tools" className="section section-light">
       <div className="container">
         {/* Header */}
-        <div className="section-header animate-fade-up">
+        <div className="section-header" data-reveal="fade">
           <div
             className="tag-teal"
             style={{ display: "inline-block", marginBottom: "1.25rem" }}
           >
             Free Tools
           </div>
-          <h2 className="text-section-heading">Tools Built for Nonprofits</h2>
+          <h2 className="section-heading-decorated">Tools Built for Nonprofits</h2>
           <p className="text-section-sub">
             Free, open tools developed through the Automation Lab — ready for
             your organization to use today.
@@ -82,14 +82,15 @@ export default function ToolsPreview() {
           {tools.map((tool, i) => (
             <div
               key={tool.id}
-              className="card-light animate-fade-up"
+              className="card-light"
+              data-reveal
+              data-delay={i * 120}
               style={{
                 padding: 0,
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
                 opacity: tool.status === "coming-soon" ? 0.75 : 1,
-                animationDelay: `${i * 0.12}s`,
               }}
             >
               {/* Accent bar */}

@@ -63,14 +63,14 @@ export default function Roadmap() {
     <section id="roadmap" className="section section-soft">
       <div className="container">
         {/* Header */}
-        <div className="section-header animate-fade-up">
+        <div className="section-header" data-reveal="fade">
           <div
             className="tag-teal"
             style={{ display: "inline-block", marginBottom: "1.25rem" }}
           >
             2026 Timeline
           </div>
-          <h2 className="text-section-heading">The Plan</h2>
+          <h2 className="section-heading-decorated">The Plan</h2>
           <p className="text-section-sub">
             Three phases from research to replicable infrastructure — all
             completed within 2026.
@@ -88,7 +88,9 @@ export default function Roadmap() {
           {phases.map((phase, i) => (
             <div
               key={phase.number}
-              className="card-light animate-fade-up"
+              className="card-light"
+              data-reveal
+              data-delay={i * 130}
               style={{
                 padding: 0,
                 overflow: "hidden",
@@ -98,7 +100,6 @@ export default function Roadmap() {
                 boxShadow: phase.status === "active"
                   ? `0 4px 24px ${phase.accentRaw}20`
                   : "var(--shadow-card)",
-                animationDelay: `${i * 0.12}s`,
               }}
             >
               {/* Accent bar */}

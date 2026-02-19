@@ -6,7 +6,7 @@ const stats = [
     color: "var(--purple)",
   },
   {
-    value: "$39,000",
+    value: "$39K",
     label: "Annual cost offset",
     sublabel: "Across two projects",
     color: "var(--teal)",
@@ -31,26 +31,39 @@ export default function Stats() {
       <div
         className="container"
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "2rem",
+          display: "flex",
+          alignItems: "stretch",
+          justifyContent: "center",
+          gap: 0,
+          flexWrap: "wrap",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className="animate-fade-up"
-            style={{
-              textAlign: "center",
-              animationDelay: `${i * 0.1}s`,
-            }}
-          >
-            <div className="stats-value" style={{ color: stat.color }}>
-              {stat.value}
+          <>
+            <div
+              key={stat.label}
+              style={{
+                textAlign: "center",
+                flex: "1 1 180px",
+                padding: "1rem 2rem",
+              }}
+            >
+              <div className="stats-value" style={{ color: stat.color }}>
+                {stat.value}
+              </div>
+              <div className="stats-label">{stat.label}</div>
+              <div className="stats-sub">{stat.sublabel}</div>
             </div>
-            <div className="stats-label">{stat.label}</div>
-            <div className="stats-sub">{stat.sublabel}</div>
-          </div>
+            {i < stats.length - 1 && (
+              <div
+                key={`divider-${i}`}
+                className="stats-divider"
+                style={{ display: "block" }}
+              />
+            )}
+          </>
         ))}
       </div>
     </section>

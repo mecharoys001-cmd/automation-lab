@@ -35,17 +35,17 @@ export default function About() {
           }}
         >
           {/* Text column */}
-          <div className="animate-slide-left">
+          <div data-reveal="slide-left">
             <div
               className="tag-teal"
               style={{ display: "inline-block", marginBottom: "1.25rem" }}
             >
               About the Project
             </div>
-            <h2 className="text-section-heading" style={{ marginBottom: "1.5rem" }}>
+            <h2 style={{ fontSize: "clamp(2rem, 4vw, 2.8rem)", fontWeight: 800, marginBottom: "1.5rem", lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--navy)", fontFamily: "'Montserrat', sans-serif" }}>
               Closing the AI
               <br />
-              Access Gap
+              <span className="gradient-text">Access Gap</span>
             </h2>
             <p style={{ color: "#5a6a7e", lineHeight: 1.8, fontSize: "16px", marginBottom: "1.5rem" }}>
               The Automation Lab is a pilot initiative by the NWCT Arts Council
@@ -75,8 +75,9 @@ export default function About() {
             {principles.map((card, i) => (
               <div
                 key={card.title}
-                className="card-feature animate-fade-up"
-                style={{ animationDelay: `${i * 0.12}s` }}
+                className="card-feature"
+                data-reveal
+                data-delay={i * 120}
               >
                 <div
                   className="icon-box icon-box-md"
