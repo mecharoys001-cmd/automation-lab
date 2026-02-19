@@ -3,7 +3,7 @@ const phases = [
     number: "01",
     title: "Research & Discovery",
     timeline: "Jan – Mar 2026",
-    status: "active",
+    status: "active" as const,
     statusLabel: "Underway",
     goals: [
       "Understand how nonprofits handle administrative work and AI use",
@@ -16,13 +16,13 @@ const phases = [
       "Clear criteria for pilot project selection",
       "Shortlist of high-potential automation use cases",
     ],
-    accent: "#a244ae",
+    accentRaw: "#a244ae",
   },
   {
     number: "02",
     title: "Pilot Projects",
     timeline: "Mar – Oct 2026",
-    status: "upcoming",
+    status: "upcoming" as const,
     statusLabel: "Up Next",
     goals: [
       "Test automation approaches in real nonprofit environments",
@@ -35,13 +35,13 @@ const phases = [
       "Observations on staff experience and sustainability",
       "Measured time and labor savings",
     ],
-    accent: "#21b8bb",
+    accentRaw: "#21b8bb",
   },
   {
     number: "03",
     title: "Systematization",
     timeline: "Oct – Dec 2026",
-    status: "future",
+    status: "future" as const,
     statusLabel: "Planned",
     goals: [
       "Translate pilot learning into repeatable approaches",
@@ -54,43 +54,30 @@ const phases = [
       "Public case study and implementation framework",
       "Prioritized recommendations for next-phase funding",
     ],
-    accent: "#1282a2",
+    accentRaw: "#1282a2",
   },
 ];
 
 export default function Roadmap() {
   return (
-    <section
-      id="roadmap"
-      style={{
-        padding: "6rem 1.5rem",
-        backgroundColor: "#f5f7fa",
-      }}
-    >
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+    <section id="roadmap" className="section section-soft">
+      <div className="container">
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "4rem" }}>
-          <div className="tag-teal" style={{ display: "inline-block", marginBottom: "1.25rem" }}>
+        <div className="section-header animate-fade-up">
+          <div
+            className="tag-teal"
+            style={{ display: "inline-block", marginBottom: "1.25rem" }}
+          >
             2026 Timeline
           </div>
-          <h2
-            style={{
-              fontSize: "clamp(1.8rem, 4vw, 2.5rem)",
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              marginBottom: "1rem",
-              color: "#1a1a38",
-            }}
-          >
-            The Plan
-          </h2>
-          <p style={{ color: "#6b7a8f", fontSize: "16px", maxWidth: "500px", margin: "0 auto", lineHeight: 1.65 }}>
+          <h2 className="text-section-heading">The Plan</h2>
+          <p className="text-section-sub">
             Three phases from research to replicable infrastructure — all
             completed within 2026.
           </p>
         </div>
 
-        {/* Phases */}
+        {/* Phase cards */}
         <div
           style={{
             display: "grid",
@@ -98,38 +85,39 @@ export default function Roadmap() {
             gap: "1.5rem",
           }}
         >
-          {phases.map((phase) => (
+          {phases.map((phase, i) => (
             <div
               key={phase.number}
-              className="card-light"
+              className="card-light animate-fade-up"
               style={{
                 padding: 0,
                 overflow: "hidden",
                 border: phase.status === "active"
-                  ? `1px solid ${phase.accent}50`
-                  : "1px solid #e0e7ef",
+                  ? `1px solid ${phase.accentRaw}50`
+                  : "1px solid var(--border-light)",
                 boxShadow: phase.status === "active"
-                  ? `0 4px 24px ${phase.accent}20`
-                  : "0 2px 16px rgba(26,26,56,0.06)",
+                  ? `0 4px 24px ${phase.accentRaw}20`
+                  : "var(--shadow-card)",
+                animationDelay: `${i * 0.12}s`,
               }}
             >
-              {/* Top accent bar */}
+              {/* Accent bar */}
               <div
                 style={{
                   height: "4px",
                   background: phase.status === "active"
-                    ? `linear-gradient(90deg, ${phase.accent}, ${phase.accent}80)`
-                    : "#e0e7ef",
+                    ? `linear-gradient(90deg, ${phase.accentRaw}, ${phase.accentRaw}80)`
+                    : "var(--border-light)",
                 }}
               />
 
               <div style={{ padding: "2rem" }}>
-                {/* Phase number (decorative) */}
+                {/* Decorative number */}
                 <div
                   style={{
                     fontSize: "2.5rem",
                     fontWeight: 900,
-                    color: `${phase.accent}18`,
+                    color: `${phase.accentRaw}18`,
                     lineHeight: 1,
                     marginBottom: "0.25rem",
                     fontFamily: "'Montserrat', sans-serif",
@@ -138,7 +126,7 @@ export default function Roadmap() {
                   {phase.number}
                 </div>
 
-                {/* Header */}
+                {/* Title row */}
                 <div
                   style={{
                     display: "flex",
@@ -153,28 +141,28 @@ export default function Roadmap() {
                         fontSize: "18px",
                         fontWeight: 800,
                         marginBottom: "4px",
-                        color: "#1a1a38",
+                        color: "var(--navy)",
                         fontFamily: "'Montserrat', sans-serif",
                       }}
                     >
                       {phase.title}
                     </div>
-                    <div style={{ fontSize: "13px", color: "#9aa3b0" }}>
+                    <div style={{ fontSize: "13px", color: "var(--text-subtle)" }}>
                       {phase.timeline}
                     </div>
                   </div>
                   <span
                     style={{
-                      backgroundColor: `${phase.accent}15`,
-                      color: phase.accent,
+                      backgroundColor: `${phase.accentRaw}15`,
+                      color: phase.accentRaw,
                       padding: "4px 10px",
-                      borderRadius: "100px",
+                      borderRadius: "var(--radius-pill)",
                       fontSize: "11px",
                       fontWeight: 700,
-                      textTransform: "uppercase",
+                      textTransform: "uppercase" as const,
                       letterSpacing: "0.05em",
-                      whiteSpace: "nowrap",
-                      border: `1px solid ${phase.accent}30`,
+                      whiteSpace: "nowrap" as const,
+                      border: `1px solid ${phase.accentRaw}30`,
                       fontFamily: "'Montserrat', sans-serif",
                     }}
                   >
@@ -185,32 +173,15 @@ export default function Roadmap() {
                 {/* Goals */}
                 <div style={{ marginBottom: "1.5rem" }}>
                   <div
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: phase.accent,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      marginBottom: "0.75rem",
-                      fontFamily: "'Montserrat', sans-serif",
-                    }}
+                    className="text-label"
+                    style={{ color: phase.accentRaw, marginBottom: "0.75rem", fontSize: "10px" }}
                   >
                     Goals
                   </div>
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                  <ul className="goal-list">
                     {phase.goals.map((goal) => (
-                      <li
-                        key={goal}
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginBottom: "7px",
-                          fontSize: "13px",
-                          color: "#5a6a7e",
-                          lineHeight: 1.55,
-                        }}
-                      >
-                        <span style={{ color: phase.accent, flexShrink: 0 }}>→</span>
+                      <li key={goal}>
+                        <span style={{ color: phase.accentRaw, flexShrink: 0 }}>→</span>
                         {goal}
                       </li>
                     ))}
@@ -220,31 +191,14 @@ export default function Roadmap() {
                 {/* Deliverables */}
                 <div>
                   <div
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: "#9aa3b0",
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      marginBottom: "0.75rem",
-                      fontFamily: "'Montserrat', sans-serif",
-                    }}
+                    className="text-label"
+                    style={{ color: "var(--text-subtle)", marginBottom: "0.75rem", fontSize: "10px" }}
                   >
                     Deliverables
                   </div>
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                  <ul className="deliverable-list">
                     {phase.deliverables.map((d) => (
-                      <li
-                        key={d}
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginBottom: "7px",
-                          fontSize: "13px",
-                          color: "#8a96a8",
-                          lineHeight: 1.55,
-                        }}
-                      >
+                      <li key={d}>
                         <span style={{ color: "#c5cdd8", flexShrink: 0 }}>✓</span>
                         {d}
                       </li>

@@ -1,21 +1,78 @@
 import Link from "next/link";
 
+const siteLinks = [
+  { href: "/#about", label: "About" },
+  { href: "/#case-studies", label: "Case Studies" },
+  { href: "/#roadmap", label: "Roadmap" },
+  { href: "/#team", label: "Team" },
+];
+
+const toolLinks = [
+  { href: "/tools", label: "All Tools" },
+  { href: "/tools/camp-scheduler", label: "Camp Scheduler" },
+];
+
+const resourceLinks = [
+  { href: "https://www.artsnwct.org", label: "NWCT Arts Council", external: true },
+  {
+    href: "https://irp.cdn-website.com/04efc271/files/uploaded/Theory+of+Change+_+Why+This+Matters+Now.pdf",
+    label: "Theory of Change",
+    external: true,
+  },
+];
+
+function FooterLinkGroup({
+  heading,
+  links,
+}: {
+  heading: string;
+  links: { href: string; label: string; external?: boolean }[];
+}) {
+  return (
+    <div>
+      <div
+        className="text-label"
+        style={{
+          color: "rgba(255,255,255,0.3)",
+          marginBottom: "1rem",
+          fontSize: "10px",
+        }}
+      >
+        {heading}
+      </div>
+      {links.map((link) =>
+        link.external ? (
+          <div key={link.href} style={{ marginBottom: "8px" }}>
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              {link.label}
+            </a>
+          </div>
+        ) : (
+          <div key={link.href} style={{ marginBottom: "8px" }}>
+            <Link href={link.href} className="footer-link">
+              {link.label}
+            </Link>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 export default function Footer() {
   return (
     <footer
-      style={{
-        background: "linear-gradient(135deg, #1a1a38 0%, #270339 60%, #1a2e38 100%)",
-        padding: "4rem 1.5rem 2rem",
-      }}
+      className="section-dark"
+      style={{ padding: "4rem 1.5rem 2rem" }}
     >
       <div
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "2.5rem",
-        }}
+        className="container"
+        style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}
       >
         <div
           style={{
@@ -37,17 +94,8 @@ export default function Footer() {
               }}
             >
               <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "9px",
-                  background: "linear-gradient(90deg, #a244ae, #21b8bb)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "16px",
-                  flexShrink: 0,
-                }}
+                className="icon-box icon-box-sm"
+                style={{ background: "var(--gradient-brand)", fontSize: "16px" }}
               >
                 ⚡
               </div>
@@ -66,7 +114,7 @@ export default function Footer() {
                 <div
                   style={{
                     fontSize: "10px",
-                    color: "#68ccd1",
+                    color: "var(--teal-light)",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     fontWeight: 600,
@@ -78,7 +126,7 @@ export default function Footer() {
             </div>
             <p
               style={{
-                color: "rgba(255,255,255,0.45)",
+                color: "rgba(255,255,255,0.4)",
                 fontSize: "13px",
                 lineHeight: 1.7,
                 maxWidth: "280px",
@@ -89,120 +137,18 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Links */}
+          {/* Link columns */}
           <div style={{ display: "flex", gap: "3rem", flexWrap: "wrap" }}>
-            <div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "rgba(255,255,255,0.35)",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  marginBottom: "1rem",
-                  fontFamily: "'Montserrat', sans-serif",
-                }}
-              >
-                Site
-              </div>
-              {[
-                { href: "/#about", label: "About" },
-                { href: "/#case-studies", label: "Case Studies" },
-                { href: "/#roadmap", label: "Roadmap" },
-                { href: "/#team", label: "Team" },
-              ].map((link) => (
-                <div key={link.href} style={{ marginBottom: "8px" }}>
-                  <Link
-                    href={link.href}
-                    style={{
-                      color: "rgba(255,255,255,0.55)",
-                      textDecoration: "none",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "rgba(255,255,255,0.35)",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  marginBottom: "1rem",
-                  fontFamily: "'Montserrat', sans-serif",
-                }}
-              >
-                Tools
-              </div>
-              {[
-                { href: "/tools", label: "All Tools" },
-                { href: "/tools/camp-scheduler", label: "Camp Scheduler" },
-              ].map((link) => (
-                <div key={link.href} style={{ marginBottom: "8px" }}>
-                  <Link
-                    href={link.href}
-                    style={{
-                      color: "rgba(255,255,255,0.55)",
-                      textDecoration: "none",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "rgba(255,255,255,0.35)",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  marginBottom: "1rem",
-                  fontFamily: "'Montserrat', sans-serif",
-                }}
-              >
-                Resources
-              </div>
-              {[
-                { href: "https://www.artsnwct.org", label: "NWCT Arts Council" },
-                { href: "https://irp.cdn-website.com/04efc271/files/uploaded/Theory+of+Change+_+Why+This+Matters+Now.pdf", label: "Theory of Change" },
-              ].map((link) => (
-                <div key={link.href} style={{ marginBottom: "8px" }}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "rgba(255,255,255,0.55)",
-                      textDecoration: "none",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {link.label}
-                  </a>
-                </div>
-              ))}
-            </div>
+            <FooterLinkGroup heading="Site" links={siteLinks} />
+            <FooterLinkGroup heading="Tools" links={toolLinks} />
+            <FooterLinkGroup heading="Resources" links={resourceLinks} />
           </div>
         </div>
 
-        {/* Bottom */}
+        {/* Bottom bar */}
         <div
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
             paddingTop: "1.75rem",
             display: "flex",
             justifyContent: "space-between",
@@ -211,16 +157,20 @@ export default function Footer() {
             gap: "1rem",
           }}
         >
-          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>
+          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)" }}>
             © 2026 NWCT Arts Council · Automation Lab
           </span>
-          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>
+          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)" }}>
             Built by{" "}
             <a
               href="https://www.ethansbrewerton.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#68ccd1", textDecoration: "none", fontWeight: 600 }}
+              style={{
+                color: "var(--teal-light)",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
             >
               Ethan S. Brewerton
             </a>

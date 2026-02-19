@@ -89,29 +89,7 @@ export default function SurveyBanner() {
           href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "10px",
-            backgroundColor: "#ffffff",
-            color: "#a244ae",
-            padding: "16px 36px",
-            borderRadius: "12px",
-            fontSize: "16px",
-            fontWeight: 800,
-            textDecoration: "none",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-            fontFamily: "'Montserrat', sans-serif",
-            letterSpacing: "0.01em",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
-          }}
+          className="btn-survey"
         >
           Take the Survey →
         </a>

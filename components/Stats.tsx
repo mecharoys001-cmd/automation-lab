@@ -3,82 +3,53 @@ const stats = [
     value: "30 hrs",
     label: "Saved per week",
     sublabel: "1,560 hrs/year",
-    color: "#a244ae",
+    color: "var(--purple)",
   },
   {
     value: "$39,000",
     label: "Annual cost offset",
     sublabel: "Across two projects",
-    color: "#21b8bb",
+    color: "var(--teal)",
   },
   {
     value: "$315/hr",
     label: "Avg. dev time ROI",
     sublabel: "Across all case studies",
-    color: "#a28231",
+    color: "var(--gold-light)",
   },
   {
     value: "3",
     label: "Automation projects",
     sublabel: "2023–2025",
-    color: "#1282a2",
+    color: "var(--teal-dark)",
   },
 ];
 
 export default function Stats() {
   return (
-    <section
-      style={{
-        background: "linear-gradient(90deg, #1a1a38 0%, #270339 50%, #1a2e38 100%)",
-        padding: "3.5rem 1.5rem",
-      }}
-    >
+    <section className="stats-bar">
       <div
+        className="container"
         style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "2rem",
         }}
       >
-        {stats.map((stat) => (
+        {stats.map((stat, i) => (
           <div
             key={stat.label}
-            style={{ textAlign: "center" }}
+            className="animate-fade-up"
+            style={{
+              textAlign: "center",
+              animationDelay: `${i * 0.1}s`,
+            }}
           >
-            <div
-              style={{
-                fontSize: "clamp(1.8rem, 4vw, 2.5rem)",
-                fontWeight: 900,
-                color: stat.color,
-                letterSpacing: "-0.02em",
-                fontVariantNumeric: "tabular-nums",
-                fontFamily: "'Montserrat', sans-serif",
-              }}
-            >
+            <div className="stats-value" style={{ color: stat.color }}>
               {stat.value}
             </div>
-            <div
-              style={{
-                fontSize: "14px",
-                color: "rgba(255,255,255,0.9)",
-                fontWeight: 700,
-                marginTop: "6px",
-                fontFamily: "'Montserrat', sans-serif",
-              }}
-            >
-              {stat.label}
-            </div>
-            <div
-              style={{
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.45)",
-                marginTop: "3px",
-              }}
-            >
-              {stat.sublabel}
-            </div>
+            <div className="stats-label">{stat.label}</div>
+            <div className="stats-sub">{stat.sublabel}</div>
           </div>
         ))}
       </div>
