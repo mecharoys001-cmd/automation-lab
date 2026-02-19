@@ -9,6 +9,27 @@ export const metadata: Metadata = {
 
 const tools = [
   {
+    id: "tech-stack",
+    name: "Tech Stack Mapper",
+    description:
+      "Build a visual map of every tool your organization uses and how they connect. Add tools from a library of 45+ nonprofit staples, draw integration lines between them, and instantly spot the manual handoffs that are costing you hours. Export as JSON or share with your team. Runs entirely in your browser.",
+    status: "live",
+    features: [
+      "45+ tools pre-loaded",
+      "Category lane layout",
+      "Click-to-connect integrations",
+      "Gap & isolation detection",
+      "Custom tool support",
+      "Export / Import JSON",
+      "100% browser-based",
+      "No data uploaded",
+    ],
+    icon: "🗺️",
+    href: "/tools/tech-stack",
+    accent: "#0ea5e9",
+    usedBy: "Nonprofits, arts orgs, ops teams doing a tech audit",
+  },
+  {
     id: "camp-scheduler",
     name: "Camp Scheduler",
     description:
