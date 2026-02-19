@@ -44,31 +44,12 @@ export default function Navigation() {
           }}
         >
           {/* Logo */}
-          <Link href="/" style={{ textDecoration: "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div
-                style={{
-                  width: "36px", height: "36px",
-                  borderRadius: "8px",
-                  background: "var(--teal)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "17px",
-                  flexShrink: 0,
-                }}
-              >
-                ⚡
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: "14px", color: "var(--navy)", fontFamily: "'Montserrat', sans-serif", lineHeight: 1.2 }}>
-                  Automation Lab
-                </div>
-                <div style={{ fontSize: "10px", color: "var(--teal-dark)", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
-                  NWCT Arts Council
-                </div>
-              </div>
-            </div>
+          <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+            <img
+              src="/images/nwct-logo.svg"
+              alt="NWCT Arts Council"
+              style={{ height: "40px", width: "auto" }}
+            />
           </Link>
 
           {/* Desktop nav */}

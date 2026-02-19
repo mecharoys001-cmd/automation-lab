@@ -64,28 +64,14 @@ export default function Footer() {
         >
           {/* Brand */}
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-              <div
-                style={{
-                  width: "34px", height: "34px",
-                  borderRadius: "8px",
-                  background: "var(--teal)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "16px", flexShrink: 0,
-                }}
-              >
-                ⚡
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: "14px", color: "#ffffff", fontFamily: "'Montserrat', sans-serif", lineHeight: 1.2 }}>
-                  Automation Lab
-                </div>
-                <div style={{ fontSize: "10px", color: "var(--teal)", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
-                  NWCT Arts Council
-                </div>
-              </div>
+            <div style={{ marginBottom: "16px" }}>
+              <img
+                src="/images/nwct-logo-white.svg"
+                alt="NWCT Arts Council"
+                style={{ height: "42px", width: "auto" }}
+              />
             </div>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", lineHeight: 1.7, maxWidth: "260px" }}>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", lineHeight: 1.7, maxWidth: "280px" }}>
               A pilot initiative exploring human-centered automation for arts &amp; culture nonprofits in Northwest Connecticut.
             </p>
           </div>
