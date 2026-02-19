@@ -1,28 +1,8 @@
 const stats = [
-  {
-    value: "30 hrs",
-    label: "Saved per week",
-    sublabel: "1,560 hrs/year",
-    color: "var(--purple)",
-  },
-  {
-    value: "$39K",
-    label: "Annual cost offset",
-    sublabel: "Across two projects",
-    color: "var(--teal)",
-  },
-  {
-    value: "$315/hr",
-    label: "Avg. dev time ROI",
-    sublabel: "Across all case studies",
-    color: "var(--gold-light)",
-  },
-  {
-    value: "3",
-    label: "Automation projects",
-    sublabel: "2023–2025",
-    color: "var(--teal-dark)",
-  },
+  { value: "30 hrs", label: "Saved per week", sublabel: "1,560 hrs/year",    color: "var(--teal)" },
+  { value: "$39K",   label: "Annual savings",  sublabel: "Across 2 projects", color: "var(--teal)" },
+  { value: "$315/hr",label: "Avg. dev ROI",    sublabel: "All case studies",  color: "var(--gold-light)" },
+  { value: "3",      label: "Projects complete",sublabel: "2023–2025",        color: "var(--teal-light)" },
 ];
 
 export default function Stats() {
@@ -36,32 +16,20 @@ export default function Stats() {
           justifyContent: "center",
           gap: 0,
           flexWrap: "wrap",
-          position: "relative",
-          zIndex: 1,
         }}
       >
-        {stats.map((stat, i) => (
+        {stats.map((s, i) => (
           <>
             <div
-              key={stat.label}
-              style={{
-                textAlign: "center",
-                flex: "1 1 180px",
-                padding: "1rem 2rem",
-              }}
+              key={s.label}
+              style={{ textAlign: "center", flex: "1 1 180px", padding: "8px 28px" }}
             >
-              <div className="stats-value" style={{ color: stat.color }}>
-                {stat.value}
-              </div>
-              <div className="stats-label">{stat.label}</div>
-              <div className="stats-sub">{stat.sublabel}</div>
+              <div className="stats-value" style={{ color: s.color }}>{s.value}</div>
+              <div className="stats-label">{s.label}</div>
+              <div className="stats-sub">{s.sublabel}</div>
             </div>
             {i < stats.length - 1 && (
-              <div
-                key={`divider-${i}`}
-                className="stats-divider"
-                style={{ display: "block" }}
-              />
+              <div key={`d-${i}`} className="stats-divider" />
             )}
           </>
         ))}

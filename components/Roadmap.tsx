@@ -16,7 +16,7 @@ const phases = [
       "Clear criteria for pilot project selection",
       "Shortlist of high-potential automation use cases",
     ],
-    accentRaw: "#a244ae",
+    accentRaw: "#1282a2",
   },
   {
     number: "02",
@@ -35,7 +35,7 @@ const phases = [
       "Observations on staff experience and sustainability",
       "Measured time and labor savings",
     ],
-    accentRaw: "#21b8bb",
+    accentRaw: "#68ccd1",
   },
   {
     number: "03",
@@ -54,73 +54,63 @@ const phases = [
       "Public case study and implementation framework",
       "Prioritized recommendations for next-phase funding",
     ],
-    accentRaw: "#1282a2",
+    accentRaw: "#a28231",
   },
 ];
 
 export default function Roadmap() {
   return (
-    <section id="roadmap" className="section section-soft">
+    <section id="roadmap" className="section section-white">
       <div className="container">
-        {/* Header */}
         <div className="section-header" data-reveal="fade">
-          <div
-            className="tag-teal"
-            style={{ display: "inline-block", marginBottom: "1.25rem" }}
-          >
-            2026 Timeline
-          </div>
-          <h2 className="section-heading-decorated">The Plan</h2>
-          <p className="text-section-sub">
-            Three phases from research to replicable infrastructure — all
-            completed within 2026.
+          <div className="label-overline" style={{ marginBottom: "10px" }}>2026 Timeline</div>
+          <h2 className="heading-section">The Plan</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "15px", maxWidth: "480px", margin: "0 auto" }}>
+            Three phases from research to replicable infrastructure — all within 2026.
           </p>
         </div>
 
-        {/* Phase cards */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "1.5rem",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "20px",
           }}
         >
           {phases.map((phase, i) => (
             <div
               key={phase.number}
-              className="card-light"
+              className="card"
               data-reveal
-              data-delay={i * 130}
+              data-delay={i * 120}
               style={{
                 padding: 0,
                 overflow: "hidden",
                 border: phase.status === "active"
                   ? `1px solid ${phase.accentRaw}50`
-                  : "1px solid var(--border-light)",
+                  : "1px solid var(--border)",
                 boxShadow: phase.status === "active"
-                  ? `0 4px 24px ${phase.accentRaw}20`
-                  : "var(--shadow-card)",
+                  ? `0 2px 16px ${phase.accentRaw}20`
+                  : "none",
               }}
             >
               {/* Accent bar */}
               <div
                 style={{
                   height: "4px",
-                  background: phase.status === "active"
-                    ? `linear-gradient(90deg, ${phase.accentRaw}, ${phase.accentRaw}80)`
-                    : "var(--border-light)",
+                  background: phase.status === "active" ? phase.accentRaw : "var(--border)",
                 }}
               />
 
-              <div style={{ padding: "2rem" }}>
+              <div style={{ padding: "24px" }}>
                 {/* Decorative number */}
                 <div
                   style={{
-                    fontSize: "2.5rem",
+                    fontSize: "2.2rem",
                     fontWeight: 900,
                     color: `${phase.accentRaw}18`,
                     lineHeight: 1,
-                    marginBottom: "0.25rem",
+                    marginBottom: "4px",
                     fontFamily: "'Montserrat', sans-serif",
                   }}
                 >
@@ -128,43 +118,20 @@ export default function Roadmap() {
                 </div>
 
                 {/* Title row */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: "1.5rem",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
                   <div>
-                    <div
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: 800,
-                        marginBottom: "4px",
-                        color: "var(--navy)",
-                        fontFamily: "'Montserrat', sans-serif",
-                      }}
-                    >
-                      {phase.title}
-                    </div>
-                    <div style={{ fontSize: "13px", color: "var(--text-subtle)" }}>
-                      {phase.timeline}
-                    </div>
+                    <div className="heading-card" style={{ fontSize: "16px", marginBottom: "3px" }}>{phase.title}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-subtle)" }}>{phase.timeline}</div>
                   </div>
                   <span
+                    className="tag"
                     style={{
-                      backgroundColor: `${phase.accentRaw}15`,
+                      background: `${phase.accentRaw}12`,
                       color: phase.accentRaw,
-                      padding: "4px 10px",
-                      borderRadius: "var(--radius-pill)",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      textTransform: "uppercase" as const,
-                      letterSpacing: "0.05em",
-                      whiteSpace: "nowrap" as const,
                       border: `1px solid ${phase.accentRaw}30`,
-                      fontFamily: "'Montserrat', sans-serif",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                      marginLeft: "8px",
                     }}
                   >
                     {phase.statusLabel}
@@ -172,18 +139,15 @@ export default function Roadmap() {
                 </div>
 
                 {/* Goals */}
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <div
-                    className="text-label"
-                    style={{ color: phase.accentRaw, marginBottom: "0.75rem", fontSize: "10px" }}
-                  >
+                <div style={{ marginBottom: "18px" }}>
+                  <div className="label-overline" style={{ color: phase.accentRaw, marginBottom: "10px", fontSize: "10px" }}>
                     Goals
                   </div>
                   <ul className="goal-list">
-                    {phase.goals.map((goal) => (
-                      <li key={goal}>
-                        <span style={{ color: phase.accentRaw, flexShrink: 0 }}>→</span>
-                        {goal}
+                    {phase.goals.map((g) => (
+                      <li key={g}>
+                        <span style={{ color: phase.accentRaw, flexShrink: 0, fontSize: "12px" }}>→</span>
+                        {g}
                       </li>
                     ))}
                   </ul>
@@ -191,16 +155,13 @@ export default function Roadmap() {
 
                 {/* Deliverables */}
                 <div>
-                  <div
-                    className="text-label"
-                    style={{ color: "var(--text-subtle)", marginBottom: "0.75rem", fontSize: "10px" }}
-                  >
+                  <div className="label-overline" style={{ color: "var(--text-subtle)", marginBottom: "10px", fontSize: "10px" }}>
                     Deliverables
                   </div>
                   <ul className="deliverable-list">
                     {phase.deliverables.map((d) => (
                       <li key={d}>
-                        <span style={{ color: "#c5cdd8", flexShrink: 0 }}>✓</span>
+                        <span style={{ color: "var(--border-mid)", flexShrink: 0, fontSize: "12px" }}>✓</span>
                         {d}
                       </li>
                     ))}

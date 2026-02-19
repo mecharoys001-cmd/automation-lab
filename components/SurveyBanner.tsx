@@ -2,46 +2,15 @@
 export default function SurveyBanner() {
   return (
     <section
-      style={{
-        padding: "6rem 1.5rem",
-        background: "var(--gradient-brand)",
-        position: "relative",
-        overflow: "hidden",
-      }}
+      className="section-teal"
+      style={{ padding: "72px 20px", position: "relative", overflow: "hidden" }}
     >
-      {/* Grid overlay */}
       <div className="survey-grid-overlay" />
-
-      {/* Glow accents */}
-      <div
-        style={{
-          position: "absolute",
-          top: "10%",
-          left: "5%",
-          width: "300px",
-          height: "300px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "5%",
-          right: "8%",
-          width: "250px",
-          height: "250px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
 
       <div
         className="animate-fade-up"
         style={{
-          maxWidth: "680px",
+          maxWidth: "660px",
           margin: "0 auto",
           textAlign: "center",
           position: "relative",
@@ -54,21 +23,21 @@ export default function SurveyBanner() {
             display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            backgroundColor: "rgba(255,255,255,0.15)",
-            border: "1px solid rgba(255,255,255,0.28)",
+            background: "rgba(255,255,255,0.25)",
+            border: "1px solid rgba(255,255,255,0.4)",
             borderRadius: "var(--radius-pill)",
-            padding: "7px 20px",
-            marginBottom: "2.25rem",
+            padding: "6px 18px",
+            marginBottom: "24px",
           }}
         >
-          <span style={{ fontSize: "15px" }}>📋</span>
+          <span>📋</span>
           <span
             style={{
               fontSize: "12px",
-              color: "#fff",
+              color: "var(--navy-dark)",
               fontWeight: 700,
               fontFamily: "'Montserrat', sans-serif",
-              letterSpacing: "0.05em",
+              letterSpacing: "0.07em",
               textTransform: "uppercase",
             }}
           >
@@ -78,13 +47,13 @@ export default function SurveyBanner() {
 
         <h2
           style={{
-            fontSize: "clamp(2rem, 5vw, 3rem)",
+            fontSize: "clamp(1.8rem, 4vw, 2.6rem)",
             fontWeight: 900,
-            letterSpacing: "-0.025em",
-            marginBottom: "1.25rem",
+            letterSpacing: "-0.015em",
+            marginBottom: "18px",
             color: "#ffffff",
             fontFamily: "'Montserrat', sans-serif",
-            lineHeight: 1.1,
+            lineHeight: 1.2,
           }}
         >
           Is Your Organization a Fit?
@@ -92,11 +61,11 @@ export default function SurveyBanner() {
 
         <p
           style={{
-            color: "rgba(255,255,255,0.82)",
-            fontSize: "16px",
-            lineHeight: 1.75,
-            maxWidth: "540px",
-            margin: "0 auto 2.75rem",
+            color: "rgba(255,255,255,0.88)",
+            fontSize: "15px",
+            lineHeight: 1.8,
+            maxWidth: "520px",
+            margin: "0 auto 32px",
           }}
         >
           We are currently seeking feedback from arts &amp; culture nonprofit
@@ -114,13 +83,7 @@ export default function SurveyBanner() {
           Take the Survey →
         </a>
 
-        <p
-          style={{
-            color: "rgba(255,255,255,0.55)",
-            fontSize: "13px",
-            marginTop: "1.25rem",
-          }}
-        >
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px", marginTop: "16px" }}>
           Takes 5–10 minutes · Open to NWCT arts &amp; culture nonprofits
         </p>
       </div>
