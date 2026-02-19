@@ -1,7 +1,7 @@
 export default function About() {
   return (
-    <section id="about" style={{ padding: "6rem 1.5rem" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+    <section id="about" style={{ padding: "6rem 1.5rem", backgroundColor: "#f5f7fa" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <div
           style={{
             display: "grid",
@@ -12,16 +12,7 @@ export default function About() {
         >
           {/* Text */}
           <div>
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#10b981",
-                fontWeight: 600,
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                marginBottom: "1rem",
-              }}
-            >
+            <div className="tag-teal" style={{ display: "inline-block", marginBottom: "1.25rem" }}>
               About the Project
             </div>
             <h2
@@ -31,6 +22,7 @@ export default function About() {
                 marginBottom: "1.5rem",
                 lineHeight: 1.2,
                 letterSpacing: "-0.02em",
+                color: "#1a1a38",
               }}
             >
               Closing the AI
@@ -39,7 +31,7 @@ export default function About() {
             </h2>
             <p
               style={{
-                color: "#94a3b8",
+                color: "#5a6a7e",
                 lineHeight: 1.8,
                 fontSize: "16px",
                 marginBottom: "1.5rem",
@@ -52,7 +44,7 @@ export default function About() {
             </p>
             <p
               style={{
-                color: "#94a3b8",
+                color: "#5a6a7e",
                 lineHeight: 1.8,
                 fontSize: "16px",
                 marginBottom: "2rem",
@@ -68,64 +60,65 @@ export default function About() {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: "#10b981",
+                color: "#a244ae",
                 textDecoration: "none",
                 fontSize: "14px",
-                fontWeight: 600,
+                fontWeight: 700,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
-                borderBottom: "1px solid rgba(16, 185, 129, 0.3)",
+                borderBottom: "2px solid rgba(162, 68, 174, 0.25)",
                 paddingBottom: "2px",
+                fontFamily: "'Montserrat', sans-serif",
               }}
             >
               Read our Theory of Change →
             </a>
           </div>
 
-          {/* Cards */}
+          {/* Principle cards */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {[
               {
                 icon: "🔍",
                 title: "Research-Driven",
                 desc: "Every tool and workflow we build is grounded in real nonprofit needs — identified through sector surveys and direct partnership.",
+                accent: "#a244ae",
               },
               {
                 icon: "🤝",
                 title: "Human-Centered",
                 desc: "Technology should reduce burden, not add complexity. We design with the humans using these tools at the center.",
+                accent: "#21b8bb",
               },
               {
                 icon: "📦",
                 title: "Reusable Infrastructure",
                 desc: "Solutions that work for one organization are documented and packaged so others can adopt them — no reinventing the wheel.",
+                accent: "#1282a2",
               },
             ].map((card) => (
               <div
                 key={card.title}
-                className="card-glow"
+                className="card-light"
                 style={{
-                  backgroundColor: "#111827",
-                  borderRadius: "12px",
-                  padding: "1.25rem",
+                  padding: "1.25rem 1.5rem",
                   display: "flex",
                   gap: "1rem",
                   alignItems: "flex-start",
-                  border: "1px solid #1e293b",
                 }}
               >
                 <div
                   style={{
-                    fontSize: "24px",
-                    width: "40px",
-                    height: "40px",
+                    fontSize: "22px",
+                    width: "42px",
+                    height: "42px",
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "rgba(16, 185, 129, 0.1)",
-                    borderRadius: "8px",
+                    backgroundColor: `${card.accent}15`,
+                    borderRadius: "10px",
                   }}
                 >
                   {card.icon}
@@ -136,15 +129,17 @@ export default function About() {
                       fontWeight: 700,
                       marginBottom: "4px",
                       fontSize: "15px",
+                      color: "#1a1a38",
+                      fontFamily: "'Montserrat', sans-serif",
                     }}
                   >
                     {card.title}
                   </div>
                   <div
                     style={{
-                      color: "#64748b",
+                      color: "#6b7a8f",
                       fontSize: "13px",
-                      lineHeight: 1.6,
+                      lineHeight: 1.65,
                     }}
                   >
                     {card.desc}

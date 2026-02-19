@@ -29,13 +29,10 @@ export default function Navigation() {
         right: 0,
         zIndex: 50,
         transition: "all 0.3s ease",
-        backgroundColor: scrolled
-          ? "rgba(10, 14, 26, 0.95)"
-          : "rgba(10, 14, 26, 0.7)",
+        backgroundColor: scrolled ? "rgba(255,255,255,0.97)" : "rgba(255,255,255,0.9)",
         backdropFilter: "blur(12px)",
-        borderBottom: scrolled
-          ? "1px solid rgba(30, 41, 59, 0.8)"
-          : "1px solid transparent",
+        borderBottom: scrolled ? "1px solid #e0e7ef" : "1px solid transparent",
+        boxShadow: scrolled ? "0 2px 16px rgba(26,26,56,0.08)" : "none",
       }}
     >
       <div
@@ -46,22 +43,23 @@ export default function Navigation() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          height: "64px",
+          height: "68px",
         }}
       >
         {/* Logo */}
         <Link href="/" style={{ textDecoration: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div
               style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, #10b981, #3b82f6)",
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "linear-gradient(90deg, #a244ae 0%, #21b8bb 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "16px",
+                fontSize: "18px",
+                flexShrink: 0,
               }}
             >
               ⚡
@@ -69,10 +67,11 @@ export default function Navigation() {
             <div>
               <div
                 style={{
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: "15px",
-                  color: "#f1f5f9",
-                  lineHeight: 1.1,
+                  color: "#1a1a38",
+                  lineHeight: 1.15,
+                  fontFamily: "'Montserrat', sans-serif",
                 }}
               >
                 Automation Lab
@@ -80,9 +79,10 @@ export default function Navigation() {
               <div
                 style={{
                   fontSize: "10px",
-                  color: "#10b981",
-                  letterSpacing: "0.08em",
+                  color: "#21b8bb",
+                  letterSpacing: "0.1em",
                   textTransform: "uppercase",
+                  fontWeight: 600,
                 }}
               >
                 NWCT Arts Council
@@ -105,18 +105,15 @@ export default function Navigation() {
               key={link.href}
               href={link.href}
               style={{
-                color: "#94a3b8",
+                color: "#3d4a5c",
                 textDecoration: "none",
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: 600,
                 transition: "color 0.2s",
+                fontFamily: "'Montserrat', sans-serif",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "#f1f5f9")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "#94a3b8")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#21b8bb")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#3d4a5c")}
             >
               {link.label}
             </Link>
@@ -125,36 +122,22 @@ export default function Navigation() {
             href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              backgroundColor: "#10b981",
-              color: "#fff",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: 600,
-              textDecoration: "none",
-              transition: "background-color 0.2s",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#059669")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#10b981")
-            }
+            className="btn-primary"
+            style={{ padding: "9px 18px", fontSize: "13px" }}
           >
             Take the Survey →
           </a>
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile button */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           style={{
             background: "none",
             border: "none",
-            color: "#94a3b8",
+            color: "#1a1a38",
             cursor: "pointer",
-            fontSize: "24px",
+            fontSize: "22px",
           }}
           className="md:hidden"
         >
@@ -166,8 +149,8 @@ export default function Navigation() {
       {menuOpen && (
         <div
           style={{
-            backgroundColor: "rgba(10, 14, 26, 0.98)",
-            borderTop: "1px solid rgba(30, 41, 59, 0.8)",
+            backgroundColor: "#ffffff",
+            borderTop: "1px solid #e0e7ef",
             padding: "1rem 1.5rem",
           }}
         >
@@ -178,11 +161,13 @@ export default function Navigation() {
               onClick={() => setMenuOpen(false)}
               style={{
                 display: "block",
-                color: "#94a3b8",
+                color: "#3d4a5c",
                 textDecoration: "none",
                 padding: "12px 0",
                 fontSize: "15px",
-                borderBottom: "1px solid rgba(30, 41, 59, 0.5)",
+                fontWeight: 600,
+                borderBottom: "1px solid #e0e7ef",
+                fontFamily: "'Montserrat', sans-serif",
               }}
             >
               {link.label}
@@ -194,11 +179,12 @@ export default function Navigation() {
             rel="noopener noreferrer"
             style={{
               display: "block",
-              color: "#10b981",
+              color: "#a244ae",
               textDecoration: "none",
               padding: "12px 0",
               fontSize: "15px",
-              fontWeight: 600,
+              fontWeight: 700,
+              fontFamily: "'Montserrat', sans-serif",
             }}
           >
             Take the Survey →

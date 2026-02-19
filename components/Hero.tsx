@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 
 export default function Hero() {
@@ -10,35 +11,48 @@ export default function Hero() {
         justifyContent: "center",
         position: "relative",
         overflow: "hidden",
-        paddingTop: "64px",
+        paddingTop: "68px",
+        background: "linear-gradient(135deg, #1a1a38 0%, #270339 50%, #1a2e38 100%)",
       }}
     >
-      {/* Background grid */}
+      {/* Subtle grid overlay */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           backgroundImage: `
-            linear-gradient(rgba(16, 185, 129, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(16, 185, 129, 0.04) 1px, transparent 1px)
+            linear-gradient(rgba(104, 204, 209, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(104, 204, 209, 0.05) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
           zIndex: 0,
         }}
       />
-      {/* Radial glow */}
+      {/* Glow blobs */}
+      <div
+        style={{
+          position: "absolute",
+          top: "20%",
+          left: "15%",
+          width: "500px",
+          height: "500px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(162, 68, 174, 0.15) 0%, transparent 70%)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
       <div
         style={{
           position: "absolute",
           top: "30%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "600px",
-          height: "600px",
+          right: "10%",
+          width: "400px",
+          height: "400px",
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(33, 184, 187, 0.12) 0%, transparent 70%)",
           zIndex: 0,
+          pointerEvents: "none",
         }}
       />
 
@@ -58,29 +72,30 @@ export default function Hero() {
             display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
-            border: "1px solid rgba(16, 185, 129, 0.3)",
+            background: "rgba(33, 184, 187, 0.12)",
+            border: "1px solid rgba(33, 184, 187, 0.3)",
             borderRadius: "100px",
-            padding: "6px 16px",
-            marginBottom: "2rem",
+            padding: "7px 18px",
+            marginBottom: "2.5rem",
           }}
         >
           <span
             style={{
-              width: "6px",
-              height: "6px",
+              width: "7px",
+              height: "7px",
               borderRadius: "50%",
-              backgroundColor: "#10b981",
+              backgroundColor: "#21b8bb",
               display: "inline-block",
-              animation: "pulse-glow 2s ease-in-out infinite",
             }}
+            className="pulse-teal"
           />
           <span
             style={{
               fontSize: "13px",
-              color: "#10b981",
-              fontWeight: 500,
-              letterSpacing: "0.05em",
+              color: "#68ccd1",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              fontFamily: "'Montserrat', sans-serif",
             }}
           >
             Phase 1: Research & Discovery — Underway
@@ -90,18 +105,20 @@ export default function Hero() {
         {/* Heading */}
         <h1
           style={{
-            fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
-            fontWeight: 800,
+            fontSize: "clamp(2.4rem, 6vw, 4.5rem)",
+            fontWeight: 900,
             lineHeight: 1.1,
             marginBottom: "1.5rem",
             letterSpacing: "-0.02em",
+            color: "#ffffff",
+            fontFamily: "'Montserrat', sans-serif",
           }}
         >
           Reducing Administrative
           <br />
           <span
             style={{
-              background: "linear-gradient(135deg, #10b981, #3b82f6)",
+              background: "linear-gradient(90deg, #a244ae 0%, #21b8bb 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -116,16 +133,24 @@ export default function Hero() {
 
         <p
           style={{
-            fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
-            color: "#94a3b8",
-            maxWidth: "600px",
-            margin: "0 auto 2.5rem",
-            lineHeight: 1.7,
+            fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
+            color: "rgba(255,255,255,0.7)",
+            maxWidth: "620px",
+            margin: "0 auto 3rem",
+            lineHeight: 1.75,
           }}
         >
-          A research-driven pilot exploring how responsible, human-centered
-          automation can free up staff time for mission-driven work — and ensure
-          arts & culture nonprofits aren't left behind as technology advances.
+          A research-driven pilot by the{" "}
+          <a
+            href="https://www.artsnwct.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#68ccd1", textDecoration: "none", fontWeight: 600 }}
+          >
+            NWCT Arts Council
+          </a>{" "}
+          exploring how responsible, human-centered automation can free up staff
+          time for mission-driven work.
         </p>
 
         {/* CTAs */}
@@ -137,40 +162,22 @@ export default function Hero() {
             flexWrap: "wrap",
           }}
         >
-          <Link
-            href="/tools"
-            style={{
-              backgroundColor: "#10b981",
-              color: "#fff",
-              padding: "14px 28px",
-              borderRadius: "10px",
-              fontSize: "15px",
-              fontWeight: 600,
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              boxShadow: "0 0 20px rgba(16, 185, 129, 0.3)",
-            }}
-          >
+          <Link href="/tools" className="btn-primary">
             🛠️ Try Our Tools
           </Link>
           <a
             href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              backgroundColor: "transparent",
-              color: "#f1f5f9",
-              padding: "14px 28px",
-              borderRadius: "10px",
-              fontSize: "15px",
-              fontWeight: 600,
-              textDecoration: "none",
-              border: "1px solid rgba(241, 245, 249, 0.15)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
+            className="btn-outline"
+            style={{ color: "#fff", borderColor: "rgba(255,255,255,0.25)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#68ccd1";
+              e.currentTarget.style.background = "rgba(33,184,187,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+              e.currentTarget.style.background = "transparent";
             }}
           >
             Join the Research →
@@ -180,22 +187,22 @@ export default function Hero() {
         {/* Scroll indicator */}
         <div
           style={{
-            marginTop: "4rem",
+            marginTop: "5rem",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: "8px",
-            opacity: 0.4,
+            opacity: 0.35,
           }}
         >
-          <span style={{ fontSize: "12px", color: "#94a3b8", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: "11px", color: "#fff", letterSpacing: "0.15em", fontFamily: "'Montserrat', sans-serif" }}>
             SCROLL
           </span>
           <div
             style={{
               width: "1px",
               height: "40px",
-              background: "linear-gradient(to bottom, #94a3b8, transparent)",
+              background: "linear-gradient(to bottom, #fff, transparent)",
             }}
           />
         </div>

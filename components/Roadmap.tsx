@@ -16,7 +16,7 @@ const phases = [
       "Clear criteria for pilot project selection",
       "Shortlist of high-potential automation use cases",
     ],
-    color: "#10b981",
+    accent: "#a244ae",
   },
   {
     number: "02",
@@ -35,7 +35,7 @@ const phases = [
       "Observations on staff experience and sustainability",
       "Measured time and labor savings",
     ],
-    color: "#3b82f6",
+    accent: "#21b8bb",
   },
   {
     number: "03",
@@ -54,7 +54,7 @@ const phases = [
       "Public case study and implementation framework",
       "Prioritized recommendations for next-phase funding",
     ],
-    color: "#f59e0b",
+    accent: "#1282a2",
   },
 ];
 
@@ -64,22 +64,13 @@ export default function Roadmap() {
       id="roadmap"
       style={{
         padding: "6rem 1.5rem",
-        backgroundColor: "rgba(17, 24, 39, 0.3)",
+        backgroundColor: "#f5f7fa",
       }}
     >
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "4rem" }}>
-          <div
-            style={{
-              fontSize: "12px",
-              color: "#10b981",
-              fontWeight: 600,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              marginBottom: "1rem",
-            }}
-          >
+          <div className="tag-teal" style={{ display: "inline-block", marginBottom: "1.25rem" }}>
             2026 Timeline
           </div>
           <h2
@@ -88,18 +79,12 @@ export default function Roadmap() {
               fontWeight: 800,
               letterSpacing: "-0.02em",
               marginBottom: "1rem",
+              color: "#1a1a38",
             }}
           >
             The Plan
           </h2>
-          <p
-            style={{
-              color: "#94a3b8",
-              fontSize: "16px",
-              maxWidth: "500px",
-              margin: "0 auto",
-            }}
-          >
+          <p style={{ color: "#6b7a8f", fontSize: "16px", maxWidth: "500px", margin: "0 auto", lineHeight: 1.65 }}>
             Three phases from research to replicable infrastructure — all
             completed within 2026.
           </p>
@@ -116,158 +101,156 @@ export default function Roadmap() {
           {phases.map((phase) => (
             <div
               key={phase.number}
-              className="card-glow"
+              className="card-light"
               style={{
-                backgroundColor: "#111827",
-                borderRadius: "16px",
-                padding: "2rem",
-                border: `1px solid ${
-                  phase.status === "active"
-                    ? `${phase.color}40`
-                    : "#1e293b"
-                }`,
-                position: "relative",
+                padding: 0,
                 overflow: "hidden",
+                border: phase.status === "active"
+                  ? `1px solid ${phase.accent}50`
+                  : "1px solid #e0e7ef",
+                boxShadow: phase.status === "active"
+                  ? `0 4px 24px ${phase.accent}20`
+                  : "0 2px 16px rgba(26,26,56,0.06)",
               }}
             >
-              {/* Active indicator */}
-              {phase.status === "active" && (
+              {/* Top accent bar */}
+              <div
+                style={{
+                  height: "4px",
+                  background: phase.status === "active"
+                    ? `linear-gradient(90deg, ${phase.accent}, ${phase.accent}80)`
+                    : "#e0e7ef",
+                }}
+              />
+
+              <div style={{ padding: "2rem" }}>
+                {/* Phase number (decorative) */}
                 <div
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "2px",
-                    background: `linear-gradient(90deg, ${phase.color}, transparent)`,
+                    fontSize: "2.5rem",
+                    fontWeight: 900,
+                    color: `${phase.accent}18`,
+                    lineHeight: 1,
+                    marginBottom: "0.25rem",
+                    fontFamily: "'Montserrat', sans-serif",
                   }}
-                />
-              )}
+                >
+                  {phase.number}
+                </div>
 
-              {/* Phase number */}
-              <div
-                style={{
-                  fontSize: "3rem",
-                  fontWeight: 900,
-                  color: `${phase.color}20`,
-                  lineHeight: 1,
-                  marginBottom: "0.5rem",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {phase.number}
-              </div>
+                {/* Header */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "1.5rem",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: 800,
+                        marginBottom: "4px",
+                        color: "#1a1a38",
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}
+                    >
+                      {phase.title}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#9aa3b0" }}>
+                      {phase.timeline}
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      backgroundColor: `${phase.accent}15`,
+                      color: phase.accent,
+                      padding: "4px 10px",
+                      borderRadius: "100px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      whiteSpace: "nowrap",
+                      border: `1px solid ${phase.accent}30`,
+                      fontFamily: "'Montserrat', sans-serif",
+                    }}
+                  >
+                    {phase.statusLabel}
+                  </span>
+                </div>
 
-              {/* Header */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "1.5rem",
-                }}
-              >
+                {/* Goals */}
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: phase.accent,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      marginBottom: "0.75rem",
+                      fontFamily: "'Montserrat', sans-serif",
+                    }}
+                  >
+                    Goals
+                  </div>
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                    {phase.goals.map((goal) => (
+                      <li
+                        key={goal}
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          marginBottom: "7px",
+                          fontSize: "13px",
+                          color: "#5a6a7e",
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        <span style={{ color: phase.accent, flexShrink: 0 }}>→</span>
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Deliverables */}
                 <div>
                   <div
                     style={{
-                      fontSize: "18px",
+                      fontSize: "10px",
                       fontWeight: 700,
-                      marginBottom: "4px",
+                      color: "#9aa3b0",
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      marginBottom: "0.75rem",
+                      fontFamily: "'Montserrat', sans-serif",
                     }}
                   >
-                    {phase.title}
+                    Deliverables
                   </div>
-                  <div style={{ fontSize: "13px", color: "#64748b" }}>
-                    {phase.timeline}
-                  </div>
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                    {phase.deliverables.map((d) => (
+                      <li
+                        key={d}
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          marginBottom: "7px",
+                          fontSize: "13px",
+                          color: "#8a96a8",
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        <span style={{ color: "#c5cdd8", flexShrink: 0 }}>✓</span>
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <span
-                  style={{
-                    backgroundColor: `${phase.color}20`,
-                    color: phase.color,
-                    padding: "4px 10px",
-                    borderRadius: "100px",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {phase.statusLabel}
-                </span>
-              </div>
-
-              {/* Goals */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: phase.color,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  Goals
-                </div>
-                <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                  {phase.goals.map((goal) => (
-                    <li
-                      key={goal}
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        marginBottom: "6px",
-                        fontSize: "13px",
-                        color: "#94a3b8",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      <span style={{ color: phase.color, flexShrink: 0 }}>
-                        →
-                      </span>
-                      {goal}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Deliverables */}
-              <div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "#64748b",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  Deliverables
-                </div>
-                <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                  {phase.deliverables.map((d) => (
-                    <li
-                      key={d}
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        marginBottom: "6px",
-                        fontSize: "13px",
-                        color: "#64748b",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      <span style={{ color: "#475569", flexShrink: 0 }}>
-                        ✓
-                      </span>
-                      {d}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           ))}
