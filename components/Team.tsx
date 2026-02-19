@@ -71,28 +71,17 @@ export default function Team() {
               <div
                 style={{
                   position: "relative",
-                  height: "220px",
+                  aspectRatio: "1 / 1",
                   overflow: "hidden",
-                  background: `linear-gradient(135deg, ${member.accentColor}20, ${member.accentColor}08)`,
+                  background: `linear-gradient(135deg, ${member.accentColor}15, ${member.accentColor}05)`,
                 }}
               >
                 <Image
                   src={member.photo}
                   alt={member.name}
                   fill
-                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                  style={{ objectFit: "contain", objectPosition: "center center" }}
                   sizes="(max-width: 768px) 100vw, 400px"
-                />
-                {/* Gradient overlay at bottom */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: "80px",
-                    background: "linear-gradient(to top, rgba(255,255,255,0.95), transparent)",
-                  }}
                 />
                 {/* Role badge */}
                 <div
