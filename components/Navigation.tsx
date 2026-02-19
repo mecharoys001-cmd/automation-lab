@@ -45,14 +45,14 @@ export default function Navigation() {
         >
           {/* Logo */}
           <Link href="/" style={{ textDecoration: "none" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ fontWeight: 800, fontSize: "16px", color: "var(--navy)", fontFamily: "'Montserrat', sans-serif", lineHeight: 1 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ fontWeight: 900, fontSize: "20px", color: "var(--navy)", fontFamily: "'Montserrat', sans-serif", lineHeight: 1, letterSpacing: "-0.01em" }}>
                 Automation Lab
               </div>
               <img
                 src="/images/nwct-logo.svg"
                 alt="NWCT Arts Council"
-                style={{ height: "20px", width: "auto" }}
+                style={{ height: "18px", width: "auto" }}
               />
             </div>
           </Link>
