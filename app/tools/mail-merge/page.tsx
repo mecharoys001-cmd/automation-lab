@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import GasToolLayout from '@/components/GasToolLayout';
 import GasSetup from '@/components/GasSetup';
 import { useGas } from '@/components/useGas';
@@ -36,6 +36,17 @@ export default function MailMergePage() {
   const [copied, setCopied] = useState(false);
   const [sendResult, setSendResult] = useState('');
 
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const rows = parseCSV(csvText);
   const merged = rows.map(r => mergeRow(template, r));
   const preview = merged[previewIdx] || '';
@@ -44,7 +55,13 @@ export default function MailMergePage() {
   function copyPreview() {
     navigator.clipboard.writeText(preview);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopied(false);
+      copyTimeoutRef.current = null;
+    }, 2000);
   }
 
   async function sendAll() {

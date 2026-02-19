@@ -9,6 +9,7 @@ import { useEffect } from "react";
 export function useScrollReveal() {
   useEffect(() => {
     const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    const timeouts = new Set<NodeJS.Timeout>();
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -16,9 +17,11 @@ export function useScrollReveal() {
           if (entry.isIntersecting) {
             const el = entry.target as HTMLElement;
             const delay = el.dataset.delay ?? "0";
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
               el.setAttribute("data-revealed", "true");
+              timeouts.delete(timeoutId);
             }, Number(delay));
+            timeouts.add(timeoutId);
             observer.unobserve(el);
           }
         });
@@ -27,6 +30,12 @@ export function useScrollReveal() {
     );
 
     targets.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    // Cleanup: disconnect observer AND clear all pending timeouts
+    return () => {
+      observer.disconnect();
+      timeouts.forEach((id) => clearTimeout(id));
+      timeouts.clear();
+    };
   }, []);
 }
