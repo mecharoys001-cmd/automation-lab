@@ -51,6 +51,13 @@ const tools = [
     accent: "#6366f1",
     usedBy: "Nonprofits, arts orgs, event planners with mailing lists",
   },
+  { id: 'donation-receipts', name: 'Donation Receipt Generator', icon: '🧾', accent: '#10b981', status: 'live', href: '/tools/donation-receipts', usedBy: 'Nonprofits tracking donations for tax compliance', description: 'Generate and track tax-deductible donation receipts with auto-numbered IDs. Syncs to Google Sheets via Apps Script — or runs offline locally.', features: ['Auto receipt numbers', 'Google Sheets sync', 'Donor email tracking', 'Donation totals', 'Export ready', 'Offline mode'] },
+  { id: 'volunteer-tracker', name: 'Volunteer Hour Tracker', icon: '🙌', accent: '#6366f1', status: 'live', href: '/tools/volunteer-tracker', usedBy: 'Volunteer coordinators and program managers', description: 'Log volunteer hours by activity and date. Tracks totals per volunteer, shows a leaderboard, and syncs to Google Sheets.', features: ['Per-volunteer totals', 'Activity tagging', 'Date range filter', 'Leaderboard', 'Google Sheets sync', 'Offline mode'] },
+  { id: 'event-scheduler', name: 'Event Schedule Builder', icon: '🗓️', accent: '#f59e0b', status: 'live', href: '/tools/event-scheduler', usedBy: 'Event coordinators and program directors', description: 'Build and manage event schedules with speaker slots, locations, and times. Filter by date, export to Sheets.', features: ['Multi-day scheduling', 'Speaker management', 'Location tracking', 'Date filtering', 'Google Sheets sync', 'Bulk import'] },
+  { id: 'mail-merge', name: 'Mail Merge Preview', icon: '✉️', accent: '#ec4899', status: 'live', href: '/tools/mail-merge', usedBy: 'Development teams and program staff', description: 'Write a {{field}} template and preview it merged with your contact list. Send via Gmail through Apps Script.', features: ['{{field}} templates', 'Live preview', 'Gmail send', 'CSV paste', 'Google Sheets source', 'Bulk send'] },
+  { id: 'event-attendance', name: 'Event Attendance Checker', icon: '✅', accent: '#14b8a6', status: 'live', href: '/tools/event-attendance', usedBy: 'Event coordinators managing check-in', description: "Compare your registration list against check-ins to instantly see who showed up, who didn't, and who walked in unregistered.", features: ['No-show detection', 'Walk-in tracking', 'Attendance rate %', 'Multi-event support', 'Google Sheets sync', 'Fuzzy matching'] },
+  { id: 'donor-thankyou', name: 'Donor Thank-You Generator', icon: '💌', accent: '#f97316', status: 'live', href: '/tools/donor-thankyou', usedBy: 'Development and fundraising staff', description: 'Generate personalized thank-you letters for donors using customizable templates. Send via Gmail with one click.', features: ['Personalized letters', '2 default templates', 'Gmail send', 'Sent tracking', 'Bulk generation', 'Tax receipt option'] },
+  { id: 'budget-tracker', name: 'Budget vs. Actual Tracker', icon: '📊', accent: '#8b5cf6', status: 'live', href: '/tools/budget-tracker', usedBy: 'Finance staff and executive directors', description: 'Track budgeted vs. actual spending by category and period. Color-coded variance with summary totals.', features: ['Variance calculation', 'Period filtering', 'Color-coded overage', 'Summary totals', 'Google Sheets sync', 'Multi-period tracking'] },
 ];
 
 export default function ToolsPage() {
@@ -278,10 +285,10 @@ export default function ToolsPage() {
         >
           <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>🚧</div>
           <div style={{ fontWeight: 600, marginBottom: "0.5rem", color: "#64748b" }}>
-            More tools coming in Phase 2
+            More tools coming soon
           </div>
           <div style={{ fontSize: "13px" }}>
-            Email Newsletter Automator · Grant Tracker · and more
+            Email Newsletter Automator · Grant Tracker · Board Meeting Minutes Generator · and more
           </div>
         </div>
       </div>
