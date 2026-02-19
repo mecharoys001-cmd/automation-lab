@@ -1,0 +1,269 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tools | The Automation Lab",
+  description:
+    "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
+};
+
+const tools = [
+  {
+    id: "camp-scheduler",
+    name: "Camp Scheduler",
+    description:
+      "A full-featured weekly activity scheduler for camps and summer programs. Built with conflict detection, drag-and-drop scheduling, instructor availability management, multi-venue support, and Google Sheets integration.",
+    status: "live",
+    features: [
+      "50+ activity support",
+      "Drag & drop scheduling",
+      "6-type conflict detection",
+      "Auto-resolution engine",
+      "Instructor availability & limits",
+      "Employee self-submit portal",
+      "16+ venue management with utilization",
+      "Google Sheets sync",
+      "Print view",
+    ],
+    icon: "📅",
+    href: "/tools/camp-scheduler",
+    accent: "#10b981",
+    usedBy: "Camps, summer programs, youth organizations",
+  },
+];
+
+export default function ToolsPage() {
+  return (
+    <div style={{ paddingTop: "64px", minHeight: "100vh" }}>
+      {/* Header */}
+      <div
+        style={{
+          borderBottom: "1px solid #1e293b",
+          padding: "4rem 1.5rem",
+          textAlign: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "400px",
+            height: "400px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%)",
+          }}
+        />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <Link
+            href="/"
+            style={{
+              color: "#64748b",
+              textDecoration: "none",
+              fontSize: "13px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "2rem",
+            }}
+          >
+            ← Back to Automation Lab
+          </Link>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#10b981",
+              fontWeight: 600,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              marginBottom: "1rem",
+            }}
+          >
+            Open Source · Free to Use
+          </div>
+          <h1
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
+              marginBottom: "1rem",
+            }}
+          >
+            Automation Tools
+          </h1>
+          <p
+            style={{
+              color: "#94a3b8",
+              fontSize: "16px",
+              maxWidth: "500px",
+              margin: "0 auto",
+              lineHeight: 1.7,
+            }}
+          >
+            Practical tools built through the Automation Lab — free for any
+            nonprofit or organization to use.
+          </p>
+        </div>
+      </div>
+
+      {/* Tools list */}
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "0 auto",
+          padding: "4rem 1.5rem",
+        }}
+      >
+        {tools.map((tool) => (
+          <div
+            key={tool.id}
+            className="card-glow"
+            style={{
+              backgroundColor: "#111827",
+              borderRadius: "20px",
+              padding: "2.5rem",
+              border: `1px solid ${tool.accent}30`,
+              marginBottom: "2rem",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: "1rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "14px",
+                    backgroundColor: `${tool.accent}20`,
+                    border: `1px solid ${tool.accent}30`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "28px",
+                  }}
+                >
+                  {tool.icon}
+                </div>
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {tool.name}
+                  </h2>
+                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                    Best for: {tool.usedBy}
+                  </div>
+                </div>
+              </div>
+              <span
+                style={{
+                  backgroundColor: `${tool.accent}20`,
+                  color: tool.accent,
+                  padding: "6px 14px",
+                  borderRadius: "100px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                ● Live
+              </span>
+            </div>
+
+            <p
+              style={{
+                color: "#94a3b8",
+                fontSize: "15px",
+                lineHeight: 1.7,
+                marginBottom: "2rem",
+              }}
+            >
+              {tool.description}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "2rem",
+              }}
+            >
+              {tool.features.map((f) => (
+                <span
+                  key={f}
+                  style={{
+                    backgroundColor: `${tool.accent}10`,
+                    color: tool.accent,
+                    border: `1px solid ${tool.accent}25`,
+                    borderRadius: "8px",
+                    padding: "5px 12px",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                  }}
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+
+            <Link
+              href={tool.href}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                backgroundColor: tool.accent,
+                color: "#fff",
+                padding: "14px 28px",
+                borderRadius: "10px",
+                fontSize: "15px",
+                fontWeight: 600,
+                textDecoration: "none",
+                boxShadow: `0 0 20px ${tool.accent}30`,
+              }}
+            >
+              Open Camp Scheduler →
+            </Link>
+          </div>
+        ))}
+
+        {/* Coming soon */}
+        <div
+          style={{
+            textAlign: "center",
+            padding: "3rem",
+            border: "1px dashed #1e293b",
+            borderRadius: "20px",
+            color: "#475569",
+          }}
+        >
+          <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>🚧</div>
+          <div style={{ fontWeight: 600, marginBottom: "0.5rem", color: "#64748b" }}>
+            More tools coming in Phase 2
+          </div>
+          <div style={{ fontSize: "13px" }}>
+            Email Newsletter Automator · Grant Tracker · and more
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
