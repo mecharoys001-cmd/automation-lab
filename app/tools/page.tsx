@@ -30,6 +30,27 @@ const tools = [
     accent: "#10b981",
     usedBy: "Camps, summer programs, youth organizations",
   },
+  {
+    id: "csv-dedup",
+    name: "CSV Deduplicator",
+    description:
+      "Upload a mailing list or contacts CSV and get a cleaned file back instantly. Removes exact duplicates and fuzzy matches — catches misspelled names, initials, and concatenated names (like 'Ethan Brewerton', 'Ethen Brewerton', 'E Brewerton', and 'Ebrewerton') when they share the same address. Runs 100% in your browser; your data never leaves your computer.",
+    status: "live",
+    features: [
+      "Fuzzy name matching",
+      "Handles misspellings & initials",
+      "Address normalization",
+      "Smart record selection",
+      "Auto-detects columns",
+      "100% browser-based",
+      "No data uploaded",
+      "Download cleaned CSV",
+    ],
+    icon: "🧹",
+    href: "/tools/csv-dedup",
+    accent: "#6366f1",
+    usedBy: "Nonprofits, arts orgs, event planners with mailing lists",
+  },
 ];
 
 export default function ToolsPage() {
@@ -240,7 +261,7 @@ export default function ToolsPage() {
                 boxShadow: `0 0 20px ${tool.accent}30`,
               }}
             >
-              Open Camp Scheduler →
+              Open {tool.name} →
             </Link>
           </div>
         ))}
