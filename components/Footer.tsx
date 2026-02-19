@@ -64,11 +64,14 @@ export default function Footer() {
         >
           {/* Brand */}
           <div>
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: "4px" }}>
+              <div style={{ fontWeight: 800, fontSize: "18px", color: "#ffffff", fontFamily: "'Montserrat', sans-serif", marginBottom: "10px" }}>
+                Automation Lab
+              </div>
               <img
                 src="/images/nwct-logo-white.svg"
                 alt="NWCT Arts Council"
-                style={{ height: "42px", width: "auto" }}
+                style={{ height: "28px", width: "auto", marginBottom: "16px" }}
               />
             </div>
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", lineHeight: 1.7, maxWidth: "280px" }}>
