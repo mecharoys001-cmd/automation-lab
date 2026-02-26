@@ -5,14 +5,12 @@
   "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://djuygbsnqakbctkjlmvl.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_PyM-Tjki0npMnbNqGuuk5g_ITvTb6l5",
-    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4amRlbmNhZnhudWdrb2V3dndxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA2NDkwOCwiZXhwIjoyMDg3NjQwOTA4fQ.m3Jue_qdxNtUez7sacqrmxibKygqrIZ_T7353wK_lJE"
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_PyM-Tjki0npMnbNqGuuk5g_ITvTb6l5"
   },
   "build": {
     "env": {
       "NEXT_PUBLIC_SUPABASE_URL": "https://djuygbsnqakbctkjlmvl.supabase.co",
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_PyM-Tjki0npMnbNqGuuk5g_ITvTb6l5",
-      "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4amRlbmNhZnhudWdrb2V3dndxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA2NDkwOCwiZXhwIjoyMDg3NjQwOTA4fQ.m3Jue_qdxNtUez7sacqrmxibKygqrIZ_T7353wK_lJE"
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_PyM-Tjki0npMnbNqGuuk5g_ITvTb6l5"
     }
   }
 }
