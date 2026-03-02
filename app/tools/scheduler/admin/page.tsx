@@ -992,7 +992,7 @@ function CalendarDashboard() {
       const anchor = selectedDate ?? new Date();
       const year = anchor.getFullYear();
       const payload = { program_id: selectedProgramId, year };
-      const res = await fetch('/api/sessions/generate', {
+      const res = await fetch('/api/scheduler/generate', {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },

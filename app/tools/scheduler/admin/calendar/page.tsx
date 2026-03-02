@@ -538,7 +538,7 @@ export default function CalendarPage() {
     setIsGenerating(true);
     try {
       const year = new Date().getFullYear();
-      const res = await fetch('/api/sessions/generate', {
+      const res = await fetch('/api/scheduler/generate', {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
