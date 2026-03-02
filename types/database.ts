@@ -369,3 +369,15 @@ export interface Database {
     };
   };
 }
+
+/** JSONB snapshot stored inside schedule_versions */
+export interface ScheduleSnapshot {
+  sessions: Session[];
+  session_tags: SessionTag[];
+  session_templates: SessionTemplate[];
+  school_calendar: SchoolCalendar[];
+  settings: Settings;
+  instructors: Instructor[];
+  venues: Venue[];
+  tags: Tag[];
+}
