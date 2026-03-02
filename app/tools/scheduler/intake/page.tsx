@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { AvailabilityJson, DayOfWeek } from '@/types/database';
-import Tooltip from '../components/Tooltip';
+import { Tooltip } from '../components/ui/Tooltip';
 
 // ── Constants ──────────────────────────────────────────────
 

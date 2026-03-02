@@ -1,1136 +1,2176 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
-import Tooltip from '../../components/Tooltip';
-import type { SessionTemplate, Venue, TemplateType, RotationMode } from '@/types/database';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { Button } from '../../components/ui/Button';
 
-// ── Constants ────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// Types
+// ──────────────────────────────────────────────────────────────
 
-const TEMPLATE_TYPES: { value: TemplateType; label: string; description: string; color: string }[] = [
-  { value: 'fully_defined', label: 'Fully Defined', description: 'Admin sets everything: instructor, venue, time, day, grades, tags. Nothing auto-assigned.', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  { value: 'tagged_slot', label: 'Tagged Slot', description: 'Admin sets day, time, venue, grades, and tags. Instructor auto-assigned by scheduler based on matching skills to tags + availability.', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
-  { value: 'auto_assign', label: 'Auto-Assign', description: 'Admin sets day, time, venue, grades. No specific tag requirement. Scheduler picks best available instructor.', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-  { value: 'time_block', label: 'Time Block', description: 'Admin sets day, time, venue only. Scheduler assigns grades, instructor, and event types.', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+interface Template {
+  id: string;
+  name: string;
+  gradeLevel?: string;
+  subject?: string;
+  instructor?: string;
+  venue?: string;
+  days: number[]; // indices into DAYS array
+  timeSlot?: { start: string; end: string }; // HH:MM format
+  instructorRotation: boolean;
+  color: string;
+}
+
+interface PlacedTemplate {
+  id: string;
+  templateId: string;
+  dayIndex: number;
+  startHour: number;
+  durationHours: number;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Constants
+// ──────────────────────────────────────────────────────────────
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const HOUR_HEIGHT = 72;
+const DAY_START_HOUR = 8;
+const DAY_END_HOUR = 16;
+const TIME_COL_WIDTH = 72;
+
+const TEMPLATE_COLORS = [
+  '#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899',
 ];
 
-const ROTATION_MODES: { value: RotationMode; label: string; description: string }[] = [
-  { value: 'consistent', label: 'Consistent', description: 'Same instructor assigned every week' },
-  { value: 'rotate', label: 'Rotate', description: 'Rotate through qualified instructors across weeks' },
+const GRADE_OPTIONS = ['K', 'K-1', 'K-2', '1', '1-2', '2', '2-3', '3', '3-4', '4', '4-5', '5', '5-6', '6', 'All'];
+
+const SUBJECT_OPTIONS = [
+  'Strings', 'Piano', 'Brass', 'Percussion', 'Woodwinds', 'Choir',
+  'General Music', 'Music Theory', 'Composition', 'Ensemble',
 ];
 
-// ── Helpers ──────────────────────────────────────────────────
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
-const WEEKDAYS = [1, 2, 3, 4, 5] as const; // Mon-Fri for visual grid
-
-const GRID_COLORS = [
-  'bg-blue-500/30 border-blue-500/50 text-blue-200',
-  'bg-emerald-500/30 border-emerald-500/50 text-emerald-200',
-  'bg-violet-500/30 border-violet-500/50 text-violet-200',
-  'bg-amber-500/30 border-amber-500/50 text-amber-200',
-  'bg-rose-500/30 border-rose-500/50 text-rose-200',
-  'bg-cyan-500/30 border-cyan-500/50 text-cyan-200',
-  'bg-pink-500/30 border-pink-500/50 text-pink-200',
-  'bg-teal-500/30 border-teal-500/50 text-teal-200',
+const INSTRUCTOR_OPTIONS = [
+  'Ms. Chen', 'Mr. Park', 'Ms. Rivera', 'Mr. Johnson', 'Ms. Davis', 'Mr. Lee',
 ];
 
-function timeToMinutes(time: string): number {
+const VENUE_OPTIONS = [
+  'Room A1', 'Room B2', 'Auditorium', 'Piano Lab', 'Music Hall', 'Choir Room', 'Virtual Studio',
+];
+
+const AUTO_FILL_DAYS_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const AUTO_FILL_WEEKDAY_INDICES = [1, 2, 3, 4, 5]; // Mo–Fr pre-checked
+// Maps auto-fill day index (0=Su..6=Sa) to grid dayIndex (0=Mon..4=Fri)
+const AUTO_FILL_DAY_TO_GRID: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4 };
+
+function generateTimeOptions(): { value: string; label: string }[] {
+  const opts: { value: string; label: string }[] = [];
+  for (let h = 6; h <= 22; h++) {
+    for (const m of [0, 30]) {
+      if (h === 22 && m === 30) continue;
+      const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const period = h >= 12 ? 'PM' : 'AM';
+      const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const label = m === 0 ? `${displayH}:00 ${period}` : `${displayH}:${String(m).padStart(2, '0')} ${period}`;
+      opts.push({ value, label });
+    }
+  }
+  return opts;
+}
+
+const TIME_OPTIONS = generateTimeOptions();
+
+// ──────────────────────────────────────────────────────────────
+// DB ↔ Frontend conversion helpers
+// ──────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromDbTemplate(db: Record<string, any>, index: number): Template {
+  const gradeGroups: string[] = db.grade_groups ?? [];
+  const startTime = ((db.start_time as string) ?? '09:00').slice(0, 5);
+  const endTime = ((db.end_time as string) ?? '10:00').slice(0, 5);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const venue = db.venue as Record<string, any> | null;
+
+  return {
+    id: db.id as string,
+    name: gradeGroups.length > 0
+      ? `${gradeGroups.join(', ')} ${formatTimeSlot({ start: startTime, end: endTime })}`
+      : 'Untitled Template',
+    gradeLevel: gradeGroups[0] ?? '',
+    subject: '',
+    instructor: '',
+    venue: (venue?.name as string) ?? '',
+    days: db.day_of_week != null ? [db.day_of_week as number] : [],
+    timeSlot: { start: startTime, end: endTime },
+    instructorRotation: db.rotation_mode === 'rotate',
+    color: TEMPLATE_COLORS[index % TEMPLATE_COLORS.length],
+  };
+}
+
+function toDbPayload(t: Template, programId: string) {
+  const startTime = t.timeSlot?.start ?? '09:00';
+  const endTime = t.timeSlot?.end ?? '10:00';
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+
+  return {
+    program_id: programId,
+    day_of_week: t.days[0] ?? 1,
+    grade_groups: t.gradeLevel ? [t.gradeLevel] : [],
+    start_time: startTime,
+    end_time: endTime,
+    duration_minutes: Math.max(durationMinutes, 0),
+    rotation_mode: t.instructorRotation ? 'rotate' : 'consistent',
+    template_type: 'fully_defined' as const,
+    is_active: true,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────
+// Helper Functions
+// ──────────────────────────────────────────────────────────────
+
+function formatHour(hour: number): string {
+  const h = Math.floor(hour);
+  const m = Math.round((hour - h) * 60);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${displayH}${period}` : `${displayH}:${String(m).padStart(2, '0')}${period}`;
+}
+
+function snapToQuarterHour(hour: number): number {
+  return Math.round(hour * 4) / 4;
+}
+
+function formatTimeSlot(ts?: { start: string; end: string }): string {
+  if (!ts) return '—';
+  const fmt = (t: string) => {
+    const [hStr, mStr] = t.split(':');
+    const h = parseInt(hStr);
+    const m = mStr;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const dh = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return m === '00' ? `${dh}${period}` : `${dh}:${m}${period}`;
+  };
+  return `${fmt(ts.start)}–${fmt(ts.end)}`;
+}
+
+function formatSchedule(template: Template): string {
+  const dayStr = template.days.length === 5
+    ? 'Mon–Fri'
+    : template.days.map((d) => DAYS_SHORT[d]).join('/');
+  const time = formatTimeSlot(template.timeSlot);
+  return dayStr ? `${dayStr} ${time}` : time;
+}
+
+/** Build a short display name that includes subject/skill AND grade for distinguishing blocks. */
+function getBlockDisplayName(template: Template): string {
+  const subject = template.subject || template.name;
+  const grade = template.gradeLevel;
+  if (grade) {
+    return `${subject} - Grade ${grade}`;
+  }
+  return subject;
+}
+
+function timeStringToHour(time: string): number {
   const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
+  return h + m / 60;
 }
 
-function minutesToTime(mins: number): string {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+function emptyTemplate(): Template {
+  return {
+    id: '',
+    name: '',
+    gradeLevel: '',
+    subject: '',
+    instructor: '',
+    venue: '',
+    days: [],
+    timeSlot: { start: '09:00', end: '10:00' },
+    instructorRotation: false,
+    color: '',
+  };
 }
 
-function formatTime(time: string): string {
-  const [h, m] = time.split(':');
-  const hour = parseInt(h, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${hour12}:${m} ${ampm}`;
+// ──────────────────────────────────────────────────────────────
+// Toast Notification
+// ──────────────────────────────────────────────────────────────
+
+interface ToastState {
+  message: string;
+  type: 'success' | 'error';
+  id: number;
 }
 
-function calcDuration(start: string, end: string): number {
-  return timeToMinutes(end) - timeToMinutes(start);
-}
+function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 3500);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
 
-type TemplateWithVenue = SessionTemplate & { venue?: Venue | null };
+  const isSuccess = toast.type === 'success';
 
-interface FormData {
-  template_type: TemplateType;
-  rotation_mode: RotationMode;
-  day_of_week: number;
-  grade_groups: string;
-  start_time: string;
-  end_time: string;
-  venue_id: string;
-  required_skills: string;
-  sort_order: string;
-}
-
-const EMPTY_FORM: FormData = {
-  template_type: 'fully_defined',
-  rotation_mode: 'consistent',
-  day_of_week: 1,
-  grade_groups: '',
-  start_time: '12:00',
-  end_time: '13:00',
-  venue_id: '',
-  required_skills: '',
-  sort_order: '0',
-};
-
-// ── Skeleton loaders ─────────────────────────────────────────
-
-function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="space-y-2 animate-pulse">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-12 rounded bg-muted/30" />
-      ))}
+    <div
+      className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
+        isSuccess ? 'bg-emerald-500' : 'bg-red-500'
+      }`}
+    >
+      {isSuccess ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+      {toast.message}
     </div>
   );
 }
 
-// ── Skill badge ──────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// Form Field Components
+// ──────────────────────────────────────────────────────────────
 
-function SkillBadge({ skill }: { skill: string }) {
+function FormInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  tooltip?: string;
+}) {
   return (
-    <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
-      {skill}
-    </span>
+    <div>
+      <label className="block text-[13px] font-medium text-slate-900 mb-1.5">{label}</label>
+      <Tooltip text={tooltip ?? label} className="block">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </Tooltip>
+    </div>
   );
 }
 
-// ── Status dot ───────────────────────────────────────────────
-
-function StatusDot({ active }: { active: boolean }) {
+function FormSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+  tooltip?: string;
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-      <span
-        className={`h-2 w-2 rounded-full ${active ? 'bg-green-400' : 'bg-red-400'}`}
-      />
-      {active ? 'Active' : 'Inactive'}
-    </span>
+    <div>
+      <label className="block text-[13px] font-medium text-slate-900 mb-1.5">{label}</label>
+      <Tooltip text={tooltip ?? label} className="block">
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">{placeholder ?? `Select ${label.toLowerCase()}`}</option>
+            {options.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        </div>
+      </Tooltip>
+    </div>
   );
 }
 
-// ── Weekly Visual Grid ───────────────────────────────────────
-
-function WeeklyGrid({ templates }: { templates: TemplateWithVenue[] }) {
-  const activeTemplates = templates.filter((t) => t.is_active);
-
-  // Determine time range from templates, or default 12:00-15:00
-  const { minTime, maxTime } = useMemo(() => {
-    if (activeTemplates.length === 0) return { minTime: 720, maxTime: 900 }; // 12:00-15:00
-    let min = Infinity;
-    let max = -Infinity;
-    for (const t of activeTemplates) {
-      const s = timeToMinutes(t.start_time);
-      const e = timeToMinutes(t.end_time);
-      if (s < min) min = s;
-      if (e > max) max = e;
-    }
-    // Round down/up to nearest 30-min
-    min = Math.floor(min / 30) * 30;
-    max = Math.ceil(max / 30) * 30;
-    return { minTime: min, maxTime: max };
-  }, [activeTemplates]);
-
-  const totalSlots = (maxTime - minTime) / 30;
-  const timeLabels = Array.from({ length: totalSlots + 1 }, (_, i) =>
-    minutesToTime(minTime + i * 30),
-  );
-
-  // Grade group color map
-  const gradeColorMap = useMemo(() => {
-    const map = new Map<string, string>();
-    let idx = 0;
-    for (const t of activeTemplates) {
-      const key = t.grade_groups.join(',');
-      if (!map.has(key)) {
-        map.set(key, GRID_COLORS[idx % GRID_COLORS.length]);
-        idx++;
-      }
-    }
-    return map;
-  }, [activeTemplates]);
-
-  if (activeTemplates.length === 0) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
-        No active templates to display in the weekly grid.
-      </div>
+function DayChips({
+  label,
+  selected,
+  onChange,
+}: {
+  label: string;
+  selected: number[];
+  onChange: (days: number[]) => void;
+}) {
+  const toggle = (idx: number) => {
+    onChange(
+      selected.includes(idx) ? selected.filter((d) => d !== idx) : [...selected, idx].sort(),
     );
-  }
+  };
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="overflow-x-auto">
-        <div
-          className="min-w-[600px]"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '60px repeat(5, 1fr)',
-            gridTemplateRows: `32px repeat(${totalSlots}, 40px)`,
-          }}
-        >
-          {/* Header row: empty corner + day names */}
-          <div className="bg-muted/50 border-b border-r border-border" />
-          {WEEKDAYS.map((day) => (
-            <div
-              key={day}
-              className="bg-muted/50 border-b border-border flex items-center justify-center text-xs font-medium text-muted-foreground"
-            >
-              {DAY_NAMES[day]}
-            </div>
-          ))}
-
-          {/* Time rows */}
-          {Array.from({ length: totalSlots }).map((_, slotIdx) => (
-            <>
-              {/* Time label */}
-              <div
-                key={`time-${slotIdx}`}
-                className="border-r border-b border-border flex items-start justify-end pr-2 pt-0.5 text-[10px] text-muted-foreground"
+    <div>
+      <label className="block text-[13px] font-medium text-slate-900 mb-1.5">{label}</label>
+      <div className="flex gap-1.5 flex-wrap">
+        {DAYS_SHORT.map((day, idx) => {
+          const active = selected.includes(idx);
+          return (
+            <Tooltip key={day} text={active ? `Remove ${day}` : `Add ${day}`}>
+              <button
+                type="button"
+                onClick={() => toggle(idx)}
+                className={`h-10 px-3.5 rounded-lg text-[13px] font-medium border transition-colors cursor-pointer ${
+                  active
+                    ? 'bg-blue-500 text-white border-blue-500'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
               >
-                {timeLabels[slotIdx]}
-              </div>
-              {/* Day columns */}
-              {WEEKDAYS.map((day) => {
-                const slotStart = minTime + slotIdx * 30;
-                const slotEnd = slotStart + 30;
+                {day}
+              </button>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-                // Find templates that START in this slot
-                const starting = activeTemplates.filter((t) => {
-                  if (t.day_of_week !== day) return false;
-                  const tStart = timeToMinutes(t.start_time);
-                  return tStart >= slotStart && tStart < slotEnd;
-                });
+function TimeSlotInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: { start: string; end: string };
+  onChange: (v: { start: string; end: string }) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-[13px] font-medium text-slate-900 mb-1.5">{label}</label>
+      <div className="flex items-center gap-2">
+        <Tooltip text="Start time" className="flex-1">
+          <input
+            type="time"
+            value={value.start}
+            onChange={(e) => onChange({ ...value, start: e.target.value })}
+            className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </Tooltip>
+        <span className="text-[13px] text-slate-400">to</span>
+        <Tooltip text="End time" className="flex-1">
+          <input
+            type="time"
+            value={value.end}
+            onChange={(e) => onChange({ ...value, end: e.target.value })}
+            className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </Tooltip>
+      </div>
+    </div>
+  );
+}
 
-                // Find templates that SPAN this slot but don't start here (for background)
-                const spanning = activeTemplates.filter((t) => {
-                  if (t.day_of_week !== day) return false;
-                  const tStart = timeToMinutes(t.start_time);
-                  const tEnd = timeToMinutes(t.end_time);
-                  return tStart < slotStart && tEnd > slotStart;
-                });
+function RotationToggle({
+  label,
+  enabled,
+  onChange,
+}: {
+  label: string;
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-[13px] font-medium text-slate-900 mb-1.5">{label}</label>
+      <div className="flex items-center gap-3 h-10">
+        <Tooltip text={enabled ? 'Disable instructor rotation' : 'Enable instructor rotation'}>
+          <button
+            type="button"
+            onClick={() => onChange(!enabled)}
+            className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+              enabled ? 'bg-blue-500' : 'bg-slate-300'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                enabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </Tooltip>
+        <span className="text-[13px] text-slate-600">{enabled ? 'Enabled' : 'Disabled'}</span>
+      </div>
+    </div>
+  );
+}
 
-                return (
-                  <div
-                    key={`${day}-${slotIdx}`}
-                    className="border-b border-border relative"
-                    style={{ borderLeft: '1px solid hsl(var(--border))' }}
-                  >
-                    {starting.map((t) => {
-                      const duration = calcDuration(t.start_time, t.end_time);
-                      const heightSlots = duration / 30;
-                      const colorClass = gradeColorMap.get(t.grade_groups.join(',')) || GRID_COLORS[0];
-                      const offset = timeToMinutes(t.start_time) - slotStart;
-                      const offsetPx = (offset / 30) * 40;
+// ──────────────────────────────────────────────────────────────
+// Edit Modal
+// ──────────────────────────────────────────────────────────────
 
-                      return (
-                        <div
-                          key={t.id}
-                          className={`absolute left-0.5 right-0.5 rounded border text-[10px] leading-tight px-1 py-0.5 overflow-hidden z-10 ${colorClass}`}
-                          style={{
-                            top: `${offsetPx}px`,
-                            height: `${heightSlots * 40 - 2}px`,
-                          }}
-                          title={`${t.grade_groups.join(', ')} | ${formatTime(t.start_time)}-${formatTime(t.end_time)}${t.venue ? ` | ${t.venue.name}` : ''}`}
-                        >
-                          <div className="font-medium truncate">{t.grade_groups.join(', ')}</div>
-                          <div className="opacity-70 truncate">
-                            {formatTime(t.start_time)}-{formatTime(t.end_time)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {spanning.length > 0 && starting.length === 0 && (
-                      <div className="absolute inset-0 opacity-0" />
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          ))}
+function EditTemplateModal({
+  template,
+  isNew,
+  onSave,
+  onClose,
+  isSaving,
+}: {
+  template: Template;
+  isNew: boolean;
+  onSave: (t: Template) => void;
+  onClose: () => void;
+  isSaving?: boolean;
+}) {
+  const [local, setLocal] = useState<Template>({ ...template });
+
+  const update = <K extends keyof Template>(key: K, val: Template[K]) => {
+    setLocal((prev) => ({ ...prev, [key]: val }));
+  };
+
+  const handleSave = () => {
+    onSave(local);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <Tooltip text="Click to close">
+        <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      </Tooltip>
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[640px] max-h-[90vh] overflow-y-auto mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h2 className="text-lg font-semibold text-slate-900">
+            {isNew ? 'Create Template' : 'Edit Template'}
+          </h2>
+          <Tooltip text="Close">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </Tooltip>
+        </div>
+
+        {/* Form Body */}
+        <div className="px-6 py-5">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+            {/* Left Column */}
+            <FormInput
+              label="Template Name"
+              value={local.name}
+              onChange={(v) => update('name', v)}
+              placeholder="e.g., Weekly Strings K-2"
+              tooltip="Enter a name to identify this template"
+            />
+            <FormSelect
+              label="Venue"
+              value={local.venue ?? ''}
+              onChange={(v) => update('venue', v)}
+              options={VENUE_OPTIONS}
+              tooltip="Assign a room or location for this template"
+            />
+            <FormSelect
+              label="Grade Level"
+              value={local.gradeLevel ?? ''}
+              onChange={(v) => update('gradeLevel', v)}
+              options={GRADE_OPTIONS}
+              tooltip="Select the target grade level or range"
+            />
+            <DayChips
+              label="Day of Week"
+              selected={local.days}
+              onChange={(v) => update('days', v)}
+            />
+            <FormSelect
+              label="Subject"
+              value={local.subject ?? ''}
+              onChange={(v) => update('subject', v)}
+              options={SUBJECT_OPTIONS}
+              tooltip="Choose the music subject for this template"
+            />
+            <TimeSlotInput
+              label="Time Slot"
+              value={local.timeSlot ?? { start: '09:00', end: '10:00' }}
+              onChange={(v) => update('timeSlot', v)}
+            />
+            <FormSelect
+              label="Instructor"
+              value={local.instructor ?? ''}
+              onChange={(v) => update('instructor', v)}
+              options={INSTRUCTOR_OPTIONS}
+              tooltip="Assign an instructor to this template"
+            />
+            <RotationToggle
+              label="Instructor Rotation"
+              enabled={local.instructorRotation}
+              onChange={(v) => update('instructorRotation', v)}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+          <Button variant="secondary" onClick={onClose} tooltip="Discard changes and close">
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSave} disabled={isSaving} tooltip={isNew ? 'Create new template' : 'Save template changes'}>
+            {isSaving ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving…
+              </span>
+            ) : isNew ? 'Create Template' : 'Save Changes'}
+          </Button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// Auto-Fill Schedule Modal
+// ──────────────────────────────────────────────────────────────
 
-export default function TemplatesPage() {
-  const { selectedProgramId } = useProgram();
+interface PerDayTimeRange {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+}
 
-  const [templates, setTemplates] = useState<TemplateWithVenue[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dayFilter, setDayFilter] = useState<number | 'all'>('all');
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<FormData>(EMPTY_FORM);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [generateResult, setGenerateResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface AutoFillSettings {
+  startTime: string;
+  endTime: string;
+  selectedDays: number[]; // indices into AUTO_FILL_DAYS_LABELS (0=Su..6=Sa)
+  strategy: 'fill_gaps' | 'spread_evenly';
+  priorityTags: string[];
+  schedulePattern: 'same' | 'rotating' | 'random';
+  rotationOrder: string[]; // template IDs in rotation order
+  usePerDayTimes: boolean;
+  perDayTimes: Record<number, PerDayTimeRange>; // keyed by AUTO_FILL day index (0=Su..6=Sa)
+}
 
-  // ── Fetch templates ─────────────────────────────────────────
-
-  const fetchTemplates = useCallback(async () => {
-    if (!selectedProgramId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/templates?program_id=${selectedProgramId}`);
-      if (!res.ok) throw new Error('Failed to fetch templates');
-      const data = await res.json();
-      setTemplates(data.templates ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load templates');
-    } finally {
-      setLoading(false);
+function AutoFillModal({
+  onFill,
+  onClose,
+  isFilling,
+  templates,
+}: {
+  onFill: (settings: AutoFillSettings) => void;
+  onClose: () => void;
+  isFilling: boolean;
+  templates: Template[];
+}) {
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('15:00');
+  const [selectedDays, setSelectedDays] = useState<number[]>([...AUTO_FILL_WEEKDAY_INDICES]);
+  const [strategy, setStrategy] = useState<'fill_gaps' | 'spread_evenly'>('fill_gaps');
+  const [priorityTags, setPriorityTags] = useState<string[]>([]);
+  const [schedulePattern, setSchedulePattern] = useState<'same' | 'rotating' | 'random'>('same');
+  const [rotationOrder, setRotationOrder] = useState<string[]>(() => templates.map((t) => t.id));
+  const [usePerDayTimes, setUsePerDayTimes] = useState(false);
+  const [perDayTimes, setPerDayTimes] = useState<Record<number, PerDayTimeRange>>(() => {
+    const initial: Record<number, PerDayTimeRange> = {};
+    for (const idx of AUTO_FILL_WEEKDAY_INDICES) {
+      initial[idx] = { enabled: true, startTime: '08:00', endTime: '15:00' };
     }
-  }, [selectedProgramId]);
+    return initial;
+  });
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
 
-  // ── Fetch venues ────────────────────────────────────────────
-
-  const fetchVenues = useCallback(async () => {
-    try {
-      const res = await fetch('/api/venues');
-      if (!res.ok) return;
-      const { venues: venueData } = await res.json();
-      setVenues(venueData ?? []);
-    } catch {
-      // silently fail — venue select will be empty
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTemplates();
-    fetchVenues();
-  }, [fetchTemplates, fetchVenues]);
-
-  // ── Filtered templates ──────────────────────────────────────
-
-  const filtered = useMemo(() => {
-    if (dayFilter === 'all') return templates;
-    return templates.filter((t) => t.day_of_week === dayFilter);
-  }, [templates, dayFilter]);
-
-  // ── Create template ─────────────────────────────────────────
-
-  const handleCreate = async () => {
-    if (!selectedProgramId) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const gradeGroups = formData.grade_groups
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const requiredSkills = formData.required_skills
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const duration = calcDuration(formData.start_time, formData.end_time);
-
-      const body = {
-        program_id: selectedProgramId,
-        template_type: formData.template_type,
-        rotation_mode: formData.rotation_mode,
-        day_of_week: formData.day_of_week,
-        grade_groups: gradeGroups,
-        start_time: formData.start_time,
-        end_time: formData.end_time,
-        duration_minutes: duration,
-        venue_id: formData.venue_id || null,
-        required_skills: requiredSkills.length > 0 ? requiredSkills : null,
-        sort_order: parseInt(formData.sort_order, 10) || 0,
-        is_active: true,
-      };
-
-      const res = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error('Failed to create template');
-
-      setShowForm(false);
-      setFormData(EMPTY_FORM);
-      await fetchTemplates();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create template');
-    } finally {
-      setSaving(false);
-    }
+  const toggleDay = (idx: number) => {
+    setSelectedDays((prev) =>
+      prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx].sort(),
+    );
   };
 
-  // ── Update template ─────────────────────────────────────────
-
-  const handleUpdate = async (id: string) => {
-    setSaving(true);
-    setError(null);
-    try {
-      const gradeGroups = editForm.grade_groups
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const requiredSkills = editForm.required_skills
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const duration = calcDuration(editForm.start_time, editForm.end_time);
-
-      const body = {
-        template_type: editForm.template_type,
-        rotation_mode: editForm.rotation_mode,
-        day_of_week: editForm.day_of_week,
-        grade_groups: gradeGroups,
-        start_time: editForm.start_time,
-        end_time: editForm.end_time,
-        duration_minutes: duration,
-        venue_id: editForm.venue_id || null,
-        required_skills: requiredSkills.length > 0 ? requiredSkills : null,
-        sort_order: parseInt(editForm.sort_order, 10) || 0,
-      };
-
-      const res = await fetch(`/api/templates/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error('Failed to update template');
-
-      setEditingId(null);
-      await fetchTemplates();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update template');
-    } finally {
-      setSaving(false);
-    }
+  const toggleTag = (tag: string) => {
+    setPriorityTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
   };
 
-  // ── Delete template ─────────────────────────────────────────
-
-  const handleDelete = async (id: string) => {
-    setError(null);
-    try {
-      const res = await fetch(`/api/templates/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete template');
-
-      setDeleteConfirm(null);
-      await fetchTemplates();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete template');
-    }
+  const updatePerDayTime = (dayIdx: number, field: keyof PerDayTimeRange, value: string | boolean) => {
+    setPerDayTimes((prev) => ({
+      ...prev,
+      [dayIdx]: { ...prev[dayIdx], [field]: value },
+    }));
   };
 
-  // ── Toggle active ───────────────────────────────────────────
-
-  const handleToggleActive = async (template: TemplateWithVenue) => {
-    setError(null);
-    try {
-      const res = await fetch(`/api/templates/${template.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: !template.is_active }),
-      });
-      if (!res.ok) throw new Error('Failed to toggle template');
-      await fetchTemplates();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to toggle template');
-    }
+  const handleDragStart = (idx: number) => {
+    setDragIdx(idx);
   };
 
-  // ── Generate schedule ───────────────────────────────────────
-
-  const handleGenerate = async () => {
-    if (!selectedProgramId) return;
-    setGenerating(true);
-    setGenerateResult(null);
-    try {
-      const res = await fetch('/api/scheduler/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ program_id: selectedProgramId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Generation failed');
-      setGenerateResult({ success: true, message: 'Schedule generated successfully.' });
-    } catch (err) {
-      setGenerateResult({
-        success: false,
-        message: err instanceof Error ? err.message : 'Generation failed',
-      });
-    } finally {
-      setGenerating(false);
-    }
+  const handleDragOver = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === targetIdx) return;
+    setRotationOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+    setDragIdx(targetIdx);
   };
 
-  // ── Start editing ───────────────────────────────────────────
+  const handleDragEnd = () => {
+    setDragIdx(null);
+  };
 
-  const startEditing = (template: TemplateWithVenue) => {
-    setEditingId(template.id);
-    setEditForm({
-      template_type: template.template_type ?? 'fully_defined',
-      rotation_mode: template.rotation_mode ?? 'consistent',
-      day_of_week: template.day_of_week,
-      grade_groups: template.grade_groups.join(', '),
-      start_time: template.start_time.slice(0, 5),
-      end_time: template.end_time.slice(0, 5),
-      venue_id: template.venue_id ?? '',
-      required_skills: (template.required_skills ?? []).join(', '),
-      sort_order: String(template.sort_order ?? 0),
+  const handleFill = () => {
+    onFill({
+      startTime,
+      endTime,
+      selectedDays,
+      strategy,
+      priorityTags,
+      schedulePattern,
+      rotationOrder,
+      usePerDayTimes,
+      perDayTimes,
     });
   };
 
-  // ── No program selected ────────────────────────────────────
-
-  if (!selectedProgramId) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Session Templates</h1>
-          <p className="text-muted-foreground mt-1">
-            Define recurring weekly session patterns. The auto-scheduler uses these to generate concrete sessions.
-          </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-          Select a program to manage templates.
-        </div>
-      </div>
-    );
-  }
-
-  const inputClass =
-    'rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring';
-  const selectClass =
-    'rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
-  const btnClass =
-    'px-3 py-1.5 rounded-md text-xs font-medium border border-border text-foreground hover:bg-muted transition-colors';
-  const btnPrimaryClass =
-    'rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors';
+  const timeSelectClasses = 'w-full h-9 bg-white rounded-lg border border-slate-200 px-2.5 pr-7 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent';
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Session Templates</h1>
-          <p className="text-muted-foreground mt-1">
-            Define recurring weekly session patterns. The auto-scheduler uses these to generate concrete sessions.
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Tooltip text="Add a new session template">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <Tooltip text="Click to close">
+        <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      </Tooltip>
+
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-violet-100">
+              <Wand2 className="w-5 h-5 text-violet-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900">Auto-Fill Schedule</h2>
+          </div>
+          <Tooltip text="Close">
             <button
-              onClick={() => {
-                setShowForm(true);
-                setFormData(EMPTY_FORM);
-              }}
-              className={btnPrimaryClass}
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             >
-              Create Template
-            </button>
-          </Tooltip>
-          <Tooltip text="Generate sessions from active templates">
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className={`${btnPrimaryClass} ${generating ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {generating ? 'Generating...' : 'Generate Schedule'}
+              <X className="w-5 h-5" />
             </button>
           </Tooltip>
         </div>
-      </div>
 
-      {/* Generate result */}
-      {generateResult && (
-        <div
-          className={`rounded-lg border p-3 text-sm ${
-            generateResult.success
-              ? 'border-green-500/30 bg-green-500/10 text-green-300'
-              : 'border-red-500/30 bg-red-500/10 text-red-300'
-          }`}
-        >
-          {generateResult.message}
-          <Tooltip text="Dismiss this message" position="bottom">
-            <button
-              onClick={() => setGenerateResult(null)}
-              className="ml-3 text-xs underline opacity-70 hover:opacity-100"
-            >
-              Dismiss
-            </button>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* Error banner */}
-      {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-          {error}
-          <Tooltip text="Dismiss this error" position="bottom">
-            <button
-              onClick={() => setError(null)}
-              className="ml-3 text-xs underline opacity-70 hover:opacity-100"
-            >
-              Dismiss
-            </button>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* Database migration note */}
-      <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-300">
-        <div className="font-semibold mb-1">Database Setup</div>
-        <div className="text-xs opacity-90 mb-2">
-          If you encounter errors saving templates, run this SQL migration:
-        </div>
-        <pre className="text-xs bg-black/30 p-2 rounded overflow-x-auto">
-          ALTER TABLE session_templates ADD COLUMN IF NOT EXISTS template_type TEXT DEFAULT &apos;fully_defined&apos;;{'\n'}
-          ALTER TABLE session_templates ADD COLUMN IF NOT EXISTS rotation_mode TEXT DEFAULT &apos;consistent&apos;;
-        </pre>
-      </div>
-
-      {/* ── Weekly Visual Grid ────────────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Weekly Overview</h2>
-        {loading ? (
-          <div className="h-48 rounded-lg bg-muted/30 animate-pulse" />
-        ) : (
-          <WeeklyGrid templates={templates} />
-        )}
-      </section>
-
-      {/* ── Create Template Form (inline) ─────────────────────── */}
-      {showForm && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">New Template</h2>
-          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
-            {/* Template Type Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">Template Type</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {TEMPLATE_TYPES.map((type) => (
-                  <Tooltip key={type.value} text={type.description}>
+        {/* Body */}
+        <div className="px-6 py-5 space-y-5">
+          {/* Day Selection */}
+          <div>
+            <label className="block text-[13px] font-medium text-slate-900 mb-1.5">Days</label>
+            <div className="flex gap-1.5">
+              {AUTO_FILL_DAYS_LABELS.map((day, idx) => {
+                const active = selectedDays.includes(idx);
+                return (
+                  <Tooltip key={day} text={active ? `Remove ${day}` : `Add ${day}`}>
                     <button
                       type="button"
-                      onClick={() => setFormData((f) => ({ ...f, template_type: type.value }))}
-                      className={`p-3 rounded-lg border-2 transition-all text-left ${
-                        formData.template_type === type.value
-                          ? `${type.color} border-current`
-                          : 'border-border bg-card hover:bg-muted/50'
+                      onClick={() => toggleDay(idx)}
+                      className={`h-9 w-10 rounded-lg text-[13px] font-medium border transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-violet-500 text-white border-violet-500'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="font-medium text-sm">{type.label}</div>
-                      <div className="text-xs opacity-70 mt-1 line-clamp-2">{type.description}</div>
+                      {day}
                     </button>
                   </Tooltip>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Time Range with Per-Day Toggle */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[13px] font-medium text-slate-900">Time Range</label>
+              <Tooltip text={usePerDayTimes ? 'Use the same time range for all days' : 'Set different time ranges for each day'}>
+                <button
+                  type="button"
+                  onClick={() => setUsePerDayTimes(!usePerDayTimes)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                    usePerDayTimes
+                      ? 'bg-violet-100 text-violet-700 border-violet-300'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  {usePerDayTimes ? 'Custom per day' : 'Same every day'}
+                </button>
+              </Tooltip>
             </div>
 
-            {/* Rotation Mode (only for tagged_slot and auto_assign) */}
-            {(formData.template_type === 'tagged_slot' || formData.template_type === 'auto_assign') && (
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Instructor Assignment</label>
-                <div className="flex gap-2">
-                  {ROTATION_MODES.map((mode) => (
-                    <Tooltip key={mode.value} text={mode.description}>
-                      <button
-                        type="button"
-                        onClick={() => setFormData((f) => ({ ...f, rotation_mode: mode.value }))}
-                        className={`flex-1 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                          formData.rotation_mode === mode.value
-                            ? 'border-primary bg-primary/20 text-primary'
-                            : 'border-border bg-card hover:bg-muted/50'
+            {!usePerDayTimes ? (
+              <div className="flex items-center gap-2">
+                <Tooltip text="Start time for auto-fill" className="flex-1">
+                  <div className="relative">
+                    <select
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    >
+                      {TIME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </Tooltip>
+                <span className="text-[13px] text-slate-400">to</span>
+                <Tooltip text="End time for auto-fill" className="flex-1">
+                  <div className="relative">
+                    <select
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    >
+                      {TIME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </Tooltip>
+              </div>
+            ) : (
+              <div className="space-y-1.5 bg-slate-50 rounded-lg p-3 border border-slate-100">
+                {AUTO_FILL_DAYS_LABELS.map((dayLabel, idx) => {
+                  if (!selectedDays.includes(idx)) return null;
+                  const dayConf = perDayTimes[idx] ?? { enabled: true, startTime: '08:00', endTime: '15:00' };
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Tooltip text={dayConf.enabled ? `Disable ${dayLabel}` : `Enable ${dayLabel}`}>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={dayConf.enabled}
+                            onChange={(e) => updatePerDayTime(idx, 'enabled', e.target.checked)}
+                            className="w-3.5 h-3.5 accent-violet-500 rounded"
+                          />
+                        </label>
+                      </Tooltip>
+                      <span className={`w-8 text-[12px] font-semibold ${dayConf.enabled ? 'text-slate-700' : 'text-slate-400'}`}>
+                        {dayLabel}
+                      </span>
+                      <Tooltip text={`Start time for ${dayLabel}`} className="flex-1">
+                        <div className="relative">
+                          <select
+                            value={dayConf.startTime}
+                            onChange={(e) => updatePerDayTime(idx, 'startTime', e.target.value)}
+                            disabled={!dayConf.enabled}
+                            className={`${timeSelectClasses} disabled:opacity-40 disabled:cursor-not-allowed`}
+                          >
+                            {TIME_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                        </div>
+                      </Tooltip>
+                      <span className="text-[11px] text-slate-400">–</span>
+                      <Tooltip text={`End time for ${dayLabel}`} className="flex-1">
+                        <div className="relative">
+                          <select
+                            value={dayConf.endTime}
+                            onChange={(e) => updatePerDayTime(idx, 'endTime', e.target.value)}
+                            disabled={!dayConf.enabled}
+                            className={`${timeSelectClasses} disabled:opacity-40 disabled:cursor-not-allowed`}
+                          >
+                            {TIME_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                        </div>
+                      </Tooltip>
+                    </div>
+                  );
+                })}
+                {selectedDays.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-2">Select days above to configure times</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Schedule Pattern */}
+          <div>
+            <label className="block text-[13px] font-medium text-slate-900 mb-1.5">Schedule Pattern</label>
+            <div className="space-y-2">
+              <Tooltip text="Cycle through all templates within each day, same order every day">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="schedule-pattern"
+                    checked={schedulePattern === 'same'}
+                    onChange={() => setSchedulePattern('same')}
+                    className="w-4 h-4 accent-violet-500"
+                  />
+                  <div>
+                    <span className="text-[13px] font-medium text-slate-900">Same every day</span>
+                    <p className="text-xs text-slate-500">Cycle through all templates in the same order each day</p>
+                  </div>
+                </label>
+              </Tooltip>
+              <Tooltip text="Cycle through all templates within each day, shifting the start point each day for variety">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="schedule-pattern"
+                    checked={schedulePattern === 'rotating'}
+                    onChange={() => setSchedulePattern('rotating')}
+                    className="w-4 h-4 accent-violet-500"
+                  />
+                  <div>
+                    <span className="text-[13px] font-medium text-slate-900">Rotating</span>
+                    <p className="text-xs text-slate-500">Shifts starting template each day (Day 1: A→B→C, Day 2: B→C→A)</p>
+                  </div>
+                </label>
+              </Tooltip>
+              <Tooltip text="Randomly assign templates to time slots each day">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="schedule-pattern"
+                    checked={schedulePattern === 'random'}
+                    onChange={() => setSchedulePattern('random')}
+                    className="w-4 h-4 accent-violet-500"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-medium text-slate-900">Random</span>
+                    <Shuffle className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                </label>
+              </Tooltip>
+            </div>
+
+            {/* Drag-to-reorder rotation list */}
+            {schedulePattern === 'rotating' && templates.length > 0 && (
+              <div className="mt-3">
+                <Tooltip text="Drag to reorder the rotation sequence">
+                  <p className="text-xs text-slate-500 mb-1.5">Drag to set rotation order:</p>
+                </Tooltip>
+                <div className="space-y-1 bg-slate-50 rounded-lg p-2 border border-slate-100 max-h-[160px] overflow-y-auto">
+                  {rotationOrder.map((templateId, idx) => {
+                    const tmpl = templates.find((t) => t.id === templateId);
+                    if (!tmpl) return null;
+                    return (
+                      <div
+                        key={templateId}
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragOver={(e) => handleDragOver(e, idx)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border transition-colors cursor-grab active:cursor-grabbing ${
+                          dragIdx === idx
+                            ? 'bg-violet-50 border-violet-300 shadow-sm'
+                            : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {mode.label}
-                      </button>
-                    </Tooltip>
-                  ))}
+                        <GripVertical className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                        <div
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: tmpl.color }}
+                        />
+                        <span className="text-[12px] font-medium text-slate-700 truncate">{tmpl.name}</span>
+                        <span className="text-[11px] text-slate-400 ml-auto flex-shrink-0">#{idx + 1}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Day of week */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Day of Week</label>
-                <Tooltip text="Select which day this session occurs">
-                  <select
-                    value={formData.day_of_week}
-                    onChange={(e) =>
-                      setFormData((f) => ({ ...f, day_of_week: parseInt(e.target.value, 10) }))
-                    }
-                    className={`w-full ${selectClass}`}
-                  >
-                    {DAY_NAMES.map((name, idx) => (
-                      <option key={idx} value={idx}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </Tooltip>
-              </div>
-
-              {/* Grade groups — hidden for time_block */}
-              {formData.template_type !== 'time_block' && (
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Grade Groups <span className="opacity-60">(comma-separated)</span>
-                  </label>
-                  <Tooltip text="Enter grade groups, separated by commas">
-                    <input
-                      type="text"
-                      placeholder="e.g. K-2, 3-5"
-                      value={formData.grade_groups}
-                      onChange={(e) => setFormData((f) => ({ ...f, grade_groups: e.target.value }))}
-                      className={`w-full ${inputClass}`}
-                    />
-                  </Tooltip>
-                </div>
-              )}
-
-              {/* Start time */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Start Time</label>
-                <Tooltip text="Set session start time">
+          {/* Fill Strategy */}
+          <div>
+            <label className="block text-[13px] font-medium text-slate-900 mb-1.5">Fill Strategy</label>
+            <div className="space-y-2">
+              <Tooltip text="Place templates in every available time slot with no gaps">
+                <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
-                    type="time"
-                    value={formData.start_time}
-                    onChange={(e) => setFormData((f) => ({ ...f, start_time: e.target.value }))}
-                    className={`w-full ${inputClass}`}
+                    type="radio"
+                    name="fill-strategy"
+                    checked={strategy === 'fill_gaps'}
+                    onChange={() => setStrategy('fill_gaps')}
+                    className="w-4 h-4 accent-violet-500"
                   />
-                </Tooltip>
-              </div>
-
-              {/* End time */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">End Time</label>
-                <Tooltip text="Set session end time">
-                  <input
-                    type="time"
-                    value={formData.end_time}
-                    onChange={(e) => setFormData((f) => ({ ...f, end_time: e.target.value }))}
-                    className={`w-full ${inputClass}`}
-                  />
-                </Tooltip>
-              </div>
-
-              {/* Duration (auto-calculated, read-only) */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Duration <span className="opacity-60">(auto)</span>
+                  <div>
+                    <span className="text-[13px] font-medium text-slate-900">Fill all gaps</span>
+                    <p className="text-xs text-slate-500">Place templates in every available time slot</p>
+                  </div>
                 </label>
-                <div className={`w-full ${inputClass} bg-muted/30 cursor-default`}>
-                  {calcDuration(formData.start_time, formData.end_time)} min
-                </div>
-              </div>
-
-              {/* Venue */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Venue</label>
-                <Tooltip text="Assign a venue for this session">
-                  <select
-                    value={formData.venue_id}
-                    onChange={(e) => setFormData((f) => ({ ...f, venue_id: e.target.value }))}
-                    className={`w-full ${selectClass}`}
-                  >
-                    <option value="">No venue</option>
-                    {venues.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.space_type})
-                      </option>
-                    ))}
-                  </select>
-                </Tooltip>
-              </div>
-
-              {/* Required skills — hidden for auto_assign and time_block */}
-              {formData.template_type !== 'auto_assign' && formData.template_type !== 'time_block' && (
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Required Skills <span className="opacity-60">(comma-separated)</span>
-                  </label>
-                  <Tooltip text="Enter required instructor skills, separated by commas">
-                    <input
-                      type="text"
-                      placeholder="e.g. drums, guitar"
-                      value={formData.required_skills}
-                      onChange={(e) => setFormData((f) => ({ ...f, required_skills: e.target.value }))}
-                      className={`w-full ${inputClass}`}
-                    />
-                  </Tooltip>
-                </div>
-              )}
-
-              {/* Sort order */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Sort Order</label>
-                <Tooltip text="Set display order priority">
+              </Tooltip>
+              <Tooltip text="Distribute templates with spacing between them for a balanced schedule">
+                <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
-                    type="number"
-                    value={formData.sort_order}
-                    onChange={(e) => setFormData((f) => ({ ...f, sort_order: e.target.value }))}
-                    className={`w-full ${inputClass}`}
+                    type="radio"
+                    name="fill-strategy"
+                    checked={strategy === 'spread_evenly'}
+                    onChange={() => setStrategy('spread_evenly')}
+                    className="w-4 h-4 accent-violet-500"
                   />
+                  <div>
+                    <span className="text-[13px] font-medium text-slate-900">Spread evenly</span>
+                    <p className="text-xs text-slate-500">Distribute templates with spacing between them</p>
+                  </div>
+                </label>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Priority Tags */}
+          <div>
+            <label className="block text-[13px] font-medium text-slate-900 mb-1.5">
+              Prioritize Tags <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <div className="flex gap-1.5 flex-wrap">
+              {SUBJECT_OPTIONS.map((tag) => {
+                const active = priorityTags.includes(tag);
+                return (
+                  <Tooltip key={tag} text={active ? `Remove priority for ${tag}` : `Prioritize ${tag}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={`h-8 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-violet-100 text-violet-700 border-violet-300'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+          <Button variant="secondary" onClick={onClose} tooltip="Cancel auto-fill">
+            Cancel
+          </Button>
+          <Tooltip text="Fill empty time slots with templates">
+            <button
+              onClick={handleFill}
+              disabled={isFilling || selectedDays.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-blue-500 text-white hover:bg-blue-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isFilling ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Filling…
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4" />
+                  Auto-Fill
+                </>
+              )}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Placed Template Block (on week grid)
+// ──────────────────────────────────────────────────────────────
+
+function PlacedTemplateBlock({
+  placed,
+  template,
+  onSelect,
+  onResize,
+  onDelete,
+  isSelected,
+}: {
+  placed: PlacedTemplate;
+  template: Template;
+  onSelect: () => void;
+  onResize: (newStart: number, newDuration: number) => void;
+  onDelete: () => void;
+  isSelected: boolean;
+}) {
+  const [resizing, setResizing] = useState<'top' | 'bottom' | null>(null);
+  const blockRef = useRef<HTMLDivElement>(null);
+
+  const handleResizeStart = (edge: 'top' | 'bottom', e: React.MouseEvent) => {
+    e.stopPropagation();
+    setResizing(edge);
+  };
+
+  const handleResizeMove = useCallback(
+    (e: MouseEvent) => {
+      if (!resizing || !blockRef.current) return;
+
+      const gridRect = blockRef.current.closest('.schedule-grid')?.getBoundingClientRect();
+      if (!gridRect) return;
+
+      const relativeY = e.clientY - gridRect.top;
+      const hourAtMouse = DAY_START_HOUR + relativeY / HOUR_HEIGHT;
+      const snappedHour = snapToQuarterHour(Math.max(DAY_START_HOUR, Math.min(DAY_END_HOUR, hourAtMouse)));
+
+      if (resizing === 'top') {
+        const newStart = snappedHour;
+        const newDuration = (placed.startHour + placed.durationHours) - newStart;
+        if (newDuration >= 0.25) {
+          onResize(newStart, newDuration);
+        }
+      } else {
+        const newDuration = snappedHour - placed.startHour;
+        if (newDuration >= 0.25) {
+          onResize(placed.startHour, newDuration);
+        }
+      }
+    },
+    [resizing, placed, onResize],
+  );
+
+  const handleResizeEnd = useCallback(() => {
+    setResizing(null);
+  }, []);
+
+  useEffect(() => {
+    if (resizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [resizing, handleResizeMove, handleResizeEnd]);
+
+  const top = (placed.startHour - DAY_START_HOUR) * HOUR_HEIGHT;
+  const height = placed.durationHours * HOUR_HEIGHT;
+
+  return (
+    <div
+      ref={blockRef}
+      className={`absolute left-1 right-1 rounded-md overflow-hidden group cursor-pointer transition-shadow ${
+        isSelected ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md'
+      }`}
+      style={{
+        top: `${top}px`,
+        height: `${Math.max(height, 24)}px`,
+        backgroundColor: `${template.color}20`,
+        borderLeft: `3px solid ${template.color}`,
+      }}
+      onClick={onSelect}
+    >
+      {/* Top resize handle */}
+      <Tooltip text="Drag to adjust start time">
+        <div
+          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity"
+          onMouseDown={(e) => handleResizeStart('top', e)}
+          style={{ backgroundColor: template.color }}
+        />
+      </Tooltip>
+
+      <Tooltip text={`Click to edit ${getBlockDisplayName(template)}`}>
+        <div className="px-2 py-1.5">
+          <p className="text-xs font-bold leading-tight" style={{ color: template.color }}>
+            {formatHour(placed.startHour)} – {formatHour(placed.startHour + placed.durationHours)}
+          </p>
+          <p className="text-xs font-semibold text-slate-900 leading-tight truncate mt-0.5">
+            {getBlockDisplayName(template)}
+          </p>
+          {height > 48 && template.instructor && (
+            <p className="text-xs text-slate-600 leading-tight truncate mt-0.5">{template.instructor}</p>
+          )}
+        </div>
+      </Tooltip>
+
+      {/* Bottom resize handle */}
+      <Tooltip text="Drag to adjust end time">
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity"
+          onMouseDown={(e) => handleResizeStart('bottom', e)}
+          style={{ backgroundColor: template.color }}
+        />
+      </Tooltip>
+
+      {/* Delete button — always rendered, visible on hover or when selected */}
+      <Tooltip text="Remove from grid">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className={`absolute top-1 right-1 p-0.5 rounded bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all cursor-pointer ${
+            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </Tooltip>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Drag Ghost Preview
+// ──────────────────────────────────────────────────────────────
+
+function DragGhostPreview({
+  template,
+  visible,
+}: {
+  template: Template | null;
+  visible: boolean;
+}) {
+  if (!visible || !template) return null;
+
+  return (
+    <div
+      className="fixed pointer-events-none z-[100] opacity-70"
+      id="drag-ghost"
+      style={{ display: 'none' }}
+    >
+      <div
+        className="px-3 py-2 rounded-md shadow-lg text-xs font-semibold text-white min-w-[120px]"
+        style={{ backgroundColor: template.color }}
+      >
+        {template.name}
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Saved Templates Table
+// ──────────────────────────────────────────────────────────────
+
+function SavedTemplatesTable({
+  templates,
+  onEdit,
+  onDelete,
+  onDragStart,
+  onDragEnd,
+  deletingId,
+}: {
+  templates: Template[];
+  onEdit: (t: Template) => void;
+  onDelete: (id: string) => void;
+  onDragStart: (t: Template) => void;
+  onDragEnd: () => void;
+  deletingId: string | null;
+}) {
+  return (
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-base font-semibold text-slate-900">Saved Templates</h2>
+        <Tooltip text={`${templates.length} template${templates.length === 1 ? '' : 's'} saved`}>
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-100 text-xs font-medium text-slate-600">
+            ({templates.length})
+          </span>
+        </Tooltip>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+          <Tooltip text="Template name and color indicator">
+            <div className="w-[220px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Template Name</div>
+          </Tooltip>
+          <Tooltip text="Assigned instructor (Rotating = shared across instructors)">
+            <div className="flex-1 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Instructor</div>
+          </Tooltip>
+          <Tooltip text="Days and time slot for this template">
+            <div className="w-[180px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Schedule</div>
+          </Tooltip>
+          <Tooltip text="Edit or delete this template">
+            <div className="w-[70px] text-xs font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</div>
+          </Tooltip>
+        </div>
+
+        {/* Rows */}
+        {templates.map((template) => (
+          <div
+            key={template.id}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'copy';
+              e.dataTransfer.setData('text/plain', template.id);
+              // Create a custom drag image
+              const ghost = document.createElement('div');
+              ghost.textContent = getBlockDisplayName(template);
+              ghost.style.cssText = `
+                position: fixed; top: -1000px; left: -1000px;
+                padding: 6px 12px; border-radius: 6px; font-size: 12px;
+                font-weight: 600; color: white; white-space: nowrap;
+                background-color: ${template.color}; opacity: 0.9;
+              `;
+              document.body.appendChild(ghost);
+              e.dataTransfer.setDragImage(ghost, 0, 0);
+              requestAnimationFrame(() => document.body.removeChild(ghost));
+              onDragStart(template);
+            }}
+            onDragEnd={onDragEnd}
+            className="flex items-center px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing group"
+          >
+            {/* Template Name */}
+            <div className="w-[220px] flex items-center gap-2">
+              <Tooltip text="Drag to schedule">
+                <span className="inline-flex"><GripVertical className="w-4 h-4 text-slate-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+              </Tooltip>
+              <div className="flex items-center gap-2 min-w-0">
+                <Tooltip text="Template color on the schedule grid">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: template.color }} />
                 </Tooltip>
+                <span className="text-[13px] font-medium text-slate-900 truncate">{template.name}</span>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end">
-              <Tooltip text="Discard new template">
+            {/* Instructor */}
+            <div className="flex-1 min-w-0">
+              <span className="text-[13px] text-slate-600 truncate block">
+                {template.instructor || '—'}
+                {template.instructorRotation && (
+                  <span className="ml-1.5 text-xs text-violet-600 font-medium">(Rotating)</span>
+                )}
+              </span>
+            </div>
+
+            {/* Schedule */}
+            <div className="w-[180px]">
+              <span className="text-[13px] text-slate-600">{formatSchedule(template)}</span>
+            </div>
+
+            {/* Actions */}
+            <div className="w-[70px] flex items-center justify-end gap-1">
+              <Tooltip text={`Edit ${template.name}`}>
                 <button
-                  onClick={() => {
-                    setShowForm(false);
-                    setFormData(EMPTY_FORM);
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(template);
                   }}
-                  className={btnClass}
+                  onDragStart={(e) => e.stopPropagation()}
+                  draggable={false}
+                  className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
                 >
-                  Cancel
+                  <Pencil className="w-4 h-4" />
                 </button>
               </Tooltip>
-              <Tooltip text="Save new template">
+              <Tooltip text={`Delete ${template.name}`}>
                 <button
-                  onClick={handleCreate}
-                  disabled={saving || (formData.template_type !== 'time_block' && !formData.grade_groups.trim())}
-                  className={`${btnPrimaryClass} ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(template.id);
+                  }}
+                  onDragStart={(e) => e.stopPropagation()}
+                  draggable={false}
+                  disabled={deletingId === template.id}
+                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                    deletingId === template.id
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'hover:bg-red-50 text-slate-400 hover:text-red-500'
+                  }`}
                 >
-                  {saving ? 'Saving...' : 'Create'}
+                  {deletingId === template.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </button>
               </Tooltip>
             </div>
           </div>
-        </section>
-      )}
+        ))}
 
-      {/* ── Template List ─────────────────────────────────────── */}
-      <section className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-lg font-semibold">All Templates</h2>
-          <Tooltip text="Filter templates by day of week">
-            <select
-              value={dayFilter === 'all' ? 'all' : String(dayFilter)}
-              onChange={(e) =>
-                setDayFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))
-              }
-              className={selectClass}
-            >
-              <option value="all">All Days</option>
-              {DAY_NAMES.map((name, idx) => (
-                <option key={idx} value={idx}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </Tooltip>
-        </div>
+        {templates.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-slate-400">
+            No templates yet. Click &quot;Create Template&quot; to add one.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          {loading ? (
-            <div className="p-4">
-              <TableSkeleton rows={5} />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              {templates.length === 0
-                ? 'No templates yet. Create one to define your weekly schedule pattern.'
-                : 'No templates match the selected day filter.'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Day</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Grade Groups</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Time</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Duration</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Venue</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">Required Skills</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Active</th>
-                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((template) => {
-                    const isEditing = editingId === template.id;
-                    const isDeleting = deleteConfirm === template.id;
+// ──────────────────────────────────────────────────────────────
+// Main Page
+// ──────────────────────────────────────────────────────────────
 
-                    if (isEditing) {
-                      return (
-                        <tr
-                          key={template.id}
-                          className="border-b border-border last:border-0 bg-muted/10"
-                        >
-                          {/* Day */}
-                          <td className="px-4 py-2">
-                            <Tooltip text="Change the day of week">
-                              <select
-                                value={editForm.day_of_week}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    day_of_week: parseInt(e.target.value, 10),
-                                  }))
-                                }
-                                className={`w-20 ${selectClass} py-1 text-xs`}
-                              >
-                                {DAY_NAMES.map((name, idx) => (
-                                  <option key={idx} value={idx}>
-                                    {name}
-                                  </option>
-                                ))}
-                              </select>
-                            </Tooltip>
-                          </td>
-                          {/* Type */}
-                          <td className="px-4 py-2">
-                            {(() => {
-                              const typeInfo = TEMPLATE_TYPES.find(t => t.value === (editForm.template_type ?? 'fully_defined'));
-                              return (
-                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${typeInfo?.color ?? 'bg-muted/20 text-muted-foreground border-border'}`}>
-                                  {typeInfo?.label ?? 'Fully Defined'}
-                                </span>
-                              );
-                            })()}
-                          </td>
-                          {/* Grade Groups */}
-                          <td className="px-4 py-2">
-                            <Tooltip text="Edit grade groups">
-                              <input
-                                type="text"
-                                value={editForm.grade_groups}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({ ...f, grade_groups: e.target.value }))
-                                }
-                                className={`w-full max-w-[160px] ${inputClass} py-1 text-xs`}
-                              />
-                            </Tooltip>
-                          </td>
-                          {/* Time */}
-                          <td className="px-4 py-2">
-                            <div className="flex gap-1 items-center">
-                              <Tooltip text="Change start time">
-                                <input
-                                  type="time"
-                                  value={editForm.start_time}
-                                  onChange={(e) =>
-                                    setEditForm((f) => ({ ...f, start_time: e.target.value }))
-                                  }
-                                  className={`w-[100px] ${inputClass} py-1 text-xs`}
-                                />
-                              </Tooltip>
-                              <span className="text-muted-foreground text-xs">-</span>
-                              <Tooltip text="Change end time">
-                                <input
-                                  type="time"
-                                  value={editForm.end_time}
-                                  onChange={(e) =>
-                                    setEditForm((f) => ({ ...f, end_time: e.target.value }))
-                                  }
-                                  className={`w-[100px] ${inputClass} py-1 text-xs`}
-                                />
-                              </Tooltip>
-                            </div>
-                          </td>
-                          {/* Duration */}
-                          <td className="px-4 py-2 text-muted-foreground text-xs hidden md:table-cell">
-                            {calcDuration(editForm.start_time, editForm.end_time)} min
-                          </td>
-                          {/* Venue */}
-                          <td className="px-4 py-2 hidden lg:table-cell">
-                            <Tooltip text="Change assigned venue">
-                              <select
-                                value={editForm.venue_id}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({ ...f, venue_id: e.target.value }))
-                                }
-                                className={`w-full max-w-[140px] ${selectClass} py-1 text-xs`}
-                              >
-                                <option value="">None</option>
-                                {venues.map((v) => (
-                                  <option key={v.id} value={v.id}>
-                                    {v.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </Tooltip>
-                          </td>
-                          {/* Required Skills */}
-                          <td className="px-4 py-2 hidden xl:table-cell">
-                            <Tooltip text="Edit required skills">
-                              <input
-                                type="text"
-                                value={editForm.required_skills}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({ ...f, required_skills: e.target.value }))
-                                }
-                                className={`w-full max-w-[140px] ${inputClass} py-1 text-xs`}
-                              />
-                            </Tooltip>
-                          </td>
-                          {/* Active */}
-                          <td className="px-4 py-2">
-                            <StatusDot active={template.is_active} />
-                          </td>
-                          {/* Actions */}
-                          <td className="px-4 py-2 text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Tooltip text="Save changes">
-                                <button
-                                  onClick={() => handleUpdate(template.id)}
-                                  disabled={saving}
-                                  className={`${btnClass} ${saving ? 'opacity-50' : ''}`}
-                                >
-                                  {saving ? 'Saving...' : 'Save'}
-                                </button>
-                              </Tooltip>
-                              <Tooltip text="Discard changes">
-                                <button
-                                  onClick={() => setEditingId(null)}
-                                  className={btnClass}
-                                >
-                                  Cancel
-                                </button>
-                              </Tooltip>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    }
+export default function TemplatesPage() {
+  const { selectedProgramId } = useProgram();
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [placedTemplates, setPlacedTemplates] = useState<PlacedTemplate[]>([]);
+  const [draggingTemplate, setDraggingTemplate] = useState<Template | null>(null);
+  const [selectedPlacedId, setSelectedPlacedId] = useState<string | null>(null);
+  const [editModalTemplate, setEditModalTemplate] = useState<Template | null>(null);
+  const [isNewTemplate, setIsNewTemplate] = useState(false);
+  const [dropPreview, setDropPreview] = useState<{ dayIndex: number; hour: number } | null>(null);
 
-                    return (
-                      <tr
-                        key={template.id}
-                        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="px-4 py-3 font-medium">
-                          {DAY_NAMES[template.day_of_week] ?? template.day_of_week}
-                        </td>
-                        <td className="px-4 py-3">
-                          {(() => {
-                            const typeInfo = TEMPLATE_TYPES.find(t => t.value === (template.template_type ?? 'fully_defined'));
-                            return (
-                              <Tooltip text={typeInfo?.description ?? ''}>
-                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${typeInfo?.color ?? 'bg-muted/20 text-muted-foreground border-border'}`}>
-                                  {typeInfo?.label ?? 'Fully Defined'}
-                                </span>
-                              </Tooltip>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {template.grade_groups.map((g) => (
-                              <span
-                                key={g}
-                                className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary"
-                              >
-                                {g}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                          {formatTime(template.start_time)} - {formatTime(template.end_time)}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
-                          {template.duration_minutes} min
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
-                          {template.venue?.name ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 hidden xl:table-cell">
-                          <div className="flex flex-wrap gap-1">
-                            {template.required_skills && template.required_skills.length > 0
-                              ? template.required_skills.map((s) => (
-                                  <SkillBadge key={s} skill={s} />
-                                ))
-                              : <span className="text-muted-foreground">—</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Tooltip text={template.is_active ? 'Deactivate template' : 'Activate template'}>
-                            <button onClick={() => handleToggleActive(template)}>
-                              <StatusDot active={template.is_active} />
-                            </button>
-                          </Tooltip>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {isDeleting ? (
-                            <div className="flex gap-1 justify-end items-center">
-                              <span className="text-xs text-red-400 mr-1">Delete?</span>
-                              <Tooltip text="Confirm deletion">
-                                <button
-                                  onClick={() => handleDelete(template.id)}
-                                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-red-500/50 text-red-400 hover:bg-red-500/20 transition-colors"
-                                >
-                                  Yes
-                                </button>
-                              </Tooltip>
-                              <Tooltip text="Cancel deletion">
-                                <button
-                                  onClick={() => setDeleteConfirm(null)}
-                                  className={btnClass}
-                                >
-                                  No
-                                </button>
-                              </Tooltip>
-                            </div>
-                          ) : (
-                            <div className="flex gap-1 justify-end">
-                              <Tooltip text="Edit this template">
-                                <button
-                                  onClick={() => startEditing(template)}
-                                  className={btnClass}
-                                >
-                                  Edit
-                                </button>
-                              </Tooltip>
-                              <Tooltip text="Delete this template">
-                                <button
-                                  onClick={() => setDeleteConfirm(template.id)}
-                                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              </Tooltip>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+  // ── Template CRUD loading state ──
+
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+
+  // ── Save / Publish state ──
+
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [showAutoFillModal, setShowAutoFillModal] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // ── Fetch templates from API ──
+
+  const fetchTemplates = useCallback(async () => {
+    if (!selectedProgramId) return;
+    setIsLoadingTemplates(true);
+    try {
+      const res = await fetch(`/api/templates?program_id=${encodeURIComponent(selectedProgramId)}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Failed to load templates (${res.status})`);
+      }
+      const { templates: dbTemplates } = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setTemplates((dbTemplates ?? []).map((t: Record<string, any>, i: number) => fromDbTemplate(t, i)));
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to load templates',
+        type: 'error',
+        id: Date.now(),
+      });
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  }, [selectedProgramId]);
+
+  // ── Fetch saved placements from API ──
+
+  const fetchPlacements = useCallback(async () => {
+    if (!selectedProgramId) return;
+    try {
+      const res = await fetch(`/api/templates/placements?program_id=${encodeURIComponent(selectedProgramId)}`);
+      if (!res.ok) return; // silently skip if endpoint not available
+      const { placements: dbPlacements } = await res.json();
+      if (Array.isArray(dbPlacements) && dbPlacements.length > 0) {
+        setPlacedTemplates(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          dbPlacements.map((p: any) => ({
+            id: p.id ?? `placed-${Date.now()}-${Math.random()}`,
+            templateId: p.template_id,
+            dayIndex: p.day_index,
+            startHour: p.start_hour,
+            durationHours: p.duration_hours,
+          })),
+        );
+      }
+    } catch {
+      // Non-critical — placements will just start empty
+    }
+  }, [selectedProgramId]);
+
+  useEffect(() => {
+    fetchTemplates();
+    fetchPlacements();
+  }, [fetchTemplates, fetchPlacements]);
+
+  // Warn on navigate-away when there are unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
+  const handleSaveSchedule = async () => {
+    if (!selectedProgramId) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/templates/placements', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          program_id: selectedProgramId,
+          placements: placedTemplates.map((p) => ({
+            templateId: p.templateId,
+            dayIndex: p.dayIndex,
+            startHour: p.startHour,
+            durationHours: p.durationHours,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to save schedule');
+      }
+      setIsDirty(false);
+      setToast({ message: 'Weekly schedule saved!', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to save schedule. Please try again.',
+        type: 'error',
+        id: Date.now(),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePublishSchedule = async () => {
+    if (!selectedProgramId) return;
+    setIsPublishing(true);
+    setShowPublishConfirm(false);
+    try {
+      const res = await fetch('/api/templates/placements/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          program_id: selectedProgramId,
+          placements: placedTemplates.map((p) => ({
+            templateId: p.templateId,
+            dayIndex: p.dayIndex,
+            startHour: p.startHour,
+            durationHours: p.durationHours,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to publish schedule');
+      }
+      const { sessions_created } = await res.json();
+      setToast({
+        message: `Schedule published! ${sessions_created} session${sessions_created === 1 ? '' : 's'} created.`,
+        type: 'success',
+        id: Date.now(),
+      });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to publish schedule. Please try again.',
+        type: 'error',
+        id: Date.now(),
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // ── Auto-Fill ──
+
+  const handleAutoFill = async (settings: AutoFillSettings) => {
+    if (templates.length === 0) {
+      setToast({ message: 'No templates available to fill schedule', type: 'error', id: Date.now() });
+      return;
+    }
+
+    setIsAutoFilling(true);
+    // Brief delay for UX feedback
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Map selected auto-fill days to grid dayIndices (only Mon–Fri exist on the grid)
+    const gridDays = settings.selectedDays
+      .map((d) => AUTO_FILL_DAY_TO_GRID[d])
+      .filter((d): d is number => d !== undefined);
+
+    if (gridDays.length === 0) {
+      setToast({ message: 'No valid weekdays selected', type: 'error', id: Date.now() });
+      setIsAutoFilling(false);
+      return;
+    }
+
+    // Resolve per-day time ranges: if custom, filter out disabled days
+    const getTimeRange = (autoFillDayIdx: number): { start: number; end: number } | null => {
+      if (settings.usePerDayTimes) {
+        const conf = settings.perDayTimes[autoFillDayIdx];
+        if (!conf || !conf.enabled) return null;
+        const s = timeStringToHour(conf.startTime);
+        const e = timeStringToHour(conf.endTime);
+        return e > s ? { start: s, end: e } : null;
+      }
+      const s = timeStringToHour(settings.startTime);
+      const e = timeStringToHour(settings.endTime);
+      return e > s ? { start: s, end: e } : null;
+    };
+
+    // Validate that at least one day has a valid time range
+    const validDays = settings.selectedDays.filter((d) => getTimeRange(d) !== null);
+    if (validDays.length === 0) {
+      setToast({ message: 'End time must be after start time', type: 'error', id: Date.now() });
+      setIsAutoFilling(false);
+      return;
+    }
+
+    const getTemplateDuration = (t: Template): number => {
+      if (t.timeSlot) {
+        const s = timeStringToHour(t.timeSlot.start);
+        const e = timeStringToHour(t.timeSlot.end);
+        if (e > s) return e - s;
+      }
+      return 1;
+    };
+
+    // Build template list based on schedule pattern
+    // Both 'same' and 'rotating' cycle through ALL templates within each day.
+    // 'same' uses the same order every day; 'rotating' shifts the starting point each day.
+    const buildTemplateListForDay = (daySeqIndex: number): Template[] => {
+      // Sort templates: priority tags first, then by name
+      const sortedTemplates = [...templates].sort((a, b) => {
+        const aPri = settings.priorityTags.length > 0 && settings.priorityTags.includes(a.subject ?? '') ? 0 : 1;
+        const bPri = settings.priorityTags.length > 0 && settings.priorityTags.includes(b.subject ?? '') ? 0 : 1;
+        if (aPri !== bPri) return aPri - bPri;
+        return a.name.localeCompare(b.name);
+      });
+
+      if (settings.schedulePattern === 'same') {
+        // Same order every day — cycles through all templates within each day
+        return sortedTemplates;
+      }
+
+      if (settings.schedulePattern === 'rotating') {
+        // Use rotation order, shifted by daySeqIndex so each day starts at a different template
+        const rotationIds = settings.rotationOrder.filter((id) => templates.some((t) => t.id === id));
+        if (rotationIds.length === 0) return sortedTemplates;
+        const offset = daySeqIndex % rotationIds.length;
+        const rotated = [...rotationIds.slice(offset), ...rotationIds.slice(0, offset)];
+        return rotated.map((id) => templates.find((t) => t.id === id)!).filter(Boolean);
+      }
+
+      if (settings.schedulePattern === 'random') {
+        // Fisher-Yates shuffle
+        const shuffled = [...sortedTemplates];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      }
+
+      return sortedTemplates;
+    };
+
+    const newPlacements: PlacedTemplate[] = [];
+    let daysAffected = 0;
+
+    // Track the sequential day index (for rotation)
+    let daySeqIndex = 0;
+
+    for (const autoFillDayIdx of settings.selectedDays) {
+      const dayIndex = AUTO_FILL_DAY_TO_GRID[autoFillDayIdx];
+      if (dayIndex === undefined) continue;
+
+      const range = getTimeRange(autoFillDayIdx);
+      if (!range) { daySeqIndex++; continue; }
+      const { start: rangeStart, end: rangeEnd } = range;
+
+      // Get all existing placements on this day, sorted by start
+      const existingOnDay = [...placedTemplates, ...newPlacements]
+        .filter((p) => p.dayIndex === dayIndex)
+        .sort((a, b) => a.startHour - b.startHour);
+
+      // Find gaps within the time range
+      const gaps: { start: number; end: number }[] = [];
+      let cursor = rangeStart;
+
+      for (const p of existingOnDay) {
+        const pStart = p.startHour;
+        const pEnd = p.startHour + p.durationHours;
+        // Only consider placements that overlap the range
+        if (pEnd <= rangeStart || pStart >= rangeEnd) continue;
+
+        const gapStart = Math.max(cursor, rangeStart);
+        const gapEnd = Math.min(pStart, rangeEnd);
+        if (gapEnd > gapStart + 0.2) {
+          gaps.push({ start: gapStart, end: gapEnd });
+        }
+        cursor = Math.max(cursor, pEnd);
+      }
+      // Trailing gap
+      if (cursor < rangeEnd) {
+        const gapStart = Math.max(cursor, rangeStart);
+        if (rangeEnd > gapStart + 0.2) {
+          gaps.push({ start: gapStart, end: rangeEnd });
+        }
+      }
+
+      if (gaps.length === 0) { daySeqIndex++; continue; }
+
+      const dayTemplates = buildTemplateListForDay(daySeqIndex);
+      let dayPlaced = 0;
+      // Use a cycling index so templates rotate: Slot1=T0, Slot2=T1, ... wrapping around
+      let templateIdx = 0;
+
+      // Helper: find the next template in cycle that fits the available duration
+      const pickNextTemplate = (maxDuration: number): Template | null => {
+        for (let i = 0; i < dayTemplates.length; i++) {
+          const candidate = dayTemplates[(templateIdx + i) % dayTemplates.length];
+          if (getTemplateDuration(candidate) <= maxDuration + 0.01) {
+            templateIdx = (templateIdx + i + 1) % dayTemplates.length;
+            return candidate;
+          }
+        }
+        return null;
+      };
+
+      for (const gap of gaps) {
+        if (settings.strategy === 'spread_evenly') {
+          // Place one template centered in each gap
+          const gapDuration = gap.end - gap.start;
+          const pick = pickNextTemplate(gapDuration);
+          if (!pick) continue;
+
+          const dur = getTemplateDuration(pick);
+          // Center the template in the gap, snapped to 15-min
+          const offset = Math.floor(((gapDuration - dur) / 2) * 4) / 4;
+          newPlacements.push({
+            id: `placed-${Date.now()}-${Math.random()}`,
+            templateId: pick.id,
+            dayIndex,
+            startHour: gap.start + offset,
+            durationHours: dur,
+          });
+          dayPlaced++;
+        } else {
+          // Fill all gaps — pack templates greedily, cycling through the template list
+          let currentTime = gap.start;
+          while (currentTime < gap.end - 0.2) {
+            const remaining = gap.end - currentTime;
+            const pick = pickNextTemplate(remaining);
+            if (!pick) break;
+
+            const dur = getTemplateDuration(pick);
+            newPlacements.push({
+              id: `placed-${Date.now()}-${Math.random()}`,
+              templateId: pick.id,
+              dayIndex,
+              startHour: currentTime,
+              durationHours: dur,
+            });
+            currentTime += dur;
+            dayPlaced++;
+          }
+        }
+      }
+
+      if (dayPlaced > 0) daysAffected++;
+      daySeqIndex++;
+    }
+
+    if (newPlacements.length === 0) {
+      setToast({ message: 'No empty slots found in the selected time range', type: 'error', id: Date.now() });
+      setIsAutoFilling(false);
+      return;
+    }
+
+    setPlacedTemplates((prev) => [...prev, ...newPlacements]);
+    setIsDirty(true);
+    setShowAutoFillModal(false);
+    setIsAutoFilling(false);
+    setToast({
+      message: `Auto-filled ${newPlacements.length} session${newPlacements.length === 1 ? '' : 's'} across ${daysAffected} day${daysAffected === 1 ? '' : 's'}`,
+      type: 'success',
+      id: Date.now(),
+    });
+  };
+
+  // ── Drag & Drop ──
+
+  const handleDragStart = (template: Template) => {
+    setDraggingTemplate(template);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingTemplate(null);
+    setDropPreview(null);
+  };
+
+  const handleDragOver = (dayIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+
+    const gridRect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - gridRect.top;
+    const hourAtMouse = DAY_START_HOUR + relativeY / HOUR_HEIGHT;
+    const snappedHour = snapToQuarterHour(Math.max(DAY_START_HOUR, Math.min(DAY_END_HOUR - 1, hourAtMouse)));
+
+    setDropPreview({ dayIndex, hour: snappedHour });
+  };
+
+  const handleDragLeave = () => {
+    setDropPreview(null);
+  };
+
+  const handleDrop = (dayIndex: number, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDropPreview(null);
+
+    const templateToPlace = draggingTemplate ?? templates.find((t) => t.id === e.dataTransfer.getData('text/plain'));
+    if (!templateToPlace) return;
+
+    const gridRect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - gridRect.top;
+    const hourAtMouse = DAY_START_HOUR + relativeY / HOUR_HEIGHT;
+    const startHour = snapToQuarterHour(Math.max(DAY_START_HOUR, Math.min(DAY_END_HOUR - 1, hourAtMouse)));
+
+    // Compute duration from template's time slot or default to 1h
+    let durationHours = 1;
+    if (templateToPlace.timeSlot) {
+      const start = timeStringToHour(templateToPlace.timeSlot.start);
+      const end = timeStringToHour(templateToPlace.timeSlot.end);
+      if (end > start) durationHours = end - start;
+    }
+
+    const newPlaced: PlacedTemplate = {
+      id: `placed-${Date.now()}-${Math.random()}`,
+      templateId: templateToPlace.id,
+      dayIndex,
+      startHour,
+      durationHours,
+    };
+
+    setPlacedTemplates((prev) => [...prev, newPlaced]);
+    setDraggingTemplate(null);
+    setIsDirty(true);
+  };
+
+  // ── Placed template operations ──
+
+  const handleResizePlaced = (placedId: string, newStart: number, newDuration: number) => {
+    setPlacedTemplates((prev) =>
+      prev.map((p) => (p.id === placedId ? { ...p, startHour: newStart, durationHours: newDuration } : p)),
+    );
+    setIsDirty(true);
+  };
+
+  const handleDeletePlaced = (placedId: string) => {
+    setPlacedTemplates((prev) => prev.filter((p) => p.id !== placedId));
+    setSelectedPlacedId(null);
+    setIsDirty(true);
+  };
+
+  // ── Template CRUD ──
+
+  const handleCreateTemplate = () => {
+    const newT = emptyTemplate();
+    newT.id = `t-${Date.now()}`;
+    newT.color = TEMPLATE_COLORS[templates.length % TEMPLATE_COLORS.length];
+    setEditModalTemplate(newT);
+    setIsNewTemplate(true);
+  };
+
+  const handleEditTemplate = (template: Template) => {
+    setEditModalTemplate(template);
+    setIsNewTemplate(false);
+  };
+
+  const handleSaveTemplate = async (updated: Template) => {
+    if (!selectedProgramId) return;
+    setIsSavingTemplate(true);
+    try {
+      const payload = toDbPayload(updated, selectedProgramId);
+
+      if (isNewTemplate) {
+        const res = await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? 'Failed to create template');
+        }
+        const { template: created } = await res.json();
+        // Use server-generated ID; preserve UI-only fields from form
+        const newTemplate: Template = {
+          ...updated,
+          id: created.id,
+          venue: created.venue?.name ?? updated.venue ?? '',
+        };
+        setTemplates((prev) => [...prev, newTemplate]);
+        setToast({ message: 'Template created', type: 'success', id: Date.now() });
+      } else {
+        const res = await fetch(`/api/templates/${encodeURIComponent(updated.id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? 'Failed to update template');
+        }
+        // Preserve UI-only fields from form, keep server state in sync
+        setTemplates((prev) => prev.map((t) => (t.id === updated.id ? { ...updated } : t)));
+        setToast({ message: 'Template updated', type: 'success', id: Date.now() });
+      }
+
+      setEditModalTemplate(null);
+      setIsNewTemplate(false);
+      setIsDirty(true);
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to save template',
+        type: 'error',
+        id: Date.now(),
+      });
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    setDeletingTemplateId(id);
+    try {
+      const res = await fetch(`/api/templates/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to delete template');
+      }
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      // Also remove all placed instances of this template
+      setPlacedTemplates((prev) => prev.filter((p) => p.templateId !== id));
+      setIsDirty(true);
+      setToast({ message: 'Template deleted', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to delete template',
+        type: 'error',
+        id: Date.now(),
+      });
+    } finally {
+      setDeletingTemplateId(null);
+    }
+  };
+
+  if (!selectedProgramId) {
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <p className="text-slate-400">Select a program to manage templates.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-slate-50">
+      {/* Header */}
+      <div className="bg-white px-8 py-5 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Template Builder</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Create templates and drag them onto the weekly grid to schedule.
+            </p>
+          </div>
+          {isDirty && (
+            <Tooltip text="You have unsaved changes">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-xs font-medium text-amber-600">Unsaved</span>
+              </span>
+            </Tooltip>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <Tooltip text="Remove all template placements from the weekly grid">
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              disabled={placedTemplates.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-white text-red-600 hover:bg-red-50 border border-red-300 hover:border-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear Schedule
+            </button>
+          </Tooltip>
+          <Tooltip text="Automatically assign events to empty time slots">
+            <button
+              onClick={() => setShowAutoFillModal(true)}
+              disabled={templates.length === 0 || isAutoFilling}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-violet-500 text-white hover:bg-violet-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap className="w-4 h-4" />
+              Auto-Fill
+            </button>
+          </Tooltip>
+          <Button
+            variant="primary"
+            icon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            onClick={handleSaveSchedule}
+            disabled={!isDirty || isSaving || isPublishing}
+            tooltip="Save template placements to weekly schedule"
+          >
+            {isSaving ? 'Saving…' : 'Save Schedule'}
+          </Button>
+          <Tooltip text="Generate calendar sessions from template schedule">
+            <button
+              onClick={() => setShowPublishConfirm(true)}
+              disabled={isDirty || isPublishing || isSaving || placedTemplates.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isPublishing ? 'Publishing…' : 'Publish Schedule'}
+            </button>
+          </Tooltip>
+          <div className="w-px h-8 bg-slate-200" />
+          <Button
+            variant="primary"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={handleCreateTemplate}
+            tooltip="Create a new template"
+          >
+            Create Template
+          </Button>
+        </div>
+      </div>
 
-        {/* Count footer */}
-        {!loading && filtered.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Showing {filtered.length} of {templates.length} template{templates.length !== 1 ? 's' : ''}
-          </p>
-        )}
-      </section>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Week Grid */}
+        <div className="mx-8 mt-6 bg-white rounded-lg border border-slate-200 overflow-hidden">
+          <div className="flex min-w-full">
+            {/* Time column */}
+            <div className="shrink-0" style={{ width: TIME_COL_WIDTH }}>
+              <div className="h-12 border-b border-slate-200" />
+              {Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }).map((_, i) => {
+                const hour = DAY_START_HOUR + i;
+                return (
+                  <div
+                    key={hour}
+                    className="relative border-b border-slate-100"
+                    style={{ height: HOUR_HEIGHT }}
+                  >
+                    <span className="absolute -top-2 right-3 text-xs font-medium text-slate-500">
+                      {formatHour(hour)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Day columns */}
+            {DAYS.map((day, dayIndex) => (
+              <div key={day} className="flex-1 min-w-[160px] border-l border-slate-200">
+                {/* Day header */}
+                <div className="h-12 border-b border-slate-200 flex items-center justify-center">
+                  <Tooltip text={`Drag templates here to schedule on ${day}`}>
+                    <span className="text-sm font-semibold text-slate-700">{day}</span>
+                  </Tooltip>
+                </div>
+
+                {/* Schedule grid */}
+                <div
+                  className="schedule-grid relative"
+                  style={{ height: (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT }}
+                  onDrop={(e) => handleDrop(dayIndex, e)}
+                  onDragOver={(e) => handleDragOver(dayIndex, e)}
+                  onDragLeave={handleDragLeave}
+                >
+                  {/* Hour rows */}
+                  {Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-slate-100"
+                      style={{ height: HOUR_HEIGHT }}
+                    />
+                  ))}
+
+                  {/* Drop preview ghost */}
+                  {dropPreview && dropPreview.dayIndex === dayIndex && draggingTemplate && (
+                    <div
+                      className="absolute left-1 right-1 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75"
+                      style={{
+                        top: `${(dropPreview.hour - DAY_START_HOUR) * HOUR_HEIGHT}px`,
+                        height: `${HOUR_HEIGHT}px`,
+                        borderColor: draggingTemplate.color,
+                        backgroundColor: `${draggingTemplate.color}15`,
+                      }}
+                    >
+                      <div className="px-2 py-1.5">
+                        <p className="text-xs font-bold" style={{ color: draggingTemplate.color }}>
+                          {formatHour(dropPreview.hour)}
+                        </p>
+                        <p className="text-xs font-semibold text-slate-500 truncate">
+                          {getBlockDisplayName(draggingTemplate)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Placed templates */}
+                  {placedTemplates
+                    .filter((p) => p.dayIndex === dayIndex)
+                    .map((placed) => {
+                      const template = templates.find((t) => t.id === placed.templateId);
+                      if (!template) return null;
+                      return (
+                        <PlacedTemplateBlock
+                          key={placed.id}
+                          placed={placed}
+                          template={template}
+                          onSelect={() => {
+                            setSelectedPlacedId(placed.id === selectedPlacedId ? null : placed.id);
+                            handleEditTemplate(template);
+                          }}
+                          onResize={(newStart, newDuration) =>
+                            handleResizePlaced(placed.id, newStart, newDuration)
+                          }
+                          onDelete={() => handleDeletePlaced(placed.id)}
+                          isSelected={selectedPlacedId === placed.id}
+                        />
+                      );
+                    })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Saved Templates Table */}
+        <div className="mx-8 mt-6 mb-8">
+          {isLoadingTemplates ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+              <span className="ml-2 text-sm text-slate-400">Loading templates…</span>
+            </div>
+          ) : (
+            <SavedTemplatesTable
+              templates={templates}
+              onEdit={handleEditTemplate}
+              onDelete={handleDeleteTemplate}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              deletingId={deletingTemplateId}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Drag ghost */}
+      <DragGhostPreview template={draggingTemplate} visible={!!draggingTemplate} />
+
+      {/* Edit modal */}
+      {editModalTemplate && (
+        <EditTemplateModal
+          template={editModalTemplate}
+          isNew={isNewTemplate}
+          onSave={handleSaveTemplate}
+          onClose={() => {
+            setEditModalTemplate(null);
+            setIsNewTemplate(false);
+          }}
+          isSaving={isSavingTemplate}
+        />
+      )}
+
+      {/* Auto-Fill modal */}
+      {showAutoFillModal && (
+        <AutoFillModal
+          onFill={handleAutoFill}
+          onClose={() => {
+            setShowAutoFillModal(false);
+            setIsAutoFilling(false);
+          }}
+          isFilling={isAutoFilling}
+          templates={templates}
+        />
+      )}
+
+      {/* Publish confirmation dialog */}
+      {showPublishConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <Tooltip text="Click to close">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowPublishConfirm(false)} />
+          </Tooltip>
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[440px] mx-4">
+            <div className="px-6 py-5">
+              <h3 className="text-lg font-semibold text-slate-900">Publish Schedule</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                This will generate <span className="font-semibold">{placedTemplates.length} calendar session{placedTemplates.length === 1 ? '' : 's'}</span> from the current template placements. Sessions will be created as drafts for the upcoming week.
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Are you sure you want to continue?
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+              <Button variant="secondary" onClick={() => setShowPublishConfirm(false)} tooltip="Cancel and go back">
+                Cancel
+              </Button>
+              <Tooltip text="Publish schedule and create sessions">
+                <button
+                  onClick={handlePublishSchedule}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent"
+                >
+                  <Send className="w-4 h-4" />
+                  Publish
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear schedule confirmation dialog */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <Tooltip text="Click to close">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowClearConfirm(false)} />
+          </Tooltip>
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[440px] mx-4">
+            <div className="px-6 py-5">
+              <h3 className="text-lg font-semibold text-slate-900">Clear Schedule</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Clear all template placements? This cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+              <Button variant="secondary" onClick={() => setShowClearConfirm(false)} tooltip="Cancel and keep schedule">
+                Cancel
+              </Button>
+              <Tooltip text="Remove all placements from the grid">
+                <button
+                  onClick={() => {
+                    setPlacedTemplates([]);
+                    setSelectedPlacedId(null);
+                    setIsDirty(true);
+                    setShowClearConfirm(false);
+                    setToast({ message: 'Schedule cleared', type: 'success', id: Date.now() });
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-red-500 text-white hover:bg-red-600 border border-transparent"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear All
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notifications */}
+      {toast && (
+        <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
+      )}
     </div>
   );
 }

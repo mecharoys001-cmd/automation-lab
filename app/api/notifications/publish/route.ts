@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             instructorName,
             programName: program.name,
             sessionCount,
-            scheduleUrl: '/tools/symphonix-scheduler/portal',
+            scheduleUrl: '/tools/scheduler/portal',
           },
         });
 

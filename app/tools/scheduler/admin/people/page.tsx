@@ -2,70 +2,76 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import Tooltip from '../../components/Tooltip';
+import { useRouter } from 'next/navigation';
+import {
+  Users, MapPin, Search, Plus, ChevronDown, X, Mail, Phone,
+  Accessibility, Clock, Package, Home, StickyNote, Edit2,
+  Check, AlertTriangle, Loader2, Trash2, Save,
+} from 'lucide-react';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import { Pill } from '../../components/ui/Pill';
+import { Avatar } from '../../components/ui/Avatar';
+import { ClickToCopy } from '../../components/ui/ClickToCopy';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 
-// ── Helpers ──────────────────────────────────────────────────
+/* ── Constants ──────────────────────────────────────────────── */
 
-function relativeTime(iso: string): string {
-  const now = Date.now();
-  const then = new Date(iso).getTime();
-  const diff = now - then;
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-
-const DAY_ABBR: Record<DayOfWeek, string> = {
-  monday: 'M',
-  tuesday: 'Tu',
-  wednesday: 'W',
-  thursday: 'Th',
-  friday: 'F',
-  saturday: 'Sa',
-  sunday: 'Su',
+const SKILL_STYLES: Record<string, { emoji: string; bg: string; text: string }> = {
+  Percussion: { emoji: '🥁', bg: 'bg-amber-100',   text: 'text-amber-800' },
+  Strings:    { emoji: '🎻', bg: 'bg-purple-100',  text: 'text-violet-600' },
+  Brass:      { emoji: '🎺', bg: 'bg-yellow-100',  text: 'text-yellow-700' },
+  Choral:     { emoji: '🎤', bg: 'bg-pink-100',    text: 'text-pink-700' },
+  Piano:      { emoji: '🎹', bg: 'bg-blue-100',    text: 'text-blue-500' },
+  Guitar:     { emoji: '🎸', bg: 'bg-emerald-100', text: 'text-emerald-800' },
+  Woodwind:   { emoji: '🪈', bg: 'bg-teal-100',    text: 'text-teal-800' },
 };
 
-function availabilitySummary(avail: AvailabilityJson | null): string {
-  if (!avail) return 'Not set';
-  const days = (Object.keys(avail) as DayOfWeek[]).filter(
-    (d) => avail[d] && avail[d]!.length > 0,
-  );
-  if (days.length === 0) return 'Not set';
-  return days.map((d) => DAY_ABBR[d]).join(', ');
-}
-
-function availabilityDetail(avail: AvailabilityJson | null): string {
-  if (!avail) return 'No availability set';
-  const days = (Object.keys(avail) as DayOfWeek[]).filter(
-    (d) => avail[d] && avail[d]!.length > 0,
-  );
-  if (days.length === 0) return 'No availability set';
-  return days.map((d) => {
-    const times = avail[d]!.map((b) => `${b.start.slice(0, 5)}–${b.end.slice(0, 5)}`).join(', ');
-    return `${DAY_ABBR[d]}: ${times}`;
-  }).join(' · ');
-}
-
-// ── Availability grid constants ─────────────────────────────
-
-const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
-  { key: 'monday', short: 'Mon' },
-  { key: 'tuesday', short: 'Tue' },
-  { key: 'wednesday', short: 'Wed' },
-  { key: 'thursday', short: 'Thu' },
-  { key: 'friday', short: 'Fri' },
-  { key: 'saturday', short: 'Sat' },
-  { key: 'sunday', short: 'Sun' },
+const AVAIL_DAYS: { key: DayOfWeek; label: string }[] = [
+  { key: 'sunday',    label: 'Su' },
+  { key: 'monday',    label: 'Mo' },
+  { key: 'tuesday',   label: 'Tu' },
+  { key: 'wednesday', label: 'We' },
+  { key: 'thursday',  label: 'Th' },
+  { key: 'friday',    label: 'Fr' },
+  { key: 'saturday',  label: 'Sa' },
 ];
 
-const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM – 8 PM
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
+  'bg-amber-500', 'bg-pink-500', 'bg-cyan-500',
+];
+
+const EQUIPMENT_OPTIONS = [
+  { key: 'piano', label: 'Piano' },
+  { key: 'sound_system', label: 'Sound System' },
+  { key: 'music_stands', label: 'Music Stands' },
+  { key: 'whiteboard', label: 'Whiteboard' },
+];
+
+const ROOM_TYPES = ['Stage', 'Classroom', 'Auditorium', 'Outdoor'];
+
+/* Availability grid helpers (for modal) */
+const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
+  { key: 'monday', short: 'Mon' }, { key: 'tuesday', short: 'Tue' },
+  { key: 'wednesday', short: 'Wed' }, { key: 'thursday', short: 'Thu' },
+  { key: 'friday', short: 'Fri' }, { key: 'saturday', short: 'Sat' },
+  { key: 'sunday', short: 'Sun' },
+];
+const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
+
+/* ── Helpers ────────────────────────────────────────────────── */
+
+function getInitials(first: string, last: string): string {
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+}
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 function formatHourLabel(h: number): string {
   const h12 = h === 0 || h === 12 ? 12 : h > 12 ? h - 12 : h;
@@ -82,96 +88,78 @@ function isHourAvailable(hour: number, blocks: TimeBlock[]): boolean {
   });
 }
 
-// ── Skeleton loaders ─────────────────────────────────────────
-
-function TableSkeleton({ rows = 5 }: { rows?: number }) {
-  return (
-    <div className="space-y-2 animate-pulse">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-12 rounded bg-muted/30" />
-      ))}
-    </div>
-  );
-}
+/* ── Skeleton ───────────────────────────────────────────────── */
 
 function CardGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="h-40 rounded-lg bg-muted/30 animate-pulse" />
+        <div key={i} className="h-52 rounded-lg bg-slate-100 animate-pulse" />
       ))}
     </div>
   );
 }
 
-// ── Skill badge ──────────────────────────────────────────────
+/* ── Toast Notification ────────────────────────────────────── */
 
-function SkillBadge({ skill }: { skill: string }) {
+interface ToastState {
+  message: string;
+  type: 'success' | 'error';
+  id: number;
+}
+
+function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 3500);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
+
+  const isSuccess = toast.type === 'success';
+
   return (
-    <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
-      {skill}
-    </span>
+    <div
+      className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
+        isSuccess ? 'bg-emerald-500' : 'bg-red-500'
+      }`}
+    >
+      {isSuccess ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+      {toast.message}
+    </div>
   );
 }
 
-// ── Status dot ───────────────────────────────────────────────
-
-function StatusDot({ active }: { active: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-      <span
-        className={`h-2 w-2 rounded-full ${active ? 'bg-green-400' : 'bg-red-400'}`}
-      />
-      {active ? 'Active' : 'Inactive'}
-    </span>
-  );
-}
-
-// ── Availability grid (read-only) ───────────────────────────
+/* ── Availability Grid (Modal) ──────────────────────────────── */
 
 function AvailabilityGrid({ availability }: { availability: AvailabilityJson | null }) {
   if (!availability || Object.keys(availability).length === 0) {
-    return <p className="text-sm text-muted-foreground">No availability set</p>;
+    return <p className="text-sm text-slate-400">No availability set</p>;
   }
-
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[400px]">
         <div
-          className="grid gap-px rounded-lg border border-border overflow-hidden"
+          className="grid gap-px rounded-lg border border-slate-200 overflow-hidden"
           style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}
         >
-          {/* Header row */}
-          <div className="bg-muted/50 p-1" />
-          {ALL_DAYS.map((day) => (
-            <div
-              key={day.key}
-              className="bg-muted/50 py-1.5 text-center text-xs font-medium text-muted-foreground"
-            >
-              {day.short}
+          <div className="bg-slate-50 p-1" />
+          {ALL_DAYS.map((d) => (
+            <div key={d.key} className="bg-slate-50 py-1.5 text-center text-xs font-medium text-slate-400">
+              {d.short}
             </div>
           ))}
-
-          {/* Time rows */}
           {GRID_HOURS.map((hour) => (
             <div key={hour} className="contents">
-              <div className="flex items-center justify-end pr-1.5 text-[10px] text-muted-foreground bg-card h-6 border-t border-border">
+              <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-400 bg-white h-6 border-t border-slate-200">
                 {formatHourLabel(hour)}
               </div>
-              {ALL_DAYS.map((day) => {
-                const blocks = availability[day.key] ?? [];
-                const available = isHourAvailable(hour, blocks);
+              {ALL_DAYS.map((d) => {
+                const blocks = availability[d.key] ?? [];
+                const avail = isHourAvailable(hour, blocks);
                 return (
                   <div
-                    key={`${day.key}-${hour}`}
-                    className={`h-6 border-t border-l border-border flex items-center justify-center ${
-                      available ? 'bg-green-500/40' : 'bg-background'
-                    }`}
-                  >
-                    <span className={`text-[10px] leading-none font-medium ${available ? 'text-white' : 'text-muted-foreground'}`}>
-                      {formatHourLabel(hour)}
-                    </span>
-                  </div>
+                    key={`${d.key}-${hour}`}
+                    className={`h-6 border-t border-l border-slate-200 ${avail ? 'bg-emerald-500/40' : 'bg-white'}`}
+                  />
                 );
               })}
             </div>
@@ -182,7 +170,355 @@ function AvailabilityGrid({ availability }: { availability: AvailabilityJson | n
   );
 }
 
-// ── Instructor detail modal ─────────────────────────────────
+/* ── Venue Detail / Edit Modal ─────────────────────────────── */
+
+function VenueDetailModal({
+  venue, saving, onClose, onSave,
+}: {
+  venue: Venue;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (updates: Record<string, unknown>) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  /* ── Edit-mode state ─── */
+  const [capacity, setCapacity] = useState<string>(
+    venue.max_capacity != null ? String(venue.max_capacity) : ''
+  );
+  const [roomType, setRoomType] = useState(venue.space_type || '');
+  const [equipment, setEquipment] = useState<string[]>(() => {
+    const amenities = venue.amenities ?? [];
+    return amenities.filter((a) => EQUIPMENT_OPTIONS.some((e) => e.key === a));
+  });
+  const [accessible, setAccessible] = useState(
+    (venue.amenities ?? []).includes('wheelchair_accessible')
+  );
+  const [bufferMinutes, setBufferMinutes] = useState<string>(
+    venue.buffer_minutes != null ? String(venue.buffer_minutes) : ''
+  );
+  const [notes, setNotes] = useState(venue.notes ?? '');
+
+  const toggleEquipment = (key: string) => {
+    setEquipment((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const handleSave = () => {
+    const amenities = [...equipment];
+    if (accessible) amenities.push('wheelchair_accessible');
+    onSave({
+      max_capacity: capacity ? Number(capacity) : null,
+      space_type: roomType,
+      amenities: amenities.length > 0 ? amenities : null,
+      buffer_minutes: bufferMinutes ? Number(bufferMinutes) : null,
+      notes: notes.trim() || null,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    // Reset state back to venue values
+    setCapacity(venue.max_capacity != null ? String(venue.max_capacity) : '');
+    setRoomType(venue.space_type || '');
+    const amenities = venue.amenities ?? [];
+    setEquipment(amenities.filter((a) => EQUIPMENT_OPTIONS.some((e) => e.key === a)));
+    setAccessible(amenities.includes('wheelchair_accessible'));
+    setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
+    setNotes(venue.notes ?? '');
+    setEditing(false);
+  };
+
+  /* ── Derived display values ─── */
+  const equipmentLabels = (venue.amenities ?? [])
+    .filter((a) => a !== 'wheelchair_accessible')
+    .map((a) => EQUIPMENT_OPTIONS.find((e) => e.key === a)?.label ?? a);
+  const isAccessible = (venue.amenities ?? []).includes('wheelchair_accessible');
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-50 w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+
+        {/* ── Header ─────────────────────────────────── */}
+        <div className="flex items-center h-14 px-6 gap-2.5">
+          <h2 className="text-[22px] font-bold text-slate-900">{venue.name}</h2>
+          <Badge
+            variant="status"
+            color={venue.is_virtual ? 'violet' : 'blue'}
+            tooltip={venue.is_virtual ? 'Virtual venue' : 'In-person venue'}
+          >
+            {venue.is_virtual ? 'Virtual' : 'In-Person'}
+          </Badge>
+          <div className="flex-1" />
+          <Tooltip text="Close venue details">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            >
+              <X className="w-4 h-4 text-slate-500" />
+            </button>
+          </Tooltip>
+        </div>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* ── Body (Read-only OR Edit) ────────────────── */}
+        {!editing ? (
+          /* ── READ-ONLY VIEW ─── */
+          <div className="divide-y divide-slate-200">
+
+            {/* Capacity & Room Type */}
+            <div className="flex items-center px-6 py-3 gap-6">
+              <Tooltip text="Maximum capacity">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  <span className="text-[13px] text-slate-700">
+                    Capacity: <span className="font-medium">{venue.max_capacity ?? 'Not set'}</span>
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip text="Room type">
+                <div className="flex items-center gap-1.5">
+                  <Home className="w-4 h-4 text-slate-400" />
+                  <span className="text-[13px] text-slate-700">
+                    Room: <span className="font-medium">{venue.space_type || 'Not set'}</span>
+                  </span>
+                </div>
+              </Tooltip>
+            </div>
+
+            {/* Equipment */}
+            <div className="px-6 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-4 h-4 text-slate-400" />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Equipment</span>
+              </div>
+              {equipmentLabels.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {equipmentLabels.map((label) => (
+                    <Tooltip key={label} text={label}>
+                      <span className="inline-flex items-center bg-blue-100 text-blue-700 rounded-full px-3 py-1 text-xs font-medium">
+                        {label}
+                      </span>
+                    </Tooltip>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-sm text-slate-400">No equipment listed</span>
+              )}
+            </div>
+
+            {/* Accessibility */}
+            <div className="flex items-center px-6 py-3 gap-1.5">
+              <Accessibility className="w-4 h-4 text-slate-400" />
+              <span className="text-[13px] text-slate-700">
+                Wheelchair accessible:{' '}
+                <span className={`font-medium ${isAccessible ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  {isAccessible ? 'Yes' : 'No'}
+                </span>
+              </span>
+            </div>
+
+            {/* Setup / Teardown Buffer */}
+            <div className="flex items-center px-6 py-3 gap-1.5">
+              <Tooltip text="Setup and teardown time required before/after events">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="text-[13px] text-slate-700">
+                    Setup/Teardown buffer:{' '}
+                    <span className="font-medium">
+                      {venue.buffer_minutes != null ? `${venue.buffer_minutes} min` : 'None'}
+                    </span>
+                  </span>
+                </div>
+              </Tooltip>
+            </div>
+
+            {/* Availability */}
+            <div className="px-6 py-3 space-y-2">
+              <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
+              <AvailabilityGrid availability={venue.availability_json} />
+            </div>
+
+            {/* Notes */}
+            <div className="px-6 py-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <StickyNote className="w-4 h-4 text-slate-400" />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Notes</span>
+              </div>
+              <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                {venue.notes || <span className="text-slate-400">No notes added</span>}
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* ── EDIT VIEW ─── */
+          <div className="px-6 py-4 space-y-5">
+            {/* Capacity */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
+              <Tooltip text="Maximum number of people this venue can hold">
+                <input
+                  type="number"
+                  min="0"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                  placeholder="e.g. 30"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+              </Tooltip>
+            </div>
+
+            {/* Availability Times */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability Times</label>
+              <AvailabilityGrid availability={venue.availability_json} />
+            </div>
+
+            {/* Equipment */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-2">Equipment</label>
+              <div className="flex flex-wrap gap-x-5 gap-y-2.5">
+                {EQUIPMENT_OPTIONS.map((eq) => (
+                  <Tooltip key={eq.key} text={`Toggle ${eq.label.toLowerCase()} availability`}>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={equipment.includes(eq.key)}
+                        onChange={() => toggleEquipment(eq.key)}
+                        className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                      />
+                      <span className="text-sm text-slate-700">{eq.label}</span>
+                    </label>
+                  </Tooltip>
+                ))}
+              </div>
+            </div>
+
+            {/* Room Type */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Room Type</label>
+              <Tooltip text="Select the type of space for this venue">
+                <div className="relative">
+                  <select
+                    value={roomType}
+                    onChange={(e) => setRoomType(e.target.value)}
+                    className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors"
+                  >
+                    <option value="">Select room type…</option>
+                    {ROOM_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                </div>
+              </Tooltip>
+            </div>
+
+            {/* Accessibility */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Accessibility</label>
+              <Tooltip text="Mark if this venue is wheelchair accessible">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={accessible}
+                    onChange={(e) => setAccessible(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                  />
+                  <span className="text-sm text-slate-700">Wheelchair accessible</span>
+                </label>
+              </Tooltip>
+            </div>
+
+            {/* Setup / Teardown Buffer */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup / Teardown Buffer</label>
+              <Tooltip text="Minutes needed before and after events for setup and cleanup">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={bufferMinutes}
+                    onChange={(e) => setBufferMinutes(e.target.value)}
+                    placeholder="0"
+                    className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                  />
+                  <span className="text-sm text-slate-500">minutes</span>
+                </div>
+              </Tooltip>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+              <Tooltip text="Additional notes or special instructions for this venue">
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add notes about this venue…"
+                  rows={3}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+                />
+              </Tooltip>
+            </div>
+          </div>
+        )}
+
+        <div className="h-px bg-slate-200" />
+
+        {/* ── Footer ─────────────────────────────────── */}
+        <div className="flex items-center justify-between h-14 px-6">
+          <Tooltip text="Jump to calendar filtered to this venue">
+            <Link
+              href={`/tools/scheduler/admin?venue=${venue.id}`}
+              onClick={onClose}
+              className="text-[13px] font-medium text-blue-500 hover:text-blue-600"
+            >
+              View Schedule &rarr;
+            </Link>
+          </Tooltip>
+          <div className="flex items-center gap-3">
+            {editing ? (
+              <>
+                <Tooltip text="Discard changes">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-4 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </Tooltip>
+                <Tooltip text="Save venue details">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-4 py-2 rounded-lg text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? 'Saving\u2026' : 'Save Changes'}
+                  </button>
+                </Tooltip>
+              </>
+            ) : (
+              <Tooltip text="Edit venue details">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Instructor Detail Modal ────────────────────────────────── */
 
 interface SessionRecord {
   id: string;
@@ -195,192 +531,643 @@ interface SessionRecord {
 }
 
 function InstructorDetailModal({
-  instructor,
-  sessionCount,
-  sessions,
-  loadingSessions,
-  togglingStatus,
-  onClose,
-  onToggleStatus,
+  instructor, sessionCount, sessions, loadingSessions,
+  togglingStatus, onClose, onToggleStatus, onToggleOnCall, togglingOnCall, onEdit,
 }: {
   instructor: Instructor;
   sessionCount: number | null;
   sessions: SessionRecord[];
   loadingSessions: boolean;
   togglingStatus: boolean;
+  togglingOnCall: boolean;
   onClose: () => void;
   onToggleStatus: () => void;
+  onToggleOnCall: () => void;
+  onEdit: () => void;
 }) {
-  const [showSessions, setShowSessions] = useState(false);
+  const router = useRouter();
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-xl mx-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-50 w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {instructor.first_name} {instructor.last_name}
-            </h2>
-            <div className="mt-1">
-              <StatusDot active={instructor.is_active} />
-            </div>
-          </div>
+        <div className="flex items-center h-14 px-6 gap-2.5">
+          <h2 className="text-[22px] font-bold text-slate-900">
+            {instructor.first_name} {instructor.last_name}
+          </h2>
+          <Tooltip text={instructor.is_active ? 'Active instructor' : 'Inactive instructor'}>
+            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${instructor.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+          </Tooltip>
+          {instructor.on_call && (
+            <Badge variant="status" color="green" tooltip="Available for last-minute substitutions">
+              On-Call
+            </Badge>
+          )}
+          <div className="flex-1" />
           <Tooltip text="Close details">
             <button
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-4 h-4 text-slate-500" />
             </button>
           </Tooltip>
         </div>
 
-        {/* Status toggle */}
-        <div className="mb-6">
-          <Tooltip text="Toggle active/inactive status" position="bottom">
-            <button
-              onClick={onToggleStatus}
-              disabled={togglingStatus}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 ${
-                instructor.is_active
-                  ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                  : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
-              }`}
-            >
-              {togglingStatus
-                ? 'Updating…'
-                : instructor.is_active
-                  ? 'Deactivate Instructor'
-                  : 'Activate Instructor'}
-            </button>
-          </Tooltip>
-        </div>
+        <div className="h-px bg-slate-200" />
 
-        {/* Contact Info */}
-        <div className="space-y-2 mb-6">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Contact
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-lg border border-border bg-background p-3">
-              <p className="text-xs text-muted-foreground">Email</p>
-              <p className="text-sm font-medium mt-0.5">{instructor.email ?? '—'}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-background p-3">
-              <p className="text-xs text-muted-foreground">Phone</p>
-              <p className="text-sm font-medium mt-0.5">{instructor.phone ?? '—'}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Skills */}
-        <div className="space-y-2 mb-6">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Skills
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {instructor.skills && instructor.skills.length > 0
-              ? instructor.skills.map((s) => <SkillBadge key={s} skill={s} />)
-              : <span className="text-sm text-muted-foreground">No skills listed</span>}
-          </div>
-        </div>
-
-        {/* Assigned Sessions */}
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Assigned Sessions
-            </h3>
-            <Tooltip text="Jump to calendar filtered to this instructor">
-              <Link
-                href={`/tools/scheduler/admin?instructor=${instructor.id}`}
-                onClick={onClose}
-                className="text-xs text-primary hover:text-primary/80 transition-colors"
-              >
-                View on Calendar &rarr;
-              </Link>
-            </Tooltip>
-          </div>
-          <Tooltip text="Show or hide assigned session dates" position="bottom">
-            <button
-              onClick={() => setShowSessions(!showSessions)}
-              className="w-full rounded-lg border border-border bg-background p-3 text-left hover:bg-muted/30 transition-colors cursor-pointer"
-            >
-              {loadingSessions ? (
-                <div className="h-8 w-16 rounded bg-muted/30 animate-pulse" />
-              ) : (
-                <div className="flex items-center justify-between">
-                  <p className="text-2xl font-semibold">{sessionCount ?? 0}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {showSessions ? '▲ Hide' : '▼ Show dates'}
-                  </span>
-                </div>
-              )}
-            </button>
-          </Tooltip>
-          {showSessions && !loadingSessions && sessions.length > 0 && (
-            <div className="rounded-lg border border-border bg-background overflow-hidden max-h-60 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Date</th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Time</th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Venue</th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.map((s) => (
-                    <tr key={s.id} className="border-b border-border last:border-0">
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                        {s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">{s.venue?.name ?? '—'}</td>
-                      <td className="px-3 py-2">
-                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                          s.status === 'scheduled' ? 'bg-green-500/20 text-green-400' :
-                          s.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
-                          s.status === 'draft' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          {s.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {/* Contact (click-to-copy) */}
+        <div className="flex items-center px-6 py-3 gap-6">
+          {instructor.email && (
+            <ClickToCopy
+              text={instructor.email}
+              label="email"
+              icon={Mail}
+              textClassName="text-[13px] text-blue-500"
+              buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+            />
           )}
-          {showSessions && !loadingSessions && sessions.length === 0 && (
-            <p className="text-sm text-muted-foreground px-1">No sessions assigned yet.</p>
+          {instructor.phone && (
+            <ClickToCopy
+              text={instructor.phone}
+              label="phone"
+              icon={Phone}
+              textClassName="text-[13px] text-slate-500"
+              buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+            />
           )}
         </div>
 
-        {/* Availability Grid */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Availability
-          </h3>
+        <div className="h-px bg-slate-200" />
+
+        {/* Skills (clickable → calendar filter) */}
+        <div className="flex items-center flex-wrap gap-2 px-6 py-3">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Skills</span>
+          {(instructor.skills ?? []).map((skill) => {
+            const s = SKILL_STYLES[skill];
+            return (
+              <Pill key={skill} variant="skill"
+                bgColor={s?.bg ?? 'bg-slate-100'} textColor={s?.text ?? 'text-slate-600'}
+                tooltip={`Click to view calendar filtered by ${skill}`}
+                onClick={() => {
+                  onClose();
+                  router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`);
+                }}>
+                {s?.emoji ?? '🎵'} {skill}
+              </Pill>
+            );
+          })}
+          {(!instructor.skills || instructor.skills.length === 0) && (
+            <span className="text-sm text-slate-400">No skills listed</span>
+          )}
+        </div>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Availability */}
+        <div className="px-6 py-3 space-y-2">
+          <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
           <AvailabilityGrid availability={instructor.availability_json} />
+        </div>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Sessions */}
+        <div className="px-6 py-3 space-y-2.5">
+          <h3 className="text-sm font-semibold text-slate-900">
+            {loadingSessions ? 'Loading sessions\u2026' : `${sessionCount ?? 0} Active Sessions`}
+          </h3>
+          {!loadingSessions && sessions.slice(0, 3).map((s) => (
+            <div key={s.id} className="flex items-center bg-slate-100 rounded-lg h-9 px-3 gap-2">
+              <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Session'}</span>
+              <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
+                {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                {s.start_time?.slice(0, 5)}
+              </span>
+              <Badge variant="status"
+                color={s.status === 'scheduled' ? 'green' : s.status === 'draft' ? 'amber' : 'slate'}>
+                {s.status === 'scheduled' ? 'Active' : s.status === 'draft' ? 'Pending' : s.status}
+              </Badge>
+            </div>
+          ))}
+          {!loadingSessions && sessions.length === 0 && (
+            <p className="text-sm text-slate-400">No sessions assigned yet.</p>
+          )}
+        </div>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Footer */}
+        <div className="flex items-center justify-between h-14 px-6">
+          <Tooltip text="Jump to calendar filtered to this instructor">
+            <Link
+              href={`/tools/scheduler/admin?instructor=${instructor.id}`}
+              onClick={onClose}
+              className="text-[13px] font-medium text-blue-500 hover:text-blue-600"
+            >
+              View on Calendar &rarr;
+            </Link>
+          </Tooltip>
+          <div className="flex items-center gap-3">
+            <Tooltip text={instructor.on_call ? 'Remove from on-call list' : 'Mark as available for substitutions'}>
+              <button
+                onClick={onToggleOnCall}
+                disabled={togglingOnCall}
+                className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                  instructor.on_call
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {togglingOnCall ? 'Updating\u2026' : instructor.on_call ? 'On-Call \u2713' : 'Set On-Call'}
+              </button>
+            </Tooltip>
+            <Tooltip text={instructor.is_active ? 'Deactivate this instructor' : 'Activate this instructor'}>
+              <button
+                onClick={onToggleStatus}
+                disabled={togglingStatus}
+                className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                  instructor.is_active
+                    ? 'border-red-300 text-red-500 hover:bg-red-50'
+                    : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+                }`}
+              >
+                {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+            </Tooltip>
+            <Button variant="secondary" tooltip="Edit instructor profile" onClick={onEdit}>Edit</Button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────
+/* ── Instructor Edit / Create Modal ────────────────────────── */
+
+interface InstructorFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  notes: string;
+  is_active: boolean;
+  skills: string[];
+}
+
+const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  notes: '',
+  is_active: true,
+  skills: [],
+};
+
+function InstructorEditModal({
+  instructor,
+  saving,
+  deleting,
+  onSave,
+  onDelete,
+  onClose,
+}: {
+  instructor: Instructor | null;
+  saving: boolean;
+  deleting: boolean;
+  onSave: (data: InstructorFormData) => void;
+  onDelete: (() => void) | null;
+  onClose: () => void;
+}) {
+  const isNew = !instructor;
+  const [form, setForm] = useState<InstructorFormData>(() =>
+    instructor
+      ? {
+          first_name: instructor.first_name,
+          last_name: instructor.last_name,
+          email: instructor.email ?? '',
+          phone: instructor.phone ?? '',
+          notes: instructor.notes ?? '',
+          is_active: instructor.is_active,
+          skills: instructor.skills ?? [],
+        }
+      : { ...EMPTY_INSTRUCTOR_FORM },
+  );
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  function setField<K extends keyof InstructorFormData>(key: K, value: InstructorFormData[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  const toggleSkill = (skill: string) => {
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.includes(skill)
+        ? prev.skills.filter((s) => s !== skill)
+        : [...prev.skills, skill],
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-50 w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+        {/* Header */}
+        <div className="flex items-center h-14 px-6 gap-2.5">
+          <h2 className="text-[22px] font-bold text-slate-900">
+            {isNew ? 'Add Instructor' : 'Edit Instructor'}
+          </h2>
+          <div className="flex-1" />
+          <Tooltip text="Close without saving">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            >
+              <X className="w-4 h-4 text-slate-500" />
+            </button>
+          </Tooltip>
+        </div>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5">
+          {/* First Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">First Name</label>
+            <Tooltip text="Instructor's first name" className="w-full">
+              <input
+                type="text"
+                required
+                value={form.first_name}
+                onChange={(e) => setField('first_name', e.target.value)}
+                placeholder="e.g. Sarah"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Last Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Last Name</label>
+            <Tooltip text="Instructor's last name" className="w-full">
+              <input
+                type="text"
+                required
+                value={form.last_name}
+                onChange={(e) => setField('last_name', e.target.value)}
+                placeholder="e.g. Johnson"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Email</label>
+            <Tooltip text="Contact email for this instructor" className="w-full">
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setField('email', e.target.value)}
+                placeholder="sarah@example.com"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone</label>
+            <Tooltip text="Contact phone number" className="w-full">
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setField('phone', e.target.value)}
+                placeholder="(555) 123-4567"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Skills */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-2">Skills</label>
+            <Tooltip text="Select the instrument families this instructor can teach">
+              <div className="flex flex-wrap gap-x-5 gap-y-2.5">
+                {Object.entries(SKILL_STYLES).map(([skill, s]) => (
+                  <label key={skill} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={form.skills.includes(skill)}
+                      onChange={() => toggleSkill(skill)}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                    />
+                    <span className="text-sm text-slate-700">{s.emoji} {skill}</span>
+                  </label>
+                ))}
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+            <Tooltip text="Internal notes about this instructor (not visible to students)" className="w-full">
+              <textarea
+                value={form.notes}
+                onChange={(e) => setField('notes', e.target.value)}
+                placeholder="Add notes about this instructor…"
+                rows={3}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Active Toggle */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
+            <Tooltip text={form.is_active ? 'Instructor is active and can be scheduled' : 'Instructor is inactive and will not appear in scheduling'}>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => setField('is_active', e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                />
+                <span className="text-sm text-slate-700">
+                  {form.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </label>
+            </Tooltip>
+          </div>
+        </form>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Footer */}
+        <div className="flex items-center justify-between h-14 px-6">
+          <div>
+            {onDelete && !isNew && (
+              confirmDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-500">Are you sure?</span>
+                  <Tooltip text="Confirm deletion — this cannot be undone">
+                    <button
+                      onClick={onDelete}
+                      disabled={deleting}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    >
+                      {deleting ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Deleting…
+                        </span>
+                      ) : 'Yes, Delete'}
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Cancel deletion">
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </Tooltip>
+                </div>
+              ) : (
+                <Tooltip text="Delete this instructor permanently">
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                  </button>
+                </Tooltip>
+              )
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <Tooltip text="Discard changes">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </Tooltip>
+            <Tooltip text="Save instructor details">
+              <button
+                onClick={() => onSave(form)}
+                disabled={saving || !form.first_name.trim() || !form.last_name.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    {isNew ? 'Add Instructor' : 'Save Changes'}
+                  </>
+                )}
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Venue Create Modal ────────────────────────────────────── */
+
+const SPACE_TYPES = ['Stage', 'Classroom', 'Auditorium', 'Outdoor'] as const;
+
+interface VenueFormData {
+  name: string;
+  space_type: string;
+  max_capacity: string;
+  is_virtual: boolean;
+  notes: string;
+}
+
+const EMPTY_VENUE_FORM: VenueFormData = {
+  name: '',
+  space_type: 'Classroom',
+  max_capacity: '',
+  is_virtual: false,
+  notes: '',
+};
+
+function VenueCreateModal({
+  saving,
+  onSave,
+  onClose,
+}: {
+  saving: boolean;
+  onSave: (data: VenueFormData) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<VenueFormData>({ ...EMPTY_VENUE_FORM });
+
+  function setField<K extends keyof VenueFormData>(key: K, value: VenueFormData[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-50 w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+        {/* Header */}
+        <div className="flex items-center h-14 px-6 gap-2.5">
+          <h2 className="text-[22px] font-bold text-slate-900">Add Venue</h2>
+          <div className="flex-1" />
+          <Tooltip text="Close without saving">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            >
+              <X className="w-4 h-4 text-slate-500" />
+            </button>
+          </Tooltip>
+        </div>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Form */}
+        <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">
+          {/* Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Name *</label>
+            <Tooltip text="Venue or room name" className="w-full">
+              <input
+                type="text"
+                required
+                value={form.name}
+                onChange={(e) => setField('name', e.target.value)}
+                placeholder="e.g. Main Stage"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Space Type */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
+            <Tooltip text="The type of space this venue provides" className="w-full">
+              <div className="relative">
+                <select
+                  value={form.space_type}
+                  onChange={(e) => setField('space_type', e.target.value)}
+                  className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer"
+                >
+                  {SPACE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Max Capacity */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Max Capacity</label>
+            <Tooltip text="Maximum number of people this venue can hold (leave blank for unlimited)" className="w-full">
+              <input
+                type="number"
+                min={1}
+                value={form.max_capacity}
+                onChange={(e) => setField('max_capacity', e.target.value)}
+                placeholder="e.g. 30"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Is Virtual */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Type</label>
+            <Tooltip text={form.is_virtual ? 'Virtual venue (online / remote)' : 'In-person physical venue'}>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_virtual}
+                  onChange={(e) => setField('is_virtual', e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                />
+                <span className="text-sm text-slate-700">Virtual venue</span>
+              </label>
+            </Tooltip>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+            <Tooltip text="Internal notes about this venue" className="w-full">
+              <textarea
+                value={form.notes}
+                onChange={(e) => setField('notes', e.target.value)}
+                placeholder="Add notes about this venue…"
+                rows={3}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+              />
+            </Tooltip>
+          </div>
+        </form>
+
+        <div className="h-px bg-slate-200" />
+
+        {/* Footer */}
+        <div className="flex items-center justify-end h-14 px-6 gap-3">
+          <Tooltip text="Discard changes">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </Tooltip>
+          <Tooltip text="Create venue">
+            <button
+              onClick={() => onSave(form)}
+              disabled={saving || !form.name.trim()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Creating…
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  Add Venue
+                </>
+              )}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Page ──────────────────────────────────────────────── */
 
 export default function PeoplePage() {
-  const [recentInstructors, setRecentInstructors] = useState<Instructor[]>([]);
+  const router = useRouter();
   const [allInstructors, setAllInstructors] = useState<Instructor[]>([]);
-  const [loadingRecent, setLoadingRecent] = useState(true);
   const [loadingAll, setLoadingAll] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
@@ -391,44 +1178,46 @@ export default function PeoplePage() {
   const [detailSessions, setDetailSessions] = useState<SessionRecord[]>([]);
   const [loadingDetailSessions, setLoadingDetailSessions] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
+  const [togglingOnCall, setTogglingOnCall] = useState(false);
+
+  // Edit / Create instructor modal state
+  const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [savingInstructor, setSavingInstructor] = useState(false);
+  const [deletingInstructor, setDeletingInstructor] = useState(false);
+
+  // Toast
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   // Venues state
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loadingVenues, setLoadingVenues] = useState(true);
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [savingVenue, setSavingVenue] = useState(false);
+  const [showCreateVenueModal, setShowCreateVenueModal] = useState(false);
+  const [creatingVenue, setCreatingVenue] = useState(false);
 
-  // Fetch all instructors from the API and populate both lists
+  /* ── Fetching ──────────────────────────────────────────── */
+
   const fetchInstructors = useCallback(async () => {
-    setLoadingRecent(true);
     setLoadingAll(true);
     try {
       const res = await fetch('/api/instructors');
-      if (!res.ok) throw new Error(`Failed to fetch instructors: ${res.status}`);
+      if (!res.ok) throw new Error(`${res.status}`);
       const { instructors } = (await res.json()) as { instructors: Instructor[] };
-
-      // All instructors (already ordered by last_name from API)
       setAllInstructors(instructors);
-
-      // Recent: sort by created_at desc and take 10
-      const recent = [...instructors]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 10);
-      setRecentInstructors(recent);
     } catch {
-      // silently fail — empty state will show
       setAllInstructors([]);
-      setRecentInstructors([]);
     } finally {
-      setLoadingRecent(false);
       setLoadingAll(false);
     }
   }, []);
 
-  // Fetch venues
   const fetchVenues = useCallback(async () => {
     setLoadingVenues(true);
     try {
       const res = await fetch('/api/venues');
-      if (!res.ok) throw new Error(`Failed to fetch venues: ${res.status}`);
+      if (!res.ok) throw new Error(`${res.status}`);
       const { venues: data } = (await res.json()) as { venues: Venue[] };
       setVenues(data);
     } catch {
@@ -443,7 +1232,6 @@ export default function PeoplePage() {
     fetchVenues();
   }, [fetchInstructors, fetchVenues]);
 
-  // Open instructor detail modal
   const openDetail = useCallback(async (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setDetailSessionCount(null);
@@ -464,7 +1252,6 @@ export default function PeoplePage() {
     }
   }, []);
 
-  // Toggle instructor active status
   const toggleStatus = useCallback(async () => {
     if (!selectedInstructor) return;
     setTogglingStatus(true);
@@ -474,29 +1261,154 @@ export default function PeoplePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !selectedInstructor.is_active }),
       });
-      if (res.ok) {
-        const { instructor: updated } = (await res.json()) as { instructor: Instructor };
-        setSelectedInstructor(updated);
-        // Update in local lists
-        const update = (list: Instructor[]) =>
-          list.map((i) => (i.id === updated.id ? updated : i));
-        setAllInstructors(update);
-        setRecentInstructors(update);
-      }
-    } catch {
-      // silently fail
+      if (!res.ok) throw new Error('Failed to update status');
+      const { instructor: updated } = (await res.json()) as { instructor: Instructor };
+      setSelectedInstructor(updated);
+      setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      setToast({ message: `Instructor ${updated.is_active ? 'activated' : 'deactivated'}`, type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to update status', type: 'error', id: Date.now() });
     } finally {
       setTogglingStatus(false);
     }
   }, [selectedInstructor]);
 
-  // Filtered instructors for the All section
+  const toggleOnCall = useCallback(async () => {
+    if (!selectedInstructor) return;
+    setTogglingOnCall(true);
+    try {
+      const res = await fetch(`/api/instructors/${selectedInstructor.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ on_call: !selectedInstructor.on_call }),
+      });
+      if (!res.ok) throw new Error('Failed to update on-call status');
+      const { instructor: updated } = (await res.json()) as { instructor: Instructor };
+      setSelectedInstructor(updated);
+      setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      setToast({ message: updated.on_call ? 'Instructor set as on-call' : 'Instructor removed from on-call', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to update on-call status', type: 'error', id: Date.now() });
+    } finally {
+      setTogglingOnCall(false);
+    }
+  }, [selectedInstructor]);
+
+  const handleSaveVenue = useCallback(async (updates: Record<string, unknown>) => {
+    if (!selectedVenue) return;
+    setSavingVenue(true);
+    try {
+      const res = await fetch(`/api/venues/${selectedVenue.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error('Failed to save venue');
+      const { venue: updated } = (await res.json()) as { venue: Venue };
+      setVenues((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+      setSelectedVenue(null);
+      setToast({ message: 'Venue saved successfully', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to save venue', type: 'error', id: Date.now() });
+    } finally {
+      setSavingVenue(false);
+    }
+  }, [selectedVenue]);
+
+  const handleSaveInstructor = useCallback(async (data: InstructorFormData) => {
+    setSavingInstructor(true);
+    const isNew = !editingInstructor;
+    try {
+      const body: Record<string, unknown> = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email.trim() || null,
+        phone: data.phone.trim() || null,
+        notes: data.notes.trim() || null,
+        is_active: data.is_active,
+        skills: data.skills.length > 0 ? data.skills : null,
+      };
+      const url = isNew ? '/api/instructors' : `/api/instructors/${editingInstructor!.id}`;
+      const method = isNew ? 'POST' : 'PATCH';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to ${isNew ? 'create' : 'update'} instructor`);
+      }
+      const { instructor: saved } = (await res.json()) as { instructor: Instructor };
+      if (isNew) {
+        setAllInstructors((prev) => [saved, ...prev]);
+      } else {
+        setAllInstructors((prev) => prev.map((i) => (i.id === saved.id ? saved : i)));
+        // Also update selectedInstructor if detail modal is showing
+        if (selectedInstructor?.id === saved.id) setSelectedInstructor(saved);
+      }
+      setEditingInstructor(null);
+      setShowCreateModal(false);
+      setToast({ message: isNew ? 'Instructor added successfully' : 'Instructor updated successfully', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to save instructor', type: 'error', id: Date.now() });
+    } finally {
+      setSavingInstructor(false);
+    }
+  }, [editingInstructor, selectedInstructor]);
+
+  const handleDeleteInstructor = useCallback(async () => {
+    if (!editingInstructor) return;
+    setDeletingInstructor(true);
+    try {
+      const res = await fetch(`/api/instructors/${editingInstructor.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete instructor');
+      setAllInstructors((prev) => prev.filter((i) => i.id !== editingInstructor.id));
+      if (selectedInstructor?.id === editingInstructor.id) setSelectedInstructor(null);
+      setEditingInstructor(null);
+      setToast({ message: 'Instructor deleted successfully', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to delete instructor', type: 'error', id: Date.now() });
+    } finally {
+      setDeletingInstructor(false);
+    }
+  }, [editingInstructor, selectedInstructor]);
+
+  const handleCreateVenue = useCallback(async (data: VenueFormData) => {
+    setCreatingVenue(true);
+    try {
+      const body: Record<string, unknown> = {
+        name: data.name.trim(),
+        space_type: data.space_type,
+        max_capacity: data.max_capacity ? Number(data.max_capacity) : null,
+        is_virtual: data.is_virtual,
+        notes: data.notes.trim() || null,
+      };
+      const res = await fetch('/api/venues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to create venue');
+      }
+      const { venue: created } = (await res.json()) as { venue: Venue };
+      setVenues((prev) => [created, ...prev]);
+      setShowCreateVenueModal(false);
+      setToast({ message: 'Venue added successfully', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to create venue', type: 'error', id: Date.now() });
+    } finally {
+      setCreatingVenue(false);
+    }
+  }, []);
+
+  /* ── Derived state ─────────────────────────────────────── */
+
   const filtered = allInstructors.filter((inst) => {
-    // Status filter
     if (filterStatus === 'active' && !inst.is_active) return false;
     if (filterStatus === 'inactive' && inst.is_active) return false;
-
-    // Search filter
     if (search.trim()) {
       const q = search.toLowerCase();
       const name = `${inst.first_name} ${inst.last_name}`.toLowerCase();
@@ -507,260 +1419,331 @@ export default function PeoplePage() {
     return true;
   });
 
+  /* ── Render ────────────────────────────────────────────── */
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">People &amp; Places</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage instructors and venues — skills, availability, capacity.
-        </p>
-      </div>
+    <div className="flex flex-col h-full bg-slate-50">
+      {/* ── Top Bar ──────────────────────────────────────── */}
+      <div className="flex items-center bg-white px-8 py-4 border-b border-slate-200 gap-4 flex-shrink-0">
+        <h1 className="text-[22px] font-bold text-slate-900 whitespace-nowrap">
+          People &amp; Places
+        </h1>
+        <div className="flex-1" />
 
-      {/* ── Recent Intake Submissions ──────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Recent Intake Submissions</h2>
-
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          {loadingRecent ? (
-            <div className="p-4">
-              <TableSkeleton rows={4} />
-            </div>
-          ) : recentInstructors.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              No instructor submissions yet.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Email</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Phone</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Skills</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Submitted</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentInstructors.map((inst) => (
-                    <tr
-                      key={inst.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="px-4 py-3 font-medium">
-                        {inst.first_name} {inst.last_name}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
-                        {inst.email ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
-                        {inst.phone ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {inst.skills && inst.skills.length > 0
-                            ? inst.skills.map((s) => <SkillBadge key={s} skill={s} />)
-                            : <span className="text-muted-foreground">—</span>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {relativeTime(inst.created_at)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusDot active={inst.is_active} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Tooltip text="View availability, sessions, and contact info">
-                          <button
-                            onClick={() => openDetail(inst)}
-                            className="px-3 py-1.5 rounded-md text-xs font-medium border border-border text-foreground hover:bg-muted transition-colors"
-                          >
-                            View Details
-                          </button>
-                        </Tooltip>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── All Instructors ────────────────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">All Instructors</h2>
-
-        {/* Search & filter bar */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Tooltip text="Search instructors by name, email, or skill" position="bottom">
-              <input
-                type="text"
-                placeholder="Search by name, email, or skill…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </Tooltip>
+        {/* Search Bar (260px) */}
+        <Tooltip text="Search by name, email, or skill">
+          <div className="flex items-center w-[260px] border border-slate-200 rounded-lg px-3 py-2 gap-2">
+            <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search instructors..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+            />
           </div>
-          <Tooltip text="Filter by active or inactive status" position="bottom">
+        </Tooltip>
+
+        {/* Status Filter */}
+        <Tooltip text="Filter by instructor status">
+          <div className="relative flex items-center border border-slate-200 rounded-lg">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="appearance-none bg-transparent px-3 py-2 pr-8 text-[13px] font-medium text-slate-500 outline-none cursor-pointer"
             >
-              <option value="all">All statuses</option>
-              <option value="active">Active only</option>
-              <option value="inactive">Inactive only</option>
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
-          </Tooltip>
-        </div>
-
-        {/* Instructor cards */}
-        {loadingAll ? (
-          <CardGridSkeleton />
-        ) : filtered.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-            {allInstructors.length === 0
-              ? 'No instructors found.'
-              : 'No instructors match your search.'}
+            <ChevronDown className="absolute right-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((inst) => (
-              <Tooltip key={inst.id} text="View instructor details" position="bottom">
-              <div
-                className="rounded-lg border border-border bg-card p-4 space-y-3 hover:border-muted-foreground/30 transition-colors cursor-pointer"
-                onClick={() => openDetail(inst)}
-              >
-                {/* Card header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">
-                      {inst.first_name} {inst.last_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {inst.email ?? 'No email'}
-                    </p>
-                  </div>
-                  <StatusDot active={inst.is_active} />
-                </div>
+        </Tooltip>
 
-                {/* Phone */}
-                {inst.phone && (
-                  <p className="text-sm text-muted-foreground">{inst.phone}</p>
-                )}
+        {/* Add Instructor */}
+        <Button
+          variant="primary"
+          icon={<Plus className="w-4 h-4" />}
+          tooltip="Add a new instructor to the roster"
+          onClick={() => setShowCreateModal(true)}
+        >
+          Add Instructor
+        </Button>
+      </div>
 
-                {/* Skills */}
-                <div className="flex flex-wrap gap-1">
-                  {inst.skills && inst.skills.length > 0
-                    ? inst.skills.map((s) => <SkillBadge key={s} skill={s} />)
-                    : <span className="text-xs text-muted-foreground">No skills listed</span>}
-                </div>
+      {/* ── Content Area ─────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
 
-                {/* Availability */}
-                <div className="text-xs">
-                  <span className="text-muted-foreground mb-1 block">Availability</span>
-                  <div className="flex gap-1.5">
-                    {(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as DayOfWeek[]).map((day) => {
-                      const avail = inst.availability_json;
-                      const hasSlots = avail && avail[day] && avail[day]!.length > 0;
-                      return (
-                        <Tooltip key={day} text={`${DAY_ABBR[day]}: ${hasSlots ? 'Available' : 'Not available'}`} position="bottom">
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-muted-foreground text-[10px]">{DAY_ABBR[day]}</span>
-                            <span className={`h-2.5 w-2.5 rounded-full ${hasSlots ? 'bg-green-400' : 'bg-red-400/60'}`} />
+        {/* ── Instructors Section ─────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-500" />
+            <h2 className="text-lg font-semibold text-slate-900">Instructors</h2>
+            <Badge
+              variant="count"
+              color="blue"
+              tooltip={`${filtered.length} instructor${filtered.length !== 1 ? 's' : ''}`}
+            >
+              ({filtered.length})
+            </Badge>
+          </div>
+
+          {loadingAll ? (
+            <CardGridSkeleton />
+          ) : filtered.length === 0 ? (
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
+              {allInstructors.length === 0
+                ? 'No instructors found.'
+                : 'No instructors match your filters.'}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map((inst) => {
+                const fullName = `${inst.first_name} ${inst.last_name}`;
+                return (
+                  <div
+                    key={inst.id}
+                    className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar
+                          initials={getInitials(inst.first_name, inst.last_name)}
+                          size="md"
+                          bgColor={avatarColor(fullName)}
+                          tooltip={fullName}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[16px] font-bold text-slate-900 truncate">
+                              {fullName}
+                            </span>
+                            <Tooltip text={inst.is_active ? 'Currently active' : 'Currently inactive'}>
+                              <span
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                  inst.is_active ? 'bg-emerald-500' : 'bg-red-500'
+                                }`}
+                              />
+                            </Tooltip>
                           </div>
-                        </Tooltip>
-                      );
-                    })}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {inst.on_call && (
+                          <Badge
+                            variant="status"
+                            color="green"
+                            tooltip="Available for last-minute substitutions"
+                          >
+                            On-Call
+                          </Badge>
+                        )}
+                        <Badge
+                          variant="status"
+                          color={inst.is_active ? 'green' : 'red'}
+                          dot
+                          tooltip={inst.is_active ? 'Active instructor' : 'Instructor is on leave'}
+                        >
+                          {inst.is_active ? 'Active' : 'On Leave'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Contact Info (click-to-copy) */}
+                    <div className="flex flex-col gap-1.5">
+                      {inst.email && (
+                        <ClickToCopy
+                          text={inst.email}
+                          label="email"
+                          icon={Mail}
+                          textClassName="text-xs text-blue-500 truncate"
+                          buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                        />
+                      )}
+                      {inst.phone && (
+                        <ClickToCopy
+                          text={inst.phone}
+                          label="phone"
+                          icon={Phone}
+                          textClassName="text-xs text-slate-600 truncate"
+                          buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                        />
+                      )}
+                    </div>
+
+                    {/* Skill Pills (click → filter calendar by tag) */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {(inst.skills ?? []).map((skill) => {
+                        const s = SKILL_STYLES[skill];
+                        return (
+                          <Pill
+                            key={skill}
+                            variant="skill"
+                            bgColor={s?.bg ?? 'bg-slate-100'}
+                            textColor={s?.text ?? 'text-slate-600'}
+                            tooltip={`Click to view calendar filtered by ${skill}`}
+                            onClick={() => router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`)}
+                          >
+                            {s?.emoji ?? '🎵'} {skill}
+                          </Pill>
+                        );
+                      })}
+                      {(!inst.skills || inst.skills.length === 0) && (
+                        <span className="text-[11px] text-slate-400">No skills listed</span>
+                      )}
+                    </div>
+
+                    {/* 7-Day Availability Dots (Su–Sa) */}
+                    <div className="flex justify-between">
+                      {AVAIL_DAYS.map((day) => {
+                        const hasSlots = (inst.availability_json?.[day.key]?.length ?? 0) > 0;
+                        return (
+                          <Tooltip
+                            key={day.key}
+                            text={`${day.label}: ${hasSlots ? 'Available' : 'Unavailable'}`}
+                          >
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-medium text-slate-400">
+                                {day.label}
+                              </span>
+                              <span
+                                className={`w-2 h-2 rounded ${
+                                  hasSlots ? 'bg-emerald-500' : 'bg-red-500'
+                                }`}
+                              />
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
+                      <Tooltip text="View details, sessions, and availability">
+                        <button
+                          onClick={() => openDetail(inst)}
+                          className="flex-1 rounded-md border border-slate-200 py-1.5 text-[13px] font-medium text-blue-500 hover:bg-slate-50 transition-colors text-center"
+                        >
+                          View Details
+                        </button>
+                      </Tooltip>
+                      <Tooltip text="Edit instructor details">
+                        <button
+                          onClick={() => setEditingInstructor(inst)}
+                          className="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                        </button>
+                      </Tooltip>
+                    </div>
+
+                    {/* View on Calendar Link */}
+                    <Tooltip text="Jump to calendar filtered to this instructor">
+                      <Link
+                        href={`/tools/scheduler/admin?instructor=${inst.id}`}
+                        className="text-xs font-medium text-blue-500 hover:text-blue-600"
+                      >
+                        View on Calendar &rarr;
+                      </Link>
+                    </Tooltip>
                   </div>
-                </div>
-              </div>
-              </Tooltip>
-            ))}
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* ── Venues Section ──────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-blue-500" />
+            <h2 className="text-lg font-semibold text-slate-900">Venues</h2>
+            <Badge
+              variant="count"
+              color="blue"
+              tooltip={`${venues.length} venue${venues.length !== 1 ? 's' : ''}`}
+            >
+              ({venues.length})
+            </Badge>
+            <div className="flex-1" />
+            <Button
+              variant="primary"
+              icon={<Plus className="w-4 h-4" />}
+              tooltip="Add a new venue"
+              onClick={() => setShowCreateVenueModal(true)}
+            >
+              Add Venue
+            </Button>
           </div>
-        )}
 
-        {/* Count footer */}
-        {!loadingAll && filtered.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Showing {filtered.length} of {allInstructors.length} instructor{allInstructors.length !== 1 ? 's' : ''}
-          </p>
-        )}
-      </section>
-
-      {/* ── Venues (Places) ────────────────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Venues</h2>
-
-        {loadingVenues ? (
-          <CardGridSkeleton />
-        ) : venues.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-            No venues found.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {venues.map((venue) => (
-              <div
-                key={venue.id}
-                className="rounded-lg border border-border bg-card p-4 space-y-3 hover:border-muted-foreground/30 transition-colors"
-              >
-                {/* Card header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{venue.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {venue.space_type}
-                    </p>
+          {loadingVenues ? (
+            <CardGridSkeleton count={3} />
+          ) : venues.length === 0 ? (
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
+              No venues found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {venues.map((venue) => (
+                <div
+                  key={venue.id}
+                  className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                >
+                  {/* Header: Name + Type Badge */}
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[16px] font-bold text-slate-900 truncate">
+                        {venue.name}
+                      </p>
+                      <p className="text-sm text-slate-400">{venue.space_type}</p>
+                    </div>
+                    <Badge
+                      variant="status"
+                      color={venue.is_virtual ? 'violet' : 'blue'}
+                      tooltip={venue.is_virtual ? 'Virtual venue' : 'In-person venue'}
+                    >
+                      {venue.is_virtual ? 'Virtual' : 'In-Person'}
+                    </Badge>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-                    <span
-                      className={`h-2 w-2 rounded-full ${venue.is_virtual ? 'bg-blue-400' : 'bg-green-400'}`}
-                    />
-                    {venue.is_virtual ? 'Virtual' : 'In-Person'}
-                  </span>
+
+                  {/* Capacity */}
+                  <Tooltip text={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-[13px] text-slate-500">
+                        Capacity: {venue.max_capacity ?? 'Unlimited'}
+                      </span>
+                    </div>
+                  </Tooltip>
+
+                  {/* View Details Button */}
+                  <Tooltip text="View and edit venue details">
+                    <button
+                      onClick={() => setSelectedVenue(venue)}
+                      className="w-full rounded-md border border-slate-200 py-1.5 text-[13px] font-medium text-blue-500 hover:bg-slate-50 transition-colors text-center"
+                    >
+                      View Details
+                    </button>
+                  </Tooltip>
+
+                  {/* View Schedule Link */}
+                  <Tooltip text="View venue schedule on the calendar">
+                    <Link
+                      href={`/tools/scheduler/admin?venue=${venue.id}`}
+                      className="text-xs font-medium text-blue-500 hover:text-blue-600"
+                    >
+                      View Schedule &rarr;
+                    </Link>
+                  </Tooltip>
                 </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
 
-                {/* Capacity */}
-                {venue.max_capacity != null && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                    </svg>
-                    Capacity: {venue.max_capacity}
-                  </div>
-                )}
-
-                {/* Notes / Equipment */}
-                {venue.notes && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{venue.notes}</p>
-                )}
-
-                {/* Availability */}
-                <div className="text-xs text-muted-foreground">
-                  Availability: {availabilitySummary(venue.availability_json)}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Count footer */}
-        {!loadingVenues && venues.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {venues.length} venue{venues.length !== 1 ? 's' : ''}
-          </p>
-        )}
-      </section>
-
-      {/* ── Instructor Detail Modal ────────────────────────────── */}
+      {/* ── Instructor Detail Modal ──────────────────────── */}
       {selectedInstructor && (
         <InstructorDetailModal
           instructor={selectedInstructor}
@@ -768,9 +1751,48 @@ export default function PeoplePage() {
           sessions={detailSessions}
           loadingSessions={loadingDetailSessions}
           togglingStatus={togglingStatus}
+          togglingOnCall={togglingOnCall}
           onClose={() => setSelectedInstructor(null)}
           onToggleStatus={toggleStatus}
+          onToggleOnCall={toggleOnCall}
+          onEdit={() => setEditingInstructor(selectedInstructor)}
         />
+      )}
+
+      {/* ── Instructor Edit / Create Modal ────────────────── */}
+      {(editingInstructor || showCreateModal) && (
+        <InstructorEditModal
+          instructor={editingInstructor}
+          saving={savingInstructor}
+          deleting={deletingInstructor}
+          onSave={handleSaveInstructor}
+          onDelete={editingInstructor ? handleDeleteInstructor : null}
+          onClose={() => { setEditingInstructor(null); setShowCreateModal(false); }}
+        />
+      )}
+
+      {/* ── Venue Create Modal ─────────────────────────────── */}
+      {showCreateVenueModal && (
+        <VenueCreateModal
+          saving={creatingVenue}
+          onSave={handleCreateVenue}
+          onClose={() => setShowCreateVenueModal(false)}
+        />
+      )}
+
+      {/* ── Venue Detail Modal ────────────────────────────── */}
+      {selectedVenue && (
+        <VenueDetailModal
+          venue={selectedVenue}
+          saving={savingVenue}
+          onClose={() => setSelectedVenue(null)}
+          onSave={handleSaveVenue}
+        />
+      )}
+
+      {/* ── Toast notifications ───────────────────────────── */}
+      {toast && (
+        <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
       )}
     </div>
   );

@@ -71,6 +71,7 @@ export interface Instructor {
   skills: string[] | null;
   availability_json: AvailabilityJson | null;
   is_active: boolean;
+  on_call: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;

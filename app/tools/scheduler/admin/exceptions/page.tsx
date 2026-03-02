@@ -2,615 +2,651 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useProgram } from '../ProgramContext';
-import Tooltip from '../../components/Tooltip';
-import type { Tag } from '@/types/database';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  CalendarOff,
+  PartyPopper,
+  Zap,
+  Loader2,
+} from 'lucide-react';
+import type { CalendarStatusType } from '@/types/database';
 
-interface FlaggedSession {
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface SchoolCalendarEntry {
   id: string;
   program_id: string;
-  template_id: string | null;
-  instructor_id: string | null;
-  venue_id: string | null;
-  grade_groups: string[];
   date: string;
-  start_time: string;
-  end_time: string;
-  duration_minutes: number;
-  status: string;
-  is_makeup: boolean;
-  replaces_session_id: string | null;
-  needs_resolution: boolean;
-  notes: string | null;
+  description: string | null;
+  status_type: CalendarStatusType;
+  early_dismissal_time: string | null;
+  target_instructor_id: string | null;
   instructor?: { id: string; first_name: string; last_name: string } | null;
-  venue?: { id: string; name: string; space_type: string } | null;
-  tags?: Tag[];
+  created_at: string;
 }
 
-interface SubstituteCandidate {
-  id: string;
-  first_name: string;
-  last_name: string;
-  skills: string[] | null;
+interface ExceptionFormData {
+  date: string;
+  status_type: CalendarStatusType;
+  description: string;
+  early_dismissal_time: string;
+  target_instructor_id: string;
 }
 
-type ResolutionType = 'substitute' | 'cancel' | 'cancel_reschedule' | null;
+// ---------------------------------------------------------------------------
+// Exception type config — maps DB status_type to UI display
+// ---------------------------------------------------------------------------
+
+const EXCEPTION_TYPE_CONFIG: Record<
+  CalendarStatusType,
+  { label: string; badgeColor: 'red' | 'amber' | 'blue'; icon: typeof CalendarOff }
+> = {
+  no_school: {
+    label: 'No School',
+    badgeColor: 'red',
+    icon: CalendarOff,
+  },
+  early_dismissal: {
+    label: 'Early Dismissal',
+    badgeColor: 'amber',
+    icon: Clock,
+  },
+  instructor_exception: {
+    label: 'Special Event',
+    badgeColor: 'blue',
+    icon: PartyPopper,
+  },
+};
+
+const EXCEPTION_TYPES: CalendarStatusType[] = [
+  'no_school',
+  'early_dismissal',
+  'instructor_exception',
+];
+
+const emptyForm: ExceptionFormData = {
+  date: '',
+  status_type: 'no_school',
+  description: '',
+  early_dismissal_time: '',
+  target_instructor_id: '',
+};
+
+// ---------------------------------------------------------------------------
+// Shared style constants (matching design spec tokens)
+// ---------------------------------------------------------------------------
+
+const labelClass = 'block text-xs font-medium text-slate-500 mb-1';
+const inputClass =
+  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors';
+const thClass =
+  'text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider';
+const tdClass = 'px-4 py-3 text-sm';
+
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
 
 export default function ExceptionsPage() {
   const { selectedProgramId } = useProgram();
-  const [flaggedSessions, setFlaggedSessions] = useState<FlaggedSession[]>([]);
+  const [entries, setEntries] = useState<SchoolCalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal state
-  const [selectedSession, setSelectedSession] = useState<FlaggedSession | null>(null);
-  const [modalAction, setModalAction] = useState<ResolutionType>(null);
-  const [substitutes, setSubstitutes] = useState<SubstituteCandidate[]>([]);
-  const [selectedSubstitute, setSelectedSubstitute] = useState('');
-  const [makeupDate, setMakeupDate] = useState('');
-  const [resolving, setResolving] = useState(false);
-
-  // Bulk selection
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState<'cancel' | ''>('');
-  const [bulkResolving, setBulkResolving] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<ExceptionFormData>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const fetchFlagged = useCallback(async () => {
+  // =========================================================================
+  // Fetch
+  // =========================================================================
+
+  const fetchEntries = useCallback(async () => {
     if (!selectedProgramId) return;
     setLoading(true);
-
     try {
       const params = new URLSearchParams({ program_id: selectedProgramId });
-      const res = await fetch(`/api/exceptions/flagged?${params}`);
+      const res = await fetch(`/api/calendar?${params}`);
       const data = await res.json();
-
-      if (data.success) {
-        setFlaggedSessions(data.sessions);
-      }
+      setEntries(data.entries ?? []);
     } catch {
-      // Silently handle fetch error
+      setEntries([]);
     } finally {
       setLoading(false);
     }
   }, [selectedProgramId]);
 
   useEffect(() => {
-    fetchFlagged();
-  }, [fetchFlagged]);
+    fetchEntries();
+  }, [fetchEntries]);
 
-  // Fetch eligible substitute instructors for a session
-  const fetchSubstitutes = async (session: FlaggedSession) => {
-    try {
-      const params = new URLSearchParams({ session_id: session.id });
-      const res = await fetch(`/api/exceptions/substitute-candidates?${params}`);
-      const data = await res.json();
-
-      if (data.success) {
-        setSubstitutes(data.candidates);
-      } else {
-        setSubstitutes([]);
-      }
-    } catch {
-      setSubstitutes([]);
-    }
-  };
-
-  const openSubstituteModal = async (session: FlaggedSession) => {
-    setSelectedSession(session);
-    setModalAction('substitute');
-    setSelectedSubstitute('');
-    setMakeupDate('');
-    await fetchSubstitutes(session);
-  };
-
-  const openCancelModal = (session: FlaggedSession) => {
-    setSelectedSession(session);
-    setModalAction('cancel');
-  };
-
-  const openRescheduleModal = (session: FlaggedSession) => {
-    setSelectedSession(session);
-    setModalAction('cancel_reschedule');
-    setMakeupDate('');
-  };
-
-  const closeModal = () => {
-    setSelectedSession(null);
-    setModalAction(null);
-    setSelectedSubstitute('');
-    setMakeupDate('');
-    setSubstitutes([]);
-  };
+  // =========================================================================
+  // Toast helper
+  // =========================================================================
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
-  const handleResolve = async () => {
-    if (!selectedSession || !modalAction) return;
-    setResolving(true);
+  // =========================================================================
+  // Modal helpers
+  // =========================================================================
+
+  function openAdd() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setFormError(null);
+    setShowModal(true);
+  }
+
+  function openEdit(entry: SchoolCalendarEntry) {
+    setEditingId(entry.id);
+    setForm({
+      date: entry.date,
+      status_type: entry.status_type,
+      description: entry.description ?? '',
+      early_dismissal_time: entry.early_dismissal_time ?? '',
+      target_instructor_id: entry.target_instructor_id ?? '',
+    });
+    setFormError(null);
+    setShowModal(true);
+  }
+
+  function closeModal() {
+    setShowModal(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    setFormError(null);
+  }
+
+  // =========================================================================
+  // CRUD handlers
+  // =========================================================================
+
+  async function handleSave() {
+    if (!form.date) {
+      setFormError('Date is required.');
+      return;
+    }
+    if (!form.description.trim()) {
+      setFormError('Description is required.');
+      return;
+    }
+    if (!selectedProgramId) {
+      setFormError('No program selected.');
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
+
+    const payload: Record<string, string | null> = {
+      program_id: selectedProgramId,
+      date: form.date,
+      status_type: form.status_type,
+      description: form.description.trim(),
+      early_dismissal_time:
+        form.status_type === 'early_dismissal' && form.early_dismissal_time
+          ? form.early_dismissal_time
+          : null,
+      target_instructor_id:
+        form.status_type === 'instructor_exception' && form.target_instructor_id
+          ? form.target_instructor_id
+          : null,
+    };
 
     try {
-      const payload: Record<string, string> = {
-        session_id: selectedSession.id,
-        resolution_type: modalAction,
-      };
-      if (modalAction === 'substitute') {
-        payload.instructor_id = selectedSubstitute;
-      }
-      if (modalAction === 'cancel_reschedule') {
-        payload.makeup_date = makeupDate;
-      }
-
-      const res = await fetch('/api/exceptions/resolve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-
-      if (result.success) {
-        showToast(result.summary, 'success');
-        closeModal();
-        fetchFlagged();
+      if (editingId) {
+        const res = await fetch(`/api/calendar/${editingId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to update exception');
+        showToast('Exception updated', 'success');
       } else {
-        showToast(result.error ?? 'Resolution failed', 'error');
-      }
-    } catch {
-      showToast('Network error resolving session', 'error');
-    } finally {
-      setResolving(false);
-    }
-  };
-
-  // Bulk actions
-  const toggleSelection = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === flaggedSessions.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(flaggedSessions.map((s) => s.id)));
-    }
-  };
-
-  const handleBulkResolve = async () => {
-    if (selectedIds.size === 0 || !bulkAction) return;
-    setBulkResolving(true);
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const sessionId of selectedIds) {
-      try {
-        const res = await fetch('/api/exceptions/resolve', {
+        const res = await fetch('/api/calendar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            session_id: sessionId,
-            resolution_type: bulkAction,
-          }),
+          body: JSON.stringify(payload),
         });
-        const result = await res.json();
-        if (result.success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      } catch {
-        failCount++;
+        if (!res.ok) throw new Error('Failed to create exception');
+        showToast('Exception added', 'success');
       }
+      closeModal();
+      fetchEntries();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'An error occurred';
+      setFormError(msg);
+      showToast(msg, 'error');
+    } finally {
+      setSaving(false);
     }
+  }
 
-    if (successCount > 0) {
-      showToast(
-        `Resolved ${successCount} session${successCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
-        failCount > 0 ? 'error' : 'success'
-      );
-    } else {
-      showToast('All resolutions failed', 'error');
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this exception? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/calendar/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      showToast('Exception deleted', 'success');
+      fetchEntries();
+    } catch {
+      showToast('Failed to delete exception', 'error');
+    } finally {
+      setDeletingId(null);
     }
+  }
 
-    setSelectedIds(new Set());
-    setBulkAction('');
-    fetchFlagged();
-    setBulkResolving(false);
-  };
+  // =========================================================================
+  // Helpers
+  // =========================================================================
 
-  // Derive a "reason" for each flagged session from its notes or context
-  const getSessionReason = (session: FlaggedSession): string => {
-    if (session.notes) {
-      return session.notes;
-    }
-    if (!session.instructor_id) {
-      return 'No instructor assigned';
-    }
-    return 'Calendar exception';
-  };
+  function formatDate(iso: string) {
+    if (!iso) return '\u2014';
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  // Stats
+  const typeCounts = entries.reduce<Record<string, number>>((acc, e) => {
+    acc[e.status_type] = (acc[e.status_type] || 0) + 1;
+    return acc;
+  }, {});
+
+  // =========================================================================
+  // Render
+  // =========================================================================
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Exception Resolution</h1>
-        <p className="text-muted-foreground mt-1">
-          Sessions flagged by calendar exceptions. Assign a substitute, cancel, or reschedule.
-        </p>
-      </div>
-
+    <div className="h-full overflow-y-auto bg-slate-50">
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 z-50 rounded-lg px-4 py-3 text-sm font-medium shadow-lg ${
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-[13px] font-medium shadow-lg ${
             toast.type === 'success'
-              ? 'bg-green-600 text-white'
-              : 'bg-red-600 text-white'
+              ? 'bg-emerald-500 text-white'
+              : 'bg-red-500 text-white'
           }`}
         >
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4" />
+          ) : (
+            <AlertTriangle className="w-4 h-4" />
+          )}
           {toast.message}
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <Tooltip text="Total sessions with unresolved exceptions" position="bottom">
-            <p className="text-xs text-muted-foreground">Needs Resolution</p>
-          </Tooltip>
-          <p className="text-2xl font-semibold mt-1 text-red-400">
-            {loading ? '—' : flaggedSessions.length}
+      {/* Top Bar */}
+      <div className="border-b border-slate-200 bg-white px-8 py-5 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Schedule Exceptions</h1>
+          <p className="text-[13px] text-slate-500 mt-1">
+            Manage holidays, closures, early dismissals, and special events.
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <Tooltip text="Date of the oldest unresolved exception" position="bottom">
-            <p className="text-xs text-muted-foreground">Earliest Flagged</p>
-          </Tooltip>
-          <p className="text-2xl font-semibold mt-1 text-foreground">
-            {loading || flaggedSessions.length === 0
-              ? '—'
-              : flaggedSessions[0].date}
-          </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <Tooltip text="Number of distinct dates with exceptions" position="bottom">
-            <p className="text-xs text-muted-foreground">Unique Dates</p>
-          </Tooltip>
-          <p className="text-2xl font-semibold mt-1 text-foreground">
-            {loading
-              ? '—'
-              : new Set(flaggedSessions.map((s) => s.date)).size}
-          </p>
-        </div>
+        <Tooltip text="Add a new schedule exception">
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={openAdd}
+          >
+            Add Exception
+          </Button>
+        </Tooltip>
       </div>
 
-      {/* Bulk Actions */}
-      {flaggedSessions.length > 0 && (
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className="text-sm text-muted-foreground">
-              {selectedIds.size} selected
-            </span>
-            <Tooltip text="Choose an action to apply to all selected sessions" position="bottom">
-              <select
-                value={bulkAction}
-                onChange={(e) => setBulkAction(e.target.value as 'cancel' | '')}
-                disabled={selectedIds.size === 0}
-                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-              >
-                <option value="">Bulk action...</option>
-                <option value="cancel">Cancel All Selected</option>
-              </select>
-            </Tooltip>
-            <Tooltip text="Apply bulk action to selected sessions" position="bottom">
-              <button
-                onClick={handleBulkResolve}
-                disabled={selectedIds.size === 0 || !bulkAction || bulkResolving}
-                className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {bulkResolving ? 'Processing...' : 'Apply'}
-              </button>
-            </Tooltip>
-          </div>
-        </div>
-      )}
+      {/* Content */}
+      <div className="p-8 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Tooltip text="Total schedule exceptions this program">
+            <div className="bg-white rounded-lg p-5 flex items-center gap-4 border border-slate-200 shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-[22px] h-[22px] text-slate-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500">Total</p>
+                <p className="text-[28px] font-bold text-slate-900 leading-none">
+                  {loading ? '\u2014' : entries.length}
+                </p>
+              </div>
+            </div>
+          </Tooltip>
 
-      {/* Flagged Sessions Table */}
-      {loading ? (
-        <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-          Loading flagged sessions...
+          <Tooltip text="Days with no school (holidays, closures)">
+            <div className="bg-white rounded-lg p-5 flex items-center gap-4 border border-slate-200 shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <CalendarOff className="w-[22px] h-[22px] text-red-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500">No School</p>
+                <p className="text-[28px] font-bold text-slate-900 leading-none">
+                  {loading ? '\u2014' : typeCounts['no_school'] ?? 0}
+                </p>
+              </div>
+            </div>
+          </Tooltip>
+
+          <Tooltip text="Days with early dismissal">
+            <div className="bg-white rounded-lg p-5 flex items-center gap-4 border border-slate-200 shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-[22px] h-[22px] text-amber-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500">Early Dismissal</p>
+                <p className="text-[28px] font-bold text-slate-900 leading-none">
+                  {loading ? '\u2014' : typeCounts['early_dismissal'] ?? 0}
+                </p>
+              </div>
+            </div>
+          </Tooltip>
+
+          <Tooltip text="Instructor-specific exceptions and special events">
+            <div className="bg-white rounded-lg p-5 flex items-center gap-4 border border-slate-200 shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <Zap className="w-[22px] h-[22px] text-blue-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500">Special Events</p>
+                <p className="text-[28px] font-bold text-slate-900 leading-none">
+                  {loading ? '\u2014' : typeCounts['instructor_exception'] ?? 0}
+                </p>
+              </div>
+            </div>
+          </Tooltip>
         </div>
-      ) : flaggedSessions.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-          No sessions need resolution. All clear!
-        </div>
-      ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground w-10">
-                    <Tooltip text="Select all sessions" position="bottom">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === flaggedSessions.length && flaggedSessions.length > 0}
-                        onChange={toggleSelectAll}
-                        className="rounded border-border"
-                      />
-                    </Tooltip>
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Time</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Instructor</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Venue</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Grades</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Reason</th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {flaggedSessions.map((session) => {
-                  const inst = session.instructor;
-                  const venue = session.venue;
-                  return (
-                    <tr
-                      key={session.id}
-                      className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors ${
-                        selectedIds.has(session.id) ? 'bg-muted/20' : ''
-                      }`}
-                    >
-                      <td className="px-4 py-3">
-                        <Tooltip text="Select this session for bulk action">
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(session.id)}
-                            onChange={() => toggleSelection(session.id)}
-                            className="rounded border-border"
-                          />
-                        </Tooltip>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-2">
-                          <Tooltip text="Unresolved exception">
-                            <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                          </Tooltip>
-                          {session.date}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {session.start_time.slice(0, 5)} – {session.end_time.slice(0, 5)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {inst
-                          ? `${inst.first_name} ${inst.last_name}`
-                          : 'Unassigned'}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {venue ? venue.name : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 flex-wrap">
-                          {session.grade_groups.map((g) => (
-                            <span
-                              key={g}
-                              className="inline-block rounded bg-muted px-2 py-0.5 text-xs"
-                            >
-                              {g}
+
+        {/* Exceptions Table */}
+        {loading ? (
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-12 text-center text-sm text-slate-400">
+            Loading exceptions...
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-12 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-900">No Exceptions</p>
+                <p className="text-[13px] text-slate-500 mt-0.5">
+                  Add holidays, closures, or early dismissals to the schedule.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className={thClass}>Date</th>
+                    <th className={thClass}>Type</th>
+                    <th className={thClass}>Description</th>
+                    <th className={thClass}>Details</th>
+                    <th className={`${thClass} text-right`}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => {
+                    const config = EXCEPTION_TYPE_CONFIG[entry.status_type];
+                    return (
+                      <tr
+                        key={entry.id}
+                        className="border-b border-slate-200 last:border-0 hover:bg-slate-50 transition-colors"
+                      >
+                        <td className={tdClass}>
+                          <Tooltip text={`Exception on ${entry.date}`}>
+                            <span className="font-medium text-slate-900">
+                              {formatDate(entry.date)}
                             </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs text-muted-foreground italic">
-                          {getSessionReason(session)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2 justify-end">
-                          <Tooltip text="Assign a substitute instructor">
-                            <button
-                              onClick={() => openSubstituteModal(session)}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                            >
-                              Substitute
-                            </button>
                           </Tooltip>
-                          <Tooltip text="Cancel this session">
-                            <button
-                              onClick={() => openCancelModal(session)}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
+                        </td>
+                        <td className={tdClass}>
+                          <Tooltip text={config.label}>
+                            <Badge
+                              variant="table"
+                              color={config.badgeColor}
                             >
-                              Cancel
-                            </button>
+                              {config.label}
+                            </Badge>
                           </Tooltip>
-                          <Tooltip text="Cancel and reschedule to a new date">
-                            <button
-                              onClick={() => openRescheduleModal(session)}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors"
-                            >
-                              Reschedule
-                            </button>
+                        </td>
+                        <td className={`${tdClass} text-slate-500 max-w-xs truncate`}>
+                          <Tooltip text={entry.description ?? 'No description'}>
+                            <span>{entry.description || '\u2014'}</span>
                           </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className={`${tdClass} text-slate-400 text-xs`}>
+                          {entry.status_type === 'early_dismissal' && entry.early_dismissal_time && (
+                            <Tooltip text="Early dismissal time">
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {entry.early_dismissal_time.slice(0, 5)}
+                              </span>
+                            </Tooltip>
+                          )}
+                          {entry.status_type === 'instructor_exception' && entry.instructor && (
+                            <Tooltip text="Affected instructor">
+                              <span>
+                                {entry.instructor.first_name} {entry.instructor.last_name}
+                              </span>
+                            </Tooltip>
+                          )}
+                          {entry.status_type === 'no_school' && (
+                            <Tooltip text="Affects all sessions on this date">
+                              <span>All sessions</span>
+                            </Tooltip>
+                          )}
+                        </td>
+                        <td className={`${tdClass} text-right`}>
+                          <div className="inline-flex items-center gap-2">
+                            <Tooltip text="Edit this exception">
+                              <button
+                                onClick={() => openEdit(entry)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" />
+                                Edit
+                              </button>
+                            </Tooltip>
+                            <Tooltip text="Delete this exception">
+                              <button
+                                onClick={() => handleDelete(entry.id)}
+                                disabled={deletingId === entry.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-300 text-red-500 px-3 py-1.5 text-xs font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                              >
+                                {deletingId === entry.id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Deleting…
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete
+                                  </>
+                                )}
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Resolution Modal */}
-      {modalAction && selectedSession && (
+      {/* Add/Edit Modal */}
+      {showModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={closeModal} />
-          <div className="relative z-50 w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={closeModal} />
+
+          {/* Modal card — design spec: rounded-16, shadow */}
+          <div className="relative z-50 w-full max-w-lg bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">
-                {modalAction === 'substitute' && 'Assign Substitute'}
-                {modalAction === 'cancel' && 'Cancel Session'}
-                {modalAction === 'cancel_reschedule' && 'Cancel & Reschedule'}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-200">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-blue-500" />
+              </div>
+              <h2 className="text-base font-semibold text-slate-900 flex-1">
+                {editingId ? 'Edit Exception' : 'Add Exception'}
               </h2>
               <Tooltip text="Close without saving">
                 <button
                   onClick={closeModal}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-4 h-4 text-slate-400" />
                 </button>
               </Tooltip>
             </div>
 
-            {/* Session Info */}
-            <div className="rounded-lg bg-muted/50 p-3 mb-4 text-sm space-y-1">
-              <p>
-                <span className="text-muted-foreground">Date:</span>{' '}
-                {selectedSession.date}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Time:</span>{' '}
-                {selectedSession.start_time.slice(0, 5)} – {selectedSession.end_time.slice(0, 5)}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Instructor:</span>{' '}
-                {selectedSession.instructor
-                  ? `${selectedSession.instructor.first_name} ${selectedSession.instructor.last_name}`
-                  : 'Unassigned'}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Grades:</span>{' '}
-                {selectedSession.grade_groups.join(', ')}
-              </p>
-            </div>
-
-            {/* Substitute picker */}
-            {modalAction === 'substitute' && (
-              <div className="mb-4">
-                <Tooltip text="Only instructors available on this date with matching skills" position="bottom">
-                  <label className="block text-sm font-medium mb-2">
-                    Select Substitute Instructor
-                  </label>
+            {/* Modal Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Date */}
+              <div>
+                <Tooltip text="The date this exception applies to" position="bottom">
+                  <label className={labelClass}>Date</label>
                 </Tooltip>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Filtered by matching skills, availability, and no double-booking.
-                </p>
-                {substitutes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No eligible substitutes found.
-                  </p>
-                ) : (
-                  <Tooltip text="Select a substitute instructor for this session" position="bottom">
-                    <select
-                      value={selectedSubstitute}
-                      onChange={(e) => setSelectedSubstitute(e.target.value)}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">Choose an instructor...</option>
-                      {substitutes.map((sub) => (
-                        <option key={sub.id} value={sub.id}>
-                          {sub.first_name} {sub.last_name}
-                          {sub.skills && sub.skills.length > 0
-                            ? ` (${sub.skills.join(', ')})`
-                            : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </Tooltip>
-                )}
-              </div>
-            )}
-
-            {/* Cancel confirmation */}
-            {modalAction === 'cancel' && (
-              <p className="text-sm text-muted-foreground mb-4">
-                This will cancel the session. It will remain in the schedule with a
-                &quot;canceled&quot; status for record-keeping.
-              </p>
-            )}
-
-            {/* Reschedule with makeup date picker */}
-            {modalAction === 'cancel_reschedule' && (
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-3">
-                  This will cancel the session and create a draft makeup session on the
-                  selected date with a link back to the original.
-                </p>
-                <Tooltip text="Date for the replacement makeup session" position="bottom">
-                  <label className="block text-sm font-medium mb-2">
-                    Makeup Date
-                  </label>
-                </Tooltip>
-                <Tooltip text="Pick the date for the rescheduled makeup session" position="bottom">
+                <Tooltip text="Select the exception date" position="bottom">
                   <input
                     type="date"
-                    value={makeupDate}
-                    onChange={(e) => setMakeupDate(e.target.value)}
-                    min={selectedSession.date}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={form.date}
+                    onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                    className={inputClass}
                   />
                 </Tooltip>
               </div>
-            )}
 
-            {/* Actions */}
-            <div className="flex gap-3 justify-end">
-              <Tooltip text="Return without changes">
-                <button
-                  onClick={closeModal}
-                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-accent transition-colors"
-                >
-                  Back
-                </button>
-              </Tooltip>
-              <Tooltip text={
-                modalAction === 'substitute'
-                  ? 'Confirm substitute assignment'
-                  : modalAction === 'cancel'
-                  ? 'Permanently cancel this session'
-                  : 'Cancel session and create makeup'
-              }>
-                <button
-                  onClick={handleResolve}
-                  disabled={
-                    resolving ||
-                    (modalAction === 'substitute' && !selectedSubstitute) ||
-                    (modalAction === 'cancel_reschedule' && !makeupDate)
-                  }
-                  className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    modalAction === 'cancel'
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : modalAction === 'cancel_reschedule'
-                      ? 'bg-amber-600 hover:bg-amber-700'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  {resolving
-                    ? 'Processing...'
-                    : modalAction === 'substitute'
-                    ? 'Assign Substitute'
-                    : modalAction === 'cancel'
-                    ? 'Confirm Cancel'
-                    : 'Cancel & Reschedule'}
-                </button>
-              </Tooltip>
+              {/* Exception Type */}
+              <div>
+                <Tooltip text="What kind of schedule exception is this?" position="bottom">
+                  <label className={labelClass}>Exception Type</label>
+                </Tooltip>
+                <div className="grid grid-cols-3 gap-2">
+                  {EXCEPTION_TYPES.map((type) => {
+                    const cfg = EXCEPTION_TYPE_CONFIG[type];
+                    const Icon = cfg.icon;
+                    const isSelected = form.status_type === type;
+                    return (
+                      <Tooltip key={type} text={cfg.label}>
+                        <button
+                          onClick={() => setForm((f) => ({ ...f, status_type: type }))}
+                          className={`flex flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-colors ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                          }`}
+                        >
+                          <Icon className={`w-5 h-5 ${isSelected ? 'text-blue-500' : 'text-slate-400'}`} />
+                          {cfg.label}
+                        </button>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <Tooltip text="Brief description of this exception" position="bottom">
+                  <label className={labelClass}>Description</label>
+                </Tooltip>
+                <Tooltip text="E.g., 'Thanksgiving Break', 'Teacher In-Service'" position="bottom">
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors resize-none"
+                    placeholder="e.g., Thanksgiving Break"
+                  />
+                </Tooltip>
+              </div>
+
+              {/* Early Dismissal Time — only for early_dismissal type */}
+              {form.status_type === 'early_dismissal' && (
+                <div>
+                  <Tooltip text="Time when early dismissal begins" position="bottom">
+                    <label className={labelClass}>Dismissal Time</label>
+                  </Tooltip>
+                  <Tooltip text="Set the time students are dismissed" position="bottom">
+                    <input
+                      type="time"
+                      value={form.early_dismissal_time}
+                      onChange={(e) => setForm((f) => ({ ...f, early_dismissal_time: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </Tooltip>
+                </div>
+              )}
+
+              {formError && (
+                <div className="flex items-center gap-2 text-xs text-red-500 font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {formError}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex gap-3 justify-end px-6 py-4 border-t border-slate-200">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={closeModal}
+                tooltip="Discard changes"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSave}
+                disabled={saving}
+                tooltip="Save exception details"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Saving…
+                  </>
+                ) : editingId ? 'Save' : 'Save'}
+              </Button>
             </div>
           </div>
         </div>

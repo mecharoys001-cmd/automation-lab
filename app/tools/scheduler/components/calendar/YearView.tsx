@@ -1,0 +1,631 @@
+'use client';
+
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { Calendar, ChevronUp, Loader2 } from 'lucide-react';
+import { Tooltip } from '../ui/Tooltip';
+import type { CalendarEvent, EventType } from './types';
+import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
+import { EventPopover } from './EventPopover';
+import { useEventPopover } from './useEventPopover';
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface YearViewProps {
+  events: CalendarEvent[];
+  onEventClick?: (event: CalendarEvent) => void;
+  onDayClick?: (date: Date) => void;
+  onTodayClick?: () => void;
+  /** Called when user cancels a session via popover */
+  onCancelSession?: (eventId: string) => void;
+  /** Called when user wants to replace instructor */
+  onReplaceInstructor?: (eventId: string, substituteId?: string) => void;
+  /** Called when user wants to replace event */
+  onReplaceEvent?: (eventId: string, templateId?: string) => void;
+  /** Called when user saves notes */
+  onEditNotes?: (eventId: string, notes: string) => void;
+  /** Called when user wants to open the full edit panel for an event */
+  onOpenEditPanel?: (event: CalendarEvent) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** How many months to initially show before and after the current month */
+const INITIAL_RANGE = 6;
+
+/** How many months to load when scrolling near top/bottom */
+const LOAD_INCREMENT = 3;
+
+/** Max event chips shown per day cell before "+N more" */
+const MAX_CHIPS_PER_DAY = 3;
+
+/** Brief delay (ms) to show loading indicator for perceived smoothness */
+const LOAD_DELAY = 150;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function buildInitialMonths(): { year: number; month: number }[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-based
+
+  const months: { year: number; month: number }[] = [];
+
+  for (let offset = -INITIAL_RANGE; offset <= INITIAL_RANGE; offset++) {
+    const m = addMonths({ year: currentYear, month: currentMonth }, offset);
+    months.push(m);
+  }
+
+  return months;
+}
+
+/** Build a 6-row x 7-col grid of Date objects for the given month. */
+function getMonthGrid(year: number, month: number): Date[][] {
+  // month is 1-based here, convert to 0-based for JS Date
+  const jsMonth = month - 1;
+  const firstDay = new Date(year, jsMonth, 1);
+  const startOffset = firstDay.getDay();
+
+  const grid: Date[][] = [];
+  let day = 1 - startOffset;
+
+  for (let row = 0; row < 6; row++) {
+    const week: Date[] = [];
+    for (let col = 0; col < 7; col++) {
+      week.push(new Date(year, jsMonth, day));
+      day++;
+    }
+    grid.push(week);
+  }
+
+  return grid;
+}
+
+function formatDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatMonthKey(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function addMonths(
+  base: { year: number; month: number },
+  delta: number,
+): { year: number; month: number } {
+  let y = base.year;
+  let m = base.month + delta;
+  while (m > 12) { m -= 12; y++; }
+  while (m < 1) { m += 12; y--; }
+  return { year: y, month: m };
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function EventChip({
+  event,
+  onHover,
+  onLeave,
+  onClick,
+}: {
+  event: CalendarEvent;
+  onHover: (event: CalendarEvent, el: HTMLElement) => void;
+  onLeave: () => void;
+  onClick: (event: CalendarEvent, el: HTMLElement) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const colors = EVENT_COLORS[event.type];
+  const chipTooltip = `${event.title} — ${event.time}${event.instructor ? ` · ${event.instructor}` : ''} (${EVENT_TYPE_LABELS[event.type]})`;
+
+  return (
+    <Tooltip text={chipTooltip}>
+      <div
+        ref={ref}
+        className="flex items-center gap-1 rounded px-1.5 py-0.5 mb-0.5 cursor-pointer hover:opacity-80 transition-opacity truncate"
+        style={{
+          backgroundColor: colors.bg,
+          borderLeft: `2px solid ${colors.accent}`,
+        }}
+        onMouseEnter={() => ref.current && onHover(event, ref.current)}
+        onMouseLeave={onLeave}
+        onClick={(e) => {
+          e.stopPropagation();
+          ref.current && onClick(event, ref.current);
+        }}
+      >
+        <span
+          className="text-[10px] font-medium truncate"
+          style={{ color: colors.text }}
+        >
+          {event.title}
+        </span>
+      </div>
+    </Tooltip>
+  );
+}
+
+function LegendItem({ type }: { type: EventType }) {
+  const colors = EVENT_COLORS[type];
+
+  return (
+    <Tooltip text={`${EVENT_TYPE_LABELS[type]} events`}>
+      <div className="flex items-center gap-1.5">
+        <div
+          className="w-3 h-3 rounded-sm"
+          style={{ backgroundColor: colors.accent }}
+        />
+        <span className="text-xs font-medium text-slate-500">
+          {EVENT_TYPE_LABELS[type]}
+        </span>
+      </div>
+    </Tooltip>
+  );
+}
+
+function LoadingIndicator() {
+  return (
+    <div className="flex items-center justify-center py-6 gap-2 text-slate-400">
+      <Loader2 className="w-4 h-4 animate-spin" />
+      <span className="text-xs font-medium">Loading more months…</span>
+    </div>
+  );
+}
+
+function MonthGrid({
+  year,
+  month,
+  eventsByDate,
+  todayKey,
+  onEventHover,
+  onEventLeave,
+  onEventClick,
+  onDayClick,
+}: {
+  year: number;
+  month: number;
+  eventsByDate: Record<string, CalendarEvent[]>;
+  todayKey: string;
+  onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
+  onEventLeave: () => void;
+  onEventClick: (event: CalendarEvent, el: HTMLElement) => void;
+  onDayClick?: (date: Date) => void;
+}) {
+  const jsMonth = month - 1;
+  const grid = useMemo(() => getMonthGrid(year, month), [year, month]);
+  const monthKey = formatMonthKey(year, month);
+  const eventCount = Object.keys(eventsByDate).reduce((sum, key) => {
+    if (key.startsWith(monthKey)) return sum + eventsByDate[key].length;
+    return sum;
+  }, 0);
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* Month Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+        <h3 className="text-[15px] font-bold text-slate-900">
+          {MONTH_NAMES[jsMonth]} {year}
+        </h3>
+        {eventCount > 0 && (
+          <Tooltip text={`${eventCount} total event${eventCount !== 1 ? 's' : ''} in ${MONTH_NAMES[jsMonth]}`}>
+            <span className="text-xs font-medium text-slate-400">
+              {eventCount} event{eventCount !== 1 ? 's' : ''}
+            </span>
+          </Tooltip>
+        )}
+      </div>
+
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 border-b border-slate-100">
+        {DAY_HEADERS.map((label, idx) => (
+          <div
+            key={label}
+            className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase ${
+              idx < 6 ? 'border-r border-slate-100' : ''
+            }`}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid (6 rows x 7 cols) */}
+      <div className="grid grid-rows-6">
+        {grid.map((week, rowIdx) => (
+          <div
+            key={rowIdx}
+            className="grid grid-cols-7 border-b border-slate-100 last:border-b-0 min-h-[100px]"
+          >
+            {week.map((date, colIdx) => {
+              const isCurrentMonth = date.getMonth() === jsMonth;
+              const dateKey = formatDateKey(date);
+              const isToday = dateKey === todayKey;
+              const dayEvents = eventsByDate[dateKey] || [];
+
+              return (
+                <Tooltip
+                  key={colIdx}
+                  text={`${DAY_HEADERS[colIdx]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}${
+                    dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+                  }`}
+                >
+                  <div
+                    className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden ${
+                      colIdx < 6 ? 'border-r border-slate-100' : ''
+                    } ${!isCurrentMonth ? 'bg-slate-50/50' : ''}`}
+                    onClick={() => onDayClick?.(date)}
+                  >
+                    <span
+                      className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
+                        isToday
+                          ? 'bg-blue-500 text-white'
+                          : isCurrentMonth
+                            ? 'text-slate-900'
+                            : 'text-slate-300'
+                      }`}
+                    >
+                      {date.getDate()}
+                    </span>
+
+                    <div className="space-y-0.5">
+                      {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
+                        <EventChip
+                          key={event.id}
+                          event={event}
+                          onHover={onEventHover}
+                          onLeave={onEventLeave}
+                          onClick={onEventClick}
+                        />
+                      ))}
+                      {dayEvents.length > MAX_CHIPS_PER_DAY && (
+                        <Tooltip text={`${dayEvents.length - MAX_CHIPS_PER_DAY} more event${dayEvents.length - MAX_CHIPS_PER_DAY > 1 ? 's' : ''} — click day to view all`}>
+                          <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
+                            +{dayEvents.length - MAX_CHIPS_PER_DAY} more
+                          </span>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </div>
+                </Tooltip>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// YearView (Infinite-Scroll Monthly View)
+// ---------------------------------------------------------------------------
+
+export function YearView({
+  events,
+  onEventClick,
+  onDayClick,
+  onTodayClick,
+  onCancelSession,
+  onReplaceInstructor,
+  onReplaceEvent,
+  onEditNotes,
+  onOpenEditPanel,
+}: YearViewProps) {
+  const [visibleMonths, setVisibleMonths] = useState(buildInitialMonths);
+  const [loadingTop, setLoadingTop] = useState(false);
+  const [loadingBottom, setLoadingBottom] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const todayRef = useRef<HTMLDivElement>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Track whether we should preserve scroll position after prepending months
+  const scrollHeightBeforeLoad = useRef<number>(0);
+
+  // Popover state
+  const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
+
+  const eventsByDate = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {};
+    for (const event of events) {
+      if (!map[event.date]) map[event.date] = [];
+      map[event.date].push(event);
+    }
+    return map;
+  }, [events]);
+
+  const todayKey = formatDateKey(new Date());
+
+  // Unique event types for legend
+  const activeTypes = useMemo(() => {
+    const types = new Set<EventType>();
+    for (const event of events) types.add(event.type);
+    return Array.from(types);
+  }, [events]);
+
+  // Find which month contains today for scroll-to-today
+  const todayMonth = useMemo(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Popover callbacks (placeholder API calls)
+  // -------------------------------------------------------------------------
+
+  const handleSaveNotes = useCallback(async (eventId: string, notes: string) => {
+    try {
+      await fetch('/api/session-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: eventId, note: notes }),
+      });
+    } catch (err) {
+      console.error('Failed to save notes:', err);
+    }
+    onEditNotes?.(eventId, notes);
+  }, [onEditNotes]);
+
+  const handleCancelSession = useCallback(async (eventId: string) => {
+    try {
+      const res = await fetch(`/api/calendar/${eventId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'canceled' }),
+      });
+      if (res.ok) {
+        closePopover();
+      }
+    } catch (err) {
+      console.error('Failed to cancel event:', err);
+    }
+    onCancelSession?.(eventId);
+  }, [closePopover, onCancelSession]);
+
+  const handleReplaceInstructor = useCallback(async (eventId: string, substituteId?: string) => {
+    try {
+      const res = await fetch(`/api/exceptions/substitute-candidates?session_id=${eventId}`);
+      if (res.ok) {
+        const { candidates } = await res.json();
+        console.log('Substitute candidates:', candidates);
+      }
+    } catch (err) {
+      console.error('Failed to find substitutes:', err);
+    }
+    onReplaceInstructor?.(eventId, substituteId);
+  }, [onReplaceInstructor]);
+
+  const handleReplaceEvent = useCallback(async (eventId: string, templateId?: string) => {
+    try {
+      console.log('Find replacement event for:', eventId, templateId);
+    } catch (err) {
+      console.error('Failed to find replacement:', err);
+    }
+    onReplaceEvent?.(eventId, templateId);
+  }, [onReplaceEvent]);
+
+  // -------------------------------------------------------------------------
+  // Infinite scroll: load more months
+  // -------------------------------------------------------------------------
+
+  const loadMoreTop = useCallback(() => {
+    if (loadingTop) return;
+    setLoadingTop(true);
+
+    // Capture scroll height before adding months so we can preserve position
+    if (scrollRef.current) {
+      scrollHeightBeforeLoad.current = scrollRef.current.scrollHeight;
+    }
+
+    setTimeout(() => {
+      setVisibleMonths((prev) => {
+        const first = prev[0];
+        const newMonths: { year: number; month: number }[] = [];
+        for (let i = LOAD_INCREMENT; i >= 1; i--) {
+          newMonths.push(addMonths(first, -i));
+        }
+        return [...newMonths, ...prev];
+      });
+      setLoadingTop(false);
+    }, LOAD_DELAY);
+  }, [loadingTop]);
+
+  const loadMoreBottom = useCallback(() => {
+    if (loadingBottom) return;
+    setLoadingBottom(true);
+
+    setTimeout(() => {
+      setVisibleMonths((prev) => {
+        const last = prev[prev.length - 1];
+        const newMonths: { year: number; month: number }[] = [];
+        for (let i = 1; i <= LOAD_INCREMENT; i++) {
+          newMonths.push(addMonths(last, i));
+        }
+        return [...prev, ...newMonths];
+      });
+      setLoadingBottom(false);
+    }, LOAD_DELAY);
+  }, [loadingBottom]);
+
+  // Preserve scroll position after prepending months at the top
+  useEffect(() => {
+    if (!loadingTop && scrollHeightBeforeLoad.current > 0 && scrollRef.current) {
+      const newScrollHeight = scrollRef.current.scrollHeight;
+      const delta = newScrollHeight - scrollHeightBeforeLoad.current;
+      if (delta > 0) {
+        scrollRef.current.scrollTop += delta;
+      }
+      scrollHeightBeforeLoad.current = 0;
+    }
+  }, [loadingTop, visibleMonths]);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            if (entry.target === topSentinelRef.current) {
+              loadMoreTop();
+            } else if (entry.target === bottomSentinelRef.current) {
+              loadMoreBottom();
+            }
+          }
+        }
+      },
+      { root: scrollEl, rootMargin: '200px' },
+    );
+
+    if (topSentinelRef.current) observer.observe(topSentinelRef.current);
+    if (bottomSentinelRef.current) observer.observe(bottomSentinelRef.current);
+
+    return () => observer.disconnect();
+  }, [loadMoreTop, loadMoreBottom]);
+
+  // Show/hide back-to-top based on scroll
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    const handleScroll = () => {
+      setShowBackToTop(scrollEl.scrollTop > 600);
+    };
+    scrollEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollEl.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Auto-scroll to today's month on initial mount
+  useEffect(() => {
+    // Small delay to let the DOM settle
+    const timer = setTimeout(() => {
+      if (todayRef.current) {
+        todayRef.current.scrollIntoView({ behavior: 'instant', block: 'center' });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const scrollToToday = useCallback(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    onTodayClick?.();
+  }, [onTodayClick]);
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* ------- Scrollable Months ------- */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-[#F8FAFC] px-6 py-4">
+        {/* Top sentinel for loading earlier months */}
+        <div ref={topSentinelRef} className="h-1" />
+
+        {/* Top loading indicator */}
+        {loadingTop && <LoadingIndicator />}
+
+        <div className="max-w-5xl mx-auto space-y-6">
+          {visibleMonths.map(({ year, month }) => {
+            const key = formatMonthKey(year, month);
+            const isTodayMonth =
+              year === todayMonth.year && month === todayMonth.month;
+
+            return (
+              <div key={key} ref={isTodayMonth ? todayRef : undefined}>
+                <MonthGrid
+                  year={year}
+                  month={month}
+                  eventsByDate={eventsByDate}
+                  todayKey={todayKey}
+                  onEventHover={showPopover}
+                  onEventLeave={hidePopover}
+                  onEventClick={handleEventClick}
+                  onDayClick={onDayClick}
+                />
+              </div>
+            );
+          })}
+
+          {/* Event Legend */}
+          {activeTypes.length > 0 && (
+            <div className="flex items-center gap-4 pt-2 pb-4">
+              {activeTypes.map((type) => (
+                <LegendItem key={type} type={type} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom loading indicator */}
+        {loadingBottom && <LoadingIndicator />}
+
+        {/* Bottom sentinel for loading later months */}
+        <div ref={bottomSentinelRef} className="h-1" />
+      </div>
+
+      {/* ------- Floating Buttons ------- */}
+      <div className="absolute bottom-6 right-6 flex flex-col gap-2">
+        {showBackToTop && (
+          <Tooltip text="Scroll to top">
+            <button
+              onClick={scrollToTop}
+              className="inline-flex items-center justify-center w-10 h-10 bg-white text-slate-500 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              <ChevronUp className="w-5 h-5" />
+            </button>
+          </Tooltip>
+        )}
+        <Tooltip text="Jump to today">
+          <button
+            onClick={scrollToToday}
+            className="inline-flex items-center gap-1.5 bg-blue-500 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-blue-600 transition-colors cursor-pointer text-[13px] font-semibold"
+          >
+            <Calendar className="w-4 h-4" />
+            Today
+          </button>
+        </Tooltip>
+      </div>
+
+      {/* ------- Event Popover ------- */}
+      {popoverState.event && popoverState.anchorRect && (
+        <EventPopover
+          event={popoverState.event}
+          anchorRect={popoverState.anchorRect}
+          pinned={popoverState.pinned}
+          onPin={pinPopover}
+          onClose={closePopover}
+          onViewDetails={onEventClick}
+          onCancel={handleCancelSession}
+          onReplaceInstructor={handleReplaceInstructor}
+          onReplaceEvent={handleReplaceEvent}
+          onEditNotes={handleSaveNotes}
+          onOpenEditPanel={onOpenEditPanel}
+        />
+      )}
+    </div>
+  );
+}

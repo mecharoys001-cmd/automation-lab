@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Save, Check, AlertTriangle } from 'lucide-react';
 import type { Venue, VenueInsert, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
-import Tooltip from '../../components/Tooltip';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { Pill } from '../../components/ui/Pill';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -17,6 +20,34 @@ function availabilitySummary(avail: AvailabilityJson | null): string {
   );
   if (days.length === 0) return 'Not set';
   return days.map((d) => DAY_ABBR[d]).join(', ');
+}
+
+// ── Toast Notification ───────────────────────────────────────
+
+interface ToastState {
+  message: string;
+  type: 'success' | 'error';
+  id: number;
+}
+
+function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 3500);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
+
+  const isSuccess = toast.type === 'success';
+
+  return (
+    <div
+      className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
+        isSuccess ? 'bg-emerald-500' : 'bg-red-500'
+      }`}
+    >
+      {isSuccess ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+      {toast.message}
+    </div>
+  );
 }
 
 // ── Skeleton loader ──────────────────────────────────────────
@@ -578,9 +609,14 @@ function VenueModal({
                         type="button"
                         onClick={onDelete}
                         disabled={deleting}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                       >
-                        {deleting ? 'Deleting...' : 'Yes, Delete'}
+                        {deleting ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Deleting…
+                          </>
+                        ) : 'Yes, Delete'}
                       </button>
                     </Tooltip>
                     <Tooltip text="Cancel deletion">
@@ -616,13 +652,23 @@ function VenueModal({
                   Cancel
                 </button>
               </Tooltip>
-              <Tooltip text={venue ? 'Save changes' : 'Create venue'}>
+              <Tooltip text="Save venue details">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : venue ? 'Save Changes' : 'Create Venue'}
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      {venue ? 'Save Changes' : 'Create Venue'}
+                    </>
+                  )}
                 </button>
               </Tooltip>
             </div>
@@ -636,6 +682,7 @@ function VenueModal({
 // ── Main page ────────────────────────────────────────────────
 
 export default function VenuesPage() {
+  const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -644,6 +691,9 @@ export default function VenuesPage() {
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Toast
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   const fetchVenues = useCallback(async () => {
     setLoading(true);
@@ -688,9 +738,10 @@ export default function VenuesPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        if (!res.ok) throw new Error('Failed to update');
+        if (!res.ok) throw new Error('Failed to update venue');
         const { venue } = (await res.json()) as { venue: Venue };
         setVenues((prev) => prev.map((v) => (v.id === venue.id ? venue : v)));
+        setToast({ message: 'Venue updated successfully', type: 'success', id: Date.now() });
       } else {
         // POST
         const res = await fetch('/api/venues', {
@@ -698,13 +749,14 @@ export default function VenuesPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        if (!res.ok) throw new Error('Failed to create');
+        if (!res.ok) throw new Error('Failed to create venue');
         const { venue } = (await res.json()) as { venue: Venue };
         setVenues((prev) => [...prev, venue]);
+        setToast({ message: 'Venue created successfully', type: 'success', id: Date.now() });
       }
       closeModal();
-    } catch {
-      // Error handling could be improved with toast/notification
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to save venue', type: 'error', id: Date.now() });
     } finally {
       setSaving(false);
     }
@@ -715,18 +767,19 @@ export default function VenuesPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/venues/${editingVenue.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
+      if (!res.ok) throw new Error('Failed to delete venue');
       setVenues((prev) => prev.filter((v) => v.id !== editingVenue.id));
       closeModal();
-    } catch {
-      // Error handling could be improved
+      setToast({ message: 'Venue deleted successfully', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to delete venue', type: 'error', id: Date.now() });
     } finally {
       setDeleting(false);
     }
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6 lg:p-8 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -796,16 +849,20 @@ export default function VenuesPage() {
                 )}
               </div>
 
-              {/* Amenities */}
+              {/* Amenities (click → filter calendar by tag) */}
               {venue.amenities && venue.amenities.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {venue.amenities.map((a) => (
-                    <span
+                    <Pill
                       key={a}
-                      className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary"
+                      variant="tag"
+                      bgColor="bg-primary/20"
+                      textColor="text-primary"
+                      tooltip={`Click to view calendar filtered by ${a}`}
+                      onClick={() => router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(a)}`)}
                     >
                       {a}
-                    </span>
+                    </Pill>
                   ))}
                 </div>
               )}
@@ -837,6 +894,11 @@ export default function VenuesPage() {
           onDelete={editingVenue ? handleDelete : null}
           onClose={closeModal}
         />
+      )}
+
+      {/* Toast notifications */}
+      {toast && (
+        <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
       )}
     </div>
   );

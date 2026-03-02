@@ -1,0 +1,637 @@
+'use client';
+
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Tooltip } from '../ui/Tooltip';
+import { Button } from '../ui/Button';
+import type { CalendarEvent } from './types';
+import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
+import { EventPopover } from './EventPopover';
+import { useEventPopover } from './useEventPopover';
+import { TimeRangeSelector } from './TimeRangeSelector';
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+export interface WeekViewProps {
+  events: CalendarEvent[];
+  currentDate?: Date;
+  onDateChange?: (date: Date) => void;
+  onEventClick?: (event: CalendarEvent) => void;
+  onEventContextMenu?: (event: CalendarEvent, position: { x: number; y: number }) => void;
+  /** Hour to start the grid (0-23). Default 8 (8 AM). */
+  dayStartHour?: number;
+  /** Hour to end the grid (0-23). Default 15 (3 PM). */
+  dayEndHour?: number;
+  /** Called when user cancels a session via popover */
+  onCancelSession?: (eventId: string) => void;
+  /** Called when user wants to replace instructor (with optional substitute ID) */
+  onReplaceInstructor?: (eventId: string, substituteId?: string) => void;
+  /** Called when user wants to replace event (with optional template ID) */
+  onReplaceEvent?: (eventId: string, templateId?: string) => void;
+  /** Called when user saves notes */
+  onEditNotes?: (eventId: string, notes: string) => void;
+  /** Called when user wants to open the full edit panel for an event */
+  onOpenEditPanel?: (event: CalendarEvent) => void;
+  /** Called when an event is dragged to a new date/time */
+  onEventDrop?: (eventId: string, newDate: string, newTime: string, newEndTime: string) => void;
+  /** Called when an event is resized (bottom edge dragged) */
+  onEventResize?: (eventId: string, newEndTime: string) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const HOUR_HEIGHT = 72; // px per hour slot
+const TIME_COL_WIDTH = 72; // px for the time gutter
+
+const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const DAY_FULL_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Get the Monday of the week containing `date`. */
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Parse "9:00 AM" → decimal hour (9.0), "1:30 PM" → 13.5 */
+function parseTimeToHour(time: string): number {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return 8;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && hours !== 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  return hours + minutes / 60;
+}
+
+function formatHourLabel(hour: number): string {
+  if (hour === 0) return '12 AM';
+  if (hour < 12) return `${hour} AM`;
+  if (hour === 12) return '12 PM';
+  return `${hour - 12} PM`;
+}
+
+/** Convert a decimal hour (e.g. 13.5) to "1:30 PM" format */
+function formatDecimalToTime(decimal: number): string {
+  const clamped = Math.max(0, Math.min(23.75, decimal));
+  const h = Math.floor(clamped);
+  const m = Math.round((clamped - h) * 60);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+/** Snap a decimal hour to the nearest 15-minute increment */
+function snapTo15Min(decimal: number): number {
+  return Math.round(decimal * 4) / 4;
+}
+
+// ---------------------------------------------------------------------------
+// Event Block (positioned absolutely within a day column)
+// ---------------------------------------------------------------------------
+
+function WeekEventBlock({
+  event,
+  dayStartHour,
+  onHover,
+  onLeave,
+  onClick,
+  onContextMenu,
+  onResizeEnd,
+  enableDrag,
+}: {
+  event: CalendarEvent;
+  dayStartHour: number;
+  onHover: (event: CalendarEvent, el: HTMLElement) => void;
+  onLeave: () => void;
+  onClick: (event: CalendarEvent, el: HTMLElement) => void;
+  onContextMenu?: (event: CalendarEvent, position: { x: number; y: number }) => void;
+  onResizeEnd?: (eventId: string, newEndTime: string) => void;
+  enableDrag?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const colors = EVENT_COLORS[event.type];
+  const startHour = parseTimeToHour(event.time);
+  const endHour = event.endTime ? parseTimeToHour(event.endTime) : startHour + 1;
+  const duration = Math.max(endHour - startHour, 0.25);
+
+  const top = (startHour - dayStartHour) * HOUR_HEIGHT;
+  const height = duration * HOUR_HEIGHT - 2;
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onContextMenu?.(event, { x: e.clientX, y: e.clientY });
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const grabOffsetHours = (e.clientY - rect.top) / HOUR_HEIGHT;
+    e.dataTransfer.setData(
+      'application/x-calendar-event',
+      JSON.stringify({ eventId: event.id, grabOffsetHours, duration }),
+    );
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  // Resize via mouse drag on bottom edge
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!ref.current || !onResizeEnd) return;
+
+    const startY = e.clientY;
+    const startHeight = ref.current.offsetHeight;
+
+    const onMove = (me: MouseEvent) => {
+      if (!ref.current) return;
+      const deltaY = me.clientY - startY;
+      const newHeight = Math.max(HOUR_HEIGHT * 0.25, startHeight + deltaY);
+      ref.current.style.height = `${newHeight}px`;
+    };
+
+    const onUp = (me: MouseEvent) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (!ref.current) return;
+      const deltaY = me.clientY - startY;
+      const newHeight = Math.max(HOUR_HEIGHT * 0.25, startHeight + deltaY);
+      const newDuration = (newHeight + 2) / HOUR_HEIGHT;
+      const newEnd = snapTo15Min(startHour + newDuration);
+      onResizeEnd(event.id, formatDecimalToTime(newEnd));
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  const blockTooltip = `${event.title} — ${event.time}${event.endTime ? ` – ${event.endTime}` : ''}${event.instructor ? ` · ${event.instructor}` : ''} (${EVENT_TYPE_LABELS[event.type]})${enableDrag ? ' · Drag to reschedule' : ''}`;
+
+  return (
+    <Tooltip text={blockTooltip}>
+      <div
+        ref={ref}
+        draggable={!!enableDrag}
+        onDragStart={enableDrag ? handleDragStart : undefined}
+        className="absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden group"
+        style={{
+          top: `${top}px`,
+          height: `${Math.max(height, 28)}px`,
+          backgroundColor: colors.bg,
+          borderLeft: `3px solid ${colors.accent}`,
+        }}
+        onMouseEnter={() => ref.current && onHover(event, ref.current)}
+        onMouseLeave={onLeave}
+        onClick={(e) => { e.stopPropagation(); ref.current && onClick(event, ref.current); }}
+        onContextMenu={handleContextMenu}
+      >
+        {/* Time shown prominently inside event */}
+        <p className="text-[10px] font-bold leading-tight" style={{ color: colors.accent }}>
+          {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
+        </p>
+        <p
+          className="text-[11px] font-semibold leading-tight truncate mt-0.5"
+          style={{ color: colors.text }}
+        >
+          {event.title}
+        </p>
+        {height > 36 && (
+          <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+            {event.subtitle}
+          </p>
+        )}
+        {height > 48 && (
+          <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">
+            {event.instructor}
+          </p>
+        )}
+        {/* Resize handle at bottom edge */}
+        {onResizeEnd && height > 28 && (
+          <div
+            className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ backgroundColor: colors.accent + '40' }}
+            onMouseDown={handleResizeStart}
+          />
+        )}
+      </div>
+    </Tooltip>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WeekView
+// ---------------------------------------------------------------------------
+
+export function WeekView({
+  events,
+  currentDate,
+  onDateChange,
+  onEventClick,
+  onEventContextMenu,
+  dayStartHour: initialStartHour = 8,
+  dayEndHour: initialEndHour = 15,
+  onCancelSession,
+  onReplaceInstructor,
+  onReplaceEvent,
+  onEditNotes,
+  onOpenEditPanel,
+  onEventDrop,
+  onEventResize,
+}: WeekViewProps) {
+  const [viewDate, setViewDate] = useState(() => currentDate ?? new Date());
+  const [dayStartHour, setDayStartHour] = useState(initialStartHour);
+  const [dayEndHour, setDayEndHour] = useState(initialEndHour);
+
+  const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
+  const [eventDetails, setEventDetails] = useState<Record<string, unknown> | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<number | null>(null);
+
+  // -------------------------------------------------------------------------
+  // Fetch additional event details (placeholder API)
+  // -------------------------------------------------------------------------
+  const fetchEventDetails = useCallback(async (eventId: string) => {
+    try {
+      const res = await fetch(`/api/calendar/${eventId}/details`);
+      if (res.ok) {
+        const data = await res.json();
+        setEventDetails(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch event details:', err);
+    }
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Popover callbacks (placeholder API calls)
+  // -------------------------------------------------------------------------
+
+  /** Save session notes */
+  const handleSaveNotes = useCallback(async (eventId: string, notes: string) => {
+    try {
+      const res = await fetch('/api/session-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: eventId, note: notes }),
+      });
+      if (res.ok) {
+        await fetchEventDetails(eventId);
+      }
+    } catch (err) {
+      console.error('Failed to save notes:', err);
+    }
+    onEditNotes?.(eventId, notes);
+  }, [fetchEventDetails, onEditNotes]);
+
+  /** Cancel a session */
+  const handleCancelSession = useCallback(async (eventId: string) => {
+    try {
+      const res = await fetch(`/api/calendar/${eventId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'canceled' }),
+      });
+      if (res.ok) {
+        closePopover();
+      }
+    } catch (err) {
+      console.error('Failed to cancel event:', err);
+    }
+    onCancelSession?.(eventId);
+  }, [closePopover, onCancelSession]);
+
+  /** Replace instructor (with optional substitute ID) */
+  const handleReplaceInstructor = useCallback(async (eventId: string, substituteId?: string) => {
+    try {
+      const res = await fetch(`/api/exceptions/substitute-candidates?session_id=${eventId}`);
+      if (res.ok) {
+        const { candidates } = await res.json();
+        console.log('Substitute candidates:', candidates);
+      }
+    } catch (err) {
+      console.error('Failed to find substitutes:', err);
+    }
+    onReplaceInstructor?.(eventId, substituteId);
+  }, [onReplaceInstructor]);
+
+  /** Replace entire event (with optional template ID) */
+  const handleReplaceEvent = useCallback(async (eventId: string, templateId?: string) => {
+    try {
+      console.log('Find replacement event for:', eventId, templateId);
+    } catch (err) {
+      console.error('Failed to find replacement:', err);
+    }
+    onReplaceEvent?.(eventId, templateId);
+  }, [onReplaceEvent]);
+
+  const weekStart = useMemo(() => getWeekStart(viewDate), [viewDate]);
+
+  const weekDates = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+  }, [weekStart]);
+
+  const weekDateKeys = useMemo(
+    () => weekDates.map(formatDateKey),
+    [weekDates],
+  );
+
+  const todayKey = formatDateKey(new Date());
+
+  // Group events by date
+  const eventsByDate = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {};
+    for (const event of events) {
+      if (!map[event.date]) map[event.date] = [];
+      map[event.date].push(event);
+    }
+    // Debug: show total events, week range, and how many matched this week
+    const weekEnd = weekDateKeys[weekDateKeys.length - 1];
+    const matchedCount = weekDateKeys.reduce((sum, key) => sum + (map[key]?.length ?? 0), 0);
+    // eslint-disable-next-line no-console
+    console.log('[WeekView] Received', events.length, 'events, showing week', weekDateKeys[0], 'to', weekEnd, 'matched:', matchedCount);
+    if (events.length > 0 && matchedCount === 0) {
+      const sampleDates = [...new Set(events.slice(0, 10).map(e => e.date))];
+      // eslint-disable-next-line no-console
+      console.log('[WeekView] Sample event dates:', sampleDates, '— none match week keys:', weekDateKeys);
+    }
+    return map;
+  }, [events, weekDateKeys]);
+
+  const hours = useMemo(
+    () => Array.from({ length: dayEndHour - dayStartHour }, (_, i) => dayStartHour + i),
+    [dayStartHour, dayEndHour],
+  );
+
+  const totalHeight = hours.length * HOUR_HEIGHT;
+
+  const navigate = useCallback((delta: number) => {
+    const next = new Date(viewDate);
+    next.setDate(next.getDate() + delta * 7);
+    setViewDate(next);
+    onDateChange?.(next);
+  }, [viewDate, onDateChange]);
+
+  const goToToday = useCallback(() => {
+    const now = new Date();
+    setViewDate(now);
+    onDateChange?.(now);
+  }, [onDateChange]);
+
+  // Format week range for header
+  const weekEndDate = weekDates[6];
+  const rangeLabel = useMemo(() => {
+    const s = weekDates[0];
+    const e = weekEndDate;
+    if (s.getMonth() === e.getMonth()) {
+      return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${e.getDate()}, ${s.getFullYear()}`;
+    }
+    if (s.getFullYear() === e.getFullYear()) {
+      return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${s.getFullYear()}`;
+    }
+    return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
+  }, [weekDates, weekEndDate]);
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* ------- Week Navigation Sub-bar ------- */}
+      <div className="flex items-center gap-3 bg-white px-6 py-3 border-b border-slate-200 shrink-0">
+        <Tooltip text="Previous week">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-500" />
+          </button>
+        </Tooltip>
+
+        <span className="text-[15px] font-semibold text-slate-900">
+          {rangeLabel}
+        </span>
+
+        <Tooltip text="Next week">
+          <button
+            onClick={() => navigate(1)}
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5 text-slate-500" />
+          </button>
+        </Tooltip>
+
+        <div className="flex-1" />
+
+        <TimeRangeSelector
+          startHour={dayStartHour}
+          endHour={dayEndHour}
+          onStartHourChange={setDayStartHour}
+          onEndHourChange={setDayEndHour}
+        />
+
+        <div className="w-px h-5 bg-slate-200 mx-1" />
+
+        <Button variant="today" tooltip="Jump to current week" onClick={goToToday}>
+          Today
+        </Button>
+      </div>
+
+      {/* ------- Day Headers Row ------- */}
+      <div className="flex bg-white border-b border-slate-200 shrink-0">
+        {/* Empty corner above time column */}
+        <div className="shrink-0 border-r border-slate-200" style={{ width: TIME_COL_WIDTH }} />
+
+        {/* Day header cells */}
+        <div className="flex-1 grid grid-cols-7">
+          {weekDates.map((date, idx) => {
+            const dateKey = weekDateKeys[idx];
+            const isToday = dateKey === todayKey;
+            return (
+              <Tooltip key={idx} text={`${DAY_FULL_LABELS[idx]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`}>
+                <div
+                  className={`flex flex-col items-center py-2 ${
+                    idx < 6 ? 'border-r border-slate-100' : ''
+                  }`}
+                >
+                  <span className={`text-[11px] font-semibold tracking-[1px] ${
+                    isToday ? 'text-blue-500' : 'text-slate-400'
+                  }`}>
+                    {DAY_LABELS[idx]}
+                  </span>
+                  <span className={`text-lg font-semibold leading-tight mt-0.5 w-8 h-8 flex items-center justify-center rounded-full ${
+                    isToday
+                      ? 'bg-blue-500 text-white'
+                      : 'text-slate-900'
+                  }`}>
+                    {date.getDate()}
+                  </span>
+                </div>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ------- Scrollable Time Grid ------- */}
+      <div className="flex flex-1 overflow-y-auto bg-white">
+        {/* Time Column (left gutter) */}
+        <div
+          className="shrink-0 border-r border-slate-200 bg-slate-50"
+          style={{ width: TIME_COL_WIDTH }}
+        >
+          {hours.map((hour) => (
+            <div
+              key={hour}
+              className="flex items-start justify-end pr-3 pt-0"
+              style={{ height: `${HOUR_HEIGHT}px` }}
+            >
+              <span className="text-[12px] font-semibold text-slate-500 -mt-2 select-none">
+                {formatHourLabel(hour)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Day Columns (7-column grid) */}
+        <div className="flex-1 grid grid-cols-7 relative">
+          {weekDates.map((_, dayIdx) => {
+            const dateKey = weekDateKeys[dayIdx];
+            const dayEvents = eventsByDate[dateKey] || [];
+            const isToday = dateKey === todayKey;
+            const isDragOver = dragOverCol === dayIdx;
+
+            return (
+              <div
+                key={dayIdx}
+                className={`relative ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
+                  isToday ? 'bg-blue-50/30' : ''
+                } ${isDragOver ? 'bg-blue-50/50' : ''}`}
+                style={{ minHeight: `${totalHeight}px` }}
+                onDragOver={
+                  onEventDrop
+                    ? (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        setDragOverCol(dayIdx);
+                      }
+                    : undefined
+                }
+                onDragLeave={onEventDrop ? () => setDragOverCol(null) : undefined}
+                onDrop={
+                  onEventDrop
+                    ? (e) => {
+                        e.preventDefault();
+                        setDragOverCol(null);
+                        const raw = e.dataTransfer.getData('application/x-calendar-event');
+                        if (!raw) return;
+                        try {
+                          const { eventId, grabOffsetHours, duration } = JSON.parse(raw) as {
+                            eventId: string;
+                            grabOffsetHours: number;
+                            duration: number;
+                          };
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const dropY = e.clientY - rect.top;
+                          const rawHour = dayStartHour + dropY / HOUR_HEIGHT - grabOffsetHours;
+                          const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
+                          const snappedEnd = snapTo15Min(snappedStart + duration);
+                          const newDate = weekDateKeys[dayIdx];
+                          onEventDrop(
+                            eventId,
+                            newDate,
+                            formatDecimalToTime(snappedStart),
+                            formatDecimalToTime(snappedEnd),
+                          );
+                        } catch {
+                          // ignore malformed data
+                        }
+                      }
+                    : undefined
+                }
+              >
+                {/* Hour grid lines */}
+                {hours.map((hour, hIdx) => (
+                  <div
+                    key={hour}
+                    className="absolute left-0 right-0 border-b border-slate-100"
+                    style={{
+                      top: `${hIdx * HOUR_HEIGHT}px`,
+                      height: `${HOUR_HEIGHT}px`,
+                    }}
+                  />
+                ))}
+
+                {/* Half-hour dashed lines */}
+                {hours.map((hour, hIdx) => (
+                  <div
+                    key={`half-${hour}`}
+                    className="absolute left-0 right-0 border-b border-dashed border-slate-50"
+                    style={{
+                      top: `${hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
+                    }}
+                  />
+                ))}
+
+                {/* Events */}
+                {dayEvents.map((event) => (
+                  <WeekEventBlock
+                    key={event.id}
+                    event={event}
+                    dayStartHour={dayStartHour}
+                    onHover={showPopover}
+                    onLeave={hidePopover}
+                    onClick={handleEventClick}
+                    onContextMenu={onEventContextMenu}
+                    onResizeEnd={onEventResize}
+                    enableDrag={!!onEventDrop}
+                  />
+                ))}
+              </div>
+            );
+          })}
+
+        </div>
+      </div>
+
+      {/* Event Popover */}
+      {popoverState.event && popoverState.anchorRect && (
+        <EventPopover
+          event={popoverState.event}
+          anchorRect={popoverState.anchorRect}
+          pinned={popoverState.pinned}
+          onPin={pinPopover}
+          onClose={closePopover}
+          onViewDetails={onEventClick}
+          onCancel={handleCancelSession}
+          onReplaceInstructor={handleReplaceInstructor}
+          onReplaceEvent={handleReplaceEvent}
+          onEditNotes={handleSaveNotes}
+          onOpenEditPanel={onOpenEditPanel}
+        />
+      )}
+    </div>
+  );
+}

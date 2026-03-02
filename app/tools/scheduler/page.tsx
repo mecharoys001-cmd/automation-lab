@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Tooltip from './components/Tooltip';
+import { Tooltip } from './components/ui/Tooltip';
 
 export default function SymphonixSchedulerPage() {
   return (

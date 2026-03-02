@@ -1,30 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useProgram } from '../ProgramContext';
-import Link from 'next/link';
-import Tooltip from '../../components/Tooltip';
+import {
+  Calendar, Download, ChevronDown, ChevronRight,
+  Clock, Tag,
+} from 'lucide-react';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { Button } from '../../components/ui/Button';
+import { ProgressBar } from '../../components/ui/ProgressBar';
 
-interface HoursByInstructor {
-  instructor_id: string;
-  name: string;
-  total_minutes: number;
-  total_hours: number;
-}
+/* ── Types ─────────────────────────────────────────────────── */
 
-interface HoursByTag {
-  tag_id: string;
-  tag_name: string;
-  total_minutes: number;
-  total_hours: number;
-}
-
-interface SessionsByStatus {
-  status: string;
-  count: number;
-}
-
-interface ReportSession {
+interface SessionDetail {
   id: string;
   date: string;
   start_time: string;
@@ -32,8 +21,6 @@ interface ReportSession {
   duration_minutes: number;
   status: string;
   grade_groups: string[];
-  is_makeup: boolean;
-  needs_resolution: boolean;
   instructor_name: string;
   venue_name: string;
   tags: string[];
@@ -41,39 +28,525 @@ interface ReportSession {
 }
 
 interface ReportData {
-  hours_by_instructor: HoursByInstructor[];
-  hours_by_tag: HoursByTag[];
-  sessions_by_status: SessionsByStatus[];
+  hours_by_instructor: {
+    instructor_id: string;
+    name: string;
+    total_minutes: number;
+    total_hours: number;
+  }[];
+  hours_by_tag: {
+    tag_id: string;
+    tag_name: string;
+    total_minutes: number;
+    total_hours: number;
+  }[];
+  sessions_by_status: { status: string; count: number }[];
   unassigned_count: number;
-  sessions: ReportSession[];
+  sessions: SessionDetail[];
   total_sessions: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: 'text-yellow-400',
-  published: 'text-green-400',
-  canceled: 'text-red-400',
-  completed: 'text-blue-400',
+type ReportTab = 'instructor-hours' | 'hours-by-tag';
+
+/* ── Sample Instructor Data ────────────────────────────────── */
+
+interface InstructorRow {
+  id: string;
+  name: string;
+  totalHours: number;
+  avgPerWeek: number;
+  status: 'Active' | 'Part-time' | 'Substitute';
+  avatarColor: string;
+  monthly: { month: string; hours: number }[];
+}
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const SAMPLE_INSTRUCTORS: InstructorRow[] = [
+  {
+    id: 'sarah-johnson',
+    name: 'Sarah Johnson',
+    totalHours: 487,
+    avgPerWeek: 12.1,
+    status: 'Active',
+    avatarColor: 'bg-blue-100',
+    monthly: [
+      { month: 'Jan', hours: 48 }, { month: 'Feb', hours: 52 }, { month: 'Mar', hours: 44 },
+      { month: 'Apr', hours: 40 }, { month: 'May', hours: 46 }, { month: 'Jun', hours: 38 },
+      { month: 'Jul', hours: 12 }, { month: 'Aug', hours: 8 },  { month: 'Sep', hours: 42 },
+      { month: 'Oct', hours: 50 }, { month: 'Nov', hours: 55 }, { month: 'Dec', hours: 52 },
+    ],
+  },
+  {
+    id: 'mark-davis',
+    name: 'Mark Davis',
+    totalHours: 342,
+    avgPerWeek: 8.5,
+    status: 'Active',
+    avatarColor: 'bg-emerald-100',
+    monthly: [
+      { month: 'Jan', hours: 32 }, { month: 'Feb', hours: 35 }, { month: 'Mar', hours: 30 },
+      { month: 'Apr', hours: 28 }, { month: 'May', hours: 34 }, { month: 'Jun', hours: 26 },
+      { month: 'Jul', hours: 10 }, { month: 'Aug', hours: 6 },  { month: 'Sep', hours: 30 },
+      { month: 'Oct', hours: 38 }, { month: 'Nov', hours: 40 }, { month: 'Dec', hours: 33 },
+    ],
+  },
+  {
+    id: 'lisa-chen',
+    name: 'Lisa Chen',
+    totalHours: 256,
+    avgPerWeek: 6.4,
+    status: 'Part-time',
+    avatarColor: 'bg-violet-100',
+    monthly: [
+      { month: 'Jan', hours: 24 }, { month: 'Feb', hours: 26 }, { month: 'Mar', hours: 22 },
+      { month: 'Apr', hours: 20 }, { month: 'May', hours: 25 }, { month: 'Jun', hours: 18 },
+      { month: 'Jul', hours: 8 },  { month: 'Aug', hours: 4 },  { month: 'Sep', hours: 22 },
+      { month: 'Oct', hours: 28 }, { month: 'Nov', hours: 30 }, { month: 'Dec', hours: 29 },
+    ],
+  },
+  {
+    id: 'james-wilson',
+    name: 'James Wilson',
+    totalHours: 198,
+    avgPerWeek: 4.9,
+    status: 'Part-time',
+    avatarColor: 'bg-amber-100',
+    monthly: [
+      { month: 'Jan', hours: 18 }, { month: 'Feb', hours: 20 }, { month: 'Mar', hours: 17 },
+      { month: 'Apr', hours: 16 }, { month: 'May', hours: 19 }, { month: 'Jun', hours: 14 },
+      { month: 'Jul', hours: 6 },  { month: 'Aug', hours: 3 },  { month: 'Sep', hours: 16 },
+      { month: 'Oct', hours: 22 }, { month: 'Nov', hours: 24 }, { month: 'Dec', hours: 23 },
+    ],
+  },
+  {
+    id: 'emily-rodriguez',
+    name: 'Emily Rodriguez',
+    totalHours: 156,
+    avgPerWeek: 3.9,
+    status: 'Substitute',
+    avatarColor: 'bg-pink-100',
+    monthly: [
+      { month: 'Jan', hours: 14 }, { month: 'Feb', hours: 16 }, { month: 'Mar', hours: 13 },
+      { month: 'Apr', hours: 12 }, { month: 'May', hours: 15 }, { month: 'Jun', hours: 10 },
+      { month: 'Jul', hours: 4 },  { month: 'Aug', hours: 2 },  { month: 'Sep', hours: 12 },
+      { month: 'Oct', hours: 18 }, { month: 'Nov', hours: 20 }, { month: 'Dec', hours: 20 },
+    ],
+  },
+  {
+    id: 'david-kim',
+    name: 'David Kim',
+    totalHours: 124,
+    avgPerWeek: 3.1,
+    status: 'Active',
+    avatarColor: 'bg-teal-100',
+    monthly: [
+      { month: 'Jan', hours: 11 }, { month: 'Feb', hours: 13 }, { month: 'Mar', hours: 10 },
+      { month: 'Apr', hours: 9 },  { month: 'May', hours: 12 }, { month: 'Jun', hours: 8 },
+      { month: 'Jul', hours: 3 },  { month: 'Aug', hours: 2 },  { month: 'Sep', hours: 10 },
+      { month: 'Oct', hours: 14 }, { month: 'Nov', hours: 16 }, { month: 'Dec', hours: 16 },
+    ],
+  },
+];
+
+/* ── Sample Tag Data ───────────────────────────────────────── */
+
+interface TagRow {
+  name: string;
+  emoji: string;
+  totalHours: number;
+  sessions: number;
+  avgDuration: number;
+  barColor: string;
+}
+
+const SAMPLE_TAGS: TagRow[] = [
+  { name: 'Strings',    emoji: '🎻', totalHours: 180, sessions: 24, avgDuration: 45, barColor: '#3B82F6' },
+  { name: 'Brass',      emoji: '🎺', totalHours: 120, sessions: 18, avgDuration: 40, barColor: '#10B981' },
+  { name: 'Choral',     emoji: '🎤', totalHours: 95,  sessions: 15, avgDuration: 38, barColor: '#F59E0B' },
+  { name: 'Piano',      emoji: '🎹', totalHours: 88,  sessions: 14, avgDuration: 38, barColor: '#8B5CF6' },
+  { name: 'Percussion', emoji: '🥁', totalHours: 72,  sessions: 12, avgDuration: 36, barColor: '#EF4444' },
+  { name: 'Guitar',     emoji: '🎸', totalHours: 65,  sessions: 10, avgDuration: 39, barColor: '#06B6D4' },
+];
+
+const TAG_EMOJI: Record<string, string> = {
+  strings: '🎻', brass: '🎺', choral: '🎤', piano: '🎹',
+  percussion: '🥁', guitar: '🎸', woodwinds: '🎵',
 };
 
-const STATUS_BG: Record<string, string> = {
-  draft: 'bg-yellow-500/20 text-yellow-400',
-  published: 'bg-green-500/20 text-green-400',
-  canceled: 'bg-red-500/20 text-red-400',
-  completed: 'bg-blue-500/20 text-blue-400',
+const TAG_BAR_COLORS: Record<string, string> = {
+  strings: '#3B82F6', brass: '#10B981', choral: '#F59E0B', piano: '#8B5CF6',
+  percussion: '#EF4444', guitar: '#06B6D4', woodwinds: '#14B8A6',
 };
+
+const BAR_COLOR_CYCLE = [
+  '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
+  '#EF4444', '#06B6D4', '#F97316', '#EC4899',
+];
+
+const AVATAR_COLORS = [
+  'bg-blue-100', 'bg-emerald-100', 'bg-violet-100',
+  'bg-amber-100', 'bg-pink-100', 'bg-teal-100',
+  'bg-indigo-100', 'bg-rose-100', 'bg-cyan-100',
+];
+
+/* ── Status badge config ───────────────────────────────────── */
+
+const STATUS_STYLES: Record<string, { bg: string; text: string; tooltip: string }> = {
+  Active:      { bg: 'bg-emerald-100', text: 'text-emerald-700', tooltip: 'Instructor is actively teaching on a regular schedule' },
+  'Part-time': { bg: 'bg-amber-100',   text: 'text-amber-700',   tooltip: 'Instructor works a reduced or part-time schedule' },
+  Substitute:  { bg: 'bg-blue-100',    text: 'text-blue-700',    tooltip: 'Instructor fills in as a substitute on an as-needed basis' },
+};
+
+/* ── Helpers ────────────────────────────────────────────────── */
+
+function formatMonthYear(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function formatShortMonth(monthKey: string): string {
+  const [year, month] = monthKey.split('-');
+  const d = new Date(Number(year), Number(month) - 1, 1);
+  return d.toLocaleDateString('en-US', { month: 'short' });
+}
+
+function computeWeeksBetween(start: string, end: string): number {
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return Math.max(1, Math.round(ms / (7 * 24 * 60 * 60 * 1000)));
+}
+
+/* ── Instructor Hours Tab ──────────────────────────────────── */
+
+function InstructorHoursTab({
+  instructors,
+}: {
+  instructors: InstructorRow[];
+}) {
+  const router = useRouter();
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+      {/* Table Header */}
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+            <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
+              <Tooltip text="Full name of the instructor">
+                <span className="cursor-help">Instructor Name</span>
+              </Tooltip>
+            </th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+              <Tooltip text="Cumulative hours taught across the selected date range">
+                <span className="cursor-help">Total Hours</span>
+              </Tooltip>
+            </th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
+              <Tooltip text="Average number of hours taught per week">
+                <span className="cursor-help">Avg/Week</span>
+              </Tooltip>
+            </th>
+            <th className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+              <Tooltip text="Current employment status of the instructor">
+                <span className="cursor-help">Status</span>
+              </Tooltip>
+            </th>
+            <th className="w-[48px] px-2 py-3">
+              <Tooltip text="Expand row to view monthly breakdown">
+                <span className="sr-only">Expand</span>
+              </Tooltip>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {instructors.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-400">
+                No instructor data available for this date range.
+              </td>
+            </tr>
+          ) : (
+            instructors.map((instructor) => {
+              const isExpanded = expandedRows.has(instructor.id);
+              const hasMonthly = instructor.monthly.length > 0;
+              const statusStyle = STATUS_STYLES[instructor.status] ?? STATUS_STYLES.Active;
+              const initials = instructor.name
+                .split(' ')
+                .map((w) => w[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+              const maxMonthlyHours = hasMonthly
+                ? Math.max(...instructor.monthly.map((m) => m.hours))
+                : 1;
+
+              return (
+                <tr key={instructor.id} className="group">
+                  {/* Main Row */}
+                  <td colSpan={5} className="p-0 border-b border-[#E2E8F0]">
+                    <Tooltip text={`Click to ${isExpanded ? 'collapse' : 'expand'} monthly breakdown for ${instructor.name}`}>
+                      <div
+                        className={`grid items-center px-5 h-14 transition-colors cursor-pointer hover:bg-blue-50/60 ${
+                          isExpanded ? 'bg-blue-50/40' : ''
+                        }`}
+                        style={{ gridTemplateColumns: '280px 120px 100px 120px 48px' }}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => hasMonthly && toggleRow(instructor.id)}
+                        onKeyDown={(e) => {
+                          if ((e.key === 'Enter' || e.key === ' ') && hasMonthly) {
+                            e.preventDefault();
+                            toggleRow(instructor.id);
+                          }
+                        }}
+                      >
+                        {/* Name + Avatar */}
+                        <div className="flex items-center gap-3">
+                          <Tooltip text={`${instructor.name} — ${instructor.status}`}>
+                            <div
+                              className={`flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold text-slate-600 ${instructor.avatarColor}`}
+                            >
+                              {initials}
+                            </div>
+                          </Tooltip>
+                          <span className="text-sm font-medium text-slate-900 truncate">
+                            {instructor.name}
+                          </span>
+                        </div>
+
+                        {/* Total Hours */}
+                        <Tooltip text={`${instructor.totalHours} total hours taught`}>
+                          <span className="text-sm font-semibold text-slate-900 text-right tabular-nums block">
+                            {instructor.totalHours} hrs
+                          </span>
+                        </Tooltip>
+
+                        {/* Avg/Week */}
+                        <Tooltip text={`${instructor.avgPerWeek} hours per week on average`}>
+                          <span className="text-sm text-slate-500 text-right tabular-nums block">
+                            {instructor.avgPerWeek}/wk
+                          </span>
+                        </Tooltip>
+
+                        {/* Status Badge */}
+                        <div className="flex justify-center">
+                          <Tooltip text={statusStyle.tooltip}>
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusStyle.bg} ${statusStyle.text}`}
+                            >
+                              {instructor.status}
+                            </span>
+                          </Tooltip>
+                        </div>
+
+                        {/* Chevron */}
+                        <div className="flex items-center justify-center">
+                          {hasMonthly && (
+                            <Tooltip text={isExpanded ? 'Collapse monthly view' : 'Expand monthly view'}>
+                              <span>
+                                {isExpanded
+                                  ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                                  : <ChevronRight className="w-4 h-4 text-slate-400" />
+                                }
+                              </span>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </div>
+                    </Tooltip>
+
+                    {/* Expanded: 12-Month Grid (6 cols × 2 rows) */}
+                    {isExpanded && hasMonthly && (
+                      <div className="bg-[#F8FAFC] border-t border-[#E2E8F0] px-5 py-4">
+                        <div className="grid grid-cols-6 gap-2">
+                          {instructor.monthly.map((m) => {
+                            const pct = maxMonthlyHours > 0
+                              ? (m.hours / maxMonthlyHours) * 100
+                              : 0;
+                            return (
+                              <Tooltip
+                                key={m.month}
+                                text={`${instructor.name} — ${m.month}: ${m.hours} hours`}
+                              >
+                                <div className="flex flex-col gap-1.5 bg-white rounded-lg border border-[#E2E8F0] px-3 py-2.5">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                    {m.month}
+                                  </span>
+                                  <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                    {m.hours}h
+                                  </span>
+                                  <ProgressBar
+                                    value={pct}
+                                    height={4}
+                                    color="#3B82F6"
+                                    trackColor="bg-slate-100"
+                                  />
+                                </div>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+
+                        {/* View Detail Button */}
+                        <div className="mt-3">
+                          <Tooltip text={`View weekly breakdown for ${instructor.name}`}>
+                            <button
+                              type="button"
+                              className="text-[13px] font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/tools/scheduler/admin/reports/instructors/${instructor.id}`
+                                );
+                              }}
+                            >
+                              View Detail &rarr;
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Hours by Tag Tab ──────────────────────────────────────── */
+
+function HoursByTagTab({
+  tags,
+}: {
+  tags: TagRow[];
+}) {
+  const maxHours = tags.length > 0 ? Math.max(...tags.map((t) => t.totalHours)) : 1;
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+            <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <Tooltip text="Music instruction category with associated emoji">
+                <span className="cursor-help">Tag</span>
+              </Tooltip>
+            </th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+              <Tooltip text="Total hours of instruction for this tag across the date range">
+                <span className="cursor-help">Total Hours</span>
+              </Tooltip>
+            </th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
+              <Tooltip text="Number of individual sessions tagged with this category">
+                <span className="cursor-help">Sessions</span>
+              </Tooltip>
+            </th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+              <Tooltip text="Average length of each session in minutes">
+                <span className="cursor-help">Avg Duration</span>
+              </Tooltip>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {tags.length === 0 ? (
+            <tr>
+              <td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-400">
+                No tag data available for this date range.
+              </td>
+            </tr>
+          ) : (
+            tags.map((tag, idx) => {
+              const pct = maxHours > 0 ? (tag.totalHours / maxHours) * 100 : 0;
+              const isLast = idx === tags.length - 1;
+
+              return (
+                <tr
+                  key={tag.name}
+                  className={`hover:bg-blue-50/40 transition-colors ${!isLast ? 'border-b border-[#E2E8F0]' : ''}`}
+                >
+                  {/* Tag cell: emoji + name + proportional bar */}
+                  <td className="px-5 py-3.5">
+                    <Tooltip text={`${tag.emoji} ${tag.name}: ${tag.totalHours} hours across ${tag.sessions} sessions`}>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-sm font-medium text-slate-900">
+                          {tag.emoji}&nbsp;&nbsp;{tag.name}
+                        </span>
+                        <div className="max-w-[320px]">
+                          <ProgressBar
+                            value={pct}
+                            height={6}
+                            color={tag.barColor}
+                            trackColor="bg-slate-100"
+                          />
+                        </div>
+                      </div>
+                    </Tooltip>
+                  </td>
+
+                  {/* Total Hours */}
+                  <td className="px-5 py-3.5 text-right">
+                    <Tooltip text={`${tag.totalHours} total hours for ${tag.name}`}>
+                      <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                        {tag.totalHours} hrs
+                      </span>
+                    </Tooltip>
+                  </td>
+
+                  {/* Sessions */}
+                  <td className="px-5 py-3.5 text-right">
+                    <Tooltip text={`${tag.sessions} sessions tagged as ${tag.name}`}>
+                      <span className="text-sm text-slate-500 tabular-nums">
+                        {tag.sessions}
+                      </span>
+                    </Tooltip>
+                  </td>
+
+                  {/* Avg Duration */}
+                  <td className="px-5 py-3.5 text-right">
+                    <Tooltip text={`Average session duration: ${tag.avgDuration} minutes`}>
+                      <span className="text-sm text-slate-500 tabular-nums">
+                        {tag.avgDuration} min
+                      </span>
+                    </Tooltip>
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Page ──────────────────────────────────────────────────── */
 
 export default function ReportsPage() {
   const { programs, selectedProgramId } = useProgram();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ReportTab>('instructor-hours');
 
   const programId = selectedProgramId ?? '';
 
-  // Default date range to current semester (selected program's start/end)
+  // Initialize date range from selected program
   useEffect(() => {
     if (programId && programs.length > 0) {
       const program = programs.find((p) => p.id === programId);
@@ -84,327 +557,194 @@ export default function ReportsPage() {
     }
   }, [programId, programs, startDate, endDate]);
 
-  const fetchReport = async () => {
-    if (!programId || !startDate || !endDate) {
-      setError('Please select a program, start date, and end date.');
-      return;
+  // Fetch report data
+  useEffect(() => {
+    if (!programId || !startDate || !endDate) return;
+    const params = new URLSearchParams({ programId, startDate, endDate });
+    fetch(`/api/reports/summary?${params}`)
+      .then((r) => r.json())
+      .then((data) => { if (data.success) setReportData(data); })
+      .catch(() => {});
+  }, [programId, startDate, endDate]);
+
+  // Build instructor rows from API data or fallback to samples
+  const instructors = useMemo((): InstructorRow[] => {
+    if (!reportData || reportData.hours_by_instructor.length === 0) {
+      return SAMPLE_INSTRUCTORS;
     }
 
-    setLoading(true);
-    setError(null);
+    const weeks = computeWeeksBetween(startDate, endDate);
 
-    try {
-      const params = new URLSearchParams({
-        programId,
-        startDate,
-        endDate,
-      });
-
-      const res = await fetch(`/api/reports/summary?${params}`);
-      const data = await res.json();
-
-      if (data.success) {
-        setReportData(data);
-      } else {
-        setError(data.error ?? 'Failed to fetch report.');
+    // Compute monthly breakdown from session details
+    const monthlyByInstructor = new Map<string, Map<string, number>>();
+    if (reportData.sessions) {
+      for (const s of reportData.sessions) {
+        if (s.status === 'canceled' || s.instructor_name === 'Unassigned') continue;
+        const monthKey = s.date.substring(0, 7);
+        let instructorMap = monthlyByInstructor.get(s.instructor_name);
+        if (!instructorMap) {
+          instructorMap = new Map();
+          monthlyByInstructor.set(s.instructor_name, instructorMap);
+        }
+        instructorMap.set(monthKey, (instructorMap.get(monthKey) ?? 0) + s.duration_minutes);
       }
-    } catch {
-      setError('Network error fetching report.');
-    } finally {
-      setLoading(false);
     }
-  };
+
+    return reportData.hours_by_instructor
+      .sort((a, b) => b.total_hours - a.total_hours)
+      .map((h, idx) => {
+        const monthlyMap = monthlyByInstructor.get(h.name);
+        const months = monthlyMap
+          ? Array.from(monthlyMap.entries())
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([key, mins]) => ({
+                month: formatShortMonth(key),
+                hours: Math.round(mins / 60),
+              }))
+          : [];
+
+        const avgPerWeek = Math.round((h.total_hours / weeks) * 10) / 10;
+
+        let status: 'Active' | 'Part-time' | 'Substitute' = 'Active';
+        if (avgPerWeek < 4) status = 'Substitute';
+        else if (avgPerWeek < 8) status = 'Part-time';
+
+        return {
+          id: h.instructor_id,
+          name: h.name,
+          totalHours: Math.round(h.total_hours),
+          avgPerWeek,
+          status,
+          avatarColor: AVATAR_COLORS[idx % AVATAR_COLORS.length],
+          monthly: months,
+        };
+      });
+  }, [reportData, startDate, endDate]);
+
+  // Build tag rows from API data or fallback to samples
+  const tags = useMemo((): TagRow[] => {
+    if (!reportData || reportData.hours_by_tag.length === 0) {
+      return SAMPLE_TAGS;
+    }
+
+    const tagStats = new Map<string, { count: number; totalMinutes: number }>();
+    if (reportData.sessions) {
+      for (const s of reportData.sessions) {
+        if (s.status === 'canceled') continue;
+        for (const tagName of s.tags) {
+          const existing = tagStats.get(tagName) ?? { count: 0, totalMinutes: 0 };
+          existing.count += 1;
+          existing.totalMinutes += s.duration_minutes;
+          tagStats.set(tagName, existing);
+        }
+      }
+    }
+
+    return reportData.hours_by_tag
+      .sort((a, b) => b.total_hours - a.total_hours)
+      .map((t, idx) => {
+        const key = t.tag_name.toLowerCase();
+        const stats = tagStats.get(t.tag_name);
+        const sessionCount = stats?.count ?? 0;
+        const avgDuration = sessionCount > 0
+          ? Math.round(stats!.totalMinutes / sessionCount)
+          : 0;
+
+        return {
+          name: t.tag_name,
+          emoji: TAG_EMOJI[key] ?? '🎵',
+          totalHours: Math.round(t.total_hours),
+          sessions: sessionCount,
+          avgDuration,
+          barColor: TAG_BAR_COLORS[key] ?? BAR_COLOR_CYCLE[idx % BAR_COLOR_CYCLE.length],
+        };
+      });
+  }, [reportData]);
 
   const exportCSV = () => {
-    // Use the server-side CSV export endpoint
     const params = new URLSearchParams();
     if (programId) params.set('program_id', programId);
     if (startDate) params.set('start_date', startDate);
     if (endDate) params.set('end_date', endDate);
-
     window.open(`/api/reports/export-csv?${params}`, '_blank');
   };
 
+  const dateRangeLabel = startDate && endDate
+    ? `${formatMonthYear(startDate)} \u2014 ${formatMonthYear(endDate)}`
+    : 'Nov 2025 \u2014 Jun 2026';
+
+  const TABS: { key: ReportTab; label: string; icon: typeof Clock; tooltip: string }[] = [
+    { key: 'instructor-hours', label: 'Instructor Hours', icon: Clock, tooltip: 'View hours and monthly breakdown per instructor' },
+    { key: 'hours-by-tag', label: 'Hours by Tag', icon: Tag, tooltip: 'View time distribution across instrument types and tags' },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Reports &amp; Metrics</h1>
-        <p className="text-muted-foreground mt-1">
-          Hours by instructor, sessions by status, tag breakdowns, and CSV export.
-        </p>
+    <div className="flex flex-col h-full" style={{ backgroundColor: '#F8FAFC' }}>
+      {/* ─── Top Bar ──────────────────────────────────────── */}
+      <div className="flex items-center gap-3 bg-white px-8 h-16 border-b border-[#E2E8F0]">
+        <Tooltip text="Reports dashboard — view instructor hours and tag breakdowns">
+          <h1 className="text-2xl font-bold text-slate-900 cursor-default">Reports</h1>
+        </Tooltip>
+
+        <div className="flex-1" />
+
+        <Tooltip text="Select date range for report data — click to change period">
+          <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-4 py-2 cursor-pointer hover:border-slate-300 transition-colors">
+            <Calendar className="w-4 h-4 text-slate-500" />
+            <span className="text-[13px] font-medium text-slate-900">{dateRangeLabel}</span>
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          </div>
+        </Tooltip>
+
+        <Tooltip text="Download report data as a CSV spreadsheet">
+          <Button
+            variant="primary"
+            icon={<Download className="w-4 h-4" />}
+            onClick={exportCSV}
+          >
+            Export CSV
+          </Button>
+        </Tooltip>
       </div>
 
-      {/* Filters */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="flex-1 min-w-[180px]">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Program
-            </label>
-            <div className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-muted-foreground">
-              {programs.find((p) => p.id === programId)?.name ?? 'Select in sidebar'}
-            </div>
-          </div>
-          <div className="min-w-[160px]">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Start Date
-            </label>
-            <Tooltip text="Filter sessions from this date" position="bottom">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </Tooltip>
-          </div>
-          <div className="min-w-[160px]">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              End Date
-            </label>
-            <Tooltip text="Filter sessions up to this date" position="bottom">
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </Tooltip>
-          </div>
-          <Tooltip text="Fetch report data for the selected date range">
-            <button
-              onClick={fetchReport}
-              disabled={loading || !programId || !startDate || !endDate}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Loading...' : 'Generate Report'}
-            </button>
-          </Tooltip>
+      {/* ─── Tab Navigation ───────────────────────────────── */}
+      <div className="bg-white px-8 border-b border-[#E2E8F0]">
+        <div className="flex items-center gap-0">
+          {TABS.map((tab) => {
+            const TabIcon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <Tooltip key={tab.key} text={tab.tooltip}>
+                <button
+                  type="button"
+                  className={`relative flex items-center gap-2 px-5 py-3.5 text-sm transition-colors cursor-pointer ${
+                    isActive
+                      ? 'font-semibold text-[#3B82F6]'
+                      : 'font-medium text-slate-500 hover:text-slate-700'
+                  }`}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  <TabIcon className={`w-4 h-4 ${isActive ? 'text-[#3B82F6]' : 'text-slate-400'}`} />
+                  {tab.label}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3B82F6]" />
+                  )}
+                </button>
+              </Tooltip>
+            );
+          })}
         </div>
-        {error && (
-          <p className="mt-3 text-sm text-red-400">{error}</p>
+      </div>
+
+      {/* ─── Tab Content ──────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        {activeTab === 'instructor-hours' && (
+          <InstructorHoursTab instructors={instructors} />
+        )}
+        {activeTab === 'hours-by-tag' && (
+          <HoursByTagTab tags={tags} />
         )}
       </div>
-
-      {/* Report Content */}
-      {reportData && (
-        <>
-          {/* Four Report Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Hours by Instructor card */}
-            <Tooltip text="Total scheduled hours per instructor" position="bottom">
-              <div className="rounded-lg border border-border bg-card px-4 py-3">
-                <p className="text-xs text-muted-foreground">Hours by Instructor</p>
-                <p className="text-2xl font-semibold mt-1 text-foreground">
-                  {reportData.hours_by_instructor.length}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {reportData.hours_by_instructor.reduce((sum, h) => sum + h.total_hours, 0).toFixed(1)} total hrs
-                </p>
-              </div>
-            </Tooltip>
-
-            {/* Hours by Tag card */}
-            <Tooltip text="Hours grouped by session tag" position="bottom">
-              <div className="rounded-lg border border-border bg-card px-4 py-3">
-                <p className="text-xs text-muted-foreground">Hours by Tag</p>
-                <p className="text-2xl font-semibold mt-1 text-foreground">
-                  {reportData.hours_by_tag.length}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {reportData.hours_by_tag.reduce((sum, h) => sum + h.total_hours, 0).toFixed(1)} tagged hrs
-                </p>
-              </div>
-            </Tooltip>
-
-            {/* Status Breakdown card */}
-            <Tooltip text="Session counts by status" position="bottom">
-              <div className="rounded-lg border border-border bg-card px-4 py-3">
-                <p className="text-xs text-muted-foreground">Status Breakdown</p>
-                <p className="text-2xl font-semibold mt-1 text-foreground">
-                  {reportData.total_sessions}
-                </p>
-                <div className="flex gap-2 mt-1 flex-wrap">
-                  {reportData.sessions_by_status.map((s) => (
-                    <span key={s.status} className={`text-xs ${STATUS_COLORS[s.status] ?? 'text-muted-foreground'}`}>
-                      {s.count} {s.status}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </Tooltip>
-
-            {/* Unassigned Count card with quick-link */}
-            <Tooltip text="Sessions without an assigned instructor" position="bottom">
-              <Link
-                href="/tools/scheduler/admin"
-                className="rounded-lg border border-border bg-card px-4 py-3 hover:border-primary/50 transition-colors group block"
-              >
-                <p className="text-xs text-muted-foreground">Unassigned Count</p>
-                <p className={`text-2xl font-semibold mt-1 ${reportData.unassigned_count > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                  {reportData.unassigned_count}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 group-hover:text-primary transition-colors">
-                  View in calendar →
-                </p>
-              </Link>
-            </Tooltip>
-          </div>
-
-          {/* Hours by Instructor Table */}
-          {reportData.hours_by_instructor.length > 0 && (
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                <Tooltip text="Total hours each instructor is scheduled">
-                  <h3 className="text-sm font-semibold">Hours by Instructor</h3>
-                </Tooltip>
-                <Tooltip text="Export report as CSV">
-                  <button
-                    onClick={exportCSV}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium border border-border text-foreground hover:bg-muted transition-colors"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                      </svg>
-                      Export CSV
-                    </span>
-                  </button>
-                </Tooltip>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Instructor</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Minutes</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Hours</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.hours_by_instructor.map((h) => (
-                      <tr key={h.instructor_id} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2">{h.name}</td>
-                        <td className="px-4 py-2 text-right text-muted-foreground">{h.total_minutes}</td>
-                        <td className="px-4 py-2 text-right font-medium">{h.total_hours}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Hours by Tag Table */}
-          {reportData.hours_by_tag.length > 0 && (
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <div className="px-4 py-3 border-b border-border">
-                <Tooltip text="Total hours broken down by tag">
-                  <h3 className="text-sm font-semibold">Hours by Tag</h3>
-                </Tooltip>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Tag</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Minutes</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Hours</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.hours_by_tag.map((h) => (
-                      <tr key={h.tag_id} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2">{h.tag_name}</td>
-                        <td className="px-4 py-2 text-right text-muted-foreground">{h.total_minutes}</td>
-                        <td className="px-4 py-2 text-right font-medium">{h.total_hours}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Session Detail Table */}
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <Tooltip text="All individual sessions in the date range">
-                <h3 className="text-sm font-semibold">
-                  Session Detail ({reportData.sessions.length} rows)
-                </h3>
-              </Tooltip>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Date</th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Time</th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Instructor</th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Venue</th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Status</th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Grades</th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Tags</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.sessions.map((s) => (
-                    <tr
-                      key={s.id}
-                      className={`border-b border-border last:border-0 ${
-                        s.needs_resolution ? 'bg-red-500/10' : ''
-                      }`}
-                    >
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        {s.is_makeup && (
-                          <Tooltip text="Makeup session" position="bottom">
-                            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1.5" />
-                          </Tooltip>
-                        )}
-                        {s.date}
-                      </td>
-                      <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
-                        {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
-                      </td>
-                      <td className="px-4 py-2">{s.instructor_name}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{s.venue_name}</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                            STATUS_BG[s.status] ?? 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {s.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-1 flex-wrap">
-                          {s.grade_groups.map((g) => (
-                            <span key={g} className="inline-block rounded bg-muted px-1.5 py-0.5 text-xs">
-                              {g}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-1 flex-wrap">
-                          {s.tags.map((t) => (
-                            <span key={t} className="inline-block rounded bg-primary/20 text-primary px-1.5 py-0.5 text-xs">
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

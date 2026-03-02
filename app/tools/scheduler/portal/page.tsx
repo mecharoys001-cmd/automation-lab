@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Instructor, Session, Venue, Program } from '@/types/database';
-import Tooltip from '../components/Tooltip';
+import { Tooltip } from '../components/ui/Tooltip';
 
 // ── Types ──────────────────────────────────────────────────────────
 
