@@ -168,7 +168,7 @@ export interface Session {
   replaces_session_id: string | null;
   needs_resolution: boolean;
   notes: string | null;
-  scheduling_notes: string | null;
+  scheduling_notes?: string | null; // Optional: column not yet in database
   created_at: string;
   updated_at: string;
 }
