@@ -27,8 +27,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect /tools and all sub-routes
+  // Protect /tools and all sub-routes (except scheduler)
   if (!user && request.nextUrl.pathname.startsWith('/tools')) {
+    // Allow unauthenticated access to scheduler
+    if (request.nextUrl.pathname.startsWith('/tools/scheduler')) {
+      return supabaseResponse
+    }
+    
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
