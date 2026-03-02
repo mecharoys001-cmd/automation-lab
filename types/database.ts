@@ -376,7 +376,7 @@ export interface ScheduleSnapshot {
   session_tags: SessionTag[];
   session_templates: SessionTemplate[];
   school_calendar: SchoolCalendar[];
-  settings: Settings;
+  settings: any; // TODO: Define proper Settings type
   instructors: Instructor[];
   venues: Venue[];
   tags: Tag[];
