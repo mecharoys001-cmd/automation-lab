@@ -40,7 +40,7 @@ export default function Navigation() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            height: "68px",
+            height: "var(--nav-height)",
           }}
         >
           {/* Logo */}

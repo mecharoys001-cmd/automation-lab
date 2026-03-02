@@ -36,6 +36,9 @@
   --radius-md:   6px;
   --radius-lg:   10px;
   --radius-pill: 100px;
+  
+  /* Layout */
+  --nav-height:  68px;
 
   /* Shadows — subtle like artsnwct.org */
   --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
