@@ -376,7 +376,8 @@ export async function runScheduler(
           replaces_session_id: null,
           needs_resolution: false,
           notes: null,
-          scheduling_notes: schedulingNotes,
+          // TODO: Re-enable after adding scheduling_notes column to database
+          // scheduling_notes: schedulingNotes,
         };
 
         generatedSessions.push(draft);
