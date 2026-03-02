@@ -62,7 +62,7 @@ function ProgramSelector() {
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[calc(100vh-var(--nav-height))]">
+    <div className="flex h-screen" style={{ paddingTop: 'var(--nav-height)' }}>
       {/* Dark sidebar from design system */}
       <Sidebar navItems={adminNavItems} />
 
