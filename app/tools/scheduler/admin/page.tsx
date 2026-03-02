@@ -386,7 +386,7 @@ function DayScheduleSettings({
           <Tooltip text="Set the latest hour displayed on calendar">
             <select
               value={dayEndHour}
-              onChange=(e) => onEndChange(Number(e.target.value))}
+              onChange={(e) => onEndChange(Number(e.target.value))}
               className="w-full h-9 pl-3 pr-10 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
             >
               {hourOptions.filter((h) => h > dayStartHour).map((h) => (
