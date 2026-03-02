@@ -8,13 +8,6 @@ import { createServiceClient } from '@/lib/supabase-service';
 
 export async function GET() {
   try {
-    const debugInfo = {
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 40),
-      keyExists: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      keyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length,
-      keyEnding: process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-20)
-    };
-    
     const supabase = createServiceClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,7 +17,7 @@ export async function GET() {
 
     if (error) {
       return NextResponse.json(
-        { error: `Failed to fetch programs: ${error.message}`, debug: debugInfo },
+        { error: `Failed to fetch programs: ${error.message}` },
         { status: 500 }
       );
     }
