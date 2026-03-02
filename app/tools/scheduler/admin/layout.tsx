@@ -18,15 +18,15 @@ import {
 } from 'lucide-react';
 
 const adminNavItems: { label: string; href: string; icon: LucideIcon; tooltip: string }[] = [
-  { label: 'Calendar', href: '/tools/scheduler/admin', icon: Calendar, tooltip: 'View and manage the session calendar' },
-  { label: 'Templates', href: '/tools/scheduler/admin/templates', icon: LayoutTemplate, tooltip: 'Define session templates for automated generation' },
-  { label: 'Tags', href: '/tools/scheduler/admin/tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
-  { label: 'People & Places', href: '/tools/scheduler/admin/people', icon: Users, tooltip: 'Manage instructors and their availability' },
-  { label: 'School Calendar', href: '/tools/scheduler/admin/calendar', icon: Clock, tooltip: 'View and manage school calendar and special dates' },
-  { label: 'Exceptions', href: '/tools/scheduler/admin/exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
-  { label: 'Reports', href: '/tools/scheduler/admin/reports', icon: BarChart2, tooltip: 'View usage reports and export data' },
-  { label: 'Versions', href: '/tools/scheduler/admin/versions', icon: History, tooltip: 'Save, publish, and revert schedule versions' },
-  { label: 'Settings', href: '/tools/scheduler/admin/settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
+  { label: 'Calendar', href: '/admin', icon: Calendar, tooltip: 'View and manage the session calendar' },
+  { label: 'Templates', href: '/admin/templates', icon: LayoutTemplate, tooltip: 'Define session templates for automated generation' },
+  { label: 'Tags', href: '/admin/tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
+  { label: 'People & Places', href: '/admin/people', icon: Users, tooltip: 'Manage instructors and their availability' },
+  { label: 'School Calendar', href: '/admin/calendar', icon: Clock, tooltip: 'View and manage school calendar and special dates' },
+  { label: 'Exceptions', href: '/admin/exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
+  { label: 'Reports', href: '/admin/reports', icon: BarChart2, tooltip: 'View usage reports and export data' },
+  { label: 'Versions', href: '/admin/versions', icon: History, tooltip: 'Save, publish, and revert schedule versions' },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
 ];
 
 function ProgramSelector() {
