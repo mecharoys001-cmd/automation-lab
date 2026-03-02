@@ -232,6 +232,7 @@ export default function ToolsPage() {
                       fontSize: "22px",
                       fontWeight: 700,
                       marginBottom: "4px",
+                      color: '#ffffff',
                     }}
                   >
                     {tool.name}
