@@ -104,7 +104,7 @@ const tools = [
 
 export default function ToolsPage() {
   return (
-    <div style={{ paddingTop: "64px", minHeight: "100vh" }}>
+    <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "#0f172a" }}>
       {/* Header */}
       <div
         style={{
