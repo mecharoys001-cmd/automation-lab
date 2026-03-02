@@ -46,7 +46,7 @@ function ProgramSelector() {
           <select
             value={selectedProgramId ?? ''}
             onChange={(e) => setSelectedProgramId(e.target.value)}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+            className="h-9 rounded-lg border border-slate-200 bg-white pl-3 pr-10 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
           >
             {programs.map((prog) => (
               <option key={prog.id} value={prog.id}>
