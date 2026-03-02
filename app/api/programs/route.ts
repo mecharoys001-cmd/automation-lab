@@ -8,6 +8,9 @@ import { createServiceClient } from '@/lib/supabase-service';
 
 export async function GET() {
   try {
+    console.log('[DEBUG] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30));
+    console.log('[DEBUG] SERVICE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log('[DEBUG] SERVICE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
     const supabase = createServiceClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
