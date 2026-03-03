@@ -167,7 +167,7 @@ export default function VersionsPage() {
       });
       setConfirmRevert(null);
       // Redirect to calendar view after revert
-      router.push('/tools/scheduler/admin');
+      router.push('/tools/symphonix-scheduler/admin');
     } catch (err) {
       setToast({
         message: err instanceof Error ? err.message : 'Revert failed',

@@ -46,27 +46,6 @@ const MONTH_NAMES = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Build a 6-row × 7-col grid of Date objects for the given month. */
-function getMonthGrid(year: number, month: number): Date[][] {
-  const firstDay = new Date(year, month, 1);
-  // JS getDay already returns 0=Sun, which matches our Sun-first grid
-  const startOffset = firstDay.getDay();
-
-  const grid: Date[][] = [];
-  let day = 1 - startOffset;
-
-  for (let row = 0; row < 6; row++) {
-    const week: Date[] = [];
-    for (let col = 0; col < 7; col++) {
-      week.push(new Date(year, month, day));
-      day++;
-    }
-    grid.push(week);
-  }
-
-  return grid;
-}
-
 function formatDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -223,7 +202,8 @@ export function MonthView({
     onReplaceEvent?.(eventId, templateId);
   }, [onReplaceEvent]);
 
-  const grid = useMemo(() => getMonthGrid(year, month), [year, month]);
+  const daysInMonth = useMemo(() => new Date(year, month + 1, 0).getDate(), [year, month]);
+  const firstDayOfWeek = useMemo(() => new Date(year, month, 1).getDay(), [year, month]);
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -281,78 +261,79 @@ export function MonthView({
         </Button>
       </div>
 
-      {/* ------- Calendar Grid (1 header row + 6 calendar rows × 7 cols) ------- */}
-      <div className="flex-1 grid bg-white overflow-y-auto" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', gridTemplateRows: 'auto repeat(6, 1fr)' }}>
-        {/* Header row */}
-        {DAY_HEADERS.map((label, idx) => (
-          <div
-            key={`header-${label}`}
-            className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-200 ${
-              idx < 6 ? 'border-r border-slate-100' : ''
-            }`}
-            style={{ boxSizing: 'border-box' }}
-          >
-            {label}
-          </div>
-        ))}
-        
-        {/* Calendar day cells */}
-        {grid.map((week, rowIdx) => (
-          week.map((date, colIdx) => {
-              const isCurrentMonth = date.getMonth() === month;
-              const dateKey = formatDateKey(date);
-              const isToday = dateKey === todayKey;
-              const dayEvents = eventsByDate[dateKey] || [];
+      {/* ------- Day Headers + Calendar Grid (single flat grid) ------- */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        <div
+          className="grid grid-cols-7 min-h-full"
+          style={{ gridTemplateRows: 'auto', gridAutoRows: 'minmax(100px, 1fr)' }}
+        >
+          {/* Day Headers — pinned to grid-row 1 */}
+          {DAY_HEADERS.map((label, idx) => (
+            <div
+              key={label}
+              style={{ gridRow: 1 }}
+              className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 ${
+                idx < 6 ? 'border-r border-slate-100' : ''
+              }`}
+            >
+              {label}
+            </div>
+          ))}
+          {/* Day Cells — auto-flow into rows 2+, first day uses grid-column-start */}
+          {Array.from({ length: daysInMonth }, (_, i) => {
+            const day = i + 1;
+            const date = new Date(year, month, day);
+            const dateKey = formatDateKey(date);
+            const isToday = dateKey === todayKey;
+            const dayEvents = eventsByDate[dateKey] || [];
+            const dayOfWeek = date.getDay();
+            const gridColumn = (firstDayOfWeek + i) % 7;
 
-              return (
-                <Tooltip
-                  key={colIdx}
-                  text={`${DAY_HEADERS[colIdx]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}${
-                    dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+            return (
+              <Tooltip
+                key={day}
+                text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${day}${
+                  dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+                }`}
+              >
+                <div
+                  style={day === 1 ? { gridColumnStart: firstDayOfWeek + 1 } : undefined}
+                  className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 ${
+                    gridColumn < 6 ? 'border-r border-slate-100' : ''
                   }`}
+                  onClick={() => onDayClick?.(date)}
                 >
-                  <div
-                    className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 ${
-                      colIdx < 6 ? 'border-r border-slate-100' : ''
-                    } ${!isCurrentMonth ? 'bg-slate-50/50' : ''}`}
-                    style={{ boxSizing: 'border-box' }}
-                    onClick={() => onDayClick?.(date)}
+                  <span
+                    className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
+                      isToday ? 'bg-blue-500 text-white' : 'text-slate-900'
+                    }`}
                   >
-                    <span
-                      className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
-                        isToday
-                          ? 'bg-blue-500 text-white'
-                          : isCurrentMonth
-                            ? 'text-slate-900'
-                            : 'text-slate-300'
-                      }`}
-                    >
-                      {date.getDate()}
-                    </span>
+                    {day}
+                  </span>
 
-                    <div className="space-y-0.5">
-                      {dayEvents.slice(0, 3).map((event) => (
-                        <EventChip
-                          key={event.id}
-                          event={event}
-                          onHover={showPopover}
-                          onLeave={hidePopover}
-                          onClick={handleEventClick}
-                        />
-                      ))}
-                      {dayEvents.length > 3 && (
-                        <Tooltip text={`${dayEvents.length - 3} more event${dayEvents.length - 3 > 1 ? 's' : ''} — click day to view all`}>
-                          <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
-                            +{dayEvents.length - 3} more
-                          </span>
-                        </Tooltip>
-                      )}
-                    </div>
+                  <div className="space-y-0.5">
+                    {dayEvents.slice(0, 3).map((event) => (
+                      <EventChip
+                        key={event.id}
+                        event={event}
+                        onHover={showPopover}
+                        onLeave={hidePopover}
+                        onClick={handleEventClick}
+                      />
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <Tooltip text={`${dayEvents.length - 3} more event${dayEvents.length - 3 > 1 ? 's' : ''} — click day to view all`}>
+                        <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
+                          +{dayEvents.length - 3} more
+                        </span>
+                      </Tooltip>
+                    )}
                   </div>
-                </Tooltip>
-              );
-            })
-        ))}
+                </div>
+              </Tooltip>
+            );
+          })}
+        </div>
       </div>
 
       {/* Event Popover */}

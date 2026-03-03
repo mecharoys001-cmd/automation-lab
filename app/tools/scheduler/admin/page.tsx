@@ -370,7 +370,7 @@ function DayScheduleSettings({
             <select
               value={dayStartHour}
               onChange={(e) => onStartChange(Number(e.target.value))}
-              className="w-full h-9 pl-3 pr-10 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
+              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
             >
               {hourOptions.filter((h) => h < dayEndHour).map((h) => (
                 <option key={h} value={h}>{formatOption(h)}</option>
@@ -387,7 +387,7 @@ function DayScheduleSettings({
             <select
               value={dayEndHour}
               onChange={(e) => onEndChange(Number(e.target.value))}
-              className="w-full h-9 pl-3 pr-10 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
+              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
             >
               {hourOptions.filter((h) => h > dayStartHour).map((h) => (
                 <option key={h} value={h}>{formatOption(h)}</option>
@@ -992,7 +992,7 @@ function CalendarDashboard() {
       const anchor = selectedDate ?? new Date();
       const year = anchor.getFullYear();
       const payload = { program_id: selectedProgramId, year };
-      const res = await fetch('/api/scheduler/generate', {
+      const res = await fetch('/api/sessions/generate', {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },

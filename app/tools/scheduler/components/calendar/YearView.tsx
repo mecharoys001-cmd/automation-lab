@@ -71,28 +71,6 @@ function buildInitialMonths(): { year: number; month: number }[] {
   return months;
 }
 
-/** Build a 6-row x 7-col grid of Date objects for the given month. */
-function getMonthGrid(year: number, month: number): Date[][] {
-  // month is 1-based here, convert to 0-based for JS Date
-  const jsMonth = month - 1;
-  const firstDay = new Date(year, jsMonth, 1);
-  const startOffset = firstDay.getDay();
-
-  const grid: Date[][] = [];
-  let day = 1 - startOffset;
-
-  for (let row = 0; row < 6; row++) {
-    const week: Date[] = [];
-    for (let col = 0; col < 7; col++) {
-      week.push(new Date(year, jsMonth, day));
-      day++;
-    }
-    grid.push(week);
-  }
-
-  return grid;
-}
-
 function formatDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -199,7 +177,7 @@ function MonthGrid({
   onDayClick,
 }: {
   year: number;
-  month: number;
+  month: number; // 1-based
   eventsByDate: Record<string, CalendarEvent[]>;
   todayKey: string;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
@@ -208,7 +186,8 @@ function MonthGrid({
   onDayClick?: (date: Date) => void;
 }) {
   const jsMonth = month - 1;
-  const grid = useMemo(() => getMonthGrid(year, month), [year, month]);
+  const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [year, month]);
+  const firstDayOfWeek = useMemo(() => new Date(year, jsMonth, 1).getDay(), [year, jsMonth]);
   const monthKey = formatMonthKey(year, month);
   const eventCount = Object.keys(eventsByDate).reduce((sum, key) => {
     if (key.startsWith(monthKey)) return sum + eventsByDate[key].length;
@@ -231,78 +210,74 @@ function MonthGrid({
         )}
       </div>
 
-      {/* Calendar Grid (1 header row + 6 calendar rows × 7 cols) */}
-      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', gridTemplateRows: 'auto repeat(6, minmax(100px, 1fr))' }}>
-        {/* Header row */}
+      {/* Day Headers + Day Cells — single flat grid */}
+      <div className="grid grid-cols-7">
+        {/* Day Headers — pinned to grid-row 1 */}
         {DAY_HEADERS.map((label, idx) => (
           <div
-            key={`header-${label}`}
+            key={label}
+            style={{ gridRow: 1 }}
             className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-100 ${
               idx < 6 ? 'border-r border-slate-100' : ''
             }`}
-            style={{ boxSizing: 'border-box' }}
           >
             {label}
           </div>
         ))}
+        {/* Day Cells — auto-flow into rows 2+, first day uses grid-column-start */}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1;
+          const date = new Date(year, jsMonth, day);
+          const dateKey = formatDateKey(date);
+          const isToday = dateKey === todayKey;
+          const dayEvents = eventsByDate[dateKey] || [];
+          const dayOfWeek = date.getDay();
+          const gridColumn = (firstDayOfWeek + i) % 7;
 
-        {/* Calendar day cells */}
-        {grid.map((week, rowIdx) => (
-          week.map((date, colIdx) => {
-              const isCurrentMonth = date.getMonth() === jsMonth;
-              const dateKey = formatDateKey(date);
-              const isToday = dateKey === todayKey;
-              const dayEvents = eventsByDate[dateKey] || [];
-
-              return (
-                <Tooltip
-                  key={colIdx}
-                  text={`${DAY_HEADERS[colIdx]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}${
-                    dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+          return (
+            <Tooltip
+              key={day}
+              text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${day}${
+                dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+              }`}
+            >
+              <div
+                style={day === 1 ? { gridColumnStart: firstDayOfWeek + 1 } : undefined}
+                className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 ${
+                  gridColumn < 6 ? 'border-r border-slate-100' : ''
+                }`}
+                onClick={() => onDayClick?.(date)}
+              >
+                <span
+                  className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
+                    isToday ? 'bg-blue-500 text-white' : 'text-slate-900'
                   }`}
                 >
-                  <div
-                    className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 ${
-                      colIdx < 6 ? 'border-r border-slate-100' : ''
-                    } ${!isCurrentMonth ? 'bg-slate-50/50' : ''}`}
-                    style={{ boxSizing: 'border-box' }}
-                    onClick={() => onDayClick?.(date)}
-                  >
-                    <span
-                      className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
-                        isToday
-                          ? 'bg-blue-500 text-white'
-                          : isCurrentMonth
-                            ? 'text-slate-900'
-                            : 'text-slate-300'
-                      }`}
-                    >
-                      {date.getDate()}
-                    </span>
+                  {day}
+                </span>
 
-                    <div className="space-y-0.5">
-                      {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
-                        <EventChip
-                          key={event.id}
-                          event={event}
-                          onHover={onEventHover}
-                          onLeave={onEventLeave}
-                          onClick={onEventClick}
-                        />
-                      ))}
-                      {dayEvents.length > MAX_CHIPS_PER_DAY && (
-                        <Tooltip text={`${dayEvents.length - MAX_CHIPS_PER_DAY} more event${dayEvents.length - MAX_CHIPS_PER_DAY > 1 ? 's' : ''} — click day to view all`}>
-                          <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
-                            +{dayEvents.length - MAX_CHIPS_PER_DAY} more
-                          </span>
-                        </Tooltip>
-                      )}
-                    </div>
-                  </div>
-                </Tooltip>
-              );
-            })
-        ))}
+                <div className="space-y-0.5">
+                  {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
+                    <EventChip
+                      key={event.id}
+                      event={event}
+                      onHover={onEventHover}
+                      onLeave={onEventLeave}
+                      onClick={onEventClick}
+                    />
+                  ))}
+                  {dayEvents.length > MAX_CHIPS_PER_DAY && (
+                    <Tooltip text={`${dayEvents.length - MAX_CHIPS_PER_DAY} more event${dayEvents.length - MAX_CHIPS_PER_DAY > 1 ? 's' : ''} — click day to view all`}>
+                      <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
+                        +{dayEvents.length - MAX_CHIPS_PER_DAY} more
+                      </span>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+            </Tooltip>
+          );
+        })}
       </div>
     </div>
   );

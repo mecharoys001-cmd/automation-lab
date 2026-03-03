@@ -12,7 +12,7 @@ export default function SymphonixSchedulerPage() {
         <div className="flex gap-4 justify-center">
           <Tooltip text="Go to admin dashboard">
             <Link
-              href="/tools/scheduler/admin"
+              href="/tools/symphonix-scheduler/admin"
               className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               Admin Dashboard
@@ -20,7 +20,7 @@ export default function SymphonixSchedulerPage() {
           </Tooltip>
           <Tooltip text="View instructor portal">
             <Link
-              href="/tools/scheduler/intake"
+              href="/tools/symphonix-scheduler/intake"
               className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               Instructor Intake

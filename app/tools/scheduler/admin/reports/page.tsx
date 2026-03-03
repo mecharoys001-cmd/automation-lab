@@ -406,7 +406,7 @@ function InstructorHoursTab({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(
-                                  `/tools/scheduler/admin/reports/instructors/${instructor.id}`
+                                  `/tools/symphonix-scheduler/admin/reports/instructors/${instructor.id}`
                                 );
                               }}
                             >

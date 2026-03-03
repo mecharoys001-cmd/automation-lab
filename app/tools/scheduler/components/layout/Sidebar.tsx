@@ -34,6 +34,8 @@ interface SidebarProps {
   user?: UserProfile;
   /** Base path prefix for all nav hrefs */
   basePath?: string;
+  /** Custom header content (replaces the default Symphonix logo) */
+  header?: React.ReactNode;
   className?: string;
 }
 
@@ -79,7 +81,8 @@ const defaultUser: UserProfile = {
 export function Sidebar({
   navItems = defaultNavItems,
   user = defaultUser,
-  basePath = '/tools/scheduler',
+  basePath = '/tools/symphonix-scheduler',
+  header,
   className = '',
 }: SidebarProps) {
   const pathname = usePathname();
@@ -99,11 +102,13 @@ export function Sidebar({
     >
       {/* Top section: Logo + Nav */}
       <div>
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 pb-6">
-          <Music className="w-7 h-7 text-blue-500 flex-shrink-0" />
-          <span className="text-xl font-bold text-white">Symphonix</span>
-        </div>
+        {/* Header */}
+        {header ?? (
+          <div className="flex items-center gap-2.5 pb-6">
+            <Music className="w-7 h-7 text-blue-500 flex-shrink-0" />
+            <span className="text-xl font-bold text-white">Symphonix</span>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1">

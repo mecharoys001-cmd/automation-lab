@@ -116,7 +116,7 @@ export default function InstructorDetailPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const goBack = () => router.push('/tools/scheduler/admin/reports');
+  const goBack = () => router.push('/tools/symphonix-scheduler/admin/reports');
 
   return (
     <div className="flex flex-col h-full bg-slate-50">

@@ -465,7 +465,7 @@ export function WeekView({
         <div className="shrink-0 border-r border-slate-200" style={{ width: TIME_COL_WIDTH }} />
 
         {/* Day header cells */}
-        <div className="flex-1 grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr' }}>
+        <div className="flex-1 grid grid-cols-7">
           {weekDates.map((date, idx) => {
             const dateKey = weekDateKeys[idx];
             const isToday = dateKey === todayKey;
@@ -475,7 +475,6 @@ export function WeekView({
                   className={`flex flex-col items-center py-2 ${
                     idx < 6 ? 'border-r border-slate-100' : ''
                   }`}
-                  style={{ boxSizing: 'border-box' }}
                 >
                   <span className={`text-[11px] font-semibold tracking-[1px] ${
                     isToday ? 'text-blue-500' : 'text-slate-400'
@@ -517,7 +516,7 @@ export function WeekView({
         </div>
 
         {/* Day Columns (7-column grid) */}
-        <div className="flex-1 grid relative" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr' }}>
+        <div className="flex-1 grid grid-cols-7 relative">
           {weekDates.map((_, dayIdx) => {
             const dateKey = weekDateKeys[dayIdx];
             const dayEvents = eventsByDate[dateKey] || [];
@@ -530,7 +529,7 @@ export function WeekView({
                 className={`relative ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
                   isToday ? 'bg-blue-50/30' : ''
                 } ${isDragOver ? 'bg-blue-50/50' : ''}`}
-                style={{ minHeight: `${totalHeight}px`, boxSizing: 'border-box' }}
+                style={{ minHeight: `${totalHeight}px` }}
                 onDragOver={
                   onEventDrop
                     ? (e) => {
