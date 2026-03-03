@@ -231,28 +231,24 @@ function MonthGrid({
         )}
       </div>
 
-      {/* Day Headers */}
-      <div className="grid grid-cols-7 border-b border-slate-100">
+      {/* Calendar Grid (1 header row + 6 calendar rows × 7 cols) */}
+      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', gridTemplateRows: 'auto repeat(6, minmax(100px, 1fr))' }}>
+        {/* Header row */}
         {DAY_HEADERS.map((label, idx) => (
           <div
-            key={label}
-            className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase ${
+            key={`header-${label}`}
+            className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-100 ${
               idx < 6 ? 'border-r border-slate-100' : ''
             }`}
+            style={{ boxSizing: 'border-box' }}
           >
             {label}
           </div>
         ))}
-      </div>
 
-      {/* Calendar Grid (6 rows x 7 cols) */}
-      <div className="grid grid-rows-6">
+        {/* Calendar day cells */}
         {grid.map((week, rowIdx) => (
-          <div
-            key={rowIdx}
-            className="grid grid-cols-7 border-b border-slate-100 last:border-b-0 min-h-[100px]"
-          >
-            {week.map((date, colIdx) => {
+          week.map((date, colIdx) => {
               const isCurrentMonth = date.getMonth() === jsMonth;
               const dateKey = formatDateKey(date);
               const isToday = dateKey === todayKey;
@@ -266,9 +262,10 @@ function MonthGrid({
                   }`}
                 >
                   <div
-                    className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden ${
+                    className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 ${
                       colIdx < 6 ? 'border-r border-slate-100' : ''
                     } ${!isCurrentMonth ? 'bg-slate-50/50' : ''}`}
+                    style={{ boxSizing: 'border-box' }}
                     onClick={() => onDayClick?.(date)}
                   >
                     <span
@@ -304,8 +301,7 @@ function MonthGrid({
                   </div>
                 </Tooltip>
               );
-            })}
-          </div>
+            })
         ))}
       </div>
     </div>
