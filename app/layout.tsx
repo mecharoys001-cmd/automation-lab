@@ -37,7 +37,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ScrollRevealProvider />
         <Navigation />
-        <main>{children}</main>
+        <main style={{ paddingTop: "var(--nav-height)" }}>{children}</main>
         <Footer />
       </body>
     </html>
