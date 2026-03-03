@@ -282,13 +282,14 @@ export function MonthView({
       </div>
 
       {/* ------- Day Headers ------- */}
-      <div className="grid grid-cols-7 bg-white border-b border-slate-200 shrink-0">
+      <div className="grid bg-white border-b border-slate-200 shrink-0" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', width: '100%' }}>
         {DAY_HEADERS.map((label, idx) => (
           <div
             key={label}
             className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase ${
               idx < 6 ? 'border-r border-slate-100' : ''
             }`}
+            style={{ boxSizing: 'border-box' }}
           >
             {label}
           </div>
@@ -300,7 +301,8 @@ export function MonthView({
         {grid.map((week, rowIdx) => (
           <div
             key={rowIdx}
-            className="grid grid-cols-7 border-b border-slate-100 min-h-[100px]"
+            className="grid border-b border-slate-100 min-h-[100px]"
+            style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', width: '100%' }}
           >
             {week.map((date, colIdx) => {
               const isCurrentMonth = date.getMonth() === month;
@@ -319,6 +321,7 @@ export function MonthView({
                     className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden ${
                       colIdx < 6 ? 'border-r border-slate-100' : ''
                     } ${!isCurrentMonth ? 'bg-slate-50/50' : ''}`}
+                    style={{ boxSizing: 'border-box' }}
                     onClick={() => onDayClick?.(date)}
                   >
                     <span
