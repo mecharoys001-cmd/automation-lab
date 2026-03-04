@@ -1619,9 +1619,11 @@ export default function PeoplePage() {
                       )}
                     </div>
 
-                    {/* 7-Day Availability Grid (Su–Sa with Morning/Afternoon) */}
-                    <div className="flex justify-between">
-                      {AVAIL_DAYS.map((day) => {
+                    {/* Weekly Availability */}
+                    <div>
+                      <div className="text-xs font-medium text-slate-600 mb-2">Weekly Availability</div>
+                      <div className="flex justify-between">
+                        {AVAIL_DAYS.map((day) => {
                         const blocks = inst.availability_json?.[day.key] ?? [];
                         const morningAvail = getTimePeriodAvailability(blocks, 8, 12); // 8am-12pm
                         const afternoonAvail = getTimePeriodAvailability(blocks, 12, 17); // 12pm-5pm
@@ -1650,6 +1652,7 @@ export default function PeoplePage() {
                           </Tooltip>
                         );
                       })}
+                      </div>
                     </div>
 
                     {/* Action Buttons */}
