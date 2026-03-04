@@ -72,7 +72,7 @@ function SidebarProgramSelector() {
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen">
+    <div className="flex" style={{ height: '100vh' }}>
       {/* Dark sidebar with program selector */}
       <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} />
 
