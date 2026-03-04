@@ -49,6 +49,33 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE() {
+  try {
+    const supabase = createServiceClient();
+
+    // Instructors are global (not program-scoped), so this deletes all.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('instructors') as any)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000') // Supabase requires a filter — this matches all real rows
+      .select('id');
+
+    if (error) {
+      return NextResponse.json(
+        { error: `Failed to delete instructors: ${error.message}` },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true, deleted: data?.length ?? 0 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();

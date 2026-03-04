@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { program_id } = body;
+    const { program_id, year } = body;
 
     if (!program_id || typeof program_id !== 'string') {
       return NextResponse.json(
@@ -54,8 +54,9 @@ export async function POST(request: NextRequest) {
     // Create a service-role Supabase client (bypasses RLS for admin writes)
     const supabase = createServiceClient();
 
-    // Run the scheduler engine
-    const result = await runScheduler(supabase, { program_id });
+    // Run the scheduler engine — pass year so it generates for the full calendar year
+    const yearNum = year && !isNaN(Number(year)) ? Number(year) : undefined;
+    const result = await runScheduler(supabase, { program_id, year: yearNum });
 
     return NextResponse.json(result, {
       status: result.success ? 200 : 422,

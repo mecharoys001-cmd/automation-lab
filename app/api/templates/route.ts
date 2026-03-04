@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { trackScheduleChange } from '@/lib/track-change';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,6 +33,47 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const programId = searchParams.get('program_id');
+
+    if (!programId) {
+      return NextResponse.json(
+        { error: 'program_id query parameter is required' },
+        { status: 400 },
+      );
+    }
+
+    const supabase = createServiceClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('session_templates') as any)
+      .delete()
+      .eq('program_id', programId)
+      .select('id');
+
+    if (error) {
+      return NextResponse.json(
+        { error: `Failed to delete templates: ${error.message}` },
+        { status: 500 },
+      );
+    }
+
+    const deleted = data?.length ?? 0;
+    if (deleted > 0) {
+      trackScheduleChange();
+    }
+
+    return NextResponse.json({ success: true, deleted });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
@@ -51,6 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    trackScheduleChange();
     return NextResponse.json({ template: data }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

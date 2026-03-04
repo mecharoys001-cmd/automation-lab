@@ -70,7 +70,7 @@ export async function runScheduler(
   supabase: SupabaseClient<Database>,
   input: SchedulerInput
 ): Promise<SchedulerResult> {
-  const { program_id } = input;
+  const { program_id, year: yearOverride } = input;
 
   // ----------------------------------------------------------
   // 1. Load all required data
@@ -93,6 +93,11 @@ export async function runScheduler(
   }
 
   const { program, templates, calendar, rules, instructors, existing_sessions } = data;
+
+  // Derive full-year date range: explicit year param or program start year
+  const year = yearOverride ?? new Date(program.start_date + 'T00:00:00').getFullYear();
+  const yearStartDate = `${year}-01-01`;
+  const yearEndDate = `${year}-12-31`;
 
   // ----------------------------------------------------------
   // 1b. Load global buffer time settings
@@ -156,8 +161,8 @@ export async function runScheduler(
   }
 
   for (const [dayOfWeek, dayTemplates] of templatesByDay) {
-    // Generate all dates for this day-of-week within the program range
-    const dates = datesForDayOfWeek(program.start_date, program.end_date, dayOfWeek);
+    // Generate all dates for this day-of-week within the full year
+    const dates = datesForDayOfWeek(yearStartDate, yearEndDate, dayOfWeek);
 
     // Sort templates by sort_order for consistent processing
     dayTemplates.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -376,8 +381,7 @@ export async function runScheduler(
           replaces_session_id: null,
           needs_resolution: false,
           notes: null,
-          // TODO: Re-enable after adding scheduling_notes column to database
-          // scheduling_notes: schedulingNotes,
+          scheduling_notes: schedulingNotes,
         };
 
         generatedSessions.push(draft);
@@ -547,30 +551,48 @@ async function loadBufferSettings(
 // Draft management
 // ============================================================
 
-/** Deletes all draft sessions for a program. Returns count deleted. */
+/** Deletes all draft sessions for a program in batches to avoid statement timeout. Returns count deleted. */
 async function clearDraftSessions(
   supabase: SupabaseClient<Database>,
   programId: string
 ): Promise<number> {
-  // First count, then delete (Supabase doesn't return count on delete reliably without head:true)
-  const { count } = await supabase
-    .from('sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('program_id', programId)
-    .eq('status', 'draft');
+  const DELETE_BATCH = 5000;
+  let totalDeleted = 0;
 
-  const { error } = await supabase
-    .from('sessions')
-    .delete()
-    .eq('program_id', programId)
-    .eq('status', 'draft');
+  while (true) {
+    // Fetch a batch of draft session IDs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: batch, error: fetchError } = await (supabase.from('sessions') as any)
+      .select('id')
+      .eq('program_id', programId)
+      .eq('status', 'draft')
+      .limit(DELETE_BATCH);
 
-  if (error) {
-    console.error('Failed to clear draft sessions:', error.message);
-    return 0;
+    if (fetchError) {
+      console.error('Failed to fetch draft session IDs:', fetchError.message);
+      break;
+    }
+
+    if (!batch || batch.length === 0) break;
+
+    const ids = batch.map((s: { id: string }) => s.id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: deleteError } = await (supabase.from('sessions') as any)
+      .delete()
+      .in('id', ids);
+
+    if (deleteError) {
+      console.error('Failed to delete draft session batch:', deleteError.message);
+      break;
+    }
+
+    totalDeleted += ids.length;
+
+    if (batch.length < DELETE_BATCH) break;
   }
 
-  return count ?? 0;
+  return totalDeleted;
 }
 
 /** Batch inserts sessions in chunks to avoid payload limits. */

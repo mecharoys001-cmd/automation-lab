@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 
+// Ensure this route is always dynamically evaluated (never cached)
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const supabase = createServiceClient();
@@ -11,10 +14,25 @@ export async function GET() {
       .order('name');
 
     if (error) {
+      console.error('[GET /api/tags] error:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ tags: data ?? [] });
+    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+
+    // Fetch session counts per tag
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sessionTags } = await (supabase.from('session_tags') as any)
+      .select('tag_id');
+
+    const counts: Record<string, number> = {};
+    if (sessionTags) {
+      for (const row of sessionTags) {
+        counts[row.tag_id] = (counts[row.tag_id] || 0) + 1;
+      }
+    }
+
+    return NextResponse.json({ tags: data ?? [], sessionCounts: counts });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
@@ -32,17 +50,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
 
-    // Only pass DB-valid fields (no emoji column in DB)
-    const insertData: { name: string; description?: string } = { name: body.name.trim() };
-    if (body.description && typeof body.description === 'string' && body.description.trim()) {
+    const hasDescription = body.description && typeof body.description === 'string' && body.description.trim();
+    const hasEmoji = body.emoji && typeof body.emoji === 'string' && body.emoji.trim();
+    const insertData: { name: string; description?: string; emoji?: string } = { name: body.name.trim() };
+    if (hasDescription) {
       insertData.description = body.description.trim();
+    }
+    if (hasEmoji) {
+      insertData.emoji = body.emoji.trim();
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('tags') as any)
+    let { data, error } = await (supabase.from('tags') as any)
       .insert(insertData)
       .select()
       .single();
+
+    // If v2 columns don't exist yet, retry without them
+    let v2ColumnsSkipped = false;
+    if (error && (hasDescription || hasEmoji) && (error.code === '42703' || error.message?.includes('column'))) {
+      const { description: _d, emoji: _e, ...insertBasic } = insertData;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const retry = await (supabase.from('tags') as any)
+        .insert(insertBasic)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+      v2ColumnsSkipped = !error;
+    }
 
     if (error) {
       if (error.code === '23505') {
@@ -51,7 +87,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ tag: data }, { status: 201 });
+    return NextResponse.json({
+      tag: data,
+      ...(v2ColumnsSkipped && { warning: 'Description/emoji fields unavailable — run migration to enable.' }),
+    }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

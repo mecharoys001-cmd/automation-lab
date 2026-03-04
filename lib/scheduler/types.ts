@@ -27,6 +27,9 @@ import type {
 /** What the caller passes to the engine */
 export interface SchedulerInput {
   program_id: string;
+  /** When set, the engine generates sessions for Jan 1 – Dec 31 of this year
+   *  instead of the program's start_date/end_date. */
+  year?: number;
 }
 
 /** What the engine returns after generating sessions */

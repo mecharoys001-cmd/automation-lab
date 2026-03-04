@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { trackScheduleChange } from '@/lib/track-change';
 
 export async function GET() {
   try {
@@ -68,6 +69,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    trackScheduleChange();
     return NextResponse.json({ settings: data });
   } catch (err) {
     return NextResponse.json(

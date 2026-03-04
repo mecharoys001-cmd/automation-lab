@@ -27,11 +27,12 @@ export async function DELETE(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // First count how many will be deleted
+    // First count how many draft sessions will be deleted
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { count, error: countError } = await (supabase.from('sessions') as any)
       .select('*', { count: 'exact', head: true })
-      .eq('program_id', programId);
+      .eq('program_id', programId)
+      .eq('status', 'draft');
 
     if (countError) {
       return NextResponse.json(
@@ -40,11 +41,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete all sessions for this program
+    // Delete only draft sessions for this program (published schedules are protected)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('sessions') as any)
       .delete()
-      .eq('program_id', programId);
+      .eq('program_id', programId)
+      .eq('status', 'draft');
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

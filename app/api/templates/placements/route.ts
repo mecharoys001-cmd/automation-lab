@@ -52,6 +52,37 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const { searchParams } = new URL(request.url);
+    const programId = searchParams.get('program_id');
+
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('template_placements') as any)
+      .delete()
+      .eq('program_id', programId);
+
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ placements: [] });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ placements: [] });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const supabase = createServiceClient();

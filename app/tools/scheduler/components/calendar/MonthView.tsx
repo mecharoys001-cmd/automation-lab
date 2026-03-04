@@ -285,21 +285,38 @@ export function MonthView({
           ))}
 
           {/* Rows 2+: Day cells */}
-          {Array.from({ length: daysInMonth }, (_, i) => {
-            const day = i + 1;
+          {/*
+            ⚠️ CRITICAL: DO NOT CHANGE THIS TO daysInMonth!
+            This MUST be 42 cells (6 weeks × 7 days) to properly align months.
+            Months don't always start on Sunday - we need empty cells before day 1.
+            Example: April 2026 starts on Wednesday, needs 3 empty cells first.
+            Changing this to daysInMonth will break calendar alignment.
+          */}
+          {Array.from({ length: 42 }, (_, cellIndex) => {
+            const dayNumber = cellIndex - firstDayOfWeek + 1;
+
+            // Empty cell before month starts or after month ends
+            if (dayNumber < 1 || dayNumber > daysInMonth) {
+              return <div key={cellIndex} className="border-b border-slate-100 bg-slate-50/30" />;
+            }
+
+            const day = dayNumber;
             const date = new Date(year, month, day);
             const dateKey = formatDateKey(date);
             const isToday = dateKey === todayKey;
             const dayEvents = eventsByDate[dateKey] || [];
             const dayOfWeek = date.getDay();
 
+            const row = Math.floor(cellIndex / 7) + 2; // +2 because row 1 is headers
+            const col = (cellIndex % 7) + 1; // +1 for 1-based grid columns
+
             return (
               <Tooltip
-                key={day}
+                key={cellIndex}
                 text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${day}${
                   dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
                 }`}
-                style={{ gridColumn: dayOfWeek + 1, gridRow: Math.floor((firstDayOfWeek + i) / 7) + 2 }}
+                style={{ gridColumn: col, gridRow: row }}
               >
                 <div
                   className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 box-border ${

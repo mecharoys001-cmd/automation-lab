@@ -9,6 +9,8 @@
  *   - program_id (optional): UUID to filter sessions by program
  *   - instructor_email (optional): email to filter sessions by instructor
  *   - date (optional): filter sessions by exact date (YYYY-MM-DD)
+ *   - start_date (optional): filter sessions on or after this date (YYYY-MM-DD)
+ *   - end_date (optional): filter sessions on or before this date (YYYY-MM-DD)
  *   - status (optional): filter sessions by status
  *   - exclude_status (optional): exclude sessions with this status
  *   - exclude_id (optional): exclude a specific session by ID
@@ -17,21 +19,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
-
-function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !key) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  }
-
-  return createClient<Database>(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+import { createServiceClient } from '@/lib/supabase-service';
+import { trackScheduleChange } from '@/lib/track-change';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +29,8 @@ export async function GET(request: NextRequest) {
     const programId = searchParams.get('program_id');
     const instructorEmail = searchParams.get('instructor_email');
     const date = searchParams.get('date');
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
     const statusFilter = searchParams.get('status');
     const excludeStatus = searchParams.get('exclude_status');
     const excludeId = searchParams.get('exclude_id');
@@ -77,10 +68,12 @@ export async function GET(request: NextRequest) {
         *,
         instructor:instructors(*),
         venue:venues(*),
+        template:session_templates(*),
         session_tags(tag:tags(*))
       `)
       .order('date', { ascending: true })
-      .order('start_time', { ascending: true });
+      .order('start_time', { ascending: true })
+      .limit(50000); // Override Supabase default (1000); date-range filtering keeps actual result sets small
 
     if (programId && programId !== 'all') {
       query = query.eq('program_id', programId);
@@ -92,6 +85,11 @@ export async function GET(request: NextRequest) {
 
     if (date) {
       query = query.eq('date', date);
+    }
+
+    // Date range filtering (start_date/end_date take precedence over exact date)
+    if (startDate && endDate) {
+      query = query.gte('date', startDate).lte('date', endDate);
     }
 
     if (statusFilter) {
@@ -115,9 +113,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const result = data ?? [];
+
     // Flatten the session_tags junction into a tags array
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sessions = ((data ?? []) as any[]).map((session: Record<string, unknown>) => {
+    const sessions = (result as any[]).map((session: Record<string, unknown>) => {
       const { session_tags, ...rest } = session;
       const tags = Array.isArray(session_tags)
         ? session_tags.map((st: Record<string, unknown>) => st.tag).filter(Boolean)
@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    trackScheduleChange();
     return NextResponse.json({ session: data }, { status: 201 });
   } catch (err) {
     console.error('Sessions POST error:', err);
