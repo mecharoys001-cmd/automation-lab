@@ -285,21 +285,27 @@ export function MonthView({
           ))}
 
           {/* Rows 2+: Day cells */}
-          {Array.from({ length: daysInMonth }, (_, i) => {
-            const day = i + 1;
-            const date = new Date(year, month, day);
+          {/* ⚠️ 42-CELL GRID — DO NOT change to daysInMonth! See CALENDAR-GRID-WARNING.md */}
+          {Array.from({ length: 42 }, (_, cellIndex) => {
+            const dayNumber = cellIndex - firstDayOfWeek + 1;
+
+            // Empty cell before month starts or after month ends
+            if (dayNumber < 1 || dayNumber > daysInMonth) {
+              return <div key={cellIndex} className="border-b border-slate-100 bg-slate-50/30" />;
+            }
+
+            const date = new Date(year, month, dayNumber);
             const dateKey = formatDateKey(date);
             const isToday = dateKey === todayKey;
             const dayEvents = eventsByDate[dateKey] || [];
-            const dayOfWeek = date.getDay();
+            const dayOfWeek = cellIndex % 7;
 
             return (
               <Tooltip
-                key={day}
-                text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${day}${
+                key={cellIndex}
+                text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${dayNumber}${
                   dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
                 }`}
-                style={{ gridColumn: dayOfWeek + 1, gridRow: Math.floor((firstDayOfWeek + i) / 7) + 2 }}
               >
                 <div
                   className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 box-border ${
@@ -312,7 +318,7 @@ export function MonthView({
                       isToday ? 'bg-blue-500 text-white' : 'text-slate-900'
                     }`}
                   >
-                    {day}
+                    {dayNumber}
                   </span>
 
                   <div className="space-y-0.5">

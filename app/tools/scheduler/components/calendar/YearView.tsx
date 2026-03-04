@@ -225,26 +225,31 @@ function MonthGrid({
           </div>
         ))}
         {/* Day Cells — auto-flow into rows 2+, first day uses grid-column-start */}
-        {Array.from({ length: daysInMonth }, (_, i) => {
-          const day = i + 1;
-          const date = new Date(year, jsMonth, day);
+        {/* ⚠️ 42-CELL GRID — DO NOT change to daysInMonth! See CALENDAR-GRID-WARNING.md */}
+        {Array.from({ length: 42 }, (_, cellIndex) => {
+          const dayNumber = cellIndex - firstDayOfWeek + 1;
+
+          // Empty cell before month starts or after month ends
+          if (dayNumber < 1 || dayNumber > daysInMonth) {
+            return <div key={cellIndex} className="border-b border-slate-100 bg-slate-50/30" />;
+          }
+
+          const date = new Date(year, jsMonth, dayNumber);
           const dateKey = formatDateKey(date);
           const isToday = dateKey === todayKey;
           const dayEvents = eventsByDate[dateKey] || [];
-          const dayOfWeek = date.getDay();
-          const gridColumn = (firstDayOfWeek + i) % 7;
+          const dayOfWeek = cellIndex % 7;
 
           return (
             <Tooltip
-              key={day}
-              text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${day}${
+              key={cellIndex}
+              text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${dayNumber}${
                 dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
               }`}
-              style={{ gridColumn: dayOfWeek + 1, gridRow: Math.floor((firstDayOfWeek + i) / 7) + 2 }}
             >
               <div
                 className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 bg-white box-border ${
-                  gridColumn < 6 ? 'border-r border-slate-100' : ''
+                  dayOfWeek < 6 ? 'border-r border-slate-100' : ''
                 }`}
                 onClick={() => onDayClick?.(date)}
               >
@@ -253,7 +258,7 @@ function MonthGrid({
                     isToday ? 'bg-blue-500 text-white' : 'text-slate-900'
                   }`}
                 >
-                  {day}
+                  {dayNumber}
                 </span>
 
                 <div className="space-y-0.5">
