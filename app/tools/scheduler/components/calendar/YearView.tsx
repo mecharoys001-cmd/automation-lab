@@ -116,7 +116,7 @@ function EventChip({
     <Tooltip text={chipTooltip}>
       <div
         ref={ref}
-        className="flex items-center gap-1 rounded px-1.5 py-0.5 mb-0.5 cursor-pointer hover:opacity-80 transition-opacity truncate"
+        className="flex flex-col rounded px-1.5 py-1 mb-0.5 cursor-pointer hover:opacity-80 transition-opacity"
         style={{
           backgroundColor: colors.bg,
           borderLeft: `2px solid ${colors.accent}`,
@@ -134,6 +134,16 @@ function EventChip({
         >
           {event.title}
         </span>
+        {event.instructor && (
+          <span className="text-[9px] text-slate-500 truncate leading-tight">
+            {event.instructor}
+          </span>
+        )}
+        {event.gradeLevel && (
+          <span className="text-[9px] text-slate-400 truncate leading-tight">
+            {event.gradeLevel}
+          </span>
+        )}
       </div>
     </Tooltip>
   );

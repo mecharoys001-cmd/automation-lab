@@ -218,14 +218,12 @@ function WeekEventBlock({
         >
           {event.title}
         </p>
-        {height > 36 && (
-          <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
-            {event.subtitle}
-          </p>
-        )}
-        {height > 48 && (
+        <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+          {event.instructor}
+        </p>
+        {event.gradeLevel && (
           <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">
-            {event.instructor}
+            {event.gradeLevel}
           </p>
         )}
         {/* Resize handle at bottom edge */}
