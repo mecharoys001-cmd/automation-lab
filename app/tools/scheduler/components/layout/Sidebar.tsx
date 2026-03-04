@@ -42,31 +42,31 @@ interface SidebarProps {
 const defaultNavItems: NavItem[] = [
   {
     label: 'Calendar',
-    href: '/tools/scheduler/admin',
+    href: '/admin',
     icon: Calendar,
     tooltip: 'View and manage the session calendar',
   },
   {
     label: 'People & Places',
-    href: '/tools/scheduler/admin/people',
+    href: '/admin/people',
     icon: Users,
     tooltip: 'Manage instructors and venues',
   },
   {
     label: 'Schedule Builder',
-    href: '/tools/scheduler/admin/templates',
+    href: '/admin/templates',
     icon: LayoutTemplate,
     tooltip: 'Build weekly schedule templates and configure day times',
   },
   {
     label: 'Tags',
-    href: '/tools/scheduler/admin/tags',
+    href: '/admin/tags',
     icon: Tags,
     tooltip: 'Manage event tags and categories',
   },
   {
     label: 'Settings',
-    href: '/tools/scheduler/admin/settings',
+    href: '/admin/settings',
     icon: Settings,
     tooltip: 'Configure programs and settings',
   },
@@ -90,7 +90,7 @@ export function Sidebar({
   const isActive = (href: string) => {
     const fullHref = `${basePath}${href}`;
     // Exact match for the base admin path
-    if (href === '/tools/scheduler/admin') {
+    if (href === '/admin') {
       return pathname === fullHref;
     }
     return pathname.startsWith(fullHref);

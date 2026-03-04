@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Settings2 } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -181,6 +181,19 @@ function getBlockDisplayName(template: Template): string {
 function timeStringToHour(time: string): number {
   const [h, m] = time.split(':').map(Number);
   return h + m / 60;
+}
+
+/** Check if a given hour (or fractional hour) falls within the lunch break window. */
+function isLunchHour(hour: number, lunchEnabled: boolean, lunchStart: number, lunchEnd: number): boolean {
+  if (!lunchEnabled) return false;
+  return hour >= lunchStart && hour < lunchEnd;
+}
+
+/** Check if a placed block overlaps with lunch break at all. */
+function overlapsLunch(startHour: number, durationHours: number, lunchEnabled: boolean, lunchStart: number, lunchEnd: number): boolean {
+  if (!lunchEnabled) return false;
+  const endHour = startHour + durationHours;
+  return startHour < lunchEnd && endHour > lunchStart;
 }
 
 function emptyTemplate(): Template {
@@ -1325,12 +1338,24 @@ function DayScheduleSettings({
   dayEndHour,
   onStartChange,
   onEndChange,
+  lunchEnabled,
+  lunchStart,
+  lunchEnd,
+  onLunchEnabledChange,
+  onLunchStartChange,
+  onLunchEndChange,
   onClose,
 }: {
   dayStartHour: number;
   dayEndHour: number;
   onStartChange: (hour: number) => void;
   onEndChange: (hour: number) => void;
+  lunchEnabled: boolean;
+  lunchStart: number;
+  lunchEnd: number;
+  onLunchEnabledChange: (enabled: boolean) => void;
+  onLunchStartChange: (hour: number) => void;
+  onLunchEndChange: (hour: number) => void;
   onClose: () => void;
 }) {
   const hourOptions = Array.from({ length: 24 }, (_, i) => i);
@@ -1343,7 +1368,7 @@ function DayScheduleSettings({
   };
 
   return (
-    <div className="absolute right-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-slate-200 p-4 z-50">
+    <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-slate-200 p-4 z-50">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-[13px] font-semibold text-slate-900">Day Schedule</h4>
         <Tooltip text="Close schedule settings">
@@ -1390,6 +1415,59 @@ function DayScheduleSettings({
             </select>
           </Tooltip>
         </div>
+
+        {/* Lunch Break */}
+        <div className="pt-2 border-t border-slate-100">
+          <Tooltip text={lunchEnabled ? 'Disable lunch break' : 'Enable lunch break to block off time on the grid'}>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={lunchEnabled}
+                onChange={(e) => onLunchEnabledChange(e.target.checked)}
+                className="w-3.5 h-3.5 accent-blue-500 rounded"
+              />
+              <Coffee className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[13px] font-medium text-slate-700">Enable Lunch Break</span>
+            </label>
+          </Tooltip>
+
+          {lunchEnabled && (
+            <div className="mt-2.5 space-y-2 pl-6">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                  Lunch Start
+                </label>
+                <Tooltip text="When lunch break begins">
+                  <select
+                    value={lunchStart}
+                    onChange={(e) => onLunchStartChange(Number(e.target.value))}
+                    className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-[12px] text-slate-700 bg-white cursor-pointer"
+                  >
+                    {hourOptions.filter((h) => h >= dayStartHour && h < lunchEnd && h < dayEndHour).map((h) => (
+                      <option key={h} value={h}>{formatOption(h)}</option>
+                    ))}
+                  </select>
+                </Tooltip>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                  Lunch End
+                </label>
+                <Tooltip text="When lunch break ends">
+                  <select
+                    value={lunchEnd}
+                    onChange={(e) => onLunchEndChange(Number(e.target.value))}
+                    className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-[12px] text-slate-700 bg-white cursor-pointer"
+                  >
+                    {hourOptions.filter((h) => h > lunchStart && h <= dayEndHour).map((h) => (
+                      <option key={h} value={h}>{formatOption(h)}</option>
+                    ))}
+                  </select>
+                </Tooltip>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1430,6 +1508,11 @@ export default function TemplatesPage() {
   const [dayStartHour, setDayStartHour] = useState(DEFAULT_DAY_START);
   const [dayEndHour, setDayEndHour] = useState(DEFAULT_DAY_END);
   const [showDaySettings, setShowDaySettings] = useState(false);
+
+  // ── Lunch break ──
+  const [lunchEnabled, setLunchEnabled] = useState(false);
+  const [lunchStart, setLunchStart] = useState(12); // hour (e.g. 12 = noon)
+  const [lunchEnd, setLunchEnd] = useState(13);     // hour (e.g. 13 = 1 PM)
 
   // ── Fetch templates from API ──
 
@@ -1799,13 +1882,27 @@ export default function TemplatesPage() {
 
   const handleDragOver = (dayIndex: number, e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
 
     const gridRect = e.currentTarget.getBoundingClientRect();
     const relativeY = e.clientY - gridRect.top;
     const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
     const snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
 
+    // Compute duration for overlap check
+    let durationHours = 1;
+    if (draggingTemplate?.timeSlot) {
+      const start = timeStringToHour(draggingTemplate.timeSlot.start);
+      const end = timeStringToHour(draggingTemplate.timeSlot.end);
+      if (end > start) durationHours = end - start;
+    }
+
+    if (overlapsLunch(snappedHour, durationHours, lunchEnabled, lunchStart, lunchEnd)) {
+      e.dataTransfer.dropEffect = 'none';
+      setDropPreview(null);
+      return;
+    }
+
+    e.dataTransfer.dropEffect = 'copy';
     setDropPreview({ dayIndex, hour: snappedHour });
   };
 
@@ -1833,6 +1930,12 @@ export default function TemplatesPage() {
       if (end > start) durationHours = end - start;
     }
 
+    // Block placement during lunch
+    if (overlapsLunch(startHour, durationHours, lunchEnabled, lunchStart, lunchEnd)) {
+      setDraggingTemplate(null);
+      return;
+    }
+
     const newPlaced: PlacedTemplate = {
       id: `placed-${Date.now()}-${Math.random()}`,
       templateId: templateToPlace.id,
@@ -1849,6 +1952,9 @@ export default function TemplatesPage() {
   // ── Placed template operations ──
 
   const handleResizePlaced = (placedId: string, newStart: number, newDuration: number) => {
+    // Block resizing into lunch
+    if (overlapsLunch(newStart, newDuration, lunchEnabled, lunchStart, lunchEnd)) return;
+
     setPlacedTemplates((prev) =>
       prev.map((p) => (p.id === placedId ? { ...p, startHour: newStart, durationHours: newDuration } : p)),
     );
@@ -1985,14 +2091,15 @@ export default function TemplatesPage() {
           )}
           {/* Day Schedule Settings */}
           <div className="relative">
-            <Tooltip text="Configure day start/end times">
+            <Tooltip text="Day Start/End Times">
               <button
                 onClick={() => setShowDaySettings(!showDaySettings)}
-                className={`p-2 rounded-md transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors cursor-pointer ${
                   showDaySettings ? 'bg-blue-50 text-blue-500' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
                 }`}
               >
-                <Settings2 className="w-4 h-4" />
+                <Clock className="w-4 h-4" />
+                <span className="hidden sm:inline">Day Start/End Times</span>
               </button>
             </Tooltip>
             {showDaySettings && (
@@ -2001,6 +2108,12 @@ export default function TemplatesPage() {
                 dayEndHour={dayEndHour}
                 onStartChange={setDayStartHour}
                 onEndChange={setDayEndHour}
+                lunchEnabled={lunchEnabled}
+                lunchStart={lunchStart}
+                lunchEnd={lunchEnd}
+                onLunchEnabledChange={setLunchEnabled}
+                onLunchStartChange={setLunchStart}
+                onLunchEndChange={setLunchEnd}
                 onClose={() => setShowDaySettings(false)}
               />
             )}
@@ -2068,13 +2181,14 @@ export default function TemplatesPage() {
               <div className="h-12 border-b border-slate-200" />
               {Array.from({ length: dayEndHour - dayStartHour }).map((_, i) => {
                 const hour = dayStartHour + i;
+                const isLunch = isLunchHour(hour, lunchEnabled, lunchStart, lunchEnd);
                 return (
                   <div
                     key={hour}
-                    className="relative border-b border-slate-100"
+                    className={`relative border-b border-slate-100 ${isLunch ? 'bg-amber-50/60' : ''}`}
                     style={{ height: HOUR_HEIGHT }}
                   >
-                    <span className="absolute -top-2 right-3 text-xs font-medium text-slate-500">
+                    <span className={`absolute -top-2 right-3 text-xs font-medium ${isLunch ? 'text-amber-500' : 'text-slate-500'}`}>
                       {formatHour(hour)}
                     </span>
                   </div>
@@ -2101,13 +2215,35 @@ export default function TemplatesPage() {
                   onDragLeave={handleDragLeave}
                 >
                   {/* Hour rows */}
-                  {Array.from({ length: dayEndHour - dayStartHour }).map((_, i) => (
+                  {Array.from({ length: dayEndHour - dayStartHour }).map((_, i) => {
+                    const hour = dayStartHour + i;
+                    const isLunch = isLunchHour(hour, lunchEnabled, lunchStart, lunchEnd);
+                    return (
+                      <div
+                        key={i}
+                        className={`border-b border-slate-100 ${isLunch ? 'bg-amber-50/50' : ''}`}
+                        style={{ height: HOUR_HEIGHT }}
+                      />
+                    );
+                  })}
+
+                  {/* Lunch overlay */}
+                  {lunchEnabled && lunchStart >= dayStartHour && lunchStart < dayEndHour && (
                     <div
-                      key={i}
-                      className="border-b border-slate-100"
-                      style={{ height: HOUR_HEIGHT }}
-                    />
-                  ))}
+                      className="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-[1]"
+                      style={{
+                        top: `${(lunchStart - dayStartHour) * HOUR_HEIGHT}px`,
+                        height: `${(Math.min(lunchEnd, dayEndHour) - lunchStart) * HOUR_HEIGHT}px`,
+                      }}
+                    >
+                      <div className="bg-amber-100 border border-dashed border-amber-300 rounded-md px-3 py-1">
+                        <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1">
+                          <Coffee className="w-3 h-3" />
+                          Lunch
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Drop preview ghost */}
                   {dropPreview && dropPreview.dayIndex === dayIndex && draggingTemplate && (

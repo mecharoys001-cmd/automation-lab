@@ -224,43 +224,27 @@ function MonthGrid({
             {label}
           </div>
         ))}
-        {/* Day Cells — fixed 42-cell grid for consistent layout */}
-        {/*
-          ⚠️ CRITICAL: DO NOT CHANGE THIS TO daysInMonth!
-          This MUST be 42 cells (6 weeks × 7 days) to properly align months.
-          Months don't always start on Sunday - we need empty cells before day 1.
-          Example: April 2026 starts on Wednesday, needs 3 empty cells first.
-          Changing this to daysInMonth will break calendar alignment.
-        */}
-        {Array.from({ length: 42 }, (_, cellIndex) => {
-          const dayNumber = cellIndex - firstDayOfWeek + 1;
-
-          // Empty cell before month starts or after month ends
-          if (dayNumber < 1 || dayNumber > daysInMonth) {
-            return <div key={cellIndex} className="border-b border-slate-100 bg-slate-50/30" />;
-          }
-
-          const day = dayNumber;
+        {/* Day Cells — auto-flow into rows 2+, first day uses grid-column-start */}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1;
           const date = new Date(year, jsMonth, day);
           const dateKey = formatDateKey(date);
           const isToday = dateKey === todayKey;
           const dayEvents = eventsByDate[dateKey] || [];
           const dayOfWeek = date.getDay();
-
-          const row = Math.floor(cellIndex / 7) + 2; // +2 because row 1 is headers
-          const col = (cellIndex % 7) + 1; // +1 for 1-based grid columns
+          const gridColumn = (firstDayOfWeek + i) % 7;
 
           return (
             <Tooltip
-              key={cellIndex}
+              key={day}
               text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${day}${
                 dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
               }`}
-              style={{ gridColumn: col, gridRow: row }}
+              style={{ gridColumn: dayOfWeek + 1, gridRow: Math.floor((firstDayOfWeek + i) / 7) + 2 }}
             >
               <div
                 className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 bg-white box-border ${
-                  dayOfWeek < 6 ? 'border-r border-slate-100' : ''
+                  gridColumn < 6 ? 'border-r border-slate-100' : ''
                 }`}
                 onClick={() => onDayClick?.(date)}
               >
