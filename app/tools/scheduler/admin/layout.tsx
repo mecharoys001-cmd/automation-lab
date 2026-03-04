@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Tags,
   Users,
+  ShieldCheck,
   Calendar,
   AlertTriangle,
   BarChart3,
@@ -28,6 +29,7 @@ const adminNavItems = [
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'View usage reports and export data' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Save, publish, and revert schedule versions' },
   { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
+  { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Manage user roles and access levels' },
 ];
 
 function SidebarProgramSelector() {
