@@ -79,7 +79,8 @@ export type SkipReason =
   | 'venue_at_capacity'
   | 'venue_blackout'
   | 'no_instructor'
-  | 'no_qualified_instructor';
+  | 'no_qualified_instructor'
+  | 'week_cycle_skip';
 
 // ============================================================
 // Internal data loaded from the database

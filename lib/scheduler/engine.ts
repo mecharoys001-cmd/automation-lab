@@ -2,7 +2,7 @@
  * Symphonix Scheduler — Best Fit Engine
  *
  * Core auto-scheduling algorithm. Given a program_id, generates
- * draft sessions by stamping session_templates across the program
+ * draft sessions by stamping event templates across the program
  * date range while respecting:
  *
  *  - School calendar blackout dates (no_school)
@@ -46,6 +46,7 @@ import {
   skillsMatch,
   timeToMinutes,
   dayIndexToName,
+  weeksSinceStart,
 } from './utils';
 import {
   findInstructorForTaggedSlot,
@@ -216,6 +217,24 @@ export async function runScheduler(
           });
         }
         const stats = templateStats.get(tmpl.id)!;
+
+        // --- Multi-week cycle check ---
+        if (
+          tmpl.week_cycle_length != null &&
+          tmpl.week_cycle_length >= 2 &&
+          tmpl.week_in_cycle != null
+        ) {
+          const weekNum = weeksSinceStart(program.start_date, targetDate);
+          if (weekNum % tmpl.week_cycle_length !== tmpl.week_in_cycle) {
+            skippedDates.push({
+              date: targetDate,
+              template_id: tmpl.id,
+              reason: 'week_cycle_skip',
+              detail: `Week ${weekNum % tmpl.week_cycle_length + 1} of ${tmpl.week_cycle_length}-week cycle (active on week ${tmpl.week_in_cycle + 1})`,
+            });
+            continue;
+          }
+        }
 
         // --- Early dismissal check ---
         if (earlyDismissal && earlyDismissal.early_dismissal_time) {

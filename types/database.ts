@@ -123,7 +123,7 @@ export interface SchoolCalendar {
   created_at: string;
 }
 
-/** 3.6 session_templates — Recurring weekly patterns */
+/** 3.6 Event Templates (session_templates table) — Recurring weekly patterns */
 export interface SessionTemplate {
   id: string;
   program_id: string;
@@ -139,6 +139,10 @@ export interface SessionTemplate {
   required_skills: string[] | null;
   sort_order: number | null;
   is_active: boolean;
+  /** Multi-week cycle length. null or 1 = weekly (every week). 2+ = repeats every N weeks. */
+  week_cycle_length: number | null;
+  /** 0-indexed week position within the cycle. e.g. 0 = Week 1, 1 = Week 2, etc. */
+  week_in_cycle: number | null;
   created_at: string;
 }
 

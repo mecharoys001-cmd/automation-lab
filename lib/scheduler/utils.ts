@@ -126,6 +126,27 @@ export function parseDate(dateStr: string): Date {
 }
 
 /**
+ * Calculate the 0-indexed week number since a reference date string.
+ * Week boundaries are Monday-based (ISO). Week 0 is the week containing
+ * programStartDate. Used for multi-week template cycling.
+ */
+export function weeksSinceStart(programStartDate: string, targetDate: string): number {
+  const start = parseDate(programStartDate);
+  const target = parseDate(targetDate);
+
+  // Find Monday of the program start week
+  const startDay = start.getDay(); // 0=Sun
+  const startMonday = new Date(start);
+  startMonday.setDate(startMonday.getDate() - ((startDay + 6) % 7));
+  startMonday.setHours(0, 0, 0, 0);
+
+  target.setHours(0, 0, 0, 0);
+
+  const diffMs = target.getTime() - startMonday.getTime();
+  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+}
+
+/**
  * Generates all dates from startDate to endDate (inclusive) that match
  * the given JS day-of-week (0=Sunday ... 6=Saturday).
  */

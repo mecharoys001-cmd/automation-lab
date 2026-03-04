@@ -21,6 +21,10 @@ interface Template {
   timeSlot?: { start: string; end: string }; // HH:MM format
   instructorRotation: boolean;
   color: string;
+  /** Multi-week cycle length. null or 1 = weekly. 2+ = repeats every N weeks. */
+  weekCycleLength: number | null;
+  /** 0-indexed week in the cycle. 0 = Week 1, 1 = Week 2, etc. */
+  weekInCycle: number | null;
 }
 
 interface PlacedTemplate {
@@ -108,6 +112,8 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
     timeSlot: { start: startTime, end: endTime },
     instructorRotation: db.rotation_mode === 'rotate',
     color: TEMPLATE_COLORS[index % TEMPLATE_COLORS.length],
+    weekCycleLength: (db.week_cycle_length as number | null) ?? null,
+    weekInCycle: (db.week_in_cycle as number | null) ?? null,
   };
 }
 
@@ -128,6 +134,8 @@ function toDbPayload(t: Template, programId: string) {
     rotation_mode: t.instructorRotation ? 'rotate' : 'consistent',
     template_type: 'fully_defined' as const,
     is_active: true,
+    week_cycle_length: t.weekCycleLength,
+    week_in_cycle: t.weekInCycle,
   };
 }
 
@@ -208,6 +216,8 @@ function emptyTemplate(): Template {
     timeSlot: { start: '09:00', end: '10:00' },
     instructorRotation: false,
     color: '',
+    weekCycleLength: null,
+    weekInCycle: null,
   };
 }
 
@@ -422,6 +432,110 @@ function RotationToggle({
   );
 }
 
+function WeekCycleInput({
+  cycleLength,
+  weekInCycle,
+  onCycleLengthChange,
+  onWeekInCycleChange,
+}: {
+  cycleLength: number | null;
+  weekInCycle: number | null;
+  onCycleLengthChange: (v: number | null) => void;
+  onWeekInCycleChange: (v: number | null) => void;
+}) {
+  const isMultiWeek = cycleLength !== null && cycleLength >= 2;
+
+  return (
+    <div className="col-span-2">
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-[13px] font-medium text-slate-900">Week Cycle</label>
+        <Tooltip text="Templates in a multi-week cycle repeat every N weeks. Week 1 templates run on the 1st, (N+1)th, (2N+1)th… occurrence from the program start date.">
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-[10px] font-bold text-slate-500 cursor-help">?</span>
+        </Tooltip>
+      </div>
+
+      {/* Mode selector */}
+      <div className="flex gap-2 mb-3">
+        <Tooltip text="Template runs every week">
+          <button
+            type="button"
+            onClick={() => {
+              onCycleLengthChange(null);
+              onWeekInCycleChange(null);
+            }}
+            className={`flex-1 h-10 rounded-lg text-[13px] font-medium border transition-colors cursor-pointer ${
+              !isMultiWeek
+                ? 'bg-blue-500 text-white border-blue-500'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            Weekly
+          </button>
+        </Tooltip>
+        <Tooltip text="Template repeats on a multi-week rotation (e.g. every 2 weeks)">
+          <button
+            type="button"
+            onClick={() => {
+              if (!isMultiWeek) {
+                onCycleLengthChange(2);
+                onWeekInCycleChange(0);
+              }
+            }}
+            className={`flex-1 h-10 rounded-lg text-[13px] font-medium border transition-colors cursor-pointer ${
+              isMultiWeek
+                ? 'bg-blue-500 text-white border-blue-500'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            Multi-week
+          </button>
+        </Tooltip>
+      </div>
+
+      {/* Multi-week config */}
+      {isMultiWeek && (
+        <div className="flex gap-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+          <div className="flex-1">
+            <Tooltip text="How many weeks before the pattern repeats (2–8)" className="block">
+              <label className="block text-[12px] font-medium text-slate-600 mb-1">Cycle length</label>
+              <select
+                value={cycleLength}
+                onChange={(e) => {
+                  const newLen = parseInt(e.target.value, 10);
+                  onCycleLengthChange(newLen);
+                  // Clamp weekInCycle if it exceeds new length
+                  if ((weekInCycle ?? 0) >= newLen) {
+                    onWeekInCycleChange(0);
+                  }
+                }}
+                className="w-full h-9 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                  <option key={n} value={n}>{n} weeks</option>
+                ))}
+              </select>
+            </Tooltip>
+          </div>
+          <div className="flex-1">
+            <Tooltip text="Which week of the cycle this template is active" className="block">
+              <label className="block text-[12px] font-medium text-slate-600 mb-1">Active on</label>
+              <select
+                value={weekInCycle ?? 0}
+                onChange={(e) => onWeekInCycleChange(parseInt(e.target.value, 10))}
+                className="w-full h-9 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {Array.from({ length: cycleLength }, (_, i) => (
+                  <option key={i} value={i}>Week {i + 1}</option>
+                ))}
+              </select>
+            </Tooltip>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ──────────────────────────────────────────────────────────────
 // Edit Modal
 // ──────────────────────────────────────────────────────────────
@@ -526,6 +640,12 @@ function EditTemplateModal({
               label="Instructor Rotation"
               enabled={local.instructorRotation}
               onChange={(v) => update('instructorRotation', v)}
+            />
+            <WeekCycleInput
+              cycleLength={local.weekCycleLength}
+              weekInCycle={local.weekInCycle}
+              onCycleLengthChange={(v) => update('weekCycleLength', v)}
+              onWeekInCycleChange={(v) => update('weekInCycle', v)}
             />
           </div>
         </div>
@@ -1104,9 +1224,18 @@ function PlacedTemplateBlock({
 
       <Tooltip text={`Click to edit ${getBlockDisplayName(template)}`}>
         <div className="px-2 py-1.5">
-          <p className="text-xs font-bold leading-tight" style={{ color: template.color }}>
-            {formatHour(placed.startHour)} – {formatHour(placed.startHour + placed.durationHours)}
-          </p>
+          <div className="flex items-center gap-1">
+            <p className="text-xs font-bold leading-tight flex-1 truncate" style={{ color: template.color }}>
+              {formatHour(placed.startHour)} – {formatHour(placed.startHour + placed.durationHours)}
+            </p>
+            {template.weekCycleLength != null && template.weekCycleLength >= 2 && (
+              <Tooltip text={`Runs on Week ${(template.weekInCycle ?? 0) + 1} of a ${template.weekCycleLength}-week cycle`}>
+                <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-indigo-100 text-indigo-600 whitespace-nowrap">
+                  W{(template.weekInCycle ?? 0) + 1}/{template.weekCycleLength}
+                </span>
+              </Tooltip>
+            )}
+          </div>
           <p className="text-xs font-semibold text-slate-900 leading-tight truncate mt-0.5">
             {getBlockDisplayName(template)}
           </p>
@@ -1270,8 +1399,15 @@ function SavedTemplatesTable({
             </div>
 
             {/* Schedule */}
-            <div className="w-[180px]">
+            <div className="w-[180px] flex items-center gap-1.5">
               <span className="text-[13px] text-slate-600">{formatSchedule(template)}</span>
+              {template.weekCycleLength != null && template.weekCycleLength >= 2 && (
+                <Tooltip text={`Runs on Week ${(template.weekInCycle ?? 0) + 1} of a ${template.weekCycleLength}-week cycle`}>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none bg-indigo-100 text-indigo-600 whitespace-nowrap">
+                    W{(template.weekInCycle ?? 0) + 1}/{template.weekCycleLength}
+                  </span>
+                </Tooltip>
+              )}
             </div>
 
             {/* Actions */}

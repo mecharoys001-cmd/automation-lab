@@ -13,7 +13,7 @@
  *   1. Fetch program (start_date, end_date)
  *   2. Use program's start_date/end_date as generation range
  *   3. Fetch template_placements for the program
- *   4. Fetch session_templates (with instructor/venue joins) for those placements
+ *   4. Fetch event templates (with instructor/venue joins) for those placements
  *   5. Fetch school_calendar blackout entries for the program
  *   6. Walk day-by-day through the entire year:
  *      - Skip weekends (Sat/Sun)
@@ -48,6 +48,25 @@ function formatDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+/**
+ * Calculate the 0-indexed week number since a reference date.
+ * Uses ISO weeks (Monday-based) for consistency. Week 0 is the
+ * week containing programStartDate.
+ */
+function weeksSince(programStartDate: Date, currentDate: Date): number {
+  // Find the Monday of the program start week
+  const startDay = programStartDate.getDay(); // 0=Sun
+  const startMonday = new Date(programStartDate);
+  startMonday.setDate(startMonday.getDate() - ((startDay + 6) % 7)); // shift to Monday
+  startMonday.setHours(0, 0, 0, 0);
+
+  const current = new Date(currentDate);
+  current.setHours(0, 0, 0, 0);
+
+  const diffMs = current.getTime() - startMonday.getTime();
+  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Fetch session templates with instructor & venue -----------------
+    // 3. Fetch event templates with instructor & venue -----------------
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const templateIds = [...new Set(placements.map((p: any) => p.template_id))];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -187,11 +206,27 @@ export async function POST(request: NextRequest) {
           const tpl = templateMap.get((placement as any).template_id);
           if (!tpl) continue;
 
-          const startTime = hourToTimeString((placement as { start_hour: number }).start_hour);
-          const endTime = hourToTimeString(
-            (placement as { start_hour: number }).start_hour +
-              (placement as { duration_hours: number }).duration_hours,
-          );
+          // Multi-week cycle filtering: skip if this week doesn't match
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cycleLen = (tpl as any).week_cycle_length as number | null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cycleWeek = (tpl as any).week_in_cycle as number | null;
+          if (cycleLen != null && cycleLen >= 2 && cycleWeek != null) {
+            const weekNum = weeksSince(startDate, currentDate);
+            if (weekNum % cycleLen !== cycleWeek) continue;
+          }
+
+          // Use template times if set, otherwise fall back to placement grid times
+          const startTime = tpl.start_time
+            ? tpl.start_time
+            : hourToTimeString((placement as { start_hour: number }).start_hour);
+
+          const endTime = tpl.end_time
+            ? tpl.end_time
+            : hourToTimeString(
+                (placement as { start_hour: number }).start_hour +
+                  (placement as { duration_hours: number }).duration_hours,
+              );
 
           // Skip blackout dates
           const blackoutsForDate = blackoutMap.get(dateStr) || [];
@@ -233,9 +268,9 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          const durationMinutes = Math.round(
-            (placement as { duration_hours: number }).duration_hours * 60,
-          );
+          const durationMinutes = tpl.duration_minutes
+            ? tpl.duration_minutes
+            : Math.round((placement as { duration_hours: number }).duration_hours * 60);
 
           sessionRows.push({
             program_id,
