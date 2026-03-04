@@ -285,8 +285,8 @@ export function MonthView({
           {DAY_HEADERS.map((label, idx) => (
             <div
               key={`hdr-${idx}`}
-              className={`sticky top-0 z-10 bg-white px-1.5 py-2 border-b border-slate-200 text-center box-border ${
-                idx < 6 ? 'border-r border-slate-100' : ''
+              className={`sticky top-0 z-10 bg-white px-1.5 py-2 border-b border-slate-300 text-center box-border ${
+                idx < 6 ? 'border-r border-slate-200' : ''
               }`}
               style={{ gridRow: 1 }}
             >
@@ -301,7 +301,7 @@ export function MonthView({
 
             // Empty cell before month starts or after month ends
             if (dayNumber < 1 || dayNumber > daysInMonth) {
-              return <div key={cellIndex} className="border-b border-slate-100 bg-slate-50/30" />;
+              return <div key={cellIndex} className="border-b border-slate-200 bg-slate-50/30" />;
             }
 
             const date = new Date(year, month, dayNumber);
@@ -319,8 +319,8 @@ export function MonthView({
                 style={{ gridColumn: 'auto' }}
               >
                 <div
-                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 box-border min-h-[100px] ${
-                    dayOfWeek < 6 ? 'border-r border-slate-100' : ''
+                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-200 box-border min-h-[100px] ${
+                    dayOfWeek < 6 ? 'border-r border-slate-200' : ''
                   } ${isToday ? 'bg-blue-50/30' : ''}`}
                   onClick={() => onDayClick?.(date)}
                 >

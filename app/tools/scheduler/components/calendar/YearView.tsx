@@ -204,7 +204,7 @@ function MonthGrid({
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
       {/* Month Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
         <h3 className="text-[15px] font-bold text-slate-900">
           {MONTH_NAMES[jsMonth]} {year}
         </h3>
@@ -224,8 +224,8 @@ function MonthGrid({
           <div
             key={label}
             style={{ gridRow: 1 }}
-            className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-100 bg-white sticky top-0 z-10 box-border ${
-              idx < 6 ? 'border-r border-slate-100' : ''
+            className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
+              idx < 6 ? 'border-r border-slate-200' : ''
             }`}
           >
             {label}
@@ -238,7 +238,7 @@ function MonthGrid({
 
           // Empty cell before month starts or after month ends
           if (dayNumber < 1 || dayNumber > daysInMonth) {
-            return <div key={cellIndex} className="border-b border-slate-100 bg-slate-50/30" />;
+            return <div key={cellIndex} className="border-b border-slate-200 bg-slate-50/30" />;
           }
 
           const date = new Date(year, jsMonth, dayNumber);
@@ -256,8 +256,8 @@ function MonthGrid({
               style={{ gridColumn: 'auto' }}
             >
               <div
-                className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors min-h-[100px] border-b border-slate-100 bg-white box-border ${
-                  dayOfWeek < 6 ? 'border-r border-slate-100' : ''
+                className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors min-h-[100px] border-b border-slate-200 bg-white box-border ${
+                  dayOfWeek < 6 ? 'border-r border-slate-200' : ''
                 }`}
                 onClick={() => onDayClick?.(date)}
               >
