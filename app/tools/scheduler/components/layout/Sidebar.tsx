@@ -42,31 +42,31 @@ interface SidebarProps {
 const defaultNavItems: NavItem[] = [
   {
     label: 'Calendar',
-    href: '/admin',
+    href: '',
     icon: Calendar,
     tooltip: 'View and manage the session calendar',
   },
   {
     label: 'People & Places',
-    href: '/admin/people',
+    href: '/people',
     icon: Users,
     tooltip: 'Manage instructors and venues',
   },
   {
     label: 'Schedule Builder',
-    href: '/admin/templates',
+    href: '/templates',
     icon: LayoutTemplate,
     tooltip: 'Build weekly schedule templates and configure day times',
   },
   {
     label: 'Tags',
-    href: '/admin/tags',
+    href: '/tags',
     icon: Tags,
     tooltip: 'Manage event tags and categories',
   },
   {
     label: 'Settings',
-    href: '/admin/settings',
+    href: '/settings',
     icon: Settings,
     tooltip: 'Configure programs and settings',
   },
@@ -81,7 +81,7 @@ const defaultUser: UserProfile = {
 export function Sidebar({
   navItems = defaultNavItems,
   user = defaultUser,
-  basePath = '/tools/symphonix-scheduler',
+  basePath = '/tools/scheduler',
   header,
   className = '',
 }: SidebarProps) {
@@ -89,8 +89,8 @@ export function Sidebar({
 
   const isActive = (href: string) => {
     const fullHref = `${basePath}${href}`;
-    // Exact match for the base admin path
-    if (href === '/admin') {
+    // Exact match for the base admin path (empty href = root)
+    if (href === '') {
       return pathname === fullHref;
     }
     return pathname.startsWith(fullHref);
