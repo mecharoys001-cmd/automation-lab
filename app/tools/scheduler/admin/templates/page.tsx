@@ -2209,6 +2209,7 @@ export default function TemplatesPage() {
     venue: t.venue,
     instructorRotation: t.instructorRotation,
     color: t.color,
+    tags: t.requiredSkills ?? [],
     scheduleLabel: formatSchedule(t),
     cycleBadge: t.weekCycleLength != null && t.weekCycleLength >= 2
       ? {

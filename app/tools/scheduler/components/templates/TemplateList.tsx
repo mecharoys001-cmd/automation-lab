@@ -33,6 +33,8 @@ export interface TemplateListItem {
   typeLabel?: string;
   /** Cycle label (e.g. "Wk 1/2" or "Weekly"). For table mode. */
   cycleLabel?: string;
+  /** Freeform tags for categorization / filtering. */
+  tags?: string[];
   /** Whether the template is active. For table mode status badge. */
   isActive?: boolean;
   /** Whether instructor rotates. For draggable mode. */
@@ -79,6 +81,7 @@ interface Filters {
   days: Set<string>;
   types: Set<string>;
   grades: Set<string>;
+  tags: Set<string>;
   instructor: string; // '' = all
   venue: string;      // '' = all
   activeOnly: boolean;
@@ -88,6 +91,7 @@ const EMPTY_FILTERS: Filters = {
   days: new Set(),
   types: new Set(),
   grades: new Set(),
+  tags: new Set(),
   instructor: '',
   venue: '',
   activeOnly: false,
@@ -98,6 +102,7 @@ function countActiveFilters(f: Filters): number {
   if (f.days.size > 0) n++;
   if (f.types.size > 0) n++;
   if (f.grades.size > 0) n++;
+  if (f.tags.size > 0) n++;
   if (f.instructor) n++;
   if (f.venue) n++;
   if (f.activeOnly) n++;
@@ -114,6 +119,10 @@ function matchesFilters(item: TemplateListItem, f: Filters): boolean {
   if (f.grades.size > 0) {
     const g = item.gradeGroups ?? [];
     if (!g.some((grade) => f.grades.has(grade))) return false;
+  }
+  if (f.tags.size > 0) {
+    const t = item.tags ?? [];
+    if (!t.some((tag) => f.tags.has(tag))) return false;
   }
   if (f.instructor && item.instructor !== f.instructor) return false;
   if (f.venue && item.venue !== f.venue) return false;
@@ -135,6 +144,7 @@ function matchesSearch(item: TemplateListItem, query: string): boolean {
     item.typeLabel,
     item.scheduleLabel,
     ...(item.gradeGroups ?? []),
+    ...(item.tags ?? []),
   ].some((field) => field?.toLowerCase().includes(q));
 }
 
@@ -161,15 +171,18 @@ export function TemplateList({
   // Derive unique options from template data
   const filterOptions = useMemo(() => {
     const grades = new Set<string>();
+    const tags = new Set<string>();
     const instructors = new Set<string>();
     const venues = new Set<string>();
     for (const t of templates) {
       (t.gradeGroups ?? []).forEach((g) => grades.add(g));
+      (t.tags ?? []).forEach((tag) => tags.add(tag));
       if (t.instructor) instructors.add(t.instructor);
       if (t.venue) venues.add(t.venue);
     }
     return {
       grades: Array.from(grades).sort(),
+      tags: Array.from(tags).sort(),
       instructors: Array.from(instructors).sort(),
       venues: Array.from(venues).sort(),
     };
@@ -185,7 +198,7 @@ export function TemplateList({
     });
   }, [templates, search, filters]);
 
-  const toggleSetItem = (key: 'days' | 'types' | 'grades', value: string) => {
+  const toggleSetItem = (key: 'days' | 'types' | 'grades' | 'tags', value: string) => {
     setFilters((prev) => {
       const next = new Set(prev[key]);
       if (next.has(value)) next.delete(value);
@@ -293,6 +306,22 @@ export function TemplateList({
                       label={g}
                       active={filters.grades.has(g)}
                       onClick={() => toggleSetItem('grades', g)}
+                    />
+                  ))}
+                </div>
+              </FilterSection>
+            )}
+
+            {/* Tags - multi-select */}
+            {filterOptions.tags.length > 0 && (
+              <FilterSection label="Tags">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {filterOptions.tags.map((tag) => (
+                    <FilterChip
+                      key={tag}
+                      label={tag}
+                      active={filters.tags.has(tag)}
+                      onClick={() => toggleSetItem('tags', tag)}
                     />
                   ))}
                 </div>

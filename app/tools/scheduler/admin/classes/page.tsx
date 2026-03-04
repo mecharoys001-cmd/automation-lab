@@ -348,6 +348,7 @@ export default function ClassesPage() {
       venue: getVenueName(t),
       typeLabel: TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type,
       cycleLabel,
+      tags: t.required_skills ?? [],
       isActive: t.is_active,
     };
   });
