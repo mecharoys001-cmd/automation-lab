@@ -1,3 +1,4 @@
+// Force rebuild - basePath fixed to /tools/scheduler
 'use client';
 
 import Link from 'next/link';
