@@ -23,7 +23,7 @@ const adminNavItems = [
   { href: '/admin/classes', label: 'Classes', icon: GraduationCap, tooltip: 'Create and manage class templates for scheduling' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
   { href: '/admin/people', label: 'People', icon: Users, tooltip: 'Manage instructors and their availability' },
-  { href: '/admin/calendar', label: 'Calendar', icon: Calendar, tooltip: 'View and manage school calendar and special dates' },
+  { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'View and manage school calendar and special dates' },
   { href: '/admin/exceptions', label: 'Exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'View usage reports and export data' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Save, publish, and revert schedule versions' },
