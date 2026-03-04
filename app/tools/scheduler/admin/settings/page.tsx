@@ -5,7 +5,6 @@ import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import {
   Music,
-  ShieldCheck,
   Users,
   Calendar,
   Clock,
@@ -19,7 +18,7 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-import type { Program, ProgramRule, RuleType, Admin, RoleLevel } from '@/types/database';
+import type { Program, Admin, RoleLevel } from '@/types/database';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -126,11 +125,6 @@ export default function SettingsPage() {
   const [programSaving, setProgramSaving] = useState(false);
   const [programError, setProgramError] = useState<string | null>(null);
 
-  // ---- Program Rules state ----
-  const [rules, setRules] = useState<ProgramRule[]>([]);
-  const [rulesLoading, setRulesLoading] = useState(false);
-  const [ruleSaving, setRuleSaving] = useState<string | null>(null);
-
   // ---- Admins state ----
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [adminsLoading, setAdminsLoading] = useState(true);
@@ -169,19 +163,6 @@ export default function SettingsPage() {
   // Fetch helpers
   // =========================================================================
 
-  const fetchRules = useCallback(async (programId: string) => {
-    setRulesLoading(true);
-    try {
-      const res = await fetch(`/api/program-rules?program_id=${programId}`);
-      const data = await res.json();
-      setRules(data.rules ?? data.program_rules ?? []);
-    } catch {
-      setRules([]);
-    } finally {
-      setRulesLoading(false);
-    }
-  }, []);
-
   const fetchAdmins = useCallback(async () => {
     setAdminsLoading(true);
     try {
@@ -218,14 +199,6 @@ export default function SettingsPage() {
     fetchAdmins();
     fetchBufferSettings();
   }, [fetchAdmins, fetchBufferSettings]);
-
-  useEffect(() => {
-    if (selectedProgramId) {
-      fetchRules(selectedProgramId);
-    } else {
-      setRules([]);
-    }
-  }, [selectedProgramId, fetchRules]);
 
   // Warn on navigate-away when there are unsaved changes
   useEffect(() => {
@@ -307,66 +280,6 @@ export default function SettingsPage() {
       await refetchPrograms();
     } catch (err) {
       setProgramError(err instanceof Error ? err.message : 'Delete failed');
-    }
-  }
-
-  // =========================================================================
-  // Program Rules handlers
-  // =========================================================================
-
-  function getRuleForDayAndType(dayOfWeek: number, ruleType: RuleType): ProgramRule | undefined {
-    return rules.find(
-      (r) => r.day_of_week === dayOfWeek && r.rule_type === ruleType
-    );
-  }
-
-  async function toggleDayRule(dayOfWeek: number, ruleType: RuleType) {
-    if (!selectedProgramId) return;
-
-    const cellKey = `${dayOfWeek}-${ruleType}`;
-    setRuleSaving(cellKey);
-
-    const existing = getRuleForDayAndType(dayOfWeek, ruleType);
-
-    try {
-      if (existing) {
-        await fetch('/api/program-rules', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: existing.id, is_active: !existing.is_active }),
-        });
-      } else {
-        await fetch('/api/program-rules', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            program_id: selectedProgramId,
-            rule_type: ruleType,
-            day_of_week: dayOfWeek,
-            description: `${ruleType === 'blackout_day' ? 'Blackout' : 'Makeup'} on ${DAY_LABELS[dayOfWeek]}`,
-            is_active: true,
-          }),
-        });
-      }
-      await fetchRules(selectedProgramId);
-    } catch {
-      // silently fail — rule state will remain as-is
-    } finally {
-      setRuleSaving(null);
-    }
-  }
-
-  async function toggleRuleActive(rule: ProgramRule) {
-    if (!selectedProgramId) return;
-    try {
-      await fetch('/api/program-rules', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: rule.id, is_active: !rule.is_active }),
-      });
-      await fetchRules(selectedProgramId);
-    } catch {
-      // no-op
     }
   }
 
@@ -765,162 +678,8 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 2 — Program Rules                                         */}
       {/* ================================================================= */}
-      <section className={cardBodyClass}>
-        <div className="flex items-center gap-2.5 mb-5">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50">
-            <ShieldCheck className="w-[18px] h-[18px] text-amber-500" />
-          </div>
-          <div>
-            <h2 className={sectionTitleClass}>
-              Program Rules
-              {selectedProgramId && programs.length > 0 && (
-                <span className="text-sm font-normal text-slate-400 ml-2">
-                  — {programs.find((p) => p.id === selectedProgramId)?.name ?? 'Unknown'}
-                </span>
-              )}
-            </h2>
-            <p className={sectionDescClass}>Configure blackout and makeup day rules per day of week</p>
-          </div>
-        </div>
-
-        {!selectedProgramId ? (
-          <div className="rounded-lg bg-slate-50 border border-slate-200 py-8 text-center">
-            <p className="text-sm text-slate-400">
-              Select a program above to manage its rules.
-            </p>
-          </div>
-        ) : rulesLoading ? (
-          <div className="space-y-2">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-12 animate-pulse bg-slate-100 rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* Day-of-week toggle grid */}
-            <div className="mb-6">
-              <p className="text-xs text-slate-400 mb-3">
-                Click a pill to toggle a blackout or makeup rule for that day.
-              </p>
-              <div className="grid grid-cols-7 gap-2">
-                {DAY_LABELS.map((label, dayIdx) => {
-                  const blackoutRule = getRuleForDayAndType(dayIdx, 'blackout_day');
-                  const makeupRule = getRuleForDayAndType(dayIdx, 'makeup_day');
-                  const blackoutActive = blackoutRule?.is_active ?? false;
-                  const makeupActive = makeupRule?.is_active ?? false;
-                  const blackoutSaving = ruleSaving === `${dayIdx}-blackout_day`;
-                  const makeupSavingFlag = ruleSaving === `${dayIdx}-makeup_day`;
-
-                  return (
-                    <div key={dayIdx} className="flex flex-col items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                        {label}
-                      </span>
-                      <Tooltip text={blackoutActive ? `Remove ${label} blackout` : `No sessions on ${label}s`}>
-                        <button
-                          onClick={() => toggleDayRule(dayIdx, 'blackout_day')}
-                          disabled={blackoutSaving}
-                          className={`w-full rounded-lg px-2 py-1.5 text-xs font-medium transition-colors border ${
-                            blackoutActive
-                              ? 'bg-red-50 border-red-200 text-red-600'
-                              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                          } ${blackoutSaving ? 'opacity-50' : ''}`}
-                        >
-                          {blackoutSaving ? '...' : 'Blackout'}
-                        </button>
-                      </Tooltip>
-                      <Tooltip text={makeupActive ? `Remove ${label} makeup day` : `Allow makeup sessions on ${label}s`}>
-                        <button
-                          onClick={() => toggleDayRule(dayIdx, 'makeup_day')}
-                          disabled={makeupSavingFlag}
-                          className={`w-full rounded-lg px-2 py-1.5 text-xs font-medium transition-colors border ${
-                            makeupActive
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                          } ${makeupSavingFlag ? 'opacity-50' : ''}`}
-                        >
-                          {makeupSavingFlag ? '...' : 'Makeup'}
-                        </button>
-                      </Tooltip>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Existing rules list */}
-            {rules.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Active Rules</h3>
-                <div className="overflow-x-auto rounded-lg border border-slate-200">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className={thClass}>Type</th>
-                        <th className={thClass}>Day</th>
-                        <th className={thClass}>Description</th>
-                        <th className={`${thClass} text-right`}>Active</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rules.map((rule) => (
-                        <tr key={rule.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                          <td className={tdClass}>
-                            <span
-                              className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                                rule.rule_type === 'blackout_day'
-                                  ? 'bg-red-100 text-red-600'
-                                  : 'bg-emerald-100 text-emerald-600'
-                              }`}
-                            >
-                              {rule.rule_type === 'blackout_day' ? 'Blackout' : 'Makeup'}
-                            </span>
-                          </td>
-                          <td className={`${tdClass} text-slate-500`}>
-                            {rule.day_of_week !== null ? DAY_LABELS[rule.day_of_week] : '—'}
-                          </td>
-                          <td className={`${tdClass} text-slate-500`}>
-                            {rule.description || '—'}
-                          </td>
-                          <td className={`${tdClass} text-right`}>
-                            <Tooltip text={rule.is_active ? 'Disable this rule' : 'Enable this rule'}>
-                              <button
-                                onClick={() => toggleRuleActive(rule)}
-                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                  rule.is_active ? 'bg-blue-500' : 'bg-slate-200'
-                                }`}
-                              >
-                                <span
-                                  className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
-                                    rule.is_active ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                                  }`}
-                                />
-                              </button>
-                            </Tooltip>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {rules.length === 0 && (
-              <div className="rounded-lg bg-slate-50 border border-slate-200 py-6 text-center">
-                <p className="text-sm text-slate-400">
-                  No rules configured. Use the grid above to add blackout or makeup day rules.
-                </p>
-              </div>
-            )}
-          </>
-        )}
-      </section>
-
-      {/* ================================================================= */}
-      {/* SECTION 3 — Admin Management                                      */}
+      {/* SECTION 2 — Admin Management                                      */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
         <div className="flex items-center justify-between mb-5">
@@ -1063,7 +822,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 4 — Google Calendar Sync                                  */}
+      {/* SECTION 3 — Google Calendar Sync                                  */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
         <div className="flex items-center justify-between">
@@ -1091,7 +850,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 5 — Buffer Time                                           */}
+      {/* SECTION 4 — Buffer Time                                           */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
         <div className="flex items-center gap-2.5 mb-5">
@@ -1164,7 +923,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 6 — Data Management                                       */}
+      {/* SECTION 5 — Data Management                                       */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
         <div className="flex items-center gap-2.5 mb-5">
@@ -1242,7 +1001,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 7 — Clear Data (Danger Zone)                              */}
+      {/* SECTION 6 — Clear Data (Danger Zone)                              */}
       {/* ================================================================= */}
       <section className="rounded-lg border border-red-200 bg-white shadow-sm p-5">
         <div className="flex items-center gap-2.5 mb-5">
