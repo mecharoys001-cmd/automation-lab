@@ -93,6 +93,7 @@ function tpl(id: string, skills: string[], grades: string[], day: number, start:
     rotation_mode: 'consistent', instructor_id: null, day_of_week: day,
     grade_groups: grades, start_time: start, end_time: end, duration_minutes: dur,
     venue_id: null, required_skills: skills, sort_order: null, is_active: true,
+    week_cycle_length: null, week_in_cycle: null,
     created_at: '2025-09-01T00:00:00Z',
   };
 }
@@ -497,6 +498,12 @@ function CalendarDashboard() {
     position: { x: number; y: number };
   } | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [schoolCalendar, setSchoolCalendar] = useState<Array<{
+    date: string;
+    status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
+    description?: string | null;
+    early_dismissal_time?: string | null;
+  }>>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -886,6 +893,17 @@ function CalendarDashboard() {
       if (Array.isArray(body.sessions)) {
         setEvents(body.sessions.map(sessionToCalendarEvent));
       }
+
+      // Fetch school calendar data
+      const calParams = new URLSearchParams({ program_id: selectedProgramId });
+      const calRes = await fetch(`/api/calendar?${calParams.toString()}`, { cache: 'no-store' });
+      
+      if (calRes.ok) {
+        const calBody = await calRes.json();
+        if (Array.isArray(calBody.entries)) {
+          setSchoolCalendar(calBody.entries);
+        }
+      }
     } catch (err) {
       console.error('[fetchSessions]', err);
       showToast('Failed to load sessions — check console for details', 'error');
@@ -1224,6 +1242,7 @@ function CalendarDashboard() {
       {currentView === 'month' && portalContainer && createPortal(
         <MonthView
           events={filteredEvents}
+          schoolCalendar={schoolCalendar}
           onDayClick={handleDayClick}
           onOpenEditPanel={openPanel}
         />,
@@ -1234,6 +1253,7 @@ function CalendarDashboard() {
       {currentView === 'year' && portalContainer && createPortal(
         <YearView
           events={filteredEvents}
+          schoolCalendar={schoolCalendar}
           onTodayClick={() => setCurrentView('week')}
           onOpenEditPanel={openPanel}
         />,
