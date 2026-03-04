@@ -7,6 +7,7 @@ import {
   Music,
   LayoutDashboard,
   FileText,
+  GraduationCap,
   Tags,
   Users,
   Calendar,
@@ -19,6 +20,7 @@ import {
 const adminNavItems = [
   { href: '/admin', label: 'Calendar', icon: LayoutDashboard, tooltip: 'View and manage the session calendar' },
   { href: '/admin/templates', label: 'Schedule Builder', icon: FileText, tooltip: 'Build weekly schedule templates and configure day times' },
+  { href: '/admin/classes', label: 'Classes', icon: GraduationCap, tooltip: 'Create and manage class templates for scheduling' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
   { href: '/admin/people', label: 'People', icon: Users, tooltip: 'Manage instructors and their availability' },
   { href: '/admin/calendar', label: 'Calendar', icon: Calendar, tooltip: 'View and manage school calendar and special dates' },
