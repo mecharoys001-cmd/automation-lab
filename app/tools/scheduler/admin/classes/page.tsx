@@ -103,14 +103,14 @@ const EMPTY_FORM: TemplateForm = {
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
-function computeDuration(start: string, end: string): number {
-  const [sh, sm] = start.split(':').map(Number);
-  const [eh, em] = end.split(':').map(Number);
+function computeDuration(start: string | null, end: string | null): number {
+  const [sh, sm] = (start || '09:00').split(':').map(Number);
+  const [eh, em] = (end || '10:00').split(':').map(Number);
   return (eh * 60 + em) - (sh * 60 + sm);
 }
 
-function formatTime(t: string): string {
-  const [h, m] = t.split(':').map(Number);
+function formatTime(t: string | null): string {
+  const [h, m] = (t || '09:00').split(':').map(Number);
   const ampm = h >= 12 ? 'PM' : 'AM';
   const hr = h % 12 || 12;
   return `${hr}:${m.toString().padStart(2, '0')} ${ampm}`;
