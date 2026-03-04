@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Search } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -1638,6 +1638,7 @@ export default function TemplatesPage() {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // ── Save / Publish state ──
 
@@ -2216,6 +2217,18 @@ export default function TemplatesPage() {
     );
   }
 
+  const filteredTemplates = templates.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.name.toLowerCase().includes(q) ||
+      (t.subject && t.subject.toLowerCase().includes(q)) ||
+      (t.gradeLevel && t.gradeLevel.toLowerCase().includes(q)) ||
+      (t.instructor && t.instructor.toLowerCase().includes(q)) ||
+      (t.venue && t.venue.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="h-full flex flex-col bg-slate-50">
       {/* Header */}
@@ -2452,8 +2465,18 @@ export default function TemplatesPage() {
               <span className="ml-2 text-sm text-slate-400">Loading templates…</span>
             </div>
           ) : (
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search templates…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
             <SavedTemplatesTable
-              templates={templates}
+              templates={filteredTemplates}
               onEdit={handleEditTemplate}
               onDelete={handleDeleteTemplate}
               onDragStart={handleDragStart}
