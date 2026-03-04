@@ -27,16 +27,64 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect /tools and all sub-routes (except scheduler)
-  if (!user && request.nextUrl.pathname.startsWith('/tools')) {
-    // Allow unauthenticated access to scheduler
-    if (request.nextUrl.pathname.startsWith('/tools/scheduler')) {
-      return supabaseResponse
-    }
-    
+  const path = request.nextUrl.pathname
+
+  // ── Allow unauthenticated access to scheduler intake form ──────────────
+  if (path.startsWith('/tools/scheduler/intake')) {
+    return supabaseResponse
+  }
+
+  // ── Protect /tools and all sub-routes ──────────────────────────────────
+  if (!user && path.startsWith('/tools')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  // ── RBAC for scheduler admin/portal routes ─────────────────────────────
+  // Only run the org membership check for scheduler sub-paths that need it.
+  // The /tools/scheduler landing page itself does its own server-side check.
+  if (user && (path.startsWith('/tools/scheduler/admin') || path.startsWith('/tools/scheduler/portal'))) {
+    const email = user.email
+
+    // We import the service client dynamically to avoid bundling it
+    // in the Edge runtime. Middleware runs in Node runtime with our matcher.
+    const { createServiceClient } = await import('@/lib/supabase-service')
+    const svc = createServiceClient()
+
+    // Check admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: admin } = await (svc.from('admins') as any)
+      .select('role_level')
+      .eq('google_email', email)
+      .maybeSingle()
+
+    // Check instructor
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: instructor } = await (svc.from('instructors') as any)
+      .select('id')
+      .eq('email', email)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    const isAdmin = !!admin
+    const isInstructor = !!instructor
+
+    // Non-org members → redirect to tools list
+    if (!isAdmin && !isInstructor) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/tools'
+      return NextResponse.redirect(url)
+    }
+
+    // Instructors trying to access /admin → redirect to /portal
+    if (!isAdmin && path.startsWith('/tools/scheduler/admin')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/tools/scheduler/portal'
+      return NextResponse.redirect(url)
+    }
+
+    // Admins trying to access /portal → let them through (admins can see everything)
   }
 
   return supabaseResponse

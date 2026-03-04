@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgMembership, isOrgMember } from "@/lib/rbac";
 
 export const metadata: Metadata = {
   title: "Tools | The Automation Lab",
@@ -7,7 +9,9 @@ export const metadata: Metadata = {
     "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
 };
 
-const tools = [
+// ── Static tool definitions (scheduler excluded — added conditionally) ────
+
+const publicTools = [
   {
     id: "tech-stack",
     name: "Tech Stack Mapper",
@@ -79,30 +83,46 @@ const tools = [
   { id: 'event-attendance', name: 'Event Attendance Checker', icon: '✅', accent: '#14b8a6', status: 'live', href: '/tools/event-attendance', usedBy: 'Event coordinators managing check-in', description: "Compare your registration list against check-ins to instantly see who showed up, who didn't, and who walked in unregistered.", features: ['No-show detection', 'Walk-in tracking', 'Attendance rate %', 'Multi-event support', 'Google Sheets sync', 'Fuzzy matching'] },
   { id: 'donor-thankyou', name: 'Donor Thank-You Generator', icon: '💌', accent: '#f97316', status: 'live', href: '/tools/donor-thankyou', usedBy: 'Development and fundraising staff', description: 'Generate personalized thank-you letters for donors using customizable templates. Send via Gmail with one click.', features: ['Personalized letters', '2 default templates', 'Gmail send', 'Sent tracking', 'Bulk generation', 'Tax receipt option'] },
   { id: 'budget-tracker', name: 'Budget vs. Actual Tracker', icon: '📊', accent: '#8b5cf6', status: 'live', href: '/tools/budget-tracker', usedBy: 'Finance staff and executive directors', description: 'Track budgeted vs. actual spending by category and period. Color-coded variance with summary totals.', features: ['Variance calculation', 'Period filtering', 'Color-coded overage', 'Summary totals', 'Google Sheets sync', 'Multi-period tracking'] },
-  { 
-    id: 'scheduler', 
-    name: 'Symphonix Scheduler', 
-    icon: '🎵', 
-    accent: '#a244ae', 
-    status: 'live', 
-    href: '/tools/scheduler', 
-    usedBy: 'Music program coordinators and education directors', 
-    description: 'Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, track venues, and publish schedules with automated email notifications.', 
-    features: [
-      'Template-based scheduling',
-      'Automated session generation',
-      'Instructor availability tracking',
-      'Multi-venue management',
-      'Conflict detection & resolution',
-      'Email notification system',
-      'School calendar integration',
-      'Tag & categorization system',
-      'Real-time schedule publishing'
-    ] 
-  },
 ];
 
-export default function ToolsPage() {
+const schedulerTool = {
+  id: 'scheduler',
+  name: 'Symphonix Scheduler',
+  icon: '🎵',
+  accent: '#a244ae',
+  status: 'live',
+  href: '/tools/scheduler',
+  usedBy: 'Music program coordinators and education directors',
+  description: 'Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, track venues, and publish schedules with automated email notifications.',
+  features: [
+    'Template-based scheduling',
+    'Automated session generation',
+    'Instructor availability tracking',
+    'Multi-venue management',
+    'Conflict detection & resolution',
+    'Email notification system',
+    'School calendar integration',
+    'Tag & categorization system',
+    'Real-time schedule publishing'
+  ]
+};
+
+export default async function ToolsPage() {
+  // Check if the current user is an org member to conditionally show the scheduler
+  let showScheduler = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      const membership = await getOrgMembership(user.email);
+      showScheduler = isOrgMember(membership);
+    }
+  } catch {
+    // If membership check fails, hide scheduler (safe default)
+  }
+
+  const tools = showScheduler ? [...publicTools, schedulerTool] : publicTools;
+
   return (
     <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "#0f172a" }}>
       {/* Header */}

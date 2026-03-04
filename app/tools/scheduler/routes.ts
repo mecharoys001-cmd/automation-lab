@@ -15,10 +15,16 @@ import {
 
 export const APP_BASE_PATH = '/tools/scheduler';
 export const ADMIN_BASE_PATH = `${APP_BASE_PATH}/admin`;
+export const PORTAL_BASE_PATH = `${APP_BASE_PATH}/portal`;
 
 /** Build an admin sub-path, e.g. adminPath('templates') → '/tools/scheduler/admin/templates' */
 export function adminPath(sub?: string): string {
   return sub ? `${ADMIN_BASE_PATH}/${sub}` : ADMIN_BASE_PATH;
+}
+
+/** Build a portal sub-path, e.g. portalPath('schedule') → '/tools/scheduler/portal/schedule' */
+export function portalPath(sub?: string): string {
+  return sub ? `${PORTAL_BASE_PATH}/${sub}` : PORTAL_BASE_PATH;
 }
 
 // ── Nav item type ───────────────────────────────────────────────────────────

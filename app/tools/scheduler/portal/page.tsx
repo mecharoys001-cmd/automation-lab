@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { Instructor, Session, Venue, Program } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
+import { createClient } from '@/lib/supabase/client';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -57,38 +59,39 @@ function groupByDate(sessions: SessionDisplay[]): DateGroup[] {
     }));
 }
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+// ── View filter ────────────────────────────────────────────────────
+
+type ViewFilter = 'upcoming' | 'past' | 'all';
 
 // ── Component ──────────────────────────────────────────────────────
 
 export default function InstructorPortalPage() {
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [sessions, setSessions] = useState<SessionDisplay[]>([]);
   const [instructor, setInstructor] = useState<Instructor | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showSchedule, setShowSchedule] = useState(false);
+  const [viewFilter, setViewFilter] = useState<ViewFilter>('upcoming');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
+  useEffect(() => {
+    loadPortalData();
+  }, []);
 
-    if (!trimmed) return;
-    if (!isValidEmail(trimmed)) {
-      setEmailError('Please enter a valid email address.');
-      return;
-    }
-
-    setEmailError('');
+  async function loadPortalData() {
     setLoading(true);
     setError('');
 
     try {
-      // 1. Look up instructor by email
-      const instrRes = await fetch(`/api/instructors?email=${encodeURIComponent(trimmed)}`);
+      // Get logged-in user's email from Supabase auth
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        setError('Unable to identify your account. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      // Look up instructor by email
+      const instrRes = await fetch(`/api/instructors?email=${encodeURIComponent(user.email)}`);
       if (!instrRes.ok) {
         setError('Something went wrong. Please try again.');
         setLoading(false);
@@ -97,7 +100,7 @@ export default function InstructorPortalPage() {
 
       const { instructors } = await instrRes.json();
       if (!instructors || instructors.length === 0) {
-        setError('No instructor found with that email address. Please check and try again.');
+        setError('No instructor profile found for your account.');
         setLoading(false);
         return;
       }
@@ -105,12 +108,10 @@ export default function InstructorPortalPage() {
       const resolvedInstructor = instructors[0] as Instructor;
       setInstructor(resolvedInstructor);
 
-      // 2. Fetch upcoming published sessions for this instructor
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch all sessions for this instructor (both past and upcoming)
       const sessParams = new URLSearchParams({
         instructor_id: resolvedInstructor.id,
         status: 'published',
-        from_date: today,
       });
       const sessRes = await fetch(`/api/instructor-sessions?${sessParams}`);
       if (!sessRes.ok) {
@@ -121,7 +122,6 @@ export default function InstructorPortalPage() {
 
       const { sessions: sessionData } = await sessRes.json();
       setSessions((sessionData as SessionDisplay[]) ?? []);
-      setShowSchedule(true);
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
@@ -129,130 +129,90 @@ export default function InstructorPortalPage() {
     }
   }
 
-  function handleBack() {
-    setShowSchedule(false);
-    setSessions([]);
-    setInstructor(null);
-    setError('');
-    setEmailError('');
-  }
+  // Filter sessions by view
+  const today = new Date().toISOString().split('T')[0];
+  const filteredSessions = sessions.filter((s) => {
+    if (viewFilter === 'upcoming') return s.date >= today;
+    if (viewFilter === 'past') return s.date < today;
+    return true;
+  });
 
-  const dateGroups = groupByDate(sessions);
+  const dateGroups = groupByDate(filteredSessions);
+
+  // ── Render ─────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <svg className="mx-auto h-8 w-8 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-sm text-muted-foreground">Loading your schedule...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Instructor Portal</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            View your upcoming teaching schedule
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold sm:text-3xl">
+              {instructor
+                ? `${instructor.first_name} ${instructor.last_name}`
+                : 'Instructor Portal'}
+            </h1>
+            <Tooltip text="Return to scheduler home">
+              <Link
+                href="/tools/scheduler"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+              >
+                &larr; Back
+              </Link>
+            </Tooltip>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Your teaching schedule (read-only)
           </p>
         </div>
 
-        {!showSchedule ? (
-          /* ── Email Entry Form ─────────────────────────────────── */
-          <div className="rounded-xl border border-border bg-card p-6 shadow-lg sm:p-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                >
-                  Email Address
-                </label>
-                <Tooltip text="Enter your instructor email address">
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError('');
-                    }}
-                    className={`w-full rounded-md border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      emailError ? 'border-red-500' : 'border-border'
-                    }`}
-                  />
-                </Tooltip>
-                {emailError && (
-                  <p className="mt-1.5 text-xs text-red-400">{emailError}</p>
-                )}
-              </div>
-
-              {error && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                  {error}
-                </div>
-              )}
-
-              <Tooltip text="Look up your upcoming teaching schedule">
-                <button
-                  type="submit"
-                  disabled={loading || !email.trim()}
-                  className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Loading…
-                    </span>
-                  ) : (
-                    'View My Schedule'
-                  )}
-                </button>
-              </Tooltip>
-            </form>
+        {error ? (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-8 text-center">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
         ) : (
-          /* ── Schedule Display ─────────────────────────────────── */
-          <div className="space-y-5">
-            {/* Instructor header + back button */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {instructor
-                    ? `${instructor.first_name} ${instructor.last_name}`
-                    : email}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {sessions.length} upcoming session
-                  {sessions.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <Tooltip text="Return to email lookup">
+          <>
+            {/* View filter tabs */}
+            <div className="mb-6 flex gap-1 rounded-lg border border-border bg-card p-1">
+              {([
+                { key: 'upcoming', label: 'Upcoming' },
+                { key: 'past', label: 'Past' },
+                { key: 'all', label: 'All' },
+              ] as const).map(({ key, label }) => (
                 <button
-                  onClick={handleBack}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                  key={key}
+                  onClick={() => setViewFilter(key)}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewFilter === key
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
-                  &larr; Back
+                  {label}
                 </button>
-              </Tooltip>
+              ))}
             </div>
 
-            {sessions.length === 0 ? (
-              /* ── Empty state ─────────────────────────────────── */
+            {/* Session count */}
+            <p className="mb-4 text-xs text-muted-foreground">
+              {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''}
+            </p>
+
+            {filteredSessions.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-8 text-center shadow-lg sm:p-12">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent">
                   <svg
@@ -269,60 +229,60 @@ export default function InstructorPortalPage() {
                     />
                   </svg>
                 </div>
-                <p className="text-sm font-medium">No upcoming sessions</p>
+                <p className="text-sm font-medium">
+                  {viewFilter === 'upcoming'
+                    ? 'No upcoming sessions'
+                    : viewFilter === 'past'
+                      ? 'No past sessions'
+                      : 'No sessions found'}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  You don&apos;t have any published sessions scheduled yet.
+                  {viewFilter === 'upcoming'
+                    ? "You don't have any published sessions scheduled yet."
+                    : 'No sessions match this filter.'}
                 </p>
               </div>
             ) : (
-              /* ── Sessions grouped by date ────────────────────── */
               <div className="space-y-6">
                 {dateGroups.map((group) => (
                   <div key={group.date}>
-                    {/* Date header */}
                     <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
                       {group.formatted}
                     </h3>
-
-                    {/* Session cards for this date */}
                     <div className="space-y-3">
                       {group.sessions.map((session) => (
                         <div
                           key={session.id}
                           className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-5"
                         >
-                          {/* Time row */}
                           <div className="mb-2 text-base font-semibold">
                             {formatTime(session.start_time)} –{' '}
                             {formatTime(session.end_time)}
                           </div>
-
-                          {/* Details */}
                           <div className="space-y-1.5 text-sm">
                             {session.program && (
                               <div className="flex items-start gap-2">
-                                <span className="shrink-0 text-muted-foreground">
-                                  Program:
-                                </span>
+                                <span className="shrink-0 text-muted-foreground">Program:</span>
                                 <span>{session.program.name}</span>
                               </div>
                             )}
-
                             {session.grade_groups.length > 0 && (
                               <div className="flex items-start gap-2">
-                                <span className="shrink-0 text-muted-foreground">
-                                  Grades:
-                                </span>
+                                <span className="shrink-0 text-muted-foreground">Grades:</span>
                                 <span>{session.grade_groups.join(', ')}</span>
                               </div>
                             )}
-
                             {session.venue && (
                               <div className="flex items-start gap-2">
-                                <span className="shrink-0 text-muted-foreground">
-                                  Venue:
-                                </span>
+                                <span className="shrink-0 text-muted-foreground">Venue:</span>
                                 <span>{session.venue.name}</span>
+                              </div>
+                            )}
+                            {session.status !== 'published' && (
+                              <div className="mt-2">
+                                <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                                  {session.status}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -333,7 +293,7 @@ export default function InstructorPortalPage() {
                 ))}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
