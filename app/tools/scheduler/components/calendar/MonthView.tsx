@@ -278,7 +278,7 @@ export function MonthView({
           style={{
             gridTemplateColumns: 'repeat(7, 1fr)',
             gridTemplateRows: 'auto',
-            gridAutoRows: 'minmax(100px, 1fr)',
+            gridAutoRows: 'auto',
           }}
         >
           {/* Row 1: Sticky day headers */}
@@ -319,7 +319,7 @@ export function MonthView({
                 style={{ gridColumn: 'auto' }}
               >
                 <div
-                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 box-border ${
+                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 box-border min-h-[100px] ${
                     dayOfWeek < 6 ? 'border-r border-slate-100' : ''
                   } ${isToday ? 'bg-blue-50/30' : ''}`}
                   onClick={() => onDayClick?.(date)}
@@ -333,7 +333,7 @@ export function MonthView({
                   </span>
 
                   <div className="space-y-0.5">
-                    {dayEvents.slice(0, 3).map((event) => (
+                    {dayEvents.map((event) => (
                       <EventChip
                         key={event.id}
                         event={event}
@@ -342,13 +342,6 @@ export function MonthView({
                         onClick={handleEventClick}
                       />
                     ))}
-                    {dayEvents.length > 3 && (
-                      <Tooltip text={`${dayEvents.length - 3} more event${dayEvents.length - 3 > 1 ? 's' : ''} — click day to view all`}>
-                        <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
-                          +{dayEvents.length - 3} more
-                        </span>
-                      </Tooltip>
-                    )}
                   </div>
                 </div>
               </Tooltip>

@@ -46,9 +46,6 @@ const INITIAL_RANGE = 6;
 /** How many months to load when scrolling near top/bottom */
 const LOAD_INCREMENT = 3;
 
-/** Max event chips shown per day cell before "+N more" */
-const MAX_CHIPS_PER_DAY = 3;
-
 /** Brief delay (ms) to show loading indicator for perceived smoothness */
 const LOAD_DELAY = 150;
 
@@ -259,7 +256,7 @@ function MonthGrid({
               style={{ gridColumn: 'auto' }}
             >
               <div
-                className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 bg-white box-border ${
+                className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors min-h-[100px] border-b border-slate-100 bg-white box-border ${
                   dayOfWeek < 6 ? 'border-r border-slate-100' : ''
                 }`}
                 onClick={() => onDayClick?.(date)}
@@ -273,7 +270,7 @@ function MonthGrid({
                 </span>
 
                 <div className="space-y-0.5">
-                  {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
+                  {dayEvents.map((event) => (
                     <EventChip
                       key={event.id}
                       event={event}
@@ -282,13 +279,6 @@ function MonthGrid({
                       onClick={onEventClick}
                     />
                   ))}
-                  {dayEvents.length > MAX_CHIPS_PER_DAY && (
-                    <Tooltip text={`${dayEvents.length - MAX_CHIPS_PER_DAY} more event${dayEvents.length - MAX_CHIPS_PER_DAY > 1 ? 's' : ''} — click day to view all`}>
-                      <span className="text-[10px] text-slate-400 font-medium pl-1 cursor-pointer hover:text-slate-600 transition-colors">
-                        +{dayEvents.length - MAX_CHIPS_PER_DAY} more
-                      </span>
-                    </Tooltip>
-                  )}
                 </div>
               </div>
             </Tooltip>
