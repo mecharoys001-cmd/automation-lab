@@ -2,16 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Plus, Pencil, Trash2, Loader2, Check, AlertTriangle, X,
-  Clock, MapPin, User, ChevronDown, Search,
+  Plus, Loader2, Check, AlertTriangle, X,
 } from 'lucide-react';
-import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
-import { Pill } from '../../components/ui/Pill';
+import { TemplateList } from '../../components/templates/TemplateList';
+import type { TemplateListItem } from '../../components/templates/TemplateList';
 import { useProgram } from '../ProgramContext';
 import type {
   SessionTemplate, Instructor, Venue,
-  TemplateType, RotationMode, DayOfWeek,
+  TemplateType, RotationMode,
 } from '@/types/database';
 
 /* ── Constants ──────────────────────────────────────────────── */
@@ -133,9 +132,6 @@ export default function ClassesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
-
-  // Search state
-  const [search, setSearch] = useState('');
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -335,18 +331,25 @@ export default function ClassesPage() {
     return v ? v.name : '—';
   };
 
-  /* ── Filtered templates ─────────────────────────────────── */
+  /* ── Map templates to TemplateListItem ─────────────────── */
 
-  const filteredTemplates = templates.filter((t) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '';
-    const instructorName = getInstructorName(t.instructor_id);
-    const venueName = getVenueName(t);
-    const typeLabel = TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type;
-    const grades = (t.grade_groups ?? []).join(' ');
-    return [dayLabel, instructorName, venueName, typeLabel, grades]
-      .some((field) => field.toLowerCase().includes(q));
+  const templateListItems: TemplateListItem[] = templates.map((t) => {
+    const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '\u2014';
+    const cycleLabel = t.week_cycle_length && t.week_cycle_length > 1
+      ? `Wk ${(t.week_in_cycle ?? 0) + 1}/${t.week_cycle_length}`
+      : 'Weekly';
+    return {
+      id: t.id,
+      name: (t.grade_groups ?? []).join(', ') || '\u2014',
+      dayLabel,
+      timeLabel: `${formatTime(t.start_time)} \u2013 ${formatTime(t.end_time)}`,
+      gradeGroups: t.grade_groups ?? [],
+      instructor: getInstructorName(t.instructor_id),
+      venue: getVenueName(t),
+      typeLabel: TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type,
+      cycleLabel,
+      isActive: t.is_active,
+    };
   });
 
   /* ── Guard: no program selected ──────────────────────────── */
@@ -378,25 +381,8 @@ export default function ClassesPage() {
           </div>
         </div>
 
-        {/* Search & Create */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div style={{ position: 'relative', maxWidth: 320, flex: 1 }}>
-            <Search
-              className="w-4 h-4 text-slate-400"
-              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
-            />
-            <input
-              type="text"
-              placeholder="Search by day, instructor, venue, grade..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                ...inputStyle,
-                paddingLeft: 36,
-                backgroundColor: '#FFFFFF',
-              }}
-            />
-          </div>
+        {/* Create button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button variant="primary" onClick={openCreateForm} tooltip="Create a new class template">
             <Plus className="w-4 h-4" />
             New Class
@@ -404,148 +390,16 @@ export default function ClassesPage() {
         </div>
 
         {/* Template Table */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-14 rounded-lg bg-slate-200/50 animate-pulse" />
-            ))}
-          </div>
-        ) : filteredTemplates.length === 0 ? (
-          <div style={{
-            borderRadius: 12,
-            backgroundColor: '#FFFFFF',
-            padding: 48,
-            textAlign: 'center',
-            color: '#94A3B8',
-            fontSize: 14,
-          }}>
-            {search.trim()
-              ? 'No class templates match your search.'
-              : 'No class templates yet. Click \u201cNew Class\u201d to create your first template.'}
-          </div>
-        ) : (
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                  {['Grade Groups', 'Day', 'Time', 'Type', 'Instructor', 'Venue', 'Cycle', 'Status', ''].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTemplates.map((t) => {
-                  const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '—';
-                  const cycleLabel = t.week_cycle_length && t.week_cycle_length > 1
-                    ? `Wk ${(t.week_in_cycle ?? 0) + 1}/${t.week_cycle_length}`
-                    : 'Weekly';
-
-                  return (
-                    <tr
-                      key={t.id}
-                      style={{ borderBottom: '1px solid #F1F5F9' }}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      {/* Grade Groups */}
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                          {(t.grade_groups ?? []).map((g) => (
-                            <Pill key={g} variant="grade">{g}</Pill>
-                          ))}
-                        </div>
-                      </td>
-                      {/* Day */}
-                      <td style={{ padding: '12px 16px', fontSize: 14, color: '#0F172A', fontWeight: 500 }}>
-                        {dayLabel}
-                      </td>
-                      {/* Time */}
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          {formatTime(t.start_time)} – {formatTime(t.end_time)}
-                        </div>
-                      </td>
-                      {/* Type */}
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>
-                        {TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type}
-                      </td>
-                      {/* Instructor */}
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
-                          <User className="w-3.5 h-3.5 text-slate-400" />
-                          {getInstructorName(t.instructor_id)}
-                        </div>
-                      </td>
-                      {/* Venue */}
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          {getVenueName(t)}
-                        </div>
-                      </td>
-                      {/* Cycle */}
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>
-                        {cycleLabel}
-                      </td>
-                      {/* Status */}
-                      <td style={{ padding: '12px 16px' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '2px 10px',
-                            borderRadius: 9999,
-                            fontSize: 12,
-                            fontWeight: 500,
-                            backgroundColor: t.is_active ? '#ECFDF5' : '#F1F5F9',
-                            color: t.is_active ? '#059669' : '#94A3B8',
-                          }}
-                        >
-                          {t.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      {/* Actions */}
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <Tooltip text="Edit template">
-                            <button
-                              onClick={() => openEditForm(t)}
-                              className="p-1.5 rounded hover:bg-slate-100 transition-colors"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                              <Pencil className="w-4 h-4 text-slate-400" />
-                            </button>
-                          </Tooltip>
-                          <Tooltip text="Delete template">
-                            <button
-                              onClick={() => setDeleteConfirmId(t.id)}
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                              <Trash2 className="w-4 h-4 text-red-400" />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <TemplateList
+          mode="table"
+          templates={templateListItems}
+          loading={loading}
+          onEdit={(id) => {
+            const t = templates.find((t) => t.id === id);
+            if (t) openEditForm(t);
+          }}
+          onDelete={(id) => setDeleteConfirmId(id)}
+        />
       </div>
 
       {/* ── Create / Edit Form Modal ──────────────────────────── */}

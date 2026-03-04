@@ -1,0 +1,469 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Search, GripVertical, Pencil, Trash2, Loader2,
+  Clock, MapPin, User,
+} from 'lucide-react';
+import { Tooltip } from '../ui/Tooltip';
+import { Pill } from '../ui/Pill';
+
+// ──────────────────────────────────────────────────────────────
+// Types
+// ──────────────────────────────────────────────────────────────
+
+/** Minimal template shape that works for both the Classes page (SessionTemplate)
+ *  and the Schedule Builder (its local Template type). Each consumer maps its
+ *  data into this shape before passing it in. */
+export interface TemplateListItem {
+  id: string;
+  /** Primary display name (e.g. subject or composed label). */
+  name: string;
+  /** Day-of-week label(s) for display. */
+  dayLabel: string;
+  /** Formatted time range string, e.g. "9:00 AM – 10:00 AM". */
+  timeLabel: string;
+  /** Grade groups for pill display. */
+  gradeGroups?: string[];
+  /** Instructor display name. */
+  instructor?: string;
+  /** Venue display name. */
+  venue?: string;
+  /** Template type label (e.g. "Fully Defined"). For table mode. */
+  typeLabel?: string;
+  /** Cycle label (e.g. "Wk 1/2" or "Weekly"). For table mode. */
+  cycleLabel?: string;
+  /** Whether the template is active. For table mode status badge. */
+  isActive?: boolean;
+  /** Whether instructor rotates. For draggable mode. */
+  instructorRotation?: boolean;
+  /** Color swatch for the template. For draggable mode. */
+  color?: string;
+  /** Schedule summary (e.g. "Mon/Wed 9AM–10AM"). For draggable mode. */
+  scheduleLabel?: string;
+  /** Week cycle badge text (e.g. "W1/2"). For draggable mode. */
+  cycleBadge?: { label: string; tooltip: string } | null;
+}
+
+export interface TemplateListProps {
+  /** Display mode: 'table' for Classes page, 'draggable' for Schedule Builder. */
+  mode: 'table' | 'draggable';
+  /** Templates to display (pre-mapped to TemplateListItem). */
+  templates: TemplateListItem[];
+  /** Whether data is still loading. */
+  loading?: boolean;
+  /** Called when the edit action is triggered. */
+  onEdit?: (id: string) => void;
+  /** Called when the delete action is triggered. */
+  onDelete?: (id: string) => void;
+  /** Called when a draggable row starts being dragged. */
+  onDragStart?: (id: string, e: React.DragEvent) => void;
+  /** Called when drag ends. */
+  onDragEnd?: () => void;
+  /** ID of a template currently being deleted (shows spinner). */
+  deletingId?: string | null;
+  /** Placeholder text for the search input. */
+  searchPlaceholder?: string;
+  /** Hide the built-in search bar (if parent manages filtering). */
+  hideSearch?: boolean;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Searchable fields
+// ──────────────────────────────────────────────────────────────
+
+function matchesSearch(item: TemplateListItem, query: string): boolean {
+  const q = query.toLowerCase();
+  return [
+    item.name,
+    item.dayLabel,
+    item.instructor,
+    item.venue,
+    item.typeLabel,
+    item.scheduleLabel,
+    ...(item.gradeGroups ?? []),
+  ].some((field) => field?.toLowerCase().includes(q));
+}
+
+// ──────────────────────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────────────────────
+
+export function TemplateList({
+  mode,
+  templates,
+  loading = false,
+  onEdit,
+  onDelete,
+  onDragStart,
+  onDragEnd,
+  deletingId = null,
+  searchPlaceholder,
+  hideSearch = false,
+}: TemplateListProps) {
+  const [search, setSearch] = useState('');
+
+  const filtered = search.trim()
+    ? templates.filter((t) => matchesSearch(t, search))
+    : templates;
+
+  return (
+    <div>
+      {/* Search */}
+      {!hideSearch && (
+        <div className="relative mb-3" style={mode === 'table' ? { maxWidth: 320 } : undefined}>
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+          />
+          <input
+            type="text"
+            placeholder={searchPlaceholder ?? (mode === 'table'
+              ? 'Search by day, instructor, venue, grade...'
+              : 'Search templates\u2026')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading ? (
+        mode === 'table' ? (
+          <div className="flex flex-col gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-14 rounded-lg bg-slate-200/50 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            <span className="ml-2 text-sm text-slate-400">Loading templates&hellip;</span>
+          </div>
+        )
+      ) : filtered.length === 0 ? (
+        /* Empty state */
+        <div
+          className="text-center text-sm text-slate-400"
+          style={mode === 'table'
+            ? { borderRadius: 12, backgroundColor: '#FFFFFF', padding: 48 }
+            : { padding: '32px 16px' }}
+        >
+          {search.trim()
+            ? 'No templates match your search.'
+            : mode === 'table'
+              ? 'No class templates yet. Click \u201cNew Class\u201d to create your first template.'
+              : 'No templates yet. Click \u201cCreate Template\u201d to add one.'}
+        </div>
+      ) : mode === 'table' ? (
+        <TableView
+          items={filtered}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ) : (
+        <DraggableView
+          items={filtered}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          deletingId={deletingId}
+        />
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Table View (Classes page)
+// ──────────────────────────────────────────────────────────────
+
+function TableView({
+  items,
+  onEdit,
+  onDelete,
+}: {
+  items: TemplateListItem[];
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}) {
+  return (
+    <div style={{ backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+            {['Grade Groups', 'Day', 'Time', 'Type', 'Instructor', 'Venue', 'Cycle', 'Status', ''].map((h) => (
+              <th
+                key={h}
+                style={{
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#64748B',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((t) => (
+            <tr
+              key={t.id}
+              style={{ borderBottom: '1px solid #F1F5F9' }}
+              className="hover:bg-slate-50 transition-colors"
+            >
+              {/* Grade Groups */}
+              <td style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {(t.gradeGroups ?? []).map((g) => (
+                    <Pill key={g} variant="grade">{g}</Pill>
+                  ))}
+                </div>
+              </td>
+              {/* Day */}
+              <td style={{ padding: '12px 16px', fontSize: 14, color: '#0F172A', fontWeight: 500 }}>
+                {t.dayLabel}
+              </td>
+              {/* Time */}
+              <td style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  {t.timeLabel}
+                </div>
+              </td>
+              {/* Type */}
+              <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>
+                {t.typeLabel ?? '\u2014'}
+              </td>
+              {/* Instructor */}
+              <td style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  {t.instructor ?? '\u2014'}
+                </div>
+              </td>
+              {/* Venue */}
+              <td style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  {t.venue ?? '\u2014'}
+                </div>
+              </td>
+              {/* Cycle */}
+              <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>
+                {t.cycleLabel ?? 'Weekly'}
+              </td>
+              {/* Status */}
+              <td style={{ padding: '12px 16px' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    borderRadius: 9999,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    backgroundColor: t.isActive !== false ? '#ECFDF5' : '#F1F5F9',
+                    color: t.isActive !== false ? '#059669' : '#94A3B8',
+                  }}
+                >
+                  {t.isActive !== false ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              {/* Actions */}
+              <td style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {onEdit && (
+                    <Tooltip text="Edit template">
+                      <button
+                        onClick={() => onEdit(t.id)}
+                        className="p-1.5 rounded hover:bg-slate-100 transition-colors"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        <Pencil className="w-4 h-4 text-slate-400" />
+                      </button>
+                    </Tooltip>
+                  )}
+                  {onDelete && (
+                    <Tooltip text="Delete template">
+                      <button
+                        onClick={() => onDelete(t.id)}
+                        className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      </button>
+                    </Tooltip>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Draggable View (Schedule Builder)
+// ──────────────────────────────────────────────────────────────
+
+function DraggableView({
+  items,
+  onEdit,
+  onDelete,
+  onDragStart,
+  onDragEnd,
+  deletingId,
+}: {
+  items: TemplateListItem[];
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onDragStart?: (id: string, e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  deletingId?: string | null;
+}) {
+  return (
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-base font-semibold text-slate-900">Saved Templates</h2>
+        <Tooltip text={`${items.length} template${items.length === 1 ? '' : 's'} saved`}>
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-100 text-xs font-medium text-slate-600">
+            ({items.length})
+          </span>
+        </Tooltip>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+          <Tooltip text="Template name and color indicator">
+            <div className="w-[220px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Template Name</div>
+          </Tooltip>
+          <Tooltip text="Assigned instructor (Rotating = shared across instructors)">
+            <div className="flex-1 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Instructor</div>
+          </Tooltip>
+          <Tooltip text="Days and time slot for this template">
+            <div className="w-[180px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Schedule</div>
+          </Tooltip>
+          <Tooltip text="Edit or delete this template">
+            <div className="w-[70px] text-xs font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</div>
+          </Tooltip>
+        </div>
+
+        {/* Rows */}
+        {items.map((item) => (
+          <div
+            key={item.id}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'copy';
+              e.dataTransfer.setData('text/plain', item.id);
+              // Create a custom drag image
+              const ghost = document.createElement('div');
+              ghost.textContent = item.name;
+              ghost.style.cssText = `
+                position: fixed; top: -1000px; left: -1000px;
+                padding: 6px 12px; border-radius: 6px; font-size: 12px;
+                font-weight: 600; color: white; white-space: nowrap;
+                background-color: ${item.color ?? '#3B82F6'}; opacity: 0.9;
+              `;
+              document.body.appendChild(ghost);
+              e.dataTransfer.setDragImage(ghost, 0, 0);
+              requestAnimationFrame(() => document.body.removeChild(ghost));
+              onDragStart?.(item.id, e);
+            }}
+            onDragEnd={() => onDragEnd?.()}
+            className="flex items-center px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing group"
+          >
+            {/* Template Name */}
+            <div className="w-[220px] flex items-center gap-2">
+              <Tooltip text="Drag to schedule">
+                <span className="inline-flex"><GripVertical className="w-4 h-4 text-slate-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+              </Tooltip>
+              <div className="flex items-center gap-2 min-w-0">
+                <Tooltip text="Template color on the schedule grid">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color ?? '#3B82F6' }} />
+                </Tooltip>
+                <span className="text-[13px] font-medium text-slate-900 truncate">{item.name}</span>
+              </div>
+            </div>
+
+            {/* Instructor */}
+            <div className="flex-1 min-w-0">
+              <span className="text-[13px] text-slate-600 truncate block">
+                {item.instructor || '\u2014'}
+                {item.instructorRotation && (
+                  <span className="ml-1.5 text-xs text-violet-600 font-medium">(Rotating)</span>
+                )}
+              </span>
+            </div>
+
+            {/* Schedule */}
+            <div className="w-[180px] flex items-center gap-1.5">
+              <span className="text-[13px] text-slate-600">{item.scheduleLabel ?? item.timeLabel}</span>
+              {item.cycleBadge && (
+                <Tooltip text={item.cycleBadge.tooltip}>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none bg-indigo-100 text-indigo-600 whitespace-nowrap">
+                    {item.cycleBadge.label}
+                  </span>
+                </Tooltip>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="w-[70px] flex items-center justify-end gap-1">
+              {onEdit && (
+                <Tooltip text={`Edit ${item.name}`}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(item.id); }}
+                    onDragStart={(e) => e.stopPropagation()}
+                    draggable={false}
+                    className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+              )}
+              {onDelete && (
+                <Tooltip text={`Delete ${item.name}`}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                    onDragStart={(e) => e.stopPropagation()}
+                    draggable={false}
+                    disabled={deletingId === item.id}
+                    className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                      deletingId === item.id
+                        ? 'text-slate-300 cursor-not-allowed'
+                        : 'hover:bg-red-50 text-slate-400 hover:text-red-500'
+                    }`}
+                  >
+                    {deletingId === item.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {items.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-slate-400">
+            No templates yet. Click &quot;Create Template&quot; to add one.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

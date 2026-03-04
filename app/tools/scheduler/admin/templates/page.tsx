@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Search } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
+import { TemplateList } from '../../components/templates/TemplateList';
+import type { TemplateListItem } from '../../components/templates/TemplateList';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -25,6 +27,21 @@ interface Template {
   weekCycleLength: number | null;
   /** 0-indexed week in the cycle. 0 = Week 1, 1 = Week 2, etc. */
   weekInCycle: number | null;
+  // ── DB-synced fields (preserved across round-trips) ──
+  /** Full grade_groups array from DB (gradeLevel is derived from first element for display) */
+  gradeGroups?: string[];
+  /** instructor_id from DB */
+  instructorId?: string | null;
+  /** venue_id from DB */
+  venueId?: string | null;
+  /** template_type from DB */
+  templateType?: string;
+  /** required_skills from DB */
+  requiredSkills?: string[] | null;
+  /** is_active from DB */
+  isActive?: boolean;
+  /** sort_order from DB */
+  sortOrder?: number | null;
 }
 
 interface PlacedTemplate {
@@ -114,6 +131,14 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
     color: TEMPLATE_COLORS[index % TEMPLATE_COLORS.length],
     weekCycleLength: (db.week_cycle_length as number | null) ?? null,
     weekInCycle: (db.week_in_cycle as number | null) ?? null,
+    // Preserve DB fields for round-trip fidelity
+    gradeGroups,
+    instructorId: (db.instructor_id as string | null) ?? null,
+    venueId: (db.venue_id as string | null) ?? null,
+    templateType: (db.template_type as string) ?? 'fully_defined',
+    requiredSkills: (db.required_skills as string[] | null) ?? null,
+    isActive: db.is_active !== false,
+    sortOrder: (db.sort_order as number | null) ?? null,
   };
 }
 
@@ -124,18 +149,33 @@ function toDbPayload(t: Template, programId: string) {
   const [eh, em] = endTime.split(':').map(Number);
   const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
 
+  // Build grade_groups: use full array if available, fall back to single gradeLevel
+  const gradeGroups = t.gradeGroups && t.gradeGroups.length > 0
+    ? t.gradeGroups
+    : t.gradeLevel ? [t.gradeLevel] : [];
+
+  // If gradeLevel was changed in the UI, update the first element of gradeGroups
+  if (t.gradeLevel && gradeGroups[0] !== t.gradeLevel) {
+    gradeGroups[0] = t.gradeLevel;
+  }
+
   return {
     program_id: programId,
     day_of_week: t.days[0] ?? 1,
-    grade_groups: t.gradeLevel ? [t.gradeLevel] : [],
+    grade_groups: gradeGroups,
     start_time: startTime,
     end_time: endTime,
     duration_minutes: Math.max(durationMinutes, 0),
     rotation_mode: t.instructorRotation ? 'rotate' : 'consistent',
-    template_type: 'fully_defined' as const,
-    is_active: true,
+    template_type: t.templateType ?? 'fully_defined',
+    is_active: t.isActive !== false,
     week_cycle_length: t.weekCycleLength,
     week_in_cycle: t.weekInCycle,
+    // Preserve DB-synced fields
+    instructor_id: t.instructorId ?? null,
+    venue_id: t.venueId ?? null,
+    required_skills: t.requiredSkills ?? null,
+    sort_order: t.sortOrder ?? null,
   };
 }
 
@@ -1312,165 +1352,6 @@ function DragGhostPreview({
 }
 
 // ──────────────────────────────────────────────────────────────
-// Saved Templates Table
-// ──────────────────────────────────────────────────────────────
-
-function SavedTemplatesTable({
-  templates,
-  onEdit,
-  onDelete,
-  onDragStart,
-  onDragEnd,
-  deletingId,
-}: {
-  templates: Template[];
-  onEdit: (t: Template) => void;
-  onDelete: (id: string) => void;
-  onDragStart: (t: Template) => void;
-  onDragEnd: () => void;
-  deletingId: string | null;
-}) {
-  return (
-    <div>
-      {/* Section header */}
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-slate-900">Saved Templates</h2>
-        <Tooltip text={`${templates.length} template${templates.length === 1 ? '' : 's'} saved`}>
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-100 text-xs font-medium text-slate-600">
-            ({templates.length})
-          </span>
-        </Tooltip>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-          <Tooltip text="Template name and color indicator">
-            <div className="w-[220px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Template Name</div>
-          </Tooltip>
-          <Tooltip text="Assigned instructor (Rotating = shared across instructors)">
-            <div className="flex-1 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Instructor</div>
-          </Tooltip>
-          <Tooltip text="Days and time slot for this template">
-            <div className="w-[180px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Schedule</div>
-          </Tooltip>
-          <Tooltip text="Edit or delete this template">
-            <div className="w-[70px] text-xs font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</div>
-          </Tooltip>
-        </div>
-
-        {/* Rows */}
-        {templates.map((template) => (
-          <div
-            key={template.id}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.effectAllowed = 'copy';
-              e.dataTransfer.setData('text/plain', template.id);
-              // Create a custom drag image
-              const ghost = document.createElement('div');
-              ghost.textContent = getBlockDisplayName(template);
-              ghost.style.cssText = `
-                position: fixed; top: -1000px; left: -1000px;
-                padding: 6px 12px; border-radius: 6px; font-size: 12px;
-                font-weight: 600; color: white; white-space: nowrap;
-                background-color: ${template.color}; opacity: 0.9;
-              `;
-              document.body.appendChild(ghost);
-              e.dataTransfer.setDragImage(ghost, 0, 0);
-              requestAnimationFrame(() => document.body.removeChild(ghost));
-              onDragStart(template);
-            }}
-            onDragEnd={onDragEnd}
-            className="flex items-center px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing group"
-          >
-            {/* Template Name */}
-            <div className="w-[220px] flex items-center gap-2">
-              <Tooltip text="Drag to schedule">
-                <span className="inline-flex"><GripVertical className="w-4 h-4 text-slate-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
-              </Tooltip>
-              <div className="flex items-center gap-2 min-w-0">
-                <Tooltip text="Template color on the schedule grid">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: template.color }} />
-                </Tooltip>
-                <span className="text-[13px] font-medium text-slate-900 truncate">{template.name}</span>
-              </div>
-            </div>
-
-            {/* Instructor */}
-            <div className="flex-1 min-w-0">
-              <span className="text-[13px] text-slate-600 truncate block">
-                {template.instructor || '—'}
-                {template.instructorRotation && (
-                  <span className="ml-1.5 text-xs text-violet-600 font-medium">(Rotating)</span>
-                )}
-              </span>
-            </div>
-
-            {/* Schedule */}
-            <div className="w-[180px] flex items-center gap-1.5">
-              <span className="text-[13px] text-slate-600">{formatSchedule(template)}</span>
-              {template.weekCycleLength != null && template.weekCycleLength >= 2 && (
-                <Tooltip text={`Runs on Week ${(template.weekInCycle ?? 0) + 1} of a ${template.weekCycleLength}-week cycle`}>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none bg-indigo-100 text-indigo-600 whitespace-nowrap">
-                    W{(template.weekInCycle ?? 0) + 1}/{template.weekCycleLength}
-                  </span>
-                </Tooltip>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="w-[70px] flex items-center justify-end gap-1">
-              <Tooltip text={`Edit ${template.name}`}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(template);
-                  }}
-                  onDragStart={(e) => e.stopPropagation()}
-                  draggable={false}
-                  className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-              </Tooltip>
-              <Tooltip text={`Delete ${template.name}`}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(template.id);
-                  }}
-                  onDragStart={(e) => e.stopPropagation()}
-                  draggable={false}
-                  disabled={deletingId === template.id}
-                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                    deletingId === template.id
-                      ? 'text-slate-300 cursor-not-allowed'
-                      : 'hover:bg-red-50 text-slate-400 hover:text-red-500'
-                  }`}
-                >
-                  {deletingId === template.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                </button>
-              </Tooltip>
-            </div>
-          </div>
-        ))}
-
-        {templates.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-slate-400">
-            No templates yet. Click &quot;Create Template&quot; to add one.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ──────────────────────────────────────────────────────────────
 // Main Page
 // ──────────────────────────────────────────────────────────────
@@ -1490,6 +1371,10 @@ function DayScheduleSettings({
   onLunchEnabledChange,
   onLunchStartChange,
   onLunchEndChange,
+  bufferEnabled,
+  bufferMinutes,
+  onBufferEnabledChange,
+  onBufferMinutesChange,
   onClose,
 }: {
   dayStartHour: number;
@@ -1502,6 +1387,10 @@ function DayScheduleSettings({
   onLunchEnabledChange: (enabled: boolean) => void;
   onLunchStartChange: (hour: number) => void;
   onLunchEndChange: (hour: number) => void;
+  bufferEnabled: boolean;
+  bufferMinutes: number;
+  onBufferEnabledChange: (enabled: boolean) => void;
+  onBufferMinutesChange: (minutes: number) => void;
   onClose: () => void;
 }) {
   const hourOptions = Array.from({ length: 24 }, (_, i) => i);
@@ -1614,6 +1503,44 @@ function DayScheduleSettings({
             </div>
           )}
         </div>
+
+        {/* Buffer Time */}
+        <div className="pt-2 border-t border-slate-100">
+          <Tooltip text={bufferEnabled ? 'Disable buffer time between sessions' : 'Add padding time between all sessions for transitions'}>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={bufferEnabled}
+                onChange={(e) => onBufferEnabledChange(e.target.checked)}
+                className="w-3.5 h-3.5 accent-blue-500 rounded"
+              />
+              <Clock className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[13px] font-medium text-slate-700">Enable Buffer Time</span>
+            </label>
+          </Tooltip>
+
+          {bufferEnabled && (
+            <div className="mt-2.5 pl-6">
+              <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                Buffer Duration (minutes)
+              </label>
+              <Tooltip text="Minimum padding time between sessions (venues may add extra setup/teardown time)">
+                <input
+                  type="number"
+                  min="0"
+                  max="60"
+                  step="5"
+                  value={bufferMinutes}
+                  onChange={(e) => onBufferMinutesChange(Number(e.target.value))}
+                  className="w-full h-9 px-2.5 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white"
+                />
+              </Tooltip>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Per-venue setup times can be configured in Staff & Venues
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1638,7 +1565,7 @@ export default function TemplatesPage() {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+
 
   // ── Save / Publish state ──
 
@@ -1661,13 +1588,17 @@ export default function TemplatesPage() {
   const [lunchStart, setLunchStart] = useState(12); // hour (e.g. 12 = noon)
   const [lunchEnd, setLunchEnd] = useState(13);     // hour (e.g. 13 = 1 PM)
 
+  // ── Buffer time ──
+  const [bufferEnabled, setBufferEnabled] = useState(false);
+  const [bufferMinutes, setBufferMinutes] = useState(15);
+
   // ── Fetch templates from API ──
 
   const fetchTemplates = useCallback(async () => {
     if (!selectedProgramId) return;
     setIsLoadingTemplates(true);
     try {
-      const res = await fetch(`/api/templates?program_id=${encodeURIComponent(selectedProgramId)}`);
+      const res = await fetch(`/api/templates?program_id=${encodeURIComponent(selectedProgramId)}&_t=${Date.now()}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Failed to load templates (${res.status})`);
@@ -1691,7 +1622,7 @@ export default function TemplatesPage() {
   const fetchPlacements = useCallback(async () => {
     if (!selectedProgramId) return;
     try {
-      const res = await fetch(`/api/templates/placements?program_id=${encodeURIComponent(selectedProgramId)}`);
+      const res = await fetch(`/api/templates/placements?program_id=${encodeURIComponent(selectedProgramId)}&_t=${Date.now()}`);
       if (!res.ok) return; // silently skip if endpoint not available
       const { placements: dbPlacements } = await res.json();
       if (Array.isArray(dbPlacements) && dbPlacements.length > 0) {
@@ -1711,10 +1642,26 @@ export default function TemplatesPage() {
     }
   }, [selectedProgramId]);
 
+  const fetchBufferSettings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        const enabled = data.settings?.buffer_time_enabled ?? false;
+        const minutes = data.settings?.buffer_time_minutes ?? 15;
+        setBufferEnabled(enabled);
+        setBufferMinutes(minutes);
+      }
+    } catch {
+      // Non-critical — will use defaults
+    }
+  }, []);
+
   useEffect(() => {
     fetchTemplates();
     fetchPlacements();
-  }, [fetchTemplates, fetchPlacements]);
+    fetchBufferSettings();
+  }, [fetchTemplates, fetchPlacements, fetchBufferSettings]);
 
   // Warn on navigate-away when there are unsaved changes
   useEffect(() => {
@@ -2217,17 +2164,26 @@ export default function TemplatesPage() {
     );
   }
 
-  const filteredTemplates = templates.filter((t) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      t.name.toLowerCase().includes(q) ||
-      (t.subject && t.subject.toLowerCase().includes(q)) ||
-      (t.gradeLevel && t.gradeLevel.toLowerCase().includes(q)) ||
-      (t.instructor && t.instructor.toLowerCase().includes(q)) ||
-      (t.venue && t.venue.toLowerCase().includes(q))
-    );
-  });
+  const templateListItems: TemplateListItem[] = templates.map((t) => ({
+    id: t.id,
+    name: getBlockDisplayName(t),
+    dayLabel: t.days.length === 5
+      ? 'Mon\u2013Fri'
+      : t.days.map((d) => DAYS_SHORT[d]).join('/'),
+    timeLabel: formatTimeSlot(t.timeSlot),
+    gradeGroups: t.gradeLevel ? [t.gradeLevel] : [],
+    instructor: t.instructor,
+    venue: t.venue,
+    instructorRotation: t.instructorRotation,
+    color: t.color,
+    scheduleLabel: formatSchedule(t),
+    cycleBadge: t.weekCycleLength != null && t.weekCycleLength >= 2
+      ? {
+          label: `W${(t.weekInCycle ?? 0) + 1}/${t.weekCycleLength}`,
+          tooltip: `Runs on Week ${(t.weekInCycle ?? 0) + 1} of a ${t.weekCycleLength}-week cycle`,
+        }
+      : null,
+  }));
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
@@ -2459,33 +2415,22 @@ export default function TemplatesPage() {
 
         {/* Saved Templates Table */}
         <div className="mx-8 mt-6 mb-8">
-          {isLoadingTemplates ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-              <span className="ml-2 text-sm text-slate-400">Loading templates…</span>
-            </div>
-          ) : (
-            <>
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search templates…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <SavedTemplatesTable
-                templates={filteredTemplates}
-                onEdit={handleEditTemplate}
-                onDelete={handleDeleteTemplate}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                deletingId={deletingTemplateId}
-              />
-            </>
-          )}
+          <TemplateList
+            mode="draggable"
+            templates={templateListItems}
+            loading={isLoadingTemplates}
+            onEdit={(id) => {
+              const t = templates.find((t) => t.id === id);
+              if (t) handleEditTemplate(t);
+            }}
+            onDelete={handleDeleteTemplate}
+            onDragStart={(id) => {
+              const t = templates.find((t) => t.id === id);
+              if (t) handleDragStart(t);
+            }}
+            onDragEnd={handleDragEnd}
+            deletingId={deletingTemplateId}
+          />
         </div>
       </div>
 
