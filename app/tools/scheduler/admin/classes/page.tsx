@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Pencil, Trash2, Loader2, Check, AlertTriangle, X,
-  Clock, MapPin, User, ChevronDown,
+  Clock, MapPin, User, ChevronDown, Search,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -133,6 +133,9 @@ export default function ClassesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  // Search state
+  const [search, setSearch] = useState('');
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -332,6 +335,20 @@ export default function ClassesPage() {
     return v ? v.name : '—';
   };
 
+  /* ── Filtered templates ─────────────────────────────────── */
+
+  const filteredTemplates = templates.filter((t) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '';
+    const instructorName = getInstructorName(t.instructor_id);
+    const venueName = getVenueName(t);
+    const typeLabel = TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type;
+    const grades = (t.grade_groups ?? []).join(' ');
+    return [dayLabel, instructorName, venueName, typeLabel, grades]
+      .some((field) => field.toLowerCase().includes(q));
+  });
+
   /* ── Guard: no program selected ──────────────────────────── */
 
   if (!selectedProgramId) {
@@ -359,6 +376,27 @@ export default function ClassesPage() {
               Create and manage class templates for scheduling
             </p>
           </div>
+        </div>
+
+        {/* Search & Create */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ position: 'relative', maxWidth: 320, flex: 1 }}>
+            <Search
+              className="w-4 h-4 text-slate-400"
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+            />
+            <input
+              type="text"
+              placeholder="Search by day, instructor, venue, grade..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                ...inputStyle,
+                paddingLeft: 36,
+                backgroundColor: '#FFFFFF',
+              }}
+            />
+          </div>
           <Button variant="primary" onClick={openCreateForm} tooltip="Create a new class template">
             <Plus className="w-4 h-4" />
             New Class
@@ -372,7 +410,7 @@ export default function ClassesPage() {
               <div key={i} className="h-14 rounded-lg bg-slate-200/50 animate-pulse" />
             ))}
           </div>
-        ) : templates.length === 0 ? (
+        ) : filteredTemplates.length === 0 ? (
           <div style={{
             borderRadius: 12,
             backgroundColor: '#FFFFFF',
@@ -381,7 +419,9 @@ export default function ClassesPage() {
             color: '#94A3B8',
             fontSize: 14,
           }}>
-            No class templates yet. Click &ldquo;New Class&rdquo; to create your first template.
+            {search.trim()
+              ? 'No class templates match your search.'
+              : 'No class templates yet. Click \u201cNew Class\u201d to create your first template.'}
           </div>
         ) : (
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden' }}>
@@ -407,7 +447,7 @@ export default function ClassesPage() {
                 </tr>
               </thead>
               <tbody>
-                {templates.map((t) => {
+                {filteredTemplates.map((t) => {
                   const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '—';
                   const cycleLabel = t.week_cycle_length && t.week_cycle_length > 1
                     ? `Wk ${(t.week_in_cycle ?? 0) + 1}/${t.week_cycle_length}`
