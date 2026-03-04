@@ -18,15 +18,15 @@ import {
 } from 'lucide-react';
 
 const adminNavItems: { label: string; href: string; icon: LucideIcon; tooltip: string }[] = [
-  { label: 'Calendar', href: '/admin', icon: Calendar, tooltip: 'View and manage the session calendar' },
-  { label: 'Schedule Builder', href: '/admin/templates', icon: LayoutTemplate, tooltip: 'Build weekly schedule templates and configure day times' },
-  { label: 'Tags', href: '/admin/tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
-  { label: 'People & Places', href: '/admin/people', icon: Users, tooltip: 'Manage instructors and their availability' },
-  { label: 'School Calendar', href: '/admin/calendar', icon: Clock, tooltip: 'View and manage school calendar and special dates' },
-  { label: 'Exceptions', href: '/admin/exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
-  { label: 'Reports', href: '/admin/reports', icon: BarChart2, tooltip: 'View usage reports and export data' },
-  { label: 'Versions', href: '/admin/versions', icon: History, tooltip: 'Save, publish, and revert schedule versions' },
-  { label: 'Settings', href: '/admin/settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
+  { label: 'Calendar', href: '', icon: Calendar, tooltip: 'View and manage the session calendar' },
+  { label: 'Schedule Builder', href: '/templates', icon: LayoutTemplate, tooltip: 'Build weekly schedule templates and configure day times' },
+  { label: 'Tags', href: '/tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
+  { label: 'People & Places', href: '/people', icon: Users, tooltip: 'Manage instructors and their availability' },
+  { label: 'School Calendar', href: '/calendar', icon: Clock, tooltip: 'View and manage school calendar and special dates' },
+  { label: 'Exceptions', href: '/exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
+  { label: 'Reports', href: '/reports', icon: BarChart2, tooltip: 'View usage reports and export data' },
+  { label: 'Versions', href: '/versions', icon: History, tooltip: 'Save, publish, and revert schedule versions' },
+  { label: 'Settings', href: '/settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
 ];
 
 function SidebarProgramSelector() {
@@ -74,7 +74,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen">
       {/* Dark sidebar with program selector */}
-      <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} />
+      <Sidebar navItems={adminNavItems} basePath="/tools/scheduler/admin" header={<SidebarProgramSelector />} />
 
       {/* Main content — light theme matching design spec */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
