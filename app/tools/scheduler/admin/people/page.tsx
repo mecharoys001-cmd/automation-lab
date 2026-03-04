@@ -88,6 +88,31 @@ function isHourAvailable(hour: number, blocks: TimeBlock[]): boolean {
   });
 }
 
+/**
+ * Calculate availability for a time period (morning or afternoon)
+ * Returns: 'full' (all hours covered), 'partial' (some hours covered), or 'none'
+ */
+function getTimePeriodAvailability(
+  blocks: TimeBlock[],
+  periodStart: number, // hour (e.g., 8)
+  periodEnd: number,   // hour (e.g., 12)
+): 'full' | 'partial' | 'none' {
+  if (!blocks || blocks.length === 0) return 'none';
+  
+  const totalHours = periodEnd - periodStart;
+  let coveredHours = 0;
+  
+  for (let hour = periodStart; hour < periodEnd; hour++) {
+    if (isHourAvailable(hour, blocks)) {
+      coveredHours++;
+    }
+  }
+  
+  if (coveredHours === 0) return 'none';
+  if (coveredHours === totalHours) return 'full';
+  return 'partial';
+}
+
 /* ── Skeleton ───────────────────────────────────────────────── */
 
 function CardGridSkeleton({ count = 6 }: { count?: number }) {
@@ -1594,24 +1619,33 @@ export default function PeoplePage() {
                       )}
                     </div>
 
-                    {/* 7-Day Availability Dots (Su–Sa) */}
+                    {/* 7-Day Availability Grid (Su–Sa with Morning/Afternoon) */}
                     <div className="flex justify-between">
                       {AVAIL_DAYS.map((day) => {
-                        const hasSlots = (inst.availability_json?.[day.key]?.length ?? 0) > 0;
+                        const blocks = inst.availability_json?.[day.key] ?? [];
+                        const morningAvail = getTimePeriodAvailability(blocks, 8, 12); // 8am-12pm
+                        const afternoonAvail = getTimePeriodAvailability(blocks, 12, 17); // 12pm-5pm
+                        
+                        const getAvailColor = (level: 'full' | 'partial' | 'none') => {
+                          if (level === 'full') return 'bg-emerald-500';
+                          if (level === 'partial') return 'bg-amber-400';
+                          return 'bg-red-500';
+                        };
+                        
+                        const tooltipText = `${day.label}: Morning ${morningAvail === 'full' ? '✓' : morningAvail === 'partial' ? '~' : '✗'}, Afternoon ${afternoonAvail === 'full' ? '✓' : afternoonAvail === 'partial' ? '~' : '✗'}`;
+                        
                         return (
-                          <Tooltip
-                            key={day.key}
-                            text={`${day.label}: ${hasSlots ? 'Available' : 'Unavailable'}`}
-                          >
+                          <Tooltip key={day.key} text={tooltipText}>
                             <div className="flex flex-col items-center gap-0.5">
                               <span className="text-[10px] font-medium text-slate-400">
                                 {day.label}
                               </span>
-                              <span
-                                className={`w-2 h-2 rounded ${
-                                  hasSlots ? 'bg-emerald-500' : 'bg-red-500'
-                                }`}
-                              />
+                              <div className="flex flex-col gap-0.5">
+                                {/* Morning square */}
+                                <span className={`w-2.5 h-2.5 ${getAvailColor(morningAvail)}`} />
+                                {/* Afternoon square */}
+                                <span className={`w-2.5 h-2.5 ${getAvailColor(afternoonAvail)}`} />
+                              </div>
                             </div>
                           </Tooltip>
                         );
