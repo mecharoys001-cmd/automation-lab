@@ -17,15 +17,15 @@ import {
 } from 'lucide-react';
 
 const adminNavItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/templates', label: 'Templates', icon: FileText },
-  { href: '/admin/tags', label: 'Tags', icon: Tags },
-  { href: '/admin/people', label: 'People', icon: Users },
-  { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/admin/exceptions', label: 'Exceptions', icon: AlertTriangle },
-  { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/admin/versions', label: 'Versions', icon: GitBranch },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, tooltip: 'View and manage the session calendar' },
+  { href: '/admin/templates', label: 'Templates', icon: FileText, tooltip: 'Build weekly schedule templates and configure day times' },
+  { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
+  { href: '/admin/people', label: 'People', icon: Users, tooltip: 'Manage instructors and their availability' },
+  { href: '/admin/calendar', label: 'Calendar', icon: Calendar, tooltip: 'View and manage school calendar and special dates' },
+  { href: '/admin/exceptions', label: 'Exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'View usage reports and export data' },
+  { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Save, publish, and revert schedule versions' },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
 ];
 
 function SidebarProgramSelector() {
