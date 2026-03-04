@@ -297,14 +297,14 @@ function FormSelect({
           <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">{placeholder ?? `Select ${label.toLowerCase()}`}</option>
             {options.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
       </Tooltip>
     </div>
@@ -652,7 +652,7 @@ function AutoFillModal({
     });
   };
 
-  const timeSelectClasses = 'w-full h-9 bg-white rounded-lg border border-slate-200 px-2.5 pr-7 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent';
+  const timeSelectClasses = "w-full h-9 bg-white rounded-lg border border-slate-200 px-2.5 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -733,13 +733,13 @@ function AutoFillModal({
                     <select
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                      className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                     >
                       {TIME_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
                 </Tooltip>
                 <span className="text-[13px] text-slate-400">to</span>
@@ -748,13 +748,13 @@ function AutoFillModal({
                     <select
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-8 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                      className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                     >
                       {TIME_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
                 </Tooltip>
               </div>
@@ -1390,7 +1390,7 @@ function DayScheduleSettings({
             <select
               value={dayStartHour}
               onChange={(e) => onStartChange(Number(e.target.value))}
-              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
+              className="w-full h-9 px-3 pr-10 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat"
             >
               {hourOptions.filter((h) => h < dayEndHour).map((h) => (
                 <option key={h} value={h}>{formatOption(h)}</option>
@@ -1407,7 +1407,7 @@ function DayScheduleSettings({
             <select
               value={dayEndHour}
               onChange={(e) => onEndChange(Number(e.target.value))}
-              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
+              className="w-full h-9 px-3 pr-10 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat"
             >
               {hourOptions.filter((h) => h > dayStartHour).map((h) => (
                 <option key={h} value={h}>{formatOption(h)}</option>
@@ -1441,7 +1441,7 @@ function DayScheduleSettings({
                   <select
                     value={lunchStart}
                     onChange={(e) => onLunchStartChange(Number(e.target.value))}
-                    className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-[12px] text-slate-700 bg-white cursor-pointer"
+                    className="w-full h-8 px-2.5 pr-10 border border-slate-200 rounded-md text-[12px] text-slate-700 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat"
                   >
                     {hourOptions.filter((h) => h >= dayStartHour && h < lunchEnd && h < dayEndHour).map((h) => (
                       <option key={h} value={h}>{formatOption(h)}</option>
@@ -1457,7 +1457,7 @@ function DayScheduleSettings({
                   <select
                     value={lunchEnd}
                     onChange={(e) => onLunchEndChange(Number(e.target.value))}
-                    className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-[12px] text-slate-700 bg-white cursor-pointer"
+                    className="w-full h-8 px-2.5 pr-10 border border-slate-200 rounded-md text-[12px] text-slate-700 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat"
                   >
                     {hourOptions.filter((h) => h > lunchStart && h <= dayEndHour).map((h) => (
                       <option key={h} value={h}>{formatOption(h)}</option>
