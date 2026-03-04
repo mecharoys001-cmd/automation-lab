@@ -157,7 +157,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
                       months={instructor.monthly}
                       onViewDetail={() => {
                         router.push(
-                          `/tools/symphonix-scheduler/admin/reports/instructors/${instructor.id}`
+                          `/tools/scheduler/admin/reports/instructors/${instructor.id}`
                         );
                       }}
                     />

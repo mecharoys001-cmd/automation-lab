@@ -859,7 +859,7 @@ export default function VenuesPage() {
                       bgColor="bg-primary/20"
                       textColor="text-primary"
                       tooltip={`Click to view calendar filtered by ${a}`}
-                      onClick={() => router.push(`/tools/symphonix-scheduler/admin?tag=${encodeURIComponent(a)}`)}
+                      onClick={() => router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(a)}`)}
                     >
                       {a}
                     </Pill>

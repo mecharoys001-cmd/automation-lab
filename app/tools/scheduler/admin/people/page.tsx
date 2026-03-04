@@ -472,7 +472,7 @@ function VenueDetailModal({
         <div className="flex items-center justify-between h-14 px-6">
           <Tooltip text="Jump to calendar filtered to this venue">
             <Link
-              href={`/tools/symphonix-scheduler/admin?venue=${venue.id}`}
+              href={`/tools/scheduler/admin?venue=${venue.id}`}
               onClick={onClose}
               className="text-[13px] font-medium text-blue-500 hover:text-blue-600"
             >
@@ -611,7 +611,7 @@ function InstructorDetailModal({
                 tooltip={`Click to view calendar filtered by ${skill}`}
                 onClick={() => {
                   onClose();
-                  router.push(`/tools/symphonix-scheduler/admin?tag=${encodeURIComponent(skill)}`);
+                  router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`);
                 }}>
                 {s?.emoji ?? '🎵'} {skill}
               </Pill>
@@ -661,7 +661,7 @@ function InstructorDetailModal({
         <div className="flex items-center justify-between h-14 px-6">
           <Tooltip text="Jump to calendar filtered to this instructor">
             <Link
-              href={`/tools/symphonix-scheduler/admin?instructor=${instructor.id}`}
+              href={`/tools/scheduler/admin?instructor=${instructor.id}`}
               onClick={onClose}
               className="text-[13px] font-medium text-blue-500 hover:text-blue-600"
             >
@@ -1583,7 +1583,7 @@ export default function PeoplePage() {
                             bgColor={s?.bg ?? 'bg-slate-100'}
                             textColor={s?.text ?? 'text-slate-600'}
                             tooltip={`Click to view calendar filtered by ${skill}`}
-                            onClick={() => router.push(`/tools/symphonix-scheduler/admin?tag=${encodeURIComponent(skill)}`)}
+                            onClick={() => router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`)}
                           >
                             {s?.emoji ?? '🎵'} {skill}
                           </Pill>
@@ -1641,7 +1641,7 @@ export default function PeoplePage() {
                     {/* View on Calendar Link */}
                     <Tooltip text="Jump to calendar filtered to this instructor">
                       <Link
-                        href={`/tools/symphonix-scheduler/admin?instructor=${inst.id}`}
+                        href={`/tools/scheduler/admin?instructor=${inst.id}`}
                         className="text-xs font-medium text-blue-500 hover:text-blue-600"
                       >
                         View on Calendar &rarr;
@@ -1730,7 +1730,7 @@ export default function PeoplePage() {
                   {/* View Schedule Link */}
                   <Tooltip text="View venue schedule on the calendar">
                     <Link
-                      href={`/tools/symphonix-scheduler/admin?venue=${venue.id}`}
+                      href={`/tools/scheduler/admin?venue=${venue.id}`}
                       className="text-xs font-medium text-blue-500 hover:text-blue-600"
                     >
                       View Schedule &rarr;
