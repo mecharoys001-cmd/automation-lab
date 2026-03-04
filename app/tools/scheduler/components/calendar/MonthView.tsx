@@ -306,6 +306,7 @@ export function MonthView({
                 text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${dayNumber}${
                   dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
                 }`}
+                style={{ gridColumn: 'auto' }}
               >
                 <div
                   className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 box-border ${

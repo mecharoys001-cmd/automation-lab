@@ -246,6 +246,7 @@ function MonthGrid({
               text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${dayNumber}${
                 dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
               }`}
+              style={{ gridColumn: 'auto' }}
             >
               <div
                 className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 bg-white box-border ${
