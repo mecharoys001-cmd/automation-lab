@@ -17,6 +17,13 @@ interface YearViewProps {
   onEventClick?: (event: CalendarEvent) => void;
   onDayClick?: (date: Date) => void;
   onTodayClick?: () => void;
+  /** School calendar entries (no school, early dismissal, etc.) */
+  schoolCalendar?: Array<{
+    date: string; // YYYY-MM-DD
+    status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
+    description?: string | null;
+    early_dismissal_time?: string | null;
+  }>;
   /** Called when user cancels a session via popover */
   onCancelSession?: (eventId: string) => void;
   /** Called when user wants to replace instructor */
@@ -178,6 +185,7 @@ function MonthGrid({
   month,
   eventsByDate,
   todayKey,
+  schoolCalendarByDate,
   onEventHover,
   onEventLeave,
   onEventClick,
@@ -187,6 +195,7 @@ function MonthGrid({
   month: number; // 1-based
   eventsByDate: Record<string, CalendarEvent[]>;
   todayKey: string;
+  schoolCalendarByDate: Record<string, { date: string; status_type: string; description?: string | null; early_dismissal_time?: string | null }>;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
   onEventLeave: () => void;
   onEventClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -245,6 +254,7 @@ function MonthGrid({
           const dateKey = formatDateKey(date);
           const isToday = dateKey === todayKey;
           const dayEvents = eventsByDate[dateKey] || [];
+          const schoolEntry = schoolCalendarByDate[dateKey];
           const dayOfWeek = cellIndex % 7;
 
           return (
@@ -268,6 +278,29 @@ function MonthGrid({
                 >
                   {dayNumber}
                 </span>
+
+                {schoolEntry && (
+                  <div className="mb-2">
+                    {schoolEntry.status_type === 'no_school' && (
+                      <div className="bg-amber-100 border border-amber-300 rounded-md px-1 py-1 text-center">
+                        <div className="text-[11px] font-bold text-amber-900">NO SCHOOL</div>
+                        {schoolEntry.description && (
+                          <div className="text-[9px] text-amber-700 mt-0.5 line-clamp-1">{schoolEntry.description}</div>
+                        )}
+                      </div>
+                    )}
+                    {schoolEntry.status_type === 'early_dismissal' && (
+                      <div className="bg-blue-100 border border-blue-300 rounded-md px-1 py-1 text-center">
+                        <div className="text-[11px] font-bold text-blue-900">EARLY DISMISSAL</div>
+                        {schoolEntry.early_dismissal_time && (
+                          <div className="text-[9px] text-blue-700 mt-0.5">
+                            {schoolEntry.early_dismissal_time.slice(0, 5)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-0.5">
                   {dayEvents.map((event) => (
@@ -298,6 +331,7 @@ export function YearView({
   onEventClick,
   onDayClick,
   onTodayClick,
+  schoolCalendar = [],
   onCancelSession,
   onReplaceInstructor,
   onReplaceEvent,
@@ -330,6 +364,14 @@ export function YearView({
   }, [events]);
 
   const todayKey = formatDateKey(new Date());
+
+  const schoolCalendarByDate = useMemo(() => {
+    const map: Record<string, typeof schoolCalendar[0]> = {};
+    schoolCalendar.forEach(entry => {
+      map[entry.date] = entry;
+    });
+    return map;
+  }, [schoolCalendar]);
 
   // Unique event types for legend
   const activeTypes = useMemo(() => {
@@ -538,6 +580,7 @@ export function YearView({
                   month={month}
                   eventsByDate={eventsByDate}
                   todayKey={todayKey}
+                  schoolCalendarByDate={schoolCalendarByDate}
                   onEventHover={showPopover}
                   onEventLeave={hidePopover}
                   onEventClick={handleEventClick}

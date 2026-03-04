@@ -19,6 +19,13 @@ interface MonthViewProps {
   onDateChange?: (date: Date) => void;
   onDayClick?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
+  /** School calendar entries (no school, early dismissal, etc.) */
+  schoolCalendar?: Array<{
+    date: string; // YYYY-MM-DD
+    status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
+    description?: string | null;
+    early_dismissal_time?: string | null;
+  }>;
   /** Called when user cancels a session via popover */
   onCancelSession?: (eventId: string) => void;
   /** Called when user wants to replace instructor (with optional substitute ID) */
@@ -119,6 +126,7 @@ export function MonthView({
   onDateChange,
   onDayClick,
   onEventClick,
+  schoolCalendar = [],
   onCancelSession,
   onReplaceInstructor,
   onReplaceEvent,
@@ -226,6 +234,15 @@ export function MonthView({
 
   const todayKey = formatDateKey(new Date());
 
+  // Build school calendar map by date
+  const schoolCalendarByDate = useMemo(() => {
+    const map: Record<string, typeof schoolCalendar[0]> = {};
+    schoolCalendar.forEach(entry => {
+      map[entry.date] = entry;
+    });
+    return map;
+  }, [schoolCalendar]);
+
   const navigate = (delta: number) => {
     const next = new Date(year, month + delta, 1);
     setViewDate(next);
@@ -308,6 +325,7 @@ export function MonthView({
             const dateKey = formatDateKey(date);
             const isToday = dateKey === todayKey;
             const dayEvents = eventsByDate[dateKey] || [];
+            const schoolEntry = schoolCalendarByDate[dateKey];
             const dayOfWeek = cellIndex % 7;
 
             return (
@@ -331,6 +349,29 @@ export function MonthView({
                   >
                     {dayNumber}
                   </span>
+
+                  {schoolEntry && (
+                    <div className="mb-2">
+                      {schoolEntry.status_type === 'no_school' && (
+                        <div className="bg-amber-100 border border-amber-300 rounded-md px-2 py-1.5 text-center">
+                          <div className="text-sm font-bold text-amber-900">NO SCHOOL</div>
+                          {schoolEntry.description && (
+                            <div className="text-xs text-amber-700 mt-0.5">{schoolEntry.description}</div>
+                          )}
+                        </div>
+                      )}
+                      {schoolEntry.status_type === 'early_dismissal' && (
+                        <div className="bg-blue-100 border border-blue-300 rounded-md px-2 py-1.5 text-center">
+                          <div className="text-sm font-bold text-blue-900">EARLY DISMISSAL</div>
+                          {schoolEntry.early_dismissal_time && (
+                            <div className="text-xs text-blue-700 mt-0.5">
+                              {schoolEntry.early_dismissal_time.slice(0, 5)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-0.5">
                     {dayEvents.map((event) => (
