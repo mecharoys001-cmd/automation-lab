@@ -1236,11 +1236,21 @@ function PlacedTemplateBlock({
               </Tooltip>
             )}
           </div>
-          <p className="text-xs font-semibold text-slate-900 leading-tight truncate mt-0.5">
-            {getBlockDisplayName(template)}
+          <p className="text-xs font-bold text-slate-900 leading-tight truncate mt-0.5">
+            {template.name}
           </p>
+          {template.subject && template.subject !== template.name && (
+            <p className="text-[11px] text-slate-700 leading-tight truncate">
+              {template.subject}
+            </p>
+          )}
+          {height > 48 && template.gradeLevel && (
+            <p className="text-[10px] text-slate-600 leading-tight truncate">
+              {template.gradeLevel}
+            </p>
+          )}
           {height > 48 && template.instructor && (
-            <p className="text-xs text-slate-600 leading-tight truncate mt-0.5">{template.instructor}</p>
+            <p className="text-[10px] text-slate-600 leading-tight truncate">{template.instructor}</p>
           )}
         </div>
       </Tooltip>
