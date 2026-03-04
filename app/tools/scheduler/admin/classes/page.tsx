@@ -144,6 +144,16 @@ export default function ClassesPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  /* ── Guard: no program selected ──────────────────────────── */
+
+  if (!selectedProgramId) {
+    return (
+      <div className="flex items-center justify-center h-64 text-zinc-400 text-sm">
+        Please select a program to manage classes.
+      </div>
+    );
+  }
+
   /* ── Fetch data ─────────────────────────────────────────── */
 
   const fetchTemplates = useCallback(async () => {
