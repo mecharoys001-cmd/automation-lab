@@ -1673,6 +1673,39 @@ export default function TemplatesPage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
 
+  // ── Buffer time handlers ──
+  const handleBufferEnabledChange = async (enabled: boolean) => {
+    setBufferEnabled(enabled);
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buffer_time_enabled: enabled,
+          buffer_time_minutes: bufferMinutes,
+        }),
+      });
+    } catch {
+      // silently fail — UI will reflect the change even if save fails
+    }
+  };
+
+  const handleBufferMinutesChange = async (minutes: number) => {
+    setBufferMinutes(minutes);
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buffer_time_enabled: bufferEnabled,
+          buffer_time_minutes: minutes,
+        }),
+      });
+    } catch {
+      // silently fail
+    }
+  };
+
   const handleSaveSchedule = async () => {
     if (!selectedProgramId) return;
     setIsSaving(true);
@@ -2229,6 +2262,10 @@ export default function TemplatesPage() {
                 onLunchEnabledChange={setLunchEnabled}
                 onLunchStartChange={setLunchStart}
                 onLunchEndChange={setLunchEnd}
+                bufferEnabled={bufferEnabled}
+                bufferMinutes={bufferMinutes}
+                onBufferEnabledChange={handleBufferEnabledChange}
+                onBufferMinutesChange={handleBufferMinutesChange}
                 onClose={() => setShowDaySettings(false)}
               />
             )}

@@ -134,19 +134,8 @@ export default function SettingsPage() {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
 
-  // ---- Buffer Time state ----
-  const [bufferEnabled, setBufferEnabled] = useState(false);
-  const [bufferMinutes, setBufferMinutes] = useState(15);
-  const [bufferLoading, setBufferLoading] = useState(true);
-
   // ---- Global save / dirty tracking ----
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const initialBufferRef = useRef<{ enabled: boolean; minutes: number } | null>(null);
-  const isDirty =
-    initialBufferRef.current !== null &&
-    (bufferEnabled !== initialBufferRef.current.enabled ||
-      bufferMinutes !== initialBufferRef.current.minutes);
 
   // ---- Seed state ----
   const [seeding, setSeeding] = useState(false);
@@ -176,39 +165,9 @@ export default function SettingsPage() {
     }
   }, []);
 
-  const fetchBufferSettings = useCallback(async () => {
-    setBufferLoading(true);
-    try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.settings) {
-        const enabled = data.settings.buffer_time_enabled;
-        const minutes = data.settings.buffer_time_minutes;
-        setBufferEnabled(enabled);
-        setBufferMinutes(minutes);
-        initialBufferRef.current = { enabled, minutes };
-      }
-    } catch {
-      // defaults remain
-    } finally {
-      setBufferLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchAdmins();
-    fetchBufferSettings();
-  }, [fetchAdmins, fetchBufferSettings]);
-
-  // Warn on navigate-away when there are unsaved changes
-  useEffect(() => {
-    if (!isDirty) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [isDirty]);
+  }, [fetchAdmins]);
 
   // =========================================================================
   // Program handlers
@@ -344,30 +303,6 @@ export default function SettingsPage() {
   // Global Save handler
   // =========================================================================
 
-  async function handleSaveSettings() {
-    setIsSaving(true);
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          buffer_time_enabled: bufferEnabled,
-          buffer_time_minutes: bufferMinutes,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? 'Failed to save settings');
-      }
-      initialBufferRef.current = { enabled: bufferEnabled, minutes: bufferMinutes };
-      setToast({ message: 'Settings saved successfully', type: 'success', id: Date.now() });
-    } catch (err) {
-      setToast({ message: err instanceof Error ? err.message : 'Failed to save settings', type: 'error', id: Date.now() });
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
   // =========================================================================
   // Seed handler
   // =========================================================================
@@ -477,22 +412,6 @@ export default function SettingsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {isDirty && (
-            <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              Unsaved changes
-            </span>
-          )}
-          <Tooltip text="Save all configuration changes">
-            <button onClick={handleSaveSettings} disabled={isSaving || !isDirty} className={btnPrimary}>
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {isSaving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </Tooltip>
         </div>
       </div>
 
@@ -850,80 +769,8 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 4 — Buffer Time                                           */}
       {/* ================================================================= */}
-      <section className={cardBodyClass}>
-        <div className="flex items-center gap-2.5 mb-5">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sky-50">
-            <Clock className="w-[18px] h-[18px] text-sky-500" />
-          </div>
-          <div>
-            <h2 className={sectionTitleClass}>Buffer Time</h2>
-            <p className={sectionDescClass}>
-              Add padding before and after sessions to prevent back-to-back scheduling conflicts
-            </p>
-          </div>
-        </div>
-
-        {bufferLoading ? (
-          <div className="space-y-3">
-            <div className="h-6 w-48 animate-pulse bg-slate-100 rounded-lg" />
-            <div className="h-10 w-64 animate-pulse bg-slate-100 rounded-lg" />
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {/* Toggle */}
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <Tooltip text="Enable or disable buffer time for all conflict checks">
-                <span className="text-sm font-medium text-slate-900">Enable Buffer Time</span>
-              </Tooltip>
-              <Tooltip text={bufferEnabled ? 'Disable buffer time' : 'Enable buffer time'}>
-                <button
-                  onClick={() => setBufferEnabled((v) => !v)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    bufferEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      bufferEnabled ? 'translate-x-[24px]' : 'translate-x-[3px]'
-                    }`}
-                  />
-                </button>
-              </Tooltip>
-            </div>
-
-            {/* Duration dropdown */}
-            <div className="max-w-xs">
-              <label className={labelClass}>Buffer Duration</label>
-              <Tooltip text="Minutes of padding added before and after each session" position="bottom">
-                <select
-                  value={bufferMinutes}
-                  onChange={(e) => setBufferMinutes(Number(e.target.value))}
-                  disabled={!bufferEnabled}
-                  className={`${inputClass} disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <option value={15}>15 minutes</option>
-                  <option value={30}>30 minutes</option>
-                  <option value={45}>45 minutes</option>
-                  <option value={60}>60 minutes</option>
-                </select>
-              </Tooltip>
-            </div>
-
-            {/* Note: Buffer time changes are saved via the header Save Settings button */}
-            {isDirty && (
-              <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                You have unsaved changes — click &quot;Save Settings&quot; above to persist.
-              </p>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* ================================================================= */}
-      {/* SECTION 5 — Data Management                                       */}
+      {/* SECTION 4 — Data Management                                       */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
         <div className="flex items-center gap-2.5 mb-5">
@@ -1001,7 +848,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 6 — Clear Data (Danger Zone)                              */}
+      {/* SECTION 5 — Clear Data (Danger Zone)                              */}
       {/* ================================================================= */}
       <section className="rounded-lg border border-red-200 bg-white shadow-sm p-5">
         <div className="flex items-center gap-2.5 mb-5">
