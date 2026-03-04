@@ -7,6 +7,7 @@ interface TooltipProps {
   text: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }
 
@@ -15,7 +16,7 @@ type ResolvedPosition = 'top' | 'bottom' | 'left' | 'right';
 const OFFSET = 8;
 const VIEWPORT_PADDING = 4;
 
-export function Tooltip({ text, position = 'top', className, children }: TooltipProps) {
+export function Tooltip({ text, position = 'top', className, style, children }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const [placed, setPlaced] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -155,7 +156,7 @@ export function Tooltip({ text, position = 'top', className, children }: Tooltip
       onMouseEnter={show}
       onMouseLeave={hide}
       className={className}
-      style={{ display: 'inline-flex' }}
+      style={{ display: style?.gridColumn !== undefined || style?.gridRow !== undefined ? 'contents' : 'inline-flex', ...style }}
     >
       {children}
       {visible && typeof document !== 'undefined' && createPortal(

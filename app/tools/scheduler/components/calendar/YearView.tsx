@@ -211,13 +211,13 @@ function MonthGrid({
       </div>
 
       {/* Day Headers + Day Cells — single flat grid */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7" style={{ width: '100%', minWidth: 0 }}>
         {/* Day Headers — pinned to grid-row 1 */}
         {DAY_HEADERS.map((label, idx) => (
           <div
             key={label}
             style={{ gridRow: 1 }}
-            className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-100 ${
+            className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-100 bg-white sticky top-0 z-10 box-border ${
               idx < 6 ? 'border-r border-slate-100' : ''
             }`}
           >
@@ -240,10 +240,10 @@ function MonthGrid({
               text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${day}${
                 dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
               }`}
+              style={{ gridColumn: dayOfWeek + 1, gridRow: Math.floor((firstDayOfWeek + i) / 7) + 2 }}
             >
               <div
-                style={day === 1 ? { gridColumnStart: firstDayOfWeek + 1 } : undefined}
-                className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 ${
+                className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden min-h-[100px] border-b border-slate-100 bg-white box-border ${
                   gridColumn < 6 ? 'border-r border-slate-100' : ''
                 }`}
                 onClick={() => onDayClick?.(date)}

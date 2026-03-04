@@ -418,7 +418,7 @@ export function WeekView({
   }, [weekDates, weekEndDate]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
       {/* ------- Week Navigation Sub-bar ------- */}
       <div className="flex items-center gap-3 bg-white px-6 py-3 border-b border-slate-200 shrink-0">
         <Tooltip text="Previous week">
@@ -459,64 +459,54 @@ export function WeekView({
         </Button>
       </div>
 
-      {/* ------- Day Headers Row ------- */}
-      <div className="flex bg-white border-b border-slate-200 shrink-0">
-        {/* Empty corner above time column */}
-        <div className="shrink-0 border-r border-slate-200" style={{ width: TIME_COL_WIDTH }} />
-
-        {/* Day header cells */}
-        <div className="flex-1 grid grid-cols-7">
-          {weekDates.map((date, idx) => {
-            const dateKey = weekDateKeys[idx];
-            const isToday = dateKey === todayKey;
-            return (
-              <Tooltip key={idx} text={`${DAY_FULL_LABELS[idx]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`}>
-                <div
-                  className={`flex flex-col items-center py-2 ${
-                    idx < 6 ? 'border-r border-slate-100' : ''
-                  }`}
-                >
-                  <span className={`text-[11px] font-semibold tracking-[1px] ${
-                    isToday ? 'text-blue-500' : 'text-slate-400'
-                  }`}>
-                    {DAY_LABELS[idx]}
-                  </span>
-                  <span className={`text-lg font-semibold leading-tight mt-0.5 w-8 h-8 flex items-center justify-center rounded-full ${
-                    isToday
-                      ? 'bg-blue-500 text-white'
-                      : 'text-slate-900'
-                  }`}>
-                    {date.getDate()}
-                  </span>
-                </div>
-              </Tooltip>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ------- Scrollable Time Grid ------- */}
-      <div className="flex flex-1 overflow-y-auto bg-white">
-        {/* Time Column (left gutter) */}
+      {/* ------- Unified Grid (sticky headers + time gutter + day columns) ------- */}
+      <div className="flex-1 overflow-y-auto bg-white" style={{ minWidth: 0 }}>
         <div
-          className="shrink-0 border-r border-slate-200 bg-slate-50"
-          style={{ width: TIME_COL_WIDTH }}
+          className="grid min-h-full"
+          style={{
+            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, 1fr)`,
+            gridTemplateRows: 'auto 1fr',
+          }}
         >
-          {hours.map((hour) => (
+          {/* Row 1, Col 1: Sticky empty corner above time gutter */}
+          <div
+            className="sticky top-0 z-10 bg-white border-b border-slate-200 border-r border-slate-200"
+            style={{ gridRow: 1 }}
+          />
+
+          {/* Row 1, Cols 2-8: Sticky day headers */}
+          {weekDates.map((date, idx) => (
             <div
-              key={hour}
-              className="flex items-start justify-end pr-3 pt-0"
-              style={{ height: `${HOUR_HEIGHT}px` }}
+              key={`hdr-${idx}`}
+              className={`sticky top-0 z-10 bg-white px-1.5 py-2 border-b border-slate-200 text-center box-border ${
+                idx < 6 ? 'border-r border-slate-100' : ''
+              }`}
+              style={{ gridRow: 1 }}
             >
-              <span className="text-[12px] font-semibold text-slate-500 -mt-2 select-none">
-                {formatHourLabel(hour)}
-              </span>
+              <div className="text-[11px] font-semibold tracking-[1px] text-slate-400">{DAY_LABELS[idx]}</div>
+              <div className="text-lg font-semibold text-slate-800">{date.getDate()}</div>
             </div>
           ))}
-        </div>
 
-        {/* Day Columns (7-column grid) */}
-        <div className="flex-1 grid grid-cols-7 relative">
+          {/* Row 2, Col 1: Time gutter */}
+          <div
+            className="border-r border-slate-200 bg-slate-50"
+            style={{ gridRow: 2 }}
+          >
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                className="flex items-start justify-end pr-3 pt-0"
+                style={{ height: `${HOUR_HEIGHT}px` }}
+              >
+                <span className="text-[12px] font-semibold text-slate-500 -mt-2 select-none">
+                  {formatHourLabel(hour)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Row 2, Cols 2-8: Day columns */}
           {weekDates.map((_, dayIdx) => {
             const dateKey = weekDateKeys[dayIdx];
             const dayEvents = eventsByDate[dateKey] || [];
@@ -526,10 +516,10 @@ export function WeekView({
             return (
               <div
                 key={dayIdx}
-                className={`relative ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
+                className={`relative px-1.5 box-border ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
                   isToday ? 'bg-blue-50/30' : ''
                 } ${isDragOver ? 'bg-blue-50/50' : ''}`}
-                style={{ minHeight: `${totalHeight}px` }}
+                style={{ gridRow: 2, minHeight: `${totalHeight}px` }}
                 onDragOver={
                   onEventDrop
                     ? (e) => {
@@ -612,7 +602,6 @@ export function WeekView({
               </div>
             );
           })}
-
         </div>
       </div>
 

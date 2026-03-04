@@ -229,7 +229,7 @@ export function MonthView({
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
       {/* ------- Month Navigation Sub-bar ------- */}
       <div className="flex items-center gap-3 bg-white px-6 py-3 border-b border-slate-200 shrink-0">
         <Tooltip text="Previous month">
@@ -261,25 +261,30 @@ export function MonthView({
         </Button>
       </div>
 
-      {/* ------- Day Headers + Calendar Grid (single flat grid) ------- */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      {/* ------- Unified Grid (sticky headers + day columns) ------- */}
+      <div className="flex-1 overflow-y-auto bg-white" style={{ minWidth: 0 }}>
         <div
-          className="grid grid-cols-7 min-h-full"
-          style={{ gridTemplateRows: 'auto', gridAutoRows: 'minmax(100px, 1fr)' }}
+          className="grid min-h-full"
+          style={{
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gridTemplateRows: 'auto',
+            gridAutoRows: 'minmax(100px, 1fr)',
+          }}
         >
-          {/* Day Headers — pinned to grid-row 1 */}
+          {/* Row 1: Sticky day headers */}
           {DAY_HEADERS.map((label, idx) => (
             <div
-              key={label}
-              style={{ gridRow: 1 }}
-              className={`text-center py-2 text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 ${
+              key={`hdr-${idx}`}
+              className={`sticky top-0 z-10 bg-white px-1.5 py-2 border-b border-slate-200 text-center box-border ${
                 idx < 6 ? 'border-r border-slate-100' : ''
               }`}
+              style={{ gridRow: 1 }}
             >
-              {label}
+              <div className="text-[11px] font-semibold tracking-[1px] text-slate-400">{label}</div>
             </div>
           ))}
-          {/* Day Cells — auto-flow into rows 2+, first day uses grid-column-start */}
+
+          {/* Rows 2+: Day cells */}
           {Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
             const date = new Date(year, month, day);
@@ -287,7 +292,6 @@ export function MonthView({
             const isToday = dateKey === todayKey;
             const dayEvents = eventsByDate[dateKey] || [];
             const dayOfWeek = date.getDay();
-            const gridColumn = (firstDayOfWeek + i) % 7;
 
             return (
               <Tooltip
@@ -295,12 +299,12 @@ export function MonthView({
                 text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${day}${
                   dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
                 }`}
+                style={{ gridColumn: dayOfWeek + 1, gridRow: Math.floor((firstDayOfWeek + i) / 7) + 2 }}
               >
                 <div
-                  style={day === 1 ? { gridColumnStart: firstDayOfWeek + 1 } : undefined}
-                  className={`p-1.5 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 ${
-                    gridColumn < 6 ? 'border-r border-slate-100' : ''
-                  }`}
+                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden border-b border-slate-100 box-border ${
+                    dayOfWeek < 6 ? 'border-r border-slate-100' : ''
+                  } ${isToday ? 'bg-blue-50/30' : ''}`}
                   onClick={() => onDayClick?.(date)}
                 >
                   <span

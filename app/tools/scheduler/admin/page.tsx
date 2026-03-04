@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import {
   Music,
@@ -8,7 +9,6 @@ import {
   Clock,
   User as UserIcon,
   Sparkles,
-  Settings2,
   Loader2,
   Trash2,
   AlertTriangle,
@@ -322,85 +322,6 @@ function NeedsAssignmentCard({ event }: { event: UpcomingEvent }) {
 }
 
 // ---------------------------------------------------------------------------
-// Day Schedule Settings Panel
-// ---------------------------------------------------------------------------
-
-function DayScheduleSettings({
-  dayStartHour,
-  dayEndHour,
-  onStartChange,
-  onEndChange,
-  onClose,
-}: {
-  dayStartHour: number;
-  dayEndHour: number;
-  onStartChange: (hour: number) => void;
-  onEndChange: (hour: number) => void;
-  onClose: () => void;
-}) {
-  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
-
-  const formatOption = (h: number) => {
-    if (h === 0) return '12:00 AM';
-    if (h < 12) return `${h}:00 AM`;
-    if (h === 12) return '12:00 PM';
-    return `${h - 12}:00 PM`;
-  };
-
-  return (
-    <div className="absolute right-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-slate-200 p-4 z-50">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-[13px] font-semibold text-slate-900">Day Schedule</h4>
-        <Tooltip text="Close schedule settings">
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-xs"
-          >
-            Done
-          </button>
-        </Tooltip>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <label className="block text-[11px] font-medium text-slate-500 mb-1">
-            Start of Day
-          </label>
-          <Tooltip text="Set the earliest hour displayed on calendar">
-            <select
-              value={dayStartHour}
-              onChange={(e) => onStartChange(Number(e.target.value))}
-              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
-            >
-              {hourOptions.filter((h) => h < dayEndHour).map((h) => (
-                <option key={h} value={h}>{formatOption(h)}</option>
-              ))}
-            </select>
-          </Tooltip>
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-medium text-slate-500 mb-1">
-            End of Day
-          </label>
-          <Tooltip text="Set the latest hour displayed on calendar">
-            <select
-              value={dayEndHour}
-              onChange={(e) => onEndChange(Number(e.target.value))}
-              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
-            >
-              {hourOptions.filter((h) => h > dayStartHour).map((h) => (
-                <option key={h} value={h}>{formatOption(h)}</option>
-              ))}
-            </select>
-          </Tooltip>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Clear Events Confirmation Modal
 // ---------------------------------------------------------------------------
 
@@ -571,9 +492,6 @@ function CalendarDashboard() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
-  const [dayStartHour, setDayStartHour] = useState(8);
-  const [dayEndHour, setDayEndHour] = useState(15);
-  const [showSettings, setShowSettings] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     event: CalendarEvent;
     position: { x: number; y: number };
@@ -584,6 +502,8 @@ function CalendarDashboard() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  // Portal container for Month/Year views (escapes flex hierarchy)
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   // Track recently modified event IDs (eventId -> timestamp) for badge display
   const [recentlyModified, setRecentlyModified] = useState<Map<string, number>>(new Map());
   const recentlyModifiedRef = useRef(recentlyModified);
@@ -1118,30 +1038,6 @@ function CalendarDashboard() {
           Today
         </Button>
 
-        {/* Day Schedule Settings */}
-        <div className="relative">
-          <Tooltip text="Configure day start/end times">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-2 rounded-md transition-colors cursor-pointer ${
-                showSettings ? 'bg-blue-50 text-blue-500' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
-              }`}
-            >
-              <Settings2 className="w-4 h-4" />
-            </button>
-          </Tooltip>
-
-          {showSettings && (
-            <DayScheduleSettings
-              dayStartHour={dayStartHour}
-              dayEndHour={dayEndHour}
-              onStartChange={setDayStartHour}
-              onEndChange={setDayEndHour}
-              onClose={() => setShowSettings(false)}
-            />
-          )}
-        </div>
-
         {/* Spacer */}
         <div className="flex-1" />
 
@@ -1268,7 +1164,7 @@ function CalendarDashboard() {
       {/* ================================================================= */}
       {/* MAIN CONTENT                                                       */}
       {/* ================================================================= */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
         {/* ---- Week View ---- */}
         {currentView === 'week' && (
@@ -1277,8 +1173,6 @@ function CalendarDashboard() {
               events={filteredEvents}
               onEventClick={handleEditEvent}
               onEventContextMenu={handleEventContextMenu}
-              dayStartHour={dayStartHour}
-              dayEndHour={dayEndHour}
               onOpenEditPanel={openPanel}
               onEventDrop={handleEventDrop}
               onEventResize={handleEventResize}
@@ -1306,15 +1200,6 @@ function CalendarDashboard() {
           </>
         )}
 
-        {/* ---- Month View ---- */}
-        {currentView === 'month' && (
-          <MonthView
-            events={filteredEvents}
-            onDayClick={handleDayClick}
-            onOpenEditPanel={openPanel}
-          />
-        )}
-
         {/* ---- Day View ---- */}
         {currentView === 'day' && (
           <DayView
@@ -1322,21 +1207,38 @@ function CalendarDashboard() {
             currentDate={selectedDate}
             onBackToMonth={() => setCurrentView('month')}
             conflicts={1}
-            dayStartHour={dayStartHour}
-            dayEndHour={dayEndHour}
             onOpenEditPanel={openPanel}
           />
         )}
 
-        {/* ---- Year View ---- */}
-        {currentView === 'year' && (
-          <YearView
-            events={filteredEvents}
-            onTodayClick={() => setCurrentView('week')}
-            onOpenEditPanel={openPanel}
-          />
-        )}
+        {/* Portal target for Month/Year views — absolute-positioned to
+            fill the calendar area, completely outside the flex flow */}
+        <div
+          ref={setPortalContainer}
+          className="absolute inset-0"
+          style={{ display: (currentView === 'month' || currentView === 'year') ? 'flex' : 'none' }}
+        />
       </div>
+
+      {/* ---- Month View (portaled) ---- */}
+      {currentView === 'month' && portalContainer && createPortal(
+        <MonthView
+          events={filteredEvents}
+          onDayClick={handleDayClick}
+          onOpenEditPanel={openPanel}
+        />,
+        portalContainer,
+      )}
+
+      {/* ---- Year View (portaled) ---- */}
+      {currentView === 'year' && portalContainer && createPortal(
+        <YearView
+          events={filteredEvents}
+          onTodayClick={() => setCurrentView('week')}
+          onOpenEditPanel={openPanel}
+        />,
+        portalContainer,
+      )}
 
       {/* ================================================================= */}
       {/* CONTEXT MENU (portal-like, rendered on top)                        */}

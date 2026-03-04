@@ -19,7 +19,7 @@ import {
 
 const adminNavItems: { label: string; href: string; icon: LucideIcon; tooltip: string }[] = [
   { label: 'Calendar', href: '/admin', icon: Calendar, tooltip: 'View and manage the session calendar' },
-  { label: 'Templates', href: '/admin/templates', icon: LayoutTemplate, tooltip: 'Define session templates for automated generation' },
+  { label: 'Schedule Builder', href: '/admin/templates', icon: LayoutTemplate, tooltip: 'Build weekly schedule templates and configure day times' },
   { label: 'Tags', href: '/admin/tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
   { label: 'People & Places', href: '/admin/people', icon: Users, tooltip: 'Manage instructors and their availability' },
   { label: 'School Calendar', href: '/admin/calendar', icon: Clock, tooltip: 'View and manage school calendar and special dates' },
@@ -72,7 +72,7 @@ function SidebarProgramSelector() {
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex" style={{ height: '100vh' }}>
+    <div className="flex h-screen">
       {/* Dark sidebar with program selector */}
       <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} />
 

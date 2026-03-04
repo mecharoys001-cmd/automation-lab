@@ -53,10 +53,10 @@ const defaultNavItems: NavItem[] = [
     tooltip: 'Manage instructors and venues',
   },
   {
-    label: 'Templates',
+    label: 'Schedule Builder',
     href: '/admin/templates',
     icon: LayoutTemplate,
-    tooltip: 'Define session templates',
+    tooltip: 'Build weekly schedule templates and configure day times',
   },
   {
     label: 'Tags',

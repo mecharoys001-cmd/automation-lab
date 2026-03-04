@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Settings2 } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -38,8 +38,8 @@ interface PlacedTemplate {
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const HOUR_HEIGHT = 72;
-const DAY_START_HOUR = 8;
-const DAY_END_HOUR = 16;
+const DEFAULT_DAY_START = 8;
+const DEFAULT_DAY_END = 16;
 const TIME_COL_WIDTH = 72;
 
 const TEMPLATE_COLORS = [
@@ -1001,6 +1001,8 @@ function PlacedTemplateBlock({
   onResize,
   onDelete,
   isSelected,
+  dayStartHour,
+  dayEndHour,
 }: {
   placed: PlacedTemplate;
   template: Template;
@@ -1008,6 +1010,8 @@ function PlacedTemplateBlock({
   onResize: (newStart: number, newDuration: number) => void;
   onDelete: () => void;
   isSelected: boolean;
+  dayStartHour: number;
+  dayEndHour: number;
 }) {
   const [resizing, setResizing] = useState<'top' | 'bottom' | null>(null);
   const blockRef = useRef<HTMLDivElement>(null);
@@ -1025,8 +1029,8 @@ function PlacedTemplateBlock({
       if (!gridRect) return;
 
       const relativeY = e.clientY - gridRect.top;
-      const hourAtMouse = DAY_START_HOUR + relativeY / HOUR_HEIGHT;
-      const snappedHour = snapToQuarterHour(Math.max(DAY_START_HOUR, Math.min(DAY_END_HOUR, hourAtMouse)));
+      const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
+      const snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour, hourAtMouse)));
 
       if (resizing === 'top') {
         const newStart = snappedHour;
@@ -1041,7 +1045,7 @@ function PlacedTemplateBlock({
         }
       }
     },
-    [resizing, placed, onResize],
+    [resizing, placed, onResize, dayStartHour, dayEndHour],
   );
 
   const handleResizeEnd = useCallback(() => {
@@ -1059,7 +1063,7 @@ function PlacedTemplateBlock({
     }
   }, [resizing, handleResizeMove, handleResizeEnd]);
 
-  const top = (placed.startHour - DAY_START_HOUR) * HOUR_HEIGHT;
+  const top = (placed.startHour - dayStartHour) * HOUR_HEIGHT;
   const height = placed.durationHours * HOUR_HEIGHT;
 
   return (
@@ -1312,6 +1316,89 @@ function SavedTemplatesTable({
 // Main Page
 // ──────────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────────
+// Day Schedule Settings Panel
+// ──────────────────────────────────────────────────────────────
+
+function DayScheduleSettings({
+  dayStartHour,
+  dayEndHour,
+  onStartChange,
+  onEndChange,
+  onClose,
+}: {
+  dayStartHour: number;
+  dayEndHour: number;
+  onStartChange: (hour: number) => void;
+  onEndChange: (hour: number) => void;
+  onClose: () => void;
+}) {
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
+
+  const formatOption = (h: number) => {
+    if (h === 0) return '12:00 AM';
+    if (h < 12) return `${h}:00 AM`;
+    if (h === 12) return '12:00 PM';
+    return `${h - 12}:00 PM`;
+  };
+
+  return (
+    <div className="absolute right-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-slate-200 p-4 z-50">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[13px] font-semibold text-slate-900">Day Schedule</h4>
+        <Tooltip text="Close schedule settings">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-xs"
+          >
+            Done
+          </button>
+        </Tooltip>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">
+            Start of Day
+          </label>
+          <Tooltip text="Set the earliest hour displayed on the schedule grid">
+            <select
+              value={dayStartHour}
+              onChange={(e) => onStartChange(Number(e.target.value))}
+              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
+            >
+              {hourOptions.filter((h) => h < dayEndHour).map((h) => (
+                <option key={h} value={h}>{formatOption(h)}</option>
+              ))}
+            </select>
+          </Tooltip>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">
+            End of Day
+          </label>
+          <Tooltip text="Set the latest hour displayed on the schedule grid">
+            <select
+              value={dayEndHour}
+              onChange={(e) => onEndChange(Number(e.target.value))}
+              className="w-full h-9 px-3 border border-slate-200 rounded-md text-[13px] text-slate-700 bg-white cursor-pointer"
+            >
+              {hourOptions.filter((h) => h > dayStartHour).map((h) => (
+                <option key={h} value={h}>{formatOption(h)}</option>
+              ))}
+            </select>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Main Page
+// ──────────────────────────────────────────────────────────────
+
 export default function TemplatesPage() {
   const { selectedProgramId } = useProgram();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -1338,6 +1425,11 @@ export default function TemplatesPage() {
   const [showAutoFillModal, setShowAutoFillModal] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // ── Day schedule time range ──
+  const [dayStartHour, setDayStartHour] = useState(DEFAULT_DAY_START);
+  const [dayEndHour, setDayEndHour] = useState(DEFAULT_DAY_END);
+  const [showDaySettings, setShowDaySettings] = useState(false);
 
   // ── Fetch templates from API ──
 
@@ -1711,8 +1803,8 @@ export default function TemplatesPage() {
 
     const gridRect = e.currentTarget.getBoundingClientRect();
     const relativeY = e.clientY - gridRect.top;
-    const hourAtMouse = DAY_START_HOUR + relativeY / HOUR_HEIGHT;
-    const snappedHour = snapToQuarterHour(Math.max(DAY_START_HOUR, Math.min(DAY_END_HOUR - 1, hourAtMouse)));
+    const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
+    const snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
 
     setDropPreview({ dayIndex, hour: snappedHour });
   };
@@ -1730,8 +1822,8 @@ export default function TemplatesPage() {
 
     const gridRect = e.currentTarget.getBoundingClientRect();
     const relativeY = e.clientY - gridRect.top;
-    const hourAtMouse = DAY_START_HOUR + relativeY / HOUR_HEIGHT;
-    const startHour = snapToQuarterHour(Math.max(DAY_START_HOUR, Math.min(DAY_END_HOUR - 1, hourAtMouse)));
+    const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
+    const startHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
 
     // Compute duration from template's time slot or default to 1h
     let durationHours = 1;
@@ -1878,9 +1970,9 @@ export default function TemplatesPage() {
       <div className="bg-white px-8 py-5 border-b border-slate-200 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Template Builder</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Schedule Builder</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Create templates and drag them onto the weekly grid to schedule.
+              Create templates and drag them onto the weekly grid to build your schedule.
             </p>
           </div>
           {isDirty && (
@@ -1891,6 +1983,28 @@ export default function TemplatesPage() {
               </span>
             </Tooltip>
           )}
+          {/* Day Schedule Settings */}
+          <div className="relative">
+            <Tooltip text="Configure day start/end times">
+              <button
+                onClick={() => setShowDaySettings(!showDaySettings)}
+                className={`p-2 rounded-md transition-colors cursor-pointer ${
+                  showDaySettings ? 'bg-blue-50 text-blue-500' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                }`}
+              >
+                <Settings2 className="w-4 h-4" />
+              </button>
+            </Tooltip>
+            {showDaySettings && (
+              <DayScheduleSettings
+                dayStartHour={dayStartHour}
+                dayEndHour={dayEndHour}
+                onStartChange={setDayStartHour}
+                onEndChange={setDayEndHour}
+                onClose={() => setShowDaySettings(false)}
+              />
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Tooltip text="Remove all template placements from the weekly grid">
@@ -1952,8 +2066,8 @@ export default function TemplatesPage() {
             {/* Time column */}
             <div className="shrink-0" style={{ width: TIME_COL_WIDTH }}>
               <div className="h-12 border-b border-slate-200" />
-              {Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }).map((_, i) => {
-                const hour = DAY_START_HOUR + i;
+              {Array.from({ length: dayEndHour - dayStartHour }).map((_, i) => {
+                const hour = dayStartHour + i;
                 return (
                   <div
                     key={hour}
@@ -1981,13 +2095,13 @@ export default function TemplatesPage() {
                 {/* Schedule grid */}
                 <div
                   className="schedule-grid relative"
-                  style={{ height: (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT }}
+                  style={{ height: (dayEndHour - dayStartHour) * HOUR_HEIGHT }}
                   onDrop={(e) => handleDrop(dayIndex, e)}
                   onDragOver={(e) => handleDragOver(dayIndex, e)}
                   onDragLeave={handleDragLeave}
                 >
                   {/* Hour rows */}
-                  {Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }).map((_, i) => (
+                  {Array.from({ length: dayEndHour - dayStartHour }).map((_, i) => (
                     <div
                       key={i}
                       className="border-b border-slate-100"
@@ -2000,7 +2114,7 @@ export default function TemplatesPage() {
                     <div
                       className="absolute left-1 right-1 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75"
                       style={{
-                        top: `${(dropPreview.hour - DAY_START_HOUR) * HOUR_HEIGHT}px`,
+                        top: `${(dropPreview.hour - dayStartHour) * HOUR_HEIGHT}px`,
                         height: `${HOUR_HEIGHT}px`,
                         borderColor: draggingTemplate.color,
                         backgroundColor: `${draggingTemplate.color}15`,
@@ -2037,6 +2151,8 @@ export default function TemplatesPage() {
                           }
                           onDelete={() => handleDeletePlaced(placed.id)}
                           isSelected={selectedPlacedId === placed.id}
+                          dayStartHour={dayStartHour}
+                          dayEndHour={dayEndHour}
                         />
                       );
                     })}
