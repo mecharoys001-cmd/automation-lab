@@ -2465,7 +2465,7 @@ export default function TemplatesPage() {
         </div>
 
         {/* Right: Event Library Sidebar */}
-        <div className="w-[360px] shrink-0 bg-slate-800 border-l border-slate-700 flex flex-col min-h-0">
+        <div className="w-[360px] shrink-0 bg-slate-50 border-l border-slate-200 flex flex-col min-h-0">
           <div className="flex-1 overflow-y-auto p-4">
             <TemplateList
               mode="draggable"

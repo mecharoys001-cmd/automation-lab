@@ -224,7 +224,7 @@ export function TemplateList({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={mode === 'draggable'
-                ? 'w-full pl-9 pr-3 py-2 text-sm border border-slate-600 rounded-lg bg-slate-700 text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                ? 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                 : 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
               }
             />
@@ -234,9 +234,9 @@ export function TemplateList({
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer"
             style={mode === 'draggable'
               ? {
-                  backgroundColor: filtersOpen ? '#1E3A5F' : '#334155',
-                  borderColor: filtersOpen ? '#3B82F6' : '#475569',
-                  color: filtersOpen ? '#93C5FD' : '#CBD5E1',
+                  backgroundColor: filtersOpen ? '#EFF6FF' : '#FFFFFF',
+                  borderColor: filtersOpen ? '#3B82F6' : '#E2E8F0',
+                  color: filtersOpen ? '#2563EB' : '#334155',
                 }
               : {
                   backgroundColor: filtersOpen ? '#EFF6FF' : '#FFFFFF',
@@ -599,9 +599,9 @@ function DraggableView({
     <div>
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-white">Event Library</h2>
+        <h2 className="text-base font-semibold text-slate-800">Event Library</h2>
         <Tooltip text={`${items.length} event${items.length === 1 ? '' : 's'} saved`}>
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-700 text-xs font-medium text-slate-300">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-200 text-xs font-medium text-slate-600">
             {items.length}
           </span>
         </Tooltip>

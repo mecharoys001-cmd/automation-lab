@@ -173,7 +173,7 @@ export default function TagsPage() {
   const categoriesFromTags = Array.from(new Set(tags.map(t => t.category || 'General')));
   const categories = Array.from(new Set([...categoriesFromTags, ...customCategories])).sort();
 
-  // Quick add tag
+  // Quick add tag(s) - supports comma-separated values
   const handleQuickAdd = async () => {
     const trimmed = quickAddValue.trim();
     if (!trimmed) {
@@ -186,31 +186,72 @@ export default function TagsPage() {
     setQuickAddSuccess(false);
 
     try {
-      const emoji = getEmojiForTag(trimmed);
-      const description = TAG_DESCRIPTIONS[trimmed.toLowerCase()] || '';
+      // Split by comma and filter out empty strings
+      const tagNames = trimmed
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
 
-      const res = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: trimmed, 
-          emoji, 
-          description, 
-          category: quickAddCategory 
-        }),
-      });
+      if (tagNames.length === 0) {
+        setQuickAddError('Please enter at least one tag name');
+        setQuickAddLoading(false);
+        return;
+      }
 
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || `HTTP ${res.status}`);
+      // Create tags sequentially
+      let successCount = 0;
+      let failedTags: string[] = [];
+
+      for (const tagName of tagNames) {
+        try {
+          const emoji = getEmojiForTag(tagName);
+          const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
+
+          const res = await fetch('/api/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              name: tagName, 
+              emoji, 
+              description, 
+              category: quickAddCategory 
+            }),
+          });
+
+          if (!res.ok) {
+            const json = await res.json();
+            failedTags.push(`${tagName} (${json.error || 'error'})`);
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          failedTags.push(`${tagName} (failed)`);
+        }
+      }
+
+      // Refresh tags list
+      await fetchTags();
+
+      // Show results
+      if (successCount > 0 && failedTags.length === 0) {
+        setQuickAddSuccess(true);
+        showToast(
+          successCount === 1 
+            ? `Tag "${tagNames[0]}" created` 
+            : `${successCount} tags created`,
+          'success'
+        );
+      } else if (failedTags.length > 0) {
+        setQuickAddError(
+          successCount > 0
+            ? `Created ${successCount}, failed: ${failedTags.join(', ')}`
+            : `Failed: ${failedTags.join(', ')}`
+        );
       }
 
       setQuickAddValue('');
-      setQuickAddSuccess(true);
-      await fetchTags();
-      showToast(`Tag "${trimmed}" created successfully`, 'success');
     } catch (err) {
-      setQuickAddError(err instanceof Error ? err.message : 'Failed to create tag');
+      setQuickAddError(err instanceof Error ? err.message : 'Failed to create tags');
     } finally {
       setQuickAddLoading(false);
     }
@@ -325,7 +366,7 @@ export default function TagsPage() {
     quickAddRef.current?.focus();
   };
 
-  // Quick add tag to specific category
+  // Quick add tag(s) to specific category (supports comma-separated values)
   const handleCategoryQuickAdd = async (category: string) => {
     const trimmed = categoryQuickAddValue.trim();
     if (!trimmed) return;
@@ -333,31 +374,73 @@ export default function TagsPage() {
     setCategoryQuickAddLoading(true);
 
     try {
-      const emoji = getEmojiForTag(trimmed);
-      const description = TAG_DESCRIPTIONS[trimmed.toLowerCase()] || '';
+      // Split by comma and filter out empty strings
+      const tagNames = trimmed
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
 
-      const res = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: trimmed, 
-          emoji, 
-          description, 
-          category 
-        }),
-      });
+      if (tagNames.length === 0) {
+        showToast('Please enter at least one tag name', 'error');
+        setCategoryQuickAddLoading(false);
+        return;
+      }
 
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || `HTTP ${res.status}`);
+      // Create tags sequentially
+      let successCount = 0;
+      let failedTags: string[] = [];
+
+      for (const tagName of tagNames) {
+        try {
+          const emoji = getEmojiForTag(tagName);
+          const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
+
+          const res = await fetch('/api/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              name: tagName, 
+              emoji, 
+              description, 
+              category 
+            }),
+          });
+
+          if (!res.ok) {
+            const json = await res.json();
+            failedTags.push(`${tagName} (${json.error || 'error'})`);
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          failedTags.push(`${tagName} (failed)`);
+        }
+      }
+
+      // Refresh tags list
+      await fetchTags();
+
+      // Show results
+      if (successCount > 0 && failedTags.length === 0) {
+        showToast(
+          successCount === 1 
+            ? `Tag "${tagNames[0]}" added to ${category}` 
+            : `${successCount} tags added to ${category}`,
+          'success'
+        );
+      } else if (successCount > 0 && failedTags.length > 0) {
+        showToast(
+          `${successCount} tag(s) added. Failed: ${failedTags.join(', ')}`,
+          'warning'
+        );
+      } else {
+        showToast(`Failed to create tags: ${failedTags.join(', ')}`, 'error');
       }
 
       setCategoryQuickAddValue('');
       setCategoryQuickAdd(null);
-      await fetchTags();
-      showToast(`Tag "${trimmed}" added to ${category}`, 'success');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to create tag', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to create tags', 'error');
     } finally {
       setCategoryQuickAddLoading(false);
     }
@@ -416,7 +499,7 @@ export default function TagsPage() {
               value={quickAddValue}
               onChange={(e) => { setQuickAddValue(e.target.value); setQuickAddError(null); setQuickAddSuccess(false); }}
               onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
-              placeholder="e.g., Percussion, Strings..."
+              placeholder="e.g., Percussion, Strings, Brass (comma-separated for bulk)"
               className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
               disabled={quickAddLoading}
             />
@@ -537,7 +620,7 @@ export default function TagsPage() {
                           if (e.key === 'Enter') handleCategoryQuickAdd(category);
                           if (e.key === 'Escape') setCategoryQuickAdd(null);
                         }}
-                        placeholder={`Add tag to ${category}...`}
+                        placeholder={`Add tag to ${category} (comma-separated for bulk)...`}
                         className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                         autoFocus
                         disabled={categoryQuickAddLoading}
