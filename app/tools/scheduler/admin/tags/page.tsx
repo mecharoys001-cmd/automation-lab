@@ -113,6 +113,11 @@ export default function TagsPage() {
   const [editCategory, setEditCategory] = useState('General');
   const [editLoading, setEditLoading] = useState(false);
 
+  // Per-category quick add
+  const [categoryQuickAdd, setCategoryQuickAdd] = useState<string | null>(null);
+  const [categoryQuickAddValue, setCategoryQuickAddValue] = useState('');
+  const [categoryQuickAddLoading, setCategoryQuickAddLoading] = useState(false);
+
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -320,6 +325,44 @@ export default function TagsPage() {
     quickAddRef.current?.focus();
   };
 
+  // Quick add tag to specific category
+  const handleCategoryQuickAdd = async (category: string) => {
+    const trimmed = categoryQuickAddValue.trim();
+    if (!trimmed) return;
+
+    setCategoryQuickAddLoading(true);
+
+    try {
+      const emoji = getEmojiForTag(trimmed);
+      const description = TAG_DESCRIPTIONS[trimmed.toLowerCase()] || '';
+
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: trimmed, 
+          emoji, 
+          description, 
+          category 
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+
+      setCategoryQuickAddValue('');
+      setCategoryQuickAdd(null);
+      await fetchTags();
+      showToast(`Tag "${trimmed}" added to ${category}`, 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to create tag', 'error');
+    } finally {
+      setCategoryQuickAddLoading(false);
+    }
+  };
+
   if (loading && tags.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50">
@@ -457,18 +500,68 @@ export default function TagsPage() {
             return (
               <div key={category} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Category Header */}
-                <button
-                  onClick={() => toggleCategory(category)}
-                  className="w-full flex items-center justify-between px-5 py-3 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
-                    <h3 className="text-sm font-bold text-slate-900">{category}</h3>
-                    <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
-                      {categoryTags.length}
-                    </span>
-                  </div>
-                </button>
+                <div className="bg-slate-50 border-b border-slate-200">
+                  <button
+                    onClick={() => toggleCategory(category)}
+                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                      <h3 className="text-sm font-bold text-slate-900">{category}</h3>
+                      <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
+                        {categoryTags.length}
+                      </span>
+                    </div>
+                    <Tooltip text={`Add tag to ${category}`}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCategoryQuickAdd(category);
+                          setCategoryQuickAddValue('');
+                        }}
+                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-400 hover:text-blue-600"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </Tooltip>
+                  </button>
+                  
+                  {/* Quick Add Field for this category */}
+                  {categoryQuickAdd === category && (
+                    <div className="px-5 pb-3 flex gap-2">
+                      <input
+                        type="text"
+                        value={categoryQuickAddValue}
+                        onChange={(e) => setCategoryQuickAddValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCategoryQuickAdd(category);
+                          if (e.key === 'Escape') setCategoryQuickAdd(null);
+                        }}
+                        placeholder={`Add tag to ${category}...`}
+                        className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                        autoFocus
+                        disabled={categoryQuickAddLoading}
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleCategoryQuickAdd(category)}
+                        disabled={categoryQuickAddLoading || !categoryQuickAddValue.trim()}
+                        icon={categoryQuickAddLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      >
+                        Add
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setCategoryQuickAdd(null)}
+                        icon={<X className="w-4 h-4" />}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Tags in Category */}
                 {!isCollapsed && (
@@ -476,7 +569,7 @@ export default function TagsPage() {
                     {categoryTags.length === 0 ? (
                       <div className="px-5 py-6 text-center">
                         <p className="text-sm text-slate-400">No tags in this category yet.</p>
-                        <p className="text-xs text-slate-400 mt-1">Create a tag above and assign it to "{category}"</p>
+                        <p className="text-xs text-slate-400 mt-1">Click the + button above to add a tag to "{category}"</p>
                       </div>
                     ) : (
                       categoryTags.map(tag => {
