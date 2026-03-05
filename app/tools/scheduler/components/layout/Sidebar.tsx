@@ -10,6 +10,7 @@ import {
   LayoutTemplate,
   Tags,
   Settings,
+  LogOut,
   type LucideIcon,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
@@ -37,6 +38,8 @@ interface SidebarProps {
   basePath?: string;
   /** Custom header content (replaces the default Symphonix logo) */
   header?: React.ReactNode;
+  /** Callback when user clicks the logout button */
+  onLogout?: () => void;
   className?: string;
 }
 
@@ -84,6 +87,7 @@ export function Sidebar({
   user = defaultUser,
   basePath = '/tools/scheduler',
   header,
+  onLogout,
   className = '',
 }: SidebarProps) {
   const pathname = usePathname();
@@ -140,15 +144,23 @@ export function Sidebar({
 
       {/* Bottom section: User profile */}
       <div className="border-t border-slate-700 pt-4">
-        <Tooltip text={`Signed in as ${user.name}`} position="right">
-          <div className="flex items-center gap-2.5">
-            <Avatar initials={user.initials} size="md" bgColor="bg-blue-500" />
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-white truncate">{user.name}</p>
-              <p className="text-[11px] text-slate-300 truncate">{user.role}</p>
-            </div>
+        <div className="flex items-center gap-2.5">
+          <Avatar initials={user.initials} size="md" bgColor="bg-blue-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-white truncate">{user.name}</p>
+            <p className="text-[11px] text-slate-300 truncate">{user.role}</p>
           </div>
-        </Tooltip>
+          {onLogout && (
+            <Tooltip text="Sign out" position="top">
+              <button
+                onClick={onLogout}
+                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </Tooltip>
+          )}
+        </div>
       </div>
     </aside>
   );

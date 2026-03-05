@@ -1,5 +1,8 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
@@ -74,10 +77,18 @@ function SidebarProgramSelector() {
 }
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+
+  const handleLogout = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/tools/scheduler');
+  }, [router]);
+
   return (
     <div className="flex h-screen">
       {/* Dark sidebar with program selector */}
-      <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} />
+      <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} onLogout={handleLogout} />
 
       {/* Main content — light theme matching design spec */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
