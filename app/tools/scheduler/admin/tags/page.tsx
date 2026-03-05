@@ -565,20 +565,21 @@ export default function TagsPage() {
 
                 {/* Tags in Category */}
                 {!isCollapsed && (
-                  <div className="divide-y divide-slate-100">
+                  <>
                     {categoryTags.length === 0 ? (
-                      <div className="px-5 py-6 text-center">
+                      <div className="px-5 py-6 text-center border-t border-slate-100">
                         <p className="text-sm text-slate-400">No tags in this category yet.</p>
                         <p className="text-xs text-slate-400 mt-1">Click the + button above to add a tag to "{category}"</p>
                       </div>
                     ) : (
-                      categoryTags.map(tag => {
+                      <div className="grid grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
+                        {categoryTags.map(tag => {
                       const isEditing = editingId === tag.id;
                       const isDeleting = deletingId === tag.id;
                       const sessionCount = sessionCounts[tag.id] || 0;
 
                       return (
-                        <div key={tag.id} className="px-5 py-3 hover:bg-slate-50 transition-colors">
+                        <div key={tag.id} className="px-5 py-3 bg-white hover:bg-slate-50 transition-colors">
                           {isEditing ? (
                             // Edit Mode
                             <div className="space-y-3">
@@ -674,9 +675,10 @@ export default function TagsPage() {
                           )}
                         </div>
                       );
-                    })
+                    })}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             );
