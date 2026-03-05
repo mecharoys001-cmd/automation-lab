@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -2225,9 +2225,14 @@ export default function TemplatesPage() {
       <div className="bg-white px-8 py-5 border-b border-slate-200 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Schedule Builder</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-slate-900">Schedule Builder</h1>
+              <Tooltip text="Step 1: Create event templates (or edit existing ones) &#10;Step 2: Drag them onto the weekly grid to set recurring times &#10;Step 3: Click Publish Schedule to generate calendar sessions">
+                <Info className="w-4.5 h-4.5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" />
+              </Tooltip>
+            </div>
             <p className="text-sm text-slate-500 mt-1">
-              Create templates and drag them onto the weekly grid to build your schedule.
+              Build a weekly schedule template. This pattern will repeat when you publish to the calendar.
             </p>
           </div>
           {isDirty && (
@@ -2327,7 +2332,13 @@ export default function TemplatesPage() {
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto">
         {/* Week Grid */}
-        <div className="mx-8 mt-6 bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="mx-8 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-base font-semibold text-slate-900">Your Weekly Template</h2>
+            <p className="text-sm text-slate-500">— Drag templates from below to build your ideal week</p>
+          </div>
+        </div>
+        <div className="mx-8 bg-white rounded-lg border border-slate-200 overflow-hidden">
           <div className="flex min-w-full">
             {/* Time column */}
             <div className="shrink-0" style={{ width: TIME_COL_WIDTH }}>
@@ -2451,8 +2462,8 @@ export default function TemplatesPage() {
           </div>
         </div>
 
-        {/* Saved Templates Table */}
-        <div className="mx-8 mt-6 mb-8">
+        {/* Template Library */}
+        <div className="mx-8 mt-8 mb-8 p-5 bg-slate-50/80 rounded-xl border border-slate-200/60">
           <TemplateList
             mode="draggable"
             templates={templateListItems}

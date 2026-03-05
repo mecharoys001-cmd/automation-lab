@@ -589,12 +589,13 @@ function DraggableView({
     <div>
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-slate-900">Saved Templates</h2>
+        <h2 className="text-base font-semibold text-slate-900">Template Library</h2>
         <Tooltip text={`${items.length} template${items.length === 1 ? '' : 's'} saved`}>
           <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-100 text-xs font-medium text-slate-600">
             ({items.length})
           </span>
         </Tooltip>
+        <span className="text-sm text-slate-500">— Drag these onto the weekly grid above to schedule them</span>
       </div>
 
       {/* Table */}
