@@ -19,6 +19,7 @@ import {
   BarChart3,
   GitBranch,
   Settings,
+  Upload,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -31,6 +32,7 @@ const adminNavItems = [
   { href: '/admin/exceptions', label: 'Exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'View usage reports and export data' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Save, publish, and revert schedule versions' },
+  { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import venues, tags, and classes from CSV data' },
   { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
   { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Manage user roles and access levels' },
 ];
