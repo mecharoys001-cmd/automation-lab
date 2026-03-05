@@ -473,13 +473,13 @@ export function EventPopover({
         </Tooltip>
 
         {isEditing ? (
-          <Tooltip text="Edit event name">
+          <Tooltip text="Edit session name">
             <input
               type="text"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               className="flex-1 min-w-0 text-[13px] font-bold text-slate-900 bg-white/80 border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              aria-label="Event name"
+              aria-label="Session name"
             />
           </Tooltip>
         ) : (
@@ -490,11 +490,11 @@ export function EventPopover({
 
         {/* Edit – opens side panel instead of inline editing */}
         {pinned && !isEditing && !inCancelFlow && onOpenEditPanel && (
-          <Tooltip text="Edit event details">
+          <Tooltip text="Edit session details">
             <button
               onClick={() => { onOpenEditPanel(event); onClose(); }}
               className="p-1 rounded hover:bg-white/60 transition-colors cursor-pointer"
-              aria-label="Edit event"
+              aria-label="Edit session"
             >
               <Pencil className="w-3.5 h-3.5 text-slate-400" />
             </button>
@@ -721,7 +721,7 @@ export function EventPopover({
                 disabled={isSaving || !editTitle.trim()}
                 icon={isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 className="flex-1"
-                tooltip="Save event changes"
+                tooltip="Save session changes"
               >
                 {isSaving ? 'Saving...' : 'Save'}
               </Button>
@@ -913,7 +913,7 @@ export function EventPopover({
         {/* Replace Options */}
         {showReplaceOptions && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <p className="text-[12px] font-semibold text-slate-700">Replace instructor or event?</p>
+            <p className="text-[12px] font-semibold text-slate-700">Replace instructor or session?</p>
             <div className="space-y-1.5">
               <Button
                 variant="secondary"
@@ -933,7 +933,7 @@ export function EventPopover({
                 className="w-full justify-start"
                 tooltip="Replace with a different session"
               >
-                Replace Entire Event
+                Replace Entire Session
               </Button>
               <Button
                 variant="danger"
@@ -1041,7 +1041,7 @@ export function EventPopover({
         {showTemplates && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-slate-700">Select Replacement Event</p>
+              <p className="text-[12px] font-semibold text-slate-700">Select Replacement Session</p>
               <Tooltip text="Back to options">
                 <button
                   onClick={handleBackToReplaceOptions}
@@ -1059,7 +1059,7 @@ export function EventPopover({
               </div>
             ) : templates.length === 0 ? (
               <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-center">
-                <p className="text-[12px] text-slate-500">No replacement events available.</p>
+                <p className="text-[12px] text-slate-500">No replacement sessions available.</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -1118,11 +1118,11 @@ export function EventPopover({
               </button>
             </Tooltip>
           )}
-          <Tooltip text="Open full event details">
+          <Tooltip text="Open full session details">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetails?.(event); }}
               className="text-[11px] font-medium text-blue-500 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
-              aria-label="View details"
+              aria-label="View session details"
             >
               View Details
             </button>

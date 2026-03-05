@@ -39,15 +39,15 @@ export interface NavItem {
 // ── Admin sidebar navigation ────────────────────────────────────────────────
 
 export const adminNavItems: NavItem[] = [
-  { label: 'Calendar',         href: adminPath(),              icon: Calendar,       tooltip: 'View and manage the session calendar' },
-  { label: 'Schedule Builder', href: adminPath('templates'),   icon: LayoutTemplate, tooltip: 'Build weekly schedule templates and configure day times' },
-  { label: 'Tags',             href: adminPath('tags'),        icon: Tags,           tooltip: 'Create and manage session tags and categories' },
-  { label: 'People & Places',  href: adminPath('people'),      icon: Users,          tooltip: 'Manage instructors and their availability' },
-  { label: 'School Calendar',  href: adminPath('calendar'),    icon: Clock,          tooltip: 'View and manage school calendar and special dates' },
-  { label: 'Exceptions',       href: adminPath('exceptions'),  icon: AlertTriangle,  tooltip: 'Review and resolve scheduling conflicts' },
-  { label: 'Reports',          href: adminPath('reports'),     icon: BarChart2,      tooltip: 'View usage reports and export data' },
-  { label: 'Versions',         href: adminPath('versions'),    icon: History,        tooltip: 'Save, publish, and revert schedule versions' },
-  { label: 'Settings',         href: adminPath('settings'),    icon: Settings,       tooltip: 'Configure programs, admins, and system settings' },
+  { label: 'Calendar',         href: adminPath(),              icon: Calendar,       tooltip: 'View and manage session calendar' },
+  { label: 'Schedule Builder', href: adminPath('templates'),   icon: LayoutTemplate, tooltip: 'Build weekly class templates and schedule' },
+  { label: 'Tags',             href: adminPath('tags'),        icon: Tags,           tooltip: 'Create and manage session tags' },
+  { label: 'People & Places',  href: adminPath('people'),      icon: Users,          tooltip: 'Manage instructors, venues, and availability' },
+  { label: 'School Calendar',  href: adminPath('calendar'),    icon: Clock,          tooltip: 'Manage school events and special dates' },
+  { label: 'Exceptions',       href: adminPath('exceptions'),  icon: AlertTriangle,  tooltip: 'Review and resolve session conflicts' },
+  { label: 'Reports',          href: adminPath('reports'),     icon: BarChart2,      tooltip: 'View session reports and export data' },
+  { label: 'Versions',         href: adminPath('versions'),    icon: History,        tooltip: 'Save, publish, and revert schedules' },
+  { label: 'Settings',         href: adminPath('settings'),    icon: Settings,       tooltip: 'Configure programs, admins, and settings' },
 ];
 
 // ── Reports sub-tabs ────────────────────────────────────────────────────────

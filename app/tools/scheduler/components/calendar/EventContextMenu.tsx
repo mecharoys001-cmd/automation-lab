@@ -111,27 +111,27 @@ export function EventContextMenu({
 
       {/* Actions */}
       <div className="py-1">
-        <Tooltip text="Cancel this event and notify instructor">
+        <Tooltip text="Cancel this session and notify instructor">
           <button
             onClick={() => onAction('cancel', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
           >
             <XCircle className="w-4 h-4" />
-            Cancel Event
+            Cancel Session
           </button>
         </Tooltip>
 
-        <Tooltip text="Create a copy of this event">
+        <Tooltip text="Create a copy of this session">
           <button
             onClick={() => onAction('duplicate', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
           >
             <Copy className="w-4 h-4 text-slate-400" />
-            Duplicate Event
+            Duplicate Session
           </button>
         </Tooltip>
 
-        <Tooltip text="Permanently delete this event">
+        <Tooltip text="Permanently delete this session">
           <button
             onClick={() => onAction('delete', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer"

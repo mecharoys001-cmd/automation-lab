@@ -377,14 +377,14 @@ export default function ClassesPage() {
               Classes
             </h1>
             <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-              Create and manage class templates for scheduling
+              Create and manage session templates
             </p>
           </div>
         </div>
 
         {/* Create button */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button variant="primary" onClick={openCreateForm} tooltip="Create a new class template">
+          <Button variant="primary" onClick={openCreateForm} tooltip="Create a new session template">
             <Plus className="w-4 h-4" />
             New Class
           </Button>
@@ -641,7 +641,7 @@ export default function ClassesPage() {
                 variant="primary"
                 onClick={handleSave}
                 disabled={saving}
-                tooltip={editingId ? 'Save changes' : 'Create template'}
+                tooltip={editingId ? 'Save template changes' : 'Create new template'}
               >
                 {saving ? (
                   <>

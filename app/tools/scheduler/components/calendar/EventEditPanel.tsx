@@ -106,6 +106,12 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
   const [loadingTags, setLoadingTags] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
 
+  // Add new instructor inline
+  const [showAddInstructor, setShowAddInstructor] = useState(false);
+  const [newInstructorFirst, setNewInstructorFirst] = useState('');
+  const [newInstructorLast, setNewInstructorLast] = useState('');
+  const [addingInstructor, setAddingInstructor] = useState(false);
+
   // Animation
   const [visible, setVisible] = useState(false);
 
@@ -200,6 +206,40 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
     );
   }, []);
+
+  const handleAddInstructor = async () => {
+    if (!newInstructorFirst.trim() || !newInstructorLast.trim()) return;
+    setAddingInstructor(true);
+    try {
+      const res = await fetch('/api/instructors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name: newInstructorFirst.trim(),
+          last_name: newInstructorLast.trim(),
+          is_active: true,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to add instructor');
+      const { instructor } = await res.json();
+      
+      // Add to local instructors list
+      setInstructors((prev) => [...prev, instructor]);
+      
+      // Auto-select the new instructor
+      setEditInstructor(`${instructor.first_name} ${instructor.last_name}`);
+      
+      // Reset form
+      setNewInstructorFirst('');
+      setNewInstructorLast('');
+      setShowAddInstructor(false);
+    } catch (err) {
+      console.error('Failed to add instructor:', err);
+      alert('Failed to add instructor. Please try again.');
+    } finally {
+      setAddingInstructor(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!onSave) return;
@@ -319,7 +359,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
               <Tooltip text="The date this event takes place">
                 <label className={labelCls}>Date</label>
               </Tooltip>
-              <Tooltip text="Pick the session date">
+              <Tooltip text="Pick the date for this session">
                 <div className="relative">
                   <input
                     type="date"
@@ -335,7 +375,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Tooltip text="When the event begins">
+                <Tooltip text="When the session begins">
                   <label className={labelCls}>Start Time</label>
                 </Tooltip>
                 <Tooltip text="Set the start time">
@@ -352,7 +392,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                 </Tooltip>
               </div>
               <div>
-                <Tooltip text="When the event ends">
+                <Tooltip text="When the session ends">
                   <label className={labelCls}>End Time</label>
                 </Tooltip>
                 <Tooltip text="Set the end time">
@@ -378,7 +418,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
             <Tooltip text="Select the room or facility for this session">
               <label className={labelCls}>Venue</label>
             </Tooltip>
-            <Tooltip text="Choose where this event will be held">
+            <Tooltip text="Choose where this session will be held">
               <div className="relative">
                 <select
                   value={editVenue}
@@ -405,7 +445,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
 
           {/* ---- Section 4: Instructor ---- */}
           <div className="py-4">
-            <Tooltip text="The instructor assigned to lead this event">
+            <Tooltip text="The instructor assigned to lead this session">
               <label className={labelCls}>Instructor</label>
             </Tooltip>
             <Tooltip text="Choose the session instructor">
@@ -442,13 +482,90 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                 </p>
               </Tooltip>
             )}
+
+            {/* Add New Instructor Button/Form */}
+            {!showAddInstructor ? (
+              <Tooltip text="Add a new instructor to the system">
+                <button
+                  onClick={() => setShowAddInstructor(true)}
+                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add New Instructor
+                </button>
+              </Tooltip>
+            ) : (
+              <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-medium text-slate-700">New Instructor</span>
+                  <Tooltip text="Cancel adding instructor">
+                    <button
+                      onClick={() => {
+                        setShowAddInstructor(false);
+                        setNewInstructorFirst('');
+                        setNewInstructorLast('');
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
+                </div>
+                <div className="space-y-2">
+                  <Tooltip text="Enter the instructor's first name">
+                    <input
+                      type="text"
+                      placeholder="First name"
+                      value={newInstructorFirst}
+                      onChange={(e) => setNewInstructorFirst(e.target.value)}
+                      className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+                      disabled={addingInstructor}
+                    />
+                  </Tooltip>
+                  <Tooltip text="Enter the instructor's last name">
+                    <input
+                      type="text"
+                      placeholder="Last name"
+                      value={newInstructorLast}
+                      onChange={(e) => setNewInstructorLast(e.target.value)}
+                      className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+                      disabled={addingInstructor}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newInstructorFirst.trim() && newInstructorLast.trim()) {
+                          handleAddInstructor();
+                        }
+                      }}
+                    />
+                  </Tooltip>
+                  <Tooltip text="Create this instructor">
+                    <button
+                      onClick={handleAddInstructor}
+                      disabled={addingInstructor || !newInstructorFirst.trim() || !newInstructorLast.trim()}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-md transition-colors"
+                    >
+                      {addingInstructor ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          Add Instructor
+                        </>
+                      )}
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="h-px bg-[#F1F5F9]" />
 
           {/* ---- Section 5: Tags ---- */}
           <div className="py-4">
-            <Tooltip text="Categorize and label this event">
+            <Tooltip text="Categorize and label this session">
               <label className={labelCls}>Tags</label>
             </Tooltip>
 
@@ -467,7 +584,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
               ))}
 
               <div ref={tagDropdownRef} className="relative">
-                <Tooltip text="Add a tag to this event">
+                <Tooltip text="Add a tag to this session">
                   <button
                     onClick={() => setShowTagDropdown(!showTagDropdown)}
                     disabled={loadingTags}
@@ -551,7 +668,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
               Cancel
             </button>
           </Tooltip>
-          <Tooltip text="Save event changes">
+          <Tooltip text="Save session changes">
             <button
               onClick={handleSave}
               disabled={isSaving || !editTitle.trim()}

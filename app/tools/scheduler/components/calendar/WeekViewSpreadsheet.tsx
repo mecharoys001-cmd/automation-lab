@@ -209,7 +209,7 @@ function EventBlock({
             </button>
           </Tooltip>
           <div className="border-t border-slate-200 my-1" />
-          <Tooltip text="Cancel this event" position="right">
+          <Tooltip text="Cancel this session" position="right">
             <button
               onClick={() => {
                 setContextMenuOpen(false);
@@ -218,7 +218,7 @@ function EventBlock({
               className="w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
-              <span>Cancel Event</span>
+              <span>Cancel Session</span>
             </button>
           </Tooltip>
         </div>

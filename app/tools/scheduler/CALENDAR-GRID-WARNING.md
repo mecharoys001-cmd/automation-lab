@@ -57,5 +57,5 @@ This pattern renders only days 1-31 without accounting for which day of the week
 
 ---
 
-**Last updated:** 2026-03-03  
-**Last incident:** Calendar grid reverted to `daysInMonth`, broke alignment across all months
+**Last updated:** 2026-03-04
+**Last incident:** Calendar grid reverted to `daysInMonth` for the THIRD time, fixed again in both MonthView and YearView
