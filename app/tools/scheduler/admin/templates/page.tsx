@@ -2329,16 +2329,17 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Week Grid */}
-        <div className="mx-8 mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-base font-semibold text-slate-900">Your Weekly Template</h2>
-            <p className="text-sm text-slate-500">— Drag templates from below to build your ideal week</p>
+      {/* Main content: Grid + Sidebar */}
+      <div className="flex-1 flex min-h-0">
+        {/* Left: Weekly Grid */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-8 mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-base font-semibold text-slate-900">Your Weekly Template</h2>
+              <p className="text-sm text-slate-500">— Drag events from the library to build your ideal week</p>
+            </div>
           </div>
-        </div>
-        <div className="mx-8 bg-white rounded-lg border border-slate-200 overflow-hidden">
+          <div className="mx-8 mb-8 bg-white rounded-lg border border-slate-200 overflow-hidden">
           <div className="flex min-w-full">
             {/* Time column */}
             <div className="shrink-0" style={{ width: TIME_COL_WIDTH }}>
@@ -2365,7 +2366,7 @@ export default function TemplatesPage() {
               <div key={day} className="flex-1 min-w-[160px] border-l border-slate-200">
                 {/* Day header */}
                 <div className="h-12 border-b border-slate-200 flex items-center justify-center">
-                  <Tooltip text={`Drag templates here to schedule on ${day}`}>
+                  <Tooltip text={`Drag events here to schedule on ${day}`}>
                     <span className="text-sm font-semibold text-slate-700">{day}</span>
                   </Tooltip>
                 </div>
@@ -2461,25 +2462,29 @@ export default function TemplatesPage() {
             ))}
           </div>
         </div>
+        </div>
 
-        {/* Template Library */}
-        <div className="mx-8 mt-8 mb-8 p-5 bg-slate-50/80 rounded-xl border border-slate-200/60">
-          <TemplateList
-            mode="draggable"
-            templates={templateListItems}
-            loading={isLoadingTemplates}
-            onEdit={(id) => {
-              const t = templates.find((t) => t.id === id);
-              if (t) handleEditTemplate(t);
-            }}
-            onDelete={handleDeleteTemplate}
-            onDragStart={(id) => {
-              const t = templates.find((t) => t.id === id);
-              if (t) handleDragStart(t);
-            }}
-            onDragEnd={handleDragEnd}
-            deletingId={deletingTemplateId}
-          />
+        {/* Right: Event Library Sidebar */}
+        <div className="w-[360px] shrink-0 bg-slate-800 border-l border-slate-700 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-4">
+            <TemplateList
+              mode="draggable"
+              templates={templateListItems}
+              loading={isLoadingTemplates}
+              onEdit={(id) => {
+                const t = templates.find((t) => t.id === id);
+                if (t) handleEditTemplate(t);
+              }}
+              onDelete={handleDeleteTemplate}
+              onDragStart={(id) => {
+                const t = templates.find((t) => t.id === id);
+                if (t) handleDragStart(t);
+              }}
+              onDragEnd={handleDragEnd}
+              deletingId={deletingTemplateId}
+              searchPlaceholder="Search events…"
+            />
+          </div>
         </div>
       </div>
 

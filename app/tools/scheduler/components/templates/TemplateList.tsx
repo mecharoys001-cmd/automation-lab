@@ -220,20 +220,30 @@ export function TemplateList({
               type="text"
               placeholder={searchPlaceholder ?? (mode === 'table'
                 ? 'Search by day, instructor, venue, grade...'
-                : 'Search templates\u2026')}
+                : 'Search events\u2026')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={mode === 'draggable'
+                ? 'w-full pl-9 pr-3 py-2 text-sm border border-slate-600 rounded-lg bg-slate-700 text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                : 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              }
             />
           </div>
           <button
             onClick={() => setFiltersOpen((v) => !v)}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer"
-            style={{
-              backgroundColor: filtersOpen ? '#EFF6FF' : '#FFFFFF',
-              borderColor: filtersOpen ? '#3B82F6' : '#E2E8F0',
-              color: filtersOpen ? '#2563EB' : '#334155',
-            }}
+            style={mode === 'draggable'
+              ? {
+                  backgroundColor: filtersOpen ? '#1E3A5F' : '#334155',
+                  borderColor: filtersOpen ? '#3B82F6' : '#475569',
+                  color: filtersOpen ? '#93C5FD' : '#CBD5E1',
+                }
+              : {
+                  backgroundColor: filtersOpen ? '#EFF6FF' : '#FFFFFF',
+                  borderColor: filtersOpen ? '#3B82F6' : '#E2E8F0',
+                  color: filtersOpen ? '#2563EB' : '#334155',
+                }
+            }
           >
             <SlidersHorizontal className="w-4 h-4" />
             Filters
@@ -393,8 +403,8 @@ export function TemplateList({
           </div>
         ) : (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-            <span className="ml-2 text-sm text-slate-400">Loading templates&hellip;</span>
+            <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+            <span className="ml-2 text-sm text-slate-500">Loading events&hellip;</span>
           </div>
         )
       ) : filtered.length === 0 ? (
@@ -406,10 +416,10 @@ export function TemplateList({
             : { padding: '32px 16px' }}
         >
           {search.trim() || activeFilterCount > 0
-            ? 'No templates match your search or filters.'
+            ? 'No events match your search or filters.'
             : mode === 'table'
               ? 'No class templates yet. Click \u201cNew Class\u201d to create your first template.'
-              : 'No templates yet. Click \u201cCreate Template\u201d to add one.'}
+              : 'No events yet. Click \u201cCreate Template\u201d to add one.'}
         </div>
       ) : mode === 'table' ? (
         <TableView
@@ -589,34 +599,16 @@ function DraggableView({
     <div>
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-slate-900">Template Library</h2>
-        <Tooltip text={`${items.length} template${items.length === 1 ? '' : 's'} saved`}>
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-100 text-xs font-medium text-slate-600">
-            ({items.length})
+        <h2 className="text-base font-semibold text-white">Event Library</h2>
+        <Tooltip text={`${items.length} event${items.length === 1 ? '' : 's'} saved`}>
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-xl bg-slate-700 text-xs font-medium text-slate-300">
+            {items.length}
           </span>
         </Tooltip>
-        <span className="text-sm text-slate-500">— Drag these onto the weekly grid above to schedule them</span>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-          <Tooltip text="Template name and color indicator">
-            <div className="w-[220px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Template Name</div>
-          </Tooltip>
-          <Tooltip text="Assigned instructor (Rotating = shared across instructors)">
-            <div className="flex-1 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Instructor</div>
-          </Tooltip>
-          <Tooltip text="Days and time slot for this template">
-            <div className="w-[180px] text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-help">Schedule</div>
-          </Tooltip>
-          <Tooltip text="Edit or delete this template">
-            <div className="w-[70px] text-xs font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</div>
-          </Tooltip>
-        </div>
-
-        {/* Rows */}
+      {/* Event cards */}
+      <div className="flex flex-col gap-2">
         {items.map((item) => (
           <div
             key={item.id}
@@ -624,7 +616,6 @@ function DraggableView({
             onDragStart={(e) => {
               e.dataTransfer.effectAllowed = 'copy';
               e.dataTransfer.setData('text/plain', item.id);
-              // Create a custom drag image
               const ghost = document.createElement('div');
               ghost.textContent = item.name;
               ghost.style.cssText = `
@@ -639,85 +630,78 @@ function DraggableView({
               onDragStart?.(item.id, e);
             }}
             onDragEnd={() => onDragEnd?.()}
-            className="flex items-center px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing group"
+            className="group bg-slate-700/60 hover:bg-slate-700 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-colors border border-slate-600/50 hover:border-slate-500/70"
           >
-            {/* Template Name */}
-            <div className="w-[220px] flex items-center gap-2">
+            {/* Top row: color dot + name + grip */}
+            <div className="flex items-start gap-2">
               <Tooltip text="Drag to schedule">
-                <span className="inline-flex"><GripVertical className="w-4 h-4 text-slate-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+                <span className="inline-flex mt-0.5 shrink-0"><GripVertical className="w-4 h-4 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
               </Tooltip>
-              <div className="flex items-center gap-2 min-w-0">
-                <Tooltip text="Template color on the schedule grid">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color ?? '#3B82F6' }} />
-                </Tooltip>
-                <span className="text-[13px] font-medium text-slate-900 truncate">{item.name}</span>
+              <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: item.color ?? '#3B82F6' }} />
+              <div className="flex-1 min-w-0">
+                <span className="text-[13px] font-medium text-slate-100 leading-tight block truncate">{item.name}</span>
+              </div>
+              {/* Actions */}
+              <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onEdit && (
+                  <Tooltip text={`Edit ${item.name}`}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onEdit(item.id); }}
+                      onDragStart={(e) => e.stopPropagation()}
+                      draggable={false}
+                      className="p-1 rounded hover:bg-slate-600 text-slate-400 hover:text-blue-400 transition-colors cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </Tooltip>
+                )}
+                {onDelete && (
+                  <Tooltip text={`Delete ${item.name}`}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                      onDragStart={(e) => e.stopPropagation()}
+                      draggable={false}
+                      disabled={deletingId === item.id}
+                      className={`p-1 rounded transition-colors cursor-pointer ${
+                        deletingId === item.id
+                          ? 'text-slate-500 cursor-not-allowed'
+                          : 'hover:bg-slate-600 text-slate-400 hover:text-red-400'
+                      }`}
+                    >
+                      {deletingId === item.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </Tooltip>
+                )}
               </div>
             </div>
 
-            {/* Instructor */}
-            <div className="flex-1 min-w-0">
-              <span className="text-[13px] text-slate-600 truncate block">
-                {item.instructor || '\u2014'}
-                {item.instructorRotation && (
-                  <span className="ml-1.5 text-xs text-violet-600 font-medium">(Rotating)</span>
-                )}
-              </span>
-            </div>
-
-            {/* Schedule */}
-            <div className="w-[180px] flex items-center gap-1.5">
-              <span className="text-[13px] text-slate-600">{item.scheduleLabel ?? item.timeLabel}</span>
+            {/* Bottom row: schedule + instructor meta */}
+            <div className="flex items-center gap-2 mt-1.5 ml-[26px]">
+              <span className="text-xs text-slate-400">{item.scheduleLabel ?? item.timeLabel}</span>
               {item.cycleBadge && (
                 <Tooltip text={item.cycleBadge.tooltip}>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none bg-indigo-100 text-indigo-600 whitespace-nowrap">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none bg-indigo-500/20 text-indigo-300 whitespace-nowrap">
                     {item.cycleBadge.label}
                   </span>
                 </Tooltip>
               )}
-            </div>
-
-            {/* Actions */}
-            <div className="w-[70px] flex items-center justify-end gap-1">
-              {onEdit && (
-                <Tooltip text={`Edit ${item.name}`}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(item.id); }}
-                    onDragStart={(e) => e.stopPropagation()}
-                    draggable={false}
-                    className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-              )}
-              {onDelete && (
-                <Tooltip text={`Delete ${item.name}`}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-                    onDragStart={(e) => e.stopPropagation()}
-                    draggable={false}
-                    disabled={deletingId === item.id}
-                    className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                      deletingId === item.id
-                        ? 'text-slate-300 cursor-not-allowed'
-                        : 'hover:bg-red-50 text-slate-400 hover:text-red-500'
-                    }`}
-                  >
-                    {deletingId === item.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </Tooltip>
+              {item.instructor && (
+                <span className="text-xs text-slate-500 truncate">
+                  {item.instructor}
+                  {item.instructorRotation && <span className="ml-1 text-violet-400">(R)</span>}
+                </span>
               )}
             </div>
           </div>
         ))}
 
         {items.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-slate-400">
-            No templates yet. Click &quot;Create Template&quot; to add one.
+          <div className="px-4 py-8 text-center text-sm text-slate-500">
+            No events yet. Click &ldquo;Create Template&rdquo; to add one.
           </div>
         )}
       </div>
