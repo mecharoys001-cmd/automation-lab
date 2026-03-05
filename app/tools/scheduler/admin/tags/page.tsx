@@ -95,6 +95,7 @@ export default function TagsPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [customCategories, setCustomCategories] = useState<string[]>([]); // Track user-created categories
 
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
@@ -144,8 +145,28 @@ export default function TagsPage() {
     fetchTags();
   }, [fetchTags]);
 
-  // Get all unique categories
-  const categories = Array.from(new Set(tags.map(t => t.category || 'General'))).sort();
+  // Load custom categories from localStorage on mount
+  useEffect(() => {
+    const savedCategories = localStorage.getItem('customTagCategories');
+    if (savedCategories) {
+      try {
+        setCustomCategories(JSON.parse(savedCategories));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
+  // Save custom categories to localStorage whenever they change
+  useEffect(() => {
+    if (customCategories.length > 0) {
+      localStorage.setItem('customTagCategories', JSON.stringify(customCategories));
+    }
+  }, [customCategories]);
+
+  // Get all unique categories (from tags + custom ones)
+  const categoriesFromTags = Array.from(new Set(tags.map(t => t.category || 'General')));
+  const categories = Array.from(new Set([...categoriesFromTags, ...customCategories])).sort();
 
   // Quick add tag
   const handleQuickAdd = async () => {
@@ -277,14 +298,25 @@ export default function TagsPage() {
   // Create new category
   const createCategory = () => {
     const trimmed = newCategoryName.trim();
-    if (!trimmed || categories.includes(trimmed)) {
+    if (!trimmed) {
       setNewCategoryName('');
       setShowNewCategoryInput(false);
       return;
     }
+    if (categories.includes(trimmed)) {
+      // Category already exists, just select it
+      setQuickAddCategory(trimmed);
+      setNewCategoryName('');
+      setShowNewCategoryInput(false);
+      quickAddRef.current?.focus();
+      return;
+    }
+    // Add to custom categories
+    setCustomCategories(prev => [...prev, trimmed]);
     setQuickAddCategory(trimmed);
     setNewCategoryName('');
     setShowNewCategoryInput(false);
+    showToast(`Category "${trimmed}" created`, 'success');
     quickAddRef.current?.focus();
   };
 
@@ -441,7 +473,13 @@ export default function TagsPage() {
                 {/* Tags in Category */}
                 {!isCollapsed && (
                   <div className="divide-y divide-slate-100">
-                    {categoryTags.map(tag => {
+                    {categoryTags.length === 0 ? (
+                      <div className="px-5 py-6 text-center">
+                        <p className="text-sm text-slate-400">No tags in this category yet.</p>
+                        <p className="text-xs text-slate-400 mt-1">Create a tag above and assign it to "{category}"</p>
+                      </div>
+                    ) : (
+                      categoryTags.map(tag => {
                       const isEditing = editingId === tag.id;
                       const isDeleting = deletingId === tag.id;
                       const sessionCount = sessionCounts[tag.id] || 0;
@@ -543,7 +581,8 @@ export default function TagsPage() {
                           )}
                         </div>
                       );
-                    })}
+                    })
+                    )}
                   </div>
                 )}
               </div>
