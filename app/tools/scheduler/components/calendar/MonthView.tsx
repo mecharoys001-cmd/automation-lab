@@ -88,8 +88,6 @@ function EventChip({
           backgroundColor: colors.bg,
           borderLeft: `2px solid ${colors.accent}`,
         }}
-        onMouseEnter={() => ref.current && onHover(event, ref.current)}
-        onMouseLeave={onLeave}
         onClick={(e) => {
           e.stopPropagation();
           ref.current && onClick(event, ref.current);
