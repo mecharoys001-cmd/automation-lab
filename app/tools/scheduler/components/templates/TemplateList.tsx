@@ -630,16 +630,20 @@ function DraggableView({
               onDragStart?.(item.id, e);
             }}
             onDragEnd={() => onDragEnd?.()}
-            className="group bg-slate-700/60 hover:bg-slate-700 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-colors border border-slate-600/50 hover:border-slate-500/70"
+            className="group rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all border hover:shadow-md"
+            style={{
+              backgroundColor: `${item.color ?? '#3B82F6'}20`,
+              borderColor: `${item.color ?? '#3B82F6'}40`,
+              borderLeft: `3px solid ${item.color ?? '#3B82F6'}`,
+            }}
           >
-            {/* Top row: color dot + name + grip */}
+            {/* Top row: name + grip */}
             <div className="flex items-start gap-2">
               <Tooltip text="Drag to schedule">
-                <span className="inline-flex mt-0.5 shrink-0"><GripVertical className="w-4 h-4 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+                <span className="inline-flex mt-0.5 shrink-0"><GripVertical className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: item.color ?? '#3B82F6' }} /></span>
               </Tooltip>
-              <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: item.color ?? '#3B82F6' }} />
               <div className="flex-1 min-w-0">
-                <span className="text-[13px] font-medium text-slate-100 leading-tight block truncate">{item.name}</span>
+                <span className="text-[13px] font-semibold leading-tight block truncate" style={{ color: item.color ?? '#3B82F6' }}>{item.name}</span>
               </div>
               {/* Actions */}
               <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -649,7 +653,7 @@ function DraggableView({
                       onClick={(e) => { e.stopPropagation(); onEdit(item.id); }}
                       onDragStart={(e) => e.stopPropagation()}
                       draggable={false}
-                      className="p-1 rounded hover:bg-slate-600 text-slate-400 hover:text-blue-400 transition-colors cursor-pointer"
+                      className="p-1 rounded hover:bg-white/30 text-slate-500 hover:text-blue-400 transition-colors cursor-pointer"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -665,7 +669,7 @@ function DraggableView({
                       className={`p-1 rounded transition-colors cursor-pointer ${
                         deletingId === item.id
                           ? 'text-slate-500 cursor-not-allowed'
-                          : 'hover:bg-slate-600 text-slate-400 hover:text-red-400'
+                          : 'hover:bg-white/30 text-slate-500 hover:text-red-400'
                       }`}
                     >
                       {deletingId === item.id ? (
@@ -681,7 +685,7 @@ function DraggableView({
 
             {/* Bottom row: schedule + instructor meta */}
             <div className="flex items-center gap-2 mt-1.5 ml-[26px]">
-              <span className="text-xs text-slate-400">{item.scheduleLabel ?? item.timeLabel}</span>
+              <span className="text-xs font-medium text-slate-700">{item.scheduleLabel ?? item.timeLabel}</span>
               {item.cycleBadge && (
                 <Tooltip text={item.cycleBadge.tooltip}>
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none bg-indigo-500/20 text-indigo-300 whitespace-nowrap">
@@ -690,7 +694,7 @@ function DraggableView({
                 </Tooltip>
               )}
               {item.instructor && (
-                <span className="text-xs text-slate-500 truncate">
+                <span className="text-xs text-slate-600 truncate">
                   {item.instructor}
                   {item.instructorRotation && <span className="ml-1 text-violet-400">(R)</span>}
                 </span>

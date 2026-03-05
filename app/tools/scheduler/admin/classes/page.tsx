@@ -5,6 +5,7 @@ import {
   Plus, Loader2, Check, AlertTriangle, X,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { TagSelector } from '../../components/ui/TagSelector';
 import { TemplateList } from '../../components/templates/TemplateList';
 import type { TemplateListItem } from '../../components/templates/TemplateList';
 import { useProgram } from '../ProgramContext';
@@ -557,32 +558,12 @@ export default function ClassesPage() {
 
             {/* Required Skills */}
             <FormField label="Required Skills">
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {SKILL_OPTIONS.map((s) => {
-                  const selected = form.required_skills.includes(s);
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => toggleArrayField('required_skills', s)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 9999,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        border: '1px solid',
-                        borderColor: selected ? '#8B5CF6' : '#E2E8F0',
-                        backgroundColor: selected ? '#F5F3FF' : '#FFFFFF',
-                        color: selected ? '#7C3AED' : '#64748B',
-                        cursor: 'pointer',
-                        transition: 'all 150ms',
-                      }}
-                    >
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
+              <TagSelector
+                value={form.required_skills}
+                onChange={(skills) => setForm(prev => ({ ...prev, required_skills: skills }))}
+                category="Skills"
+                placeholder="Select instructor skills required for this class..."
+              />
             </FormField>
 
             {/* Multi-week Pattern */}

@@ -14,6 +14,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Pill } from '../../components/ui/Pill';
 import { Avatar } from '../../components/ui/Avatar';
 import { ClickToCopy } from '../../components/ui/ClickToCopy';
+import { TagSelector } from '../../components/ui/TagSelector';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 
 /* ── Constants ──────────────────────────────────────────────── */
@@ -885,19 +886,12 @@ function InstructorEditModal({
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-2">Skills</label>
             <Tooltip text="Select the instrument families this instructor can teach">
-              <div className="flex flex-wrap gap-x-5 gap-y-2.5">
-                {Object.entries(SKILL_STYLES).map(([skill, s]) => (
-                  <label key={skill} className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={form.skills.includes(skill)}
-                      onChange={() => toggleSkill(skill)}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
-                    />
-                    <span className="text-sm text-slate-700">{s.emoji} {skill}</span>
-                  </label>
-                ))}
-              </div>
+              <TagSelector
+                value={form.skills}
+                onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
+                category="Skills"
+                placeholder="Select instructor skills..."
+              />
             </Tooltip>
           </div>
 
