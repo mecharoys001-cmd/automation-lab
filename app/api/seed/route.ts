@@ -123,28 +123,52 @@ export async function POST() {
       ]);
     }
 
-    // ── Session Templates — Full weekly pattern ──────────────
-    const templateDefs = [
-      // Monday K-4 (day_of_week=1)
-      { day_of_week: 1, grade_groups: ['K'],      start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage',     skills: ['Strings'],    sort_order: 1 },
-      { day_of_week: 1, grade_groups: ['1'],      start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage',     skills: ['Strings'],    sort_order: 2 },
-      { day_of_week: 1, grade_groups: ['2'],      start_time: '13:40', end_time: '14:25', duration_minutes: 45, venue: 'Stage',     skills: ['Choral'],     sort_order: 3 },
-      { day_of_week: 1, grade_groups: ['3', '4'], start_time: '14:30', end_time: '15:15', duration_minutes: 45, venue: 'Stage',     skills: ['Percussion'], sort_order: 4 },
-      // Tuesday combined (day_of_week=2)
-      { day_of_week: 2, grade_groups: ['3', '4', '5'], start_time: '12:30', end_time: '13:30', duration_minutes: 60, venue: 'Classroom', skills: ['Woodwinds'], sort_order: 1 },
-      // Wednesday K-4 (day_of_week=3)
-      { day_of_week: 3, grade_groups: ['K'],      start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage',     skills: ['Strings'],    sort_order: 1 },
-      { day_of_week: 3, grade_groups: ['1'],      start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage',     skills: ['Strings'],    sort_order: 2 },
-      { day_of_week: 3, grade_groups: ['2'],      start_time: '13:40', end_time: '14:25', duration_minutes: 45, venue: 'Stage',     skills: ['Choral'],     sort_order: 3 },
-      { day_of_week: 3, grade_groups: ['3', '4'], start_time: '14:30', end_time: '15:15', duration_minutes: 45, venue: 'Classroom', skills: ['Percussion'], sort_order: 4 },
-      // Thursday 5-8 (day_of_week=4)
-      { day_of_week: 4, grade_groups: ['5'], start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage', skills: ['Brass'],      sort_order: 1 },
-      { day_of_week: 4, grade_groups: ['6'], start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage', skills: ['Woodwinds'],  sort_order: 2 },
-      { day_of_week: 4, grade_groups: ['7'], start_time: '13:40', end_time: '14:25', duration_minutes: 45, venue: 'Stage', skills: ['Percussion'], sort_order: 3 },
-      { day_of_week: 4, grade_groups: ['8'], start_time: '14:30', end_time: '15:15', duration_minutes: 45, venue: 'Stage', skills: ['Strings'],    sort_order: 4 },
+    // ── Event Templates — Full weekly pattern ──────────────
+    // Mix of fixed-time (~40%) and flexible/NULL-time (~60%) templates
+    // Durations: 30, 45, 60, 90 min — Grades K-8 — Subjects: Strings, Percussion, Choral, Woodwinds, Brass, Theory, Ensemble
+    const templateDefs: Array<{
+      day_of_week: number; grade_groups: string[];
+      start_time: string | null; end_time: string | null; duration_minutes: number;
+      venue: string; skills: string[]; sort_order: number;
+    }> = [
+      // ── Monday (day_of_week=1) ──
+      { day_of_week: 1, grade_groups: ['2'],      start_time: '08:00', end_time: '08:30', duration_minutes: 30, venue: 'Classroom',      skills: ['Choral'],      sort_order: 1 },
+      { day_of_week: 1, grade_groups: ['K'],      start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 2 },
+      { day_of_week: 1, grade_groups: ['1'],      start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 3 },
+      { day_of_week: 1, grade_groups: ['3', '4'], start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 4 },
+      { day_of_week: 1, grade_groups: ['5'],      start_time: null,    end_time: null,     duration_minutes: 60, venue: 'Stage',          skills: ['Woodwinds'],   sort_order: 5 },
+
+      // ── Tuesday (day_of_week=2) ──
+      { day_of_week: 2, grade_groups: ['3', '4', '5'], start_time: '12:30', end_time: '13:30', duration_minutes: 60, venue: 'Classroom',  skills: ['Woodwinds'],   sort_order: 1 },
+      { day_of_week: 2, grade_groups: ['5'],            start_time: null,    end_time: null,     duration_minutes: 30, venue: 'Classroom',  skills: ['Theory'],      sort_order: 2 },
+      { day_of_week: 2, grade_groups: ['1'],            start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Stage',      skills: ['Choral'],      sort_order: 3 },
+      { day_of_week: 2, grade_groups: ['6'],            start_time: '14:00', end_time: '15:00',  duration_minutes: 60, venue: 'Stage',      skills: ['Strings'],     sort_order: 4 },
+      { day_of_week: 2, grade_groups: ['4'],            start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Classroom',  skills: ['Strings'],     sort_order: 5 },
+
+      // ── Wednesday (day_of_week=3) ──
+      { day_of_week: 3, grade_groups: ['K'],      start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 1 },
+      { day_of_week: 3, grade_groups: ['1'],      start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 2 },
+      { day_of_week: 3, grade_groups: ['2'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Classroom',      skills: ['Choral'],      sort_order: 3 },
+      { day_of_week: 3, grade_groups: ['3', '4'], start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 4 },
+      { day_of_week: 3, grade_groups: ['5'],      start_time: null,    end_time: null,     duration_minutes: 60, venue: 'Google Meet',    skills: ['Theory'],      sort_order: 5 },
+
+      // ── Thursday (day_of_week=4) ──
+      { day_of_week: 4, grade_groups: ['5'],      start_time: '10:00', end_time: '10:45', duration_minutes: 45, venue: 'Stage',          skills: ['Brass'],       sort_order: 1 },
+      { day_of_week: 4, grade_groups: ['6'],      start_time: '14:00', end_time: '15:00', duration_minutes: 60, venue: 'Classroom',      skills: ['Woodwinds'],   sort_order: 2 },
+      { day_of_week: 4, grade_groups: ['7'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 3 },
+      { day_of_week: 4, grade_groups: ['8'],      start_time: null,    end_time: null,     duration_minutes: 60, venue: 'Stage',          skills: ['Strings'],     sort_order: 4 },
+      { day_of_week: 4, grade_groups: ['7', '8'], start_time: '15:30', end_time: '17:00', duration_minutes: 90, venue: 'Stage',          skills: ['Ensemble'],    sort_order: 5 },
+      { day_of_week: 4, grade_groups: ['K'],      start_time: null,    end_time: null,     duration_minutes: 30, venue: 'Classroom',      skills: ['Choral'],      sort_order: 6 },
+
+      // ── Friday (day_of_week=5) ──
+      { day_of_week: 5, grade_groups: ['K'],      start_time: '08:00', end_time: '08:30', duration_minutes: 30, venue: 'Classroom',      skills: ['Choral'],      sort_order: 1 },
+      { day_of_week: 5, grade_groups: ['7', '8'], start_time: '10:00', end_time: '11:00', duration_minutes: 60, venue: 'Cafegymatorium', skills: ['Brass'],       sort_order: 2 },
+      { day_of_week: 5, grade_groups: ['6'],      start_time: null,    end_time: null,     duration_minutes: 30, venue: 'Google Meet',    skills: ['Theory'],      sort_order: 3 },
+      { day_of_week: 5, grade_groups: ['4'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 4 },
+      { day_of_week: 5, grade_groups: ['3'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 5 },
     ];
 
-    const { data: templatesData } = await sb.from('session_templates').insert(
+    const { data: templatesData, error: templatesError } = await sb.from('session_templates').insert(
       templateDefs.map(t => ({
         program_id: programId,
         day_of_week: t.day_of_week,
@@ -159,7 +183,13 @@ export async function POST() {
       }))
     ).select();
 
+    if (templatesError) {
+      console.error('Template insert error:', templatesError);
+      return NextResponse.json({ error: 'Failed to create templates: ' + templatesError.message }, { status: 500 });
+    }
+
     const templates = templatesData ?? [];
+    console.log('Templates created:', templates.length);
 
     // ── Generate Sessions ────────────────────────────────────
     const blackoutSet = new Set(blackoutDates.map(d => d.date));
@@ -172,8 +202,8 @@ export async function POST() {
       const d = new Date(dateStr + 'T12:00:00Z');
       const dow = d.getUTCDay();
 
-      // Skip weekends and Friday
-      if (dow === 0 || dow === 5 || dow === 6) continue;
+      // Skip weekends
+      if (dow === 0 || dow === 6) continue;
       // Skip blackout dates
       if (blackoutSet.has(dateStr)) continue;
 

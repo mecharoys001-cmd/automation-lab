@@ -152,6 +152,7 @@ export interface Tag {
   name: string;
   color: string | null;
   description: string | null;
+  category: string; // Tag category (e.g., "Instrument", "Grade Level", "Event Type")
   created_at: string;
 }
 

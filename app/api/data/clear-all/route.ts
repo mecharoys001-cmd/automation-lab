@@ -1,7 +1,7 @@
 /**
  * DELETE /api/data/clear-all?program_id=XXX
  *
- * Deletes ALL sessions, session templates, instructors, venues, and tags.
+ * Deletes ALL sessions, event templates, instructors, venues, and tags.
  * Deletion order respects FK constraints (sessions → session_tags first,
  * then sessions, templates, instructors, venues, tags).
  *
@@ -39,7 +39,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 2. Delete session templates
+    // 2. Delete event templates
     const { data: tmplData, error: tmplErr } = await sb
       .from('session_templates')
       .delete()

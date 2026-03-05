@@ -52,12 +52,16 @@ export async function POST(request: NextRequest) {
 
     const hasDescription = body.description && typeof body.description === 'string' && body.description.trim();
     const hasEmoji = body.emoji && typeof body.emoji === 'string' && body.emoji.trim();
-    const insertData: { name: string; description?: string; emoji?: string } = { name: body.name.trim() };
+    const hasCategory = body.category && typeof body.category === 'string' && body.category.trim();
+    const insertData: { name: string; description?: string; emoji?: string; category?: string } = { name: body.name.trim() };
     if (hasDescription) {
       insertData.description = body.description.trim();
     }
     if (hasEmoji) {
       insertData.emoji = body.emoji.trim();
+    }
+    if (hasCategory) {
+      insertData.category = body.category.trim();
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,8 +72,8 @@ export async function POST(request: NextRequest) {
 
     // If v2 columns don't exist yet, retry without them
     let v2ColumnsSkipped = false;
-    if (error && (hasDescription || hasEmoji) && (error.code === '42703' || error.message?.includes('column'))) {
-      const { description: _d, emoji: _e, ...insertBasic } = insertData;
+    if (error && (hasDescription || hasEmoji || hasCategory) && (error.code === '42703' || error.message?.includes('column'))) {
+      const { description: _d, emoji: _e, category: _c, ...insertBasic } = insertData;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const retry = await (supabase.from('tags') as any)
         .insert(insertBasic)
@@ -89,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       tag: data,
-      ...(v2ColumnsSkipped && { warning: 'Description/emoji fields unavailable — run migration to enable.' }),
+      ...(v2ColumnsSkipped && { warning: 'Description/emoji/category fields unavailable — run migration to enable.' }),
     }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

@@ -3,7 +3,7 @@
  * PUT /api/templates/placements
  *
  * Persists the weekly grid placement state for a program.
- * Each placement maps a session_template to a specific day/time on the grid.
+ * Each placement maps an event template to a specific day/time on the grid.
  *
  * Uses the `template_placements` table:
  *   id            uuid PK

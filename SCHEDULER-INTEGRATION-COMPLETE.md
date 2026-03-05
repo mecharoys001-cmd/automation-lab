@@ -76,7 +76,7 @@ The scheduler creates the following tables:
 - `venues` - Physical/virtual spaces
 - `programs` - Terms or event series
 - `school_calendar` - Academic calendar dates
-- `session_templates` - Reusable session patterns
+- `session_templates` - Reusable event template patterns
 - `tags` - Categorization
 - `sessions` - Individual calendar sessions
 - `session_tags` - Many-to-many relationship

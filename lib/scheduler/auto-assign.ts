@@ -195,7 +195,7 @@ function isInstructorBooked(
  * Selects an instructor from candidates, respecting the template's rotation mode.
  *
  * @param candidates - Pre-filtered instructor candidates
- * @param template - The session template (for rotation_mode)
+ * @param template - The event template (for rotation_mode)
  * @param rotationMap - Mutable rotation state map
  * @returns The selected instructor, or null if no candidates
  */
@@ -269,7 +269,7 @@ function selectWithRotation(
  * Uses partial skill matching against the template's required_skills,
  * then filters by availability and applies rotation logic.
  *
- * @param template - The session template with required_skills
+ * @param template - The event template with required_skills
  * @param ctx - Auto-assignment context (instructors, date, etc.)
  * @param rotationMap - Mutable rotation state map
  * @returns Assignment result with instructor or warning
@@ -314,7 +314,7 @@ export function findInstructorForTaggedSlot(
  * Finds an instructor for an auto_assign template.
  * Uses availability + load balancing + rotation (no skill filtering).
  *
- * @param template - The session template
+ * @param template - The event template
  * @param ctx - Auto-assignment context
  * @param rotationMap - Mutable rotation state map
  * @returns Assignment result with instructor or warning
@@ -347,7 +347,7 @@ export function findInstructorForAutoAssign(
  * Same logic as auto_assign — availability + load balancing + rotation.
  * Time blocks may have empty grade_groups (handled by the engine).
  *
- * @param template - The session template
+ * @param template - The event template
  * @param ctx - Auto-assignment context
  * @param rotationMap - Mutable rotation state map
  * @returns Assignment result with instructor or warning

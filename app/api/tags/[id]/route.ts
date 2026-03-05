@@ -12,7 +12,7 @@ export async function PATCH(
 
     console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
 
-    const updateData: { name?: string; description?: string | null; emoji?: string | null } = {};
+    const updateData: { name?: string; description?: string | null; emoji?: string | null; category?: string | null } = {};
     if (body.name && typeof body.name === 'string' && body.name.trim()) {
       updateData.name = body.name.trim();
     }
@@ -26,6 +26,12 @@ export async function PATCH(
     if (hasEmoji) {
       updateData.emoji = body.emoji && typeof body.emoji === 'string' && body.emoji.trim()
         ? body.emoji.trim()
+        : null;
+    }
+    const hasCategory = 'category' in body;
+    if (hasCategory) {
+      updateData.category = body.category && typeof body.category === 'string' && body.category.trim()
+        ? body.category.trim()
         : null;
     }
 
@@ -46,13 +52,13 @@ export async function PATCH(
 
     // If v2 columns don't exist yet, retry without them
     let v2ColumnsSkipped = false;
-    if (error && (hasDescription || hasEmoji) && (error.code === '42703' || error.message?.includes('column'))) {
-      console.warn('[PATCH /api/tags] v2 columns missing — falling back without emoji/description');
-      const { description: _d, emoji: _e, ...updateBasic } = updateData;
+    if (error && (hasDescription || hasEmoji || hasCategory) && (error.code === '42703' || error.message?.includes('column'))) {
+      console.warn('[PATCH /api/tags] v2 columns missing — falling back without emoji/description/category');
+      const { description: _d, emoji: _e, category: _c, ...updateBasic } = updateData;
       if (Object.keys(updateBasic).length === 0) {
         return NextResponse.json({
           tag: null,
-          warning: 'Description/emoji fields unavailable — run migration to enable.',
+          warning: 'Description/emoji/category fields unavailable — run migration to enable.',
         }, { status: 422 });
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,7 +83,7 @@ export async function PATCH(
 
     return NextResponse.json({
       tag: data,
-      ...(v2ColumnsSkipped && { warning: 'Description/emoji fields unavailable — run migration to enable.' }),
+      ...(v2ColumnsSkipped && { warning: 'Description/emoji/category fields unavailable — run migration to enable.' }),
     });
   } catch (err) {
     return NextResponse.json(

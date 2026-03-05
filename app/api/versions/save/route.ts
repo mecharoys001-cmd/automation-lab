@@ -117,7 +117,7 @@ async function buildSnapshot(supabase: any, year: number): Promise<ScheduleSnaps
       .lte('date', endDate),
     // Session tags for sessions in this year (fetch all, filter client-side)
     (supabase.from('session_tags') as any).select('*'),
-    // Session templates (not year-scoped — include all)
+    // Event templates (not year-scoped — include all)
     (supabase.from('session_templates') as any).select('*'),
     // School calendar for this year
     (supabase.from('school_calendar') as any)

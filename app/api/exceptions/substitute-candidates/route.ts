@@ -4,7 +4,7 @@
  * Returns eligible substitute instructors for a flagged session.
  * Filters by:
  *   1. Active status
- *   2. Skills matching the session template's required_skills
+ *   2. Skills matching the event template's required_skills
  *   3. Availability covering the session's day/time window
  *   4. No double-booking on the session date
  *   5. Excludes the session's current instructor

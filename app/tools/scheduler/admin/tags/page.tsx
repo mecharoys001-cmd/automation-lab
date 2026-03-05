@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { EmojiPicker } from '../../components/ui/EmojiPicker';
@@ -39,6 +39,7 @@ interface Tag {
   name: string;
   description?: string | null;
   emoji?: string | null;
+  category: string;
   created_at: string;
 }
 
@@ -88,9 +89,16 @@ export default function TagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionCounts, setSessionCounts] = useState<Record<string, number>>({});
+
+  // Category management
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
+  const [quickAddCategory, setQuickAddCategory] = useState('General');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [quickAddSuccess, setQuickAddSuccess] = useState(false);
@@ -100,42 +108,33 @@ export default function TagsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [editEmoji, setEditEmoji] = useState('🎵');
-  const [saving, setSaving] = useState(false);
-
-  // Toast notification state
-  const [toast, setToast] = useState<ToastState | null>(null);
-
-  // Warning toast state
-  const [warningToast, setWarningToast] = useState<string | null>(null);
+  const [editEmoji, setEditEmoji] = useState('');
+  const [editCategory, setEditCategory] = useState('General');
+  const [editLoading, setEditLoading] = useState(false);
 
   // Delete state
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [usageCounts, setUsageCounts] = useState<Record<string, number>>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Whether the DB has the v2 columns (description/emoji) — tracks API warnings
-  const [v2ColumnsAvailable, setV2ColumnsAvailable] = useState(true);
+  // Toast
+  const [toast, setToast] = useState<ToastState | null>(null);
+  let toastCounter = useRef(0);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    setToast({ message, type, id: ++toastCounter.current });
+  }, []);
 
   const fetchTags = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Cache-bust to ensure we always get fresh data after mutations
-      const res = await fetch(`/api/tags?_t=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`Failed to fetch tags: ${res.status}`);
-      const { tags: data, sessionCounts } = (await res.json()) as {
-        tags: Tag[];
-        sessionCounts?: Record<string, number>;
-      };
-      console.log('[fetchTags] received', data.length, 'tags, emojis:', data.map(t => `${t.name}=${t.emoji}`).join(', '));
-      setTags(data);
-      if (sessionCounts) {
-        setUsageCounts(sessionCounts);
-      }
+      const res = await fetch('/api/tags');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      setTags(json.tags ?? []);
+      setSessionCounts(json.sessionCounts ?? {});
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tags');
-      setTags([]);
     } finally {
       setLoading(false);
     }
@@ -145,636 +144,419 @@ export default function TagsPage() {
     fetchTags();
   }, [fetchTags]);
 
+  // Get all unique categories
+  const categories = Array.from(new Set(tags.map(t => t.category || 'General'))).sort();
+
+  // Quick add tag
   const handleQuickAdd = async () => {
-    const raw = quickAddValue.trim();
-    if (!raw) return;
-    const names = raw.split(',').map(s => s.trim()).filter(Boolean);
-    if (names.length === 0) return;
+    const trimmed = quickAddValue.trim();
+    if (!trimmed) {
+      setQuickAddError('Tag name cannot be empty');
+      return;
+    }
+
     setQuickAddLoading(true);
     setQuickAddError(null);
     setQuickAddSuccess(false);
-    const errors: string[] = [];
-    let created = 0;
-    for (const raw_entry of names) {
-      const parts = raw_entry.split('|').map(s => s.trim());
-      const name = parts[0];
-      const description = parts[1] || undefined;
-      const emoji = getEmojiForTag(name);
-      try {
-        const res = await fetch('/api/tags', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description, emoji }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          errors.push(`"${name}": ${data.error || 'failed'}`);
-        } else {
-          created++;
-          if (data.warning) {
-            setV2ColumnsAvailable(false);
-            setWarningToast(data.warning);
-            setTimeout(() => setWarningToast(null), 5000);
-          }
-        }
-      } catch (err) {
-        errors.push(`"${name}": ${err instanceof Error ? err.message : 'failed'}`);
+
+    try {
+      const emoji = getEmojiForTag(trimmed);
+      const description = TAG_DESCRIPTIONS[trimmed.toLowerCase()] || '';
+
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: trimmed, 
+          emoji, 
+          description, 
+          category: quickAddCategory 
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || `HTTP ${res.status}`);
       }
-    }
-    if (errors.length > 0) {
-      setQuickAddError(errors.join('; '));
-      setToast({ message: `Failed to add ${errors.length} tag${errors.length !== 1 ? 's' : ''}`, type: 'error', id: Date.now() });
-    }
-    if (created > 0) {
+
       setQuickAddValue('');
       setQuickAddSuccess(true);
       await fetchTags();
-      setToast({ message: `${created} tag${created !== 1 ? 's' : ''} added successfully`, type: 'success', id: Date.now() });
-      setTimeout(() => setQuickAddSuccess(false), 2000);
-    }
-    quickAddRef.current?.focus();
-    setQuickAddLoading(false);
-  };
-
-  const handleEdit = async (id: string) => {
-    if (!editName.trim()) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const patchBody = {
-        name: editName.trim(),
-        description: editDescription.trim() || null,
-        emoji: editEmoji
-      };
-      console.log('[handleEdit] sending PATCH:', JSON.stringify(patchBody));
-      const res = await fetch(`/api/tags/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchBody),
-      });
-      const data = await res.json();
-      console.log('[handleEdit] response:', res.status, JSON.stringify(data));
-      if (!res.ok) {
-        setError(data.error || 'Failed to update tag');
-        setToast({ message: data.error || 'Failed to update tag', type: 'error', id: Date.now() });
-        return;
-      }
-      if (data.warning) {
-        setV2ColumnsAvailable(false);
-        setWarningToast(data.warning);
-        setTimeout(() => setWarningToast(null), 5000);
-        // Don't show success toast — emoji/description were NOT saved
-        setToast({ message: 'Tag name saved, but emoji/description require a database migration', type: 'error', id: Date.now() });
-      } else {
-        setToast({ message: 'Tag updated successfully', type: 'success', id: Date.now() });
-      }
-      setEditingId(null);
-      setEditName('');
-      setEditDescription('');
-      setEditEmoji('🎵');
-      await fetchTags();
+      showToast(`Tag "${trimmed}" created successfully`, 'success');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update tag';
-      setError(msg);
-      setToast({ message: msg, type: 'error', id: Date.now() });
+      setQuickAddError(err instanceof Error ? err.message : 'Failed to create tag');
     } finally {
-      setSaving(false);
+      setQuickAddLoading(false);
     }
   };
 
-  const handleDeleteClick = (tag: Tag) => {
-    setDeleteConfirmId(tag.id);
-  };
-
-  const handleDelete = async (id: string) => {
-    setDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/tags/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data.error || 'Failed to delete tag';
-        setError(msg);
-        setToast({ message: msg, type: 'error', id: Date.now() });
-        setDeleteConfirmId(null);
-        return;
-      }
-      setDeleteConfirmId(null);
-      await fetchTags();
-      setToast({ message: 'Tag deleted successfully', type: 'success', id: Date.now() });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete tag';
-      setError(msg);
-      setToast({ message: msg, type: 'error', id: Date.now() });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
+  // Start edit
   const startEdit = (tag: Tag) => {
     setEditingId(tag.id);
     setEditName(tag.name);
-    setEditDescription(tag.description ?? '');
-    setEditEmoji(tag.emoji ?? getEmojiForTag(tag.name));
-    setDeleteConfirmId(null);
+    setEditDescription(tag.description || '');
+    setEditEmoji(tag.emoji || '');
+    setEditCategory(tag.category || 'General');
   };
 
-  // Build rows of 3 for the grid
-  const tagRows: Tag[][] = [];
-  for (let i = 0; i < tags.length; i += 3) {
-    tagRows.push(tags.slice(i, i + 3));
+  // Cancel edit
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditDescription('');
+    setEditEmoji('');
+    setEditCategory('General');
+  };
+
+  // Save edit
+  const saveEdit = async (id: string) => {
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/tags/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName.trim(),
+          description: editDescription.trim() || null,
+          emoji: editEmoji.trim() || null,
+          category: editCategory.trim() || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+
+      await fetchTags();
+      showToast('Tag updated successfully', 'success');
+      cancelEdit();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update tag', 'error');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Delete tag
+  const deleteTag = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+
+    setDeleteLoading(true);
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/tags/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+
+      await fetchTags();
+      showToast(`Tag "${name}" deleted successfully`, 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete tag', 'error');
+    } finally {
+      setDeleteLoading(false);
+      setDeletingId(null);
+    }
+  };
+
+  // Toggle category collapse
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
+
+  // Create new category
+  const createCategory = () => {
+    const trimmed = newCategoryName.trim();
+    if (!trimmed || categories.includes(trimmed)) {
+      setNewCategoryName('');
+      setShowNewCategoryInput(false);
+      return;
+    }
+    setQuickAddCategory(trimmed);
+    setNewCategoryName('');
+    setShowNewCategoryInput(false);
+    quickAddRef.current?.focus();
+  };
+
+  if (loading && tags.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 text-slate-500">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm font-medium">Loading tags...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="max-w-md text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-sm text-red-600 font-medium">{error}</p>
+          <Button variant="primary" onClick={fetchTags} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div
-      className="overflow-y-auto h-full"
-      style={{ backgroundColor: '#F8FAFC', padding: 32 }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* Page Header */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-            Tags Management
-          </h1>
-          <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-            Manage event type tags and categories
+    <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
+      {/* Toast */}
+      {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Header */}
+      <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Tags</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Organize sessions with categorical tags for filtering and reporting
           </p>
         </div>
+      </div>
 
-        {/* Quick Add Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Tooltip text="Type tag names separated by commas to add multiple at once">
+      {/* Quick Add */}
+      <div className="bg-white px-8 py-4 border-b border-slate-200 shrink-0">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
+              Quick Add Tag
+            </label>
             <input
               ref={quickAddRef}
               type="text"
-              placeholder="Add new tag..."
               value={quickAddValue}
-              onChange={(e) => {
-                setQuickAddValue(e.target.value);
-                if (quickAddError) setQuickAddError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleQuickAdd();
-              }}
+              onChange={(e) => { setQuickAddValue(e.target.value); setQuickAddError(null); setQuickAddSuccess(false); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+              placeholder="e.g., Percussion, Strings..."
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
               disabled={quickAddLoading}
-              style={{
-                height: 40,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 8,
-                border: '1px solid #E2E8F0',
-                padding: '0 12px',
-                fontSize: 14,
-                color: '#0F172A',
-                outline: 'none',
-                flex: 1,
-                fontFamily: 'Inter, sans-serif',
-              }}
             />
-          </Tooltip>
-          <Tooltip text="Add a new tag to your collection">
-            <Button
-              variant="primary"
-              onClick={handleQuickAdd}
-              disabled={quickAddLoading || !quickAddValue.trim()}
+            {quickAddError && <p className="text-xs text-red-600 mt-1">{quickAddError}</p>}
+            {quickAddSuccess && <p className="text-xs text-emerald-600 mt-1">✓ Tag created</p>}
+          </div>
+
+          <div className="w-48">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
+              Category
+            </label>
+            <select
+              value={quickAddCategory}
+              onChange={(e) => setQuickAddCategory(e.target.value)}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors appearance-none"
               style={{
-                height: 40,
-                borderRadius: 8,
-                padding: '0 20px',
-                fontSize: 14,
-                fontWeight: 600,
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.25rem 1.25rem',
+                paddingRight: '2rem',
               }}
             >
-              {quickAddLoading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Adding…
-                </>
-              ) : 'Add Tag'}
-            </Button>
-          </Tooltip>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={handleQuickAdd}
+            disabled={quickAddLoading || !quickAddValue.trim()}
+            icon={quickAddLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          >
+            {quickAddLoading ? 'Adding...' : 'Add Tag'}
+          </Button>
+
+          <Button
+            variant="secondary"
+            onClick={() => setShowNewCategoryInput(true)}
+            icon={<FolderOpen className="w-4 h-4" />}
+            tooltip="Create a new category"
+          >
+            New Category
+          </Button>
         </div>
 
-        {/* Hint Text */}
-        <p style={{ fontSize: 12, color: '#94A3B8', margin: 0 }}>
-          Tip: Use commas to add multiple tags at once
-        </p>
-
-        {/* Success/Error feedback */}
-        {quickAddSuccess && (
-          <div style={{ fontSize: 13, color: '#10B981', fontWeight: 500 }}>
-            Tag added successfully!
-          </div>
-        )}
-        {quickAddError && (
-          <div style={{
-            borderRadius: 8,
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            padding: '8px 12px',
-            fontSize: 13,
-            color: '#EF4444',
-          }}>
-            {quickAddError}
-          </div>
-        )}
-        {error && (
-          <div style={{
-            borderRadius: 8,
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            padding: '8px 12px',
-            fontSize: 13,
-            color: '#EF4444',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            {error}
-            <Tooltip text="Dismiss this error">
-              <button
-                onClick={() => setError(null)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#EF4444',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  textDecoration: 'underline',
-                  opacity: 0.7,
-                }}
-              >
-                dismiss
-              </button>
-            </Tooltip>
-          </div>
-        )}
-        {warningToast && (
-          <div style={{
-            borderRadius: 8,
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            padding: '8px 12px',
-            fontSize: 13,
-            color: '#D97706',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            {warningToast}
-            <Tooltip text="Dismiss this warning">
-              <button
-                onClick={() => setWarningToast(null)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#D97706',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  textDecoration: 'underline',
-                  opacity: 0.7,
-                }}
-              >
-                dismiss
-              </button>
-            </Tooltip>
-          </div>
-        )}
-
-        {/* Migration banner — shown when v2 columns are unavailable */}
-        {!v2ColumnsAvailable && (
-          <div style={{
-            borderRadius: 8,
-            border: '1px solid rgba(59, 130, 246, 0.3)',
-            backgroundColor: 'rgba(59, 130, 246, 0.05)',
-            padding: '10px 14px',
-            fontSize: 13,
-            color: '#3B82F6',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            <span style={{ fontSize: 16 }}>💡</span>
-            Emoji and description fields require a database migration.
-            Run <code style={{ fontFamily: 'monospace', backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '1px 4px', borderRadius: 3 }}>
-              008_tags_description_emoji.sql
-            </code> to enable full tag customization.
-          </div>
-        )}
-
-        {/* Tag Grid */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {[0, 1, 2].map((r) => (
-              <div key={r} style={{ display: 'flex', gap: 20 }}>
-                {[0, 1, 2].map((c) => (
-                  <div
-                    key={c}
-                    style={{
-                      flex: 1,
-                      height: 160,
-                      borderRadius: 12,
-                      backgroundColor: '#E2E8F0',
-                      opacity: 0.4,
-                    }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        ) : tags.length === 0 ? (
-          <div style={{
-            borderRadius: 12,
-            backgroundColor: '#FFFFFF',
-            padding: 48,
-            textAlign: 'center',
-            color: '#94A3B8',
-            fontSize: 14,
-          }}>
-            No tags yet. Use the input above to create your first tag.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {tagRows.map((row, rowIdx) => (
-              <div key={rowIdx} style={{ display: 'flex', gap: 20 }}>
-                {row.map((tag) => {
-                  const emoji = tag.emoji ?? getEmojiForTag(tag.name);
-                  const description = getDescriptionForTag(tag);
-                  const sessionCount = usageCounts[tag.id];
-                  const isEditing = editingId === tag.id;
-
-                  return (
-                    <Tooltip key={tag.id} text={`${emoji} ${tag.name}${description ? ` — ${description}` : ''}`}>
-                      <div
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: 12,
-                          padding: 20,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 10,
-                        }}
-                      >
-                        {isEditing ? (
-                          /* Edit mode */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <Tooltip text="Choose an emoji for this tag">
-                              <div>
-                                <EmojiPicker
-                                  value={editEmoji}
-                                  onChange={setEditEmoji}
-                                />
-                              </div>
-                            </Tooltip>
-                            <Tooltip text="Tag name (Enter to save, Esc to cancel)">
-                              <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleEdit(tag.id);
-                                  if (e.key === 'Escape') {
-                                    setEditingId(null);
-                                    setEditName('');
-                                    setEditDescription('');
-                                    setEditEmoji('🎵');
-                                  }
-                                }}
-                                autoFocus
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: 600,
-                                  padding: '4px 8px',
-                                  borderRadius: 6,
-                                  border: '1px solid #E2E8F0',
-                                  outline: 'none',
-                                  color: '#0F172A',
-                                }}
-                              />
-                            </Tooltip>
-                            <Tooltip text="Optional description for this tag">
-                              <textarea
-                                placeholder="Description..."
-                                value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
-                                rows={2}
-                                style={{
-                                  fontSize: 13,
-                                  padding: '4px 8px',
-                                  borderRadius: 6,
-                                  border: '1px solid #E2E8F0',
-                                  outline: 'none',
-                                  color: '#64748B',
-                                  resize: 'none',
-                                }}
-                              />
-                            </Tooltip>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleEdit(tag.id)}
-                                disabled={saving || !editName.trim()}
-                                tooltip="Save tag details"
-                              >
-                                {saving ? (
-                                  <>
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Saving…
-                                  </>
-                                ) : 'Save'}
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingId(null);
-                                  setEditName('');
-                                  setEditDescription('');
-                                  setEditEmoji('🎵');
-                                }}
-                                tooltip="Discard changes"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          /* Display mode */
-                          <>
-                            <span style={{ fontSize: 36, lineHeight: 1 }}>{emoji}</span>
-                            <span style={{
-                              fontSize: 16,
-                              fontWeight: 700,
-                              color: '#0F172A',
-                            }}>
-                              {tag.name}
-                            </span>
-                            {description && (
-                              <span style={{
-                                fontSize: 13,
-                                color: '#64748B',
-                                lineHeight: 1.4,
-                              }}>
-                                {description}
-                              </span>
-                            )}
-                            {/* Card Footer */}
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              width: '100%',
-                              marginTop: 'auto',
-                            }}>
-                              <span style={{
-                                fontSize: 12,
-                                fontWeight: 500,
-                                color: '#3B82F6',
-                              }}>
-                                {`${sessionCount ?? 0} session${(sessionCount ?? 0) !== 1 ? 's' : ''}`}
-                              </span>
-                              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Tooltip text="Edit this tag">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startEdit(tag);
-                                    }}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      padding: 2,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                    }}
-                                  >
-                                    <Pencil size={16} color="#94A3B8" />
-                                  </button>
-                                </Tooltip>
-                                <Tooltip text="Delete this tag">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteClick(tag);
-                                    }}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      padding: 2,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                    }}
-                                  >
-                                    <Trash2 size={16} color="#EF4444" />
-                                  </button>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </Tooltip>
-                  );
-                })}
-                {/* Fill remaining columns with empty spacers */}
-                {row.length < 3 &&
-                  Array.from({ length: 3 - row.length }).map((_, i) => (
-                    <div key={`spacer-${i}`} style={{ flex: 1 }} />
-                  ))}
-              </div>
-            ))}
+        {/* New Category Input */}
+        {showNewCategoryInput && (
+          <div className="mt-3 flex gap-2 items-center bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') createCategory();
+                if (e.key === 'Escape') { setNewCategoryName(''); setShowNewCategoryInput(false); }
+              }}
+              placeholder="Category name..."
+              className="flex-1 h-9 rounded-lg border border-blue-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+              autoFocus
+            />
+            <Button variant="primary" size="sm" onClick={createCategory} disabled={!newCategoryName.trim()}>
+              Create
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => { setNewCategoryName(''); setShowNewCategoryInput(false); }}>
+              Cancel
+            </Button>
           </div>
         )}
       </div>
 
-      {/* Toast Notification */}
-      {toast && (
-        <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
-      )}
+      {/* Tags List (Grouped by Category) */}
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="space-y-4">
+          {categories.map(category => {
+            const categoryTags = tags.filter(t => (t.category || 'General') === category);
+            const isCollapsed = collapsedCategories.has(category);
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (() => {
-        const tag = tags.find((t) => t.id === deleteConfirmId);
-        if (!tag) return null;
-        const usageCount = usageCounts[tag.id];
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <Tooltip text="Click outside to cancel">
-              <div
-                className="absolute inset-0 bg-black/60"
-                onClick={() => setDeleteConfirmId(null)}
-              />
-            </Tooltip>
-            <div style={{
-              position: 'relative',
-              borderRadius: 12,
-              backgroundColor: '#FFFFFF',
-              padding: 24,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-              maxWidth: 400,
-              width: '100%',
-              margin: '0 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-            }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-                Delete Tag
-              </h2>
-              <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-                Are you sure you want to delete{' '}
-                <span style={{ fontWeight: 600, color: '#0F172A' }}>
-                  {tag.emoji ?? getEmojiForTag(tag.name)} {tag.name}
-                </span>
-                ?
-              </p>
-              {usageCount != null && usageCount > 0 && (
-                <div style={{
-                  borderRadius: 8,
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
-                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                  padding: '8px 12px',
-                  fontSize: 13,
-                  color: '#D97706',
-                }}>
-                  This tag is assigned to {usageCount} session{usageCount !== 1 ? 's' : ''}.
-                  It must be removed from all sessions before it can be deleted.
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 4 }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => setDeleteConfirmId(null)}
-                  tooltip="Cancel deletion"
+            return (
+              <div key={category} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Category Header */}
+                <button
+                  onClick={() => toggleCategory(category)}
+                  className="w-full flex items-center justify-between px-5 py-3 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-200"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => handleDelete(tag.id)}
-                  disabled={deleting}
-                  tooltip="Permanently delete this tag"
-                  style={{
-                    backgroundColor: '#EF4444',
-                    color: '#FFFFFF',
-                    borderColor: '#EF4444',
-                  }}
-                >
-                  {deleting ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Deleting…
-                    </>
-                  ) : 'Delete'}
-                </Button>
+                  <div className="flex items-center gap-3">
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                    <h3 className="text-sm font-bold text-slate-900">{category}</h3>
+                    <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
+                      {categoryTags.length}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Tags in Category */}
+                {!isCollapsed && (
+                  <div className="divide-y divide-slate-100">
+                    {categoryTags.map(tag => {
+                      const isEditing = editingId === tag.id;
+                      const isDeleting = deletingId === tag.id;
+                      const sessionCount = sessionCounts[tag.id] || 0;
+
+                      return (
+                        <div key={tag.id} className="px-5 py-3 hover:bg-slate-50 transition-colors">
+                          {isEditing ? (
+                            // Edit Mode
+                            <div className="space-y-3">
+                              <div className="flex gap-3">
+                                <EmojiPicker
+                                  value={editEmoji}
+                                  onChange={setEditEmoji}
+                                  className="shrink-0"
+                                />
+                                <div className="flex-1">
+                                  <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                                    placeholder="Tag name"
+                                  />
+                                </div>
+                                <select
+                                  value={editCategory}
+                                  onChange={(e) => setEditCategory(e.target.value)}
+                                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                                >
+                                  {categories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <textarea
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none"
+                                placeholder="Optional description"
+                                rows={2}
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => saveEdit(tag.id)}
+                                  disabled={editLoading || !editName.trim()}
+                                >
+                                  {editLoading ? 'Saving...' : 'Save'}
+                                </Button>
+                                <Button variant="secondary" size="sm" onClick={cancelEdit}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            // View Mode
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl shrink-0">{tag.emoji || '🎵'}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
+                                  {sessionCount > 0 && (
+                                    <Tooltip text={`Used in ${sessionCount} session${sessionCount === 1 ? '' : 's'}`}>
+                                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                                        {sessionCount}
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                                {getDescriptionForTag(tag) && (
+                                  <p className="text-xs text-slate-500 mt-0.5">{getDescriptionForTag(tag)}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Tooltip text="Edit tag">
+                                  <button
+                                    onClick={() => startEdit(tag)}
+                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-400 hover:text-blue-600"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip text={sessionCount > 0 ? `Cannot delete: used in ${sessionCount} sessions` : 'Delete tag'}>
+                                  <button
+                                    onClick={() => deleteTag(tag.id, tag.name)}
+                                    disabled={isDeleting || sessionCount > 0}
+                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isDeleting ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+            );
+          })}
+
+          {categories.length === 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <p className="text-sm text-slate-500">No tags yet. Create your first tag above!</p>
             </div>
-          </div>
-        );
-      })()}
+          )}
+        </div>
+      </div>
     </div>
   );
 }
