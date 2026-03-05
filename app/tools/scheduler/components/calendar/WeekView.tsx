@@ -9,6 +9,8 @@ import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { TimeRangeSelector } from './TimeRangeSelector';
+import { VenueToggle } from '../ui/VenueToggle';
+import type { VenueOption } from '../ui/VenueToggle';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -16,6 +18,8 @@ import { TimeRangeSelector } from './TimeRangeSelector';
 
 export interface WeekViewProps {
   events: CalendarEvent[];
+  /** All venues from database (shows empty venues too). Falls back to deriving from events. */
+  venues?: Array<{ id: string; name: string }>;
   currentDate?: Date;
   onDateChange?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
@@ -46,6 +50,7 @@ export interface WeekViewProps {
 
 const HOUR_HEIGHT = 72; // px per hour slot
 const TIME_COL_WIDTH = 72; // px for the time gutter
+const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const DAY_FULL_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -243,6 +248,7 @@ function WeekEventBlock({
 
 export function WeekView({
   events,
+  venues: venuesProp,
   currentDate,
   onDateChange,
   onEventClick,
@@ -260,6 +266,30 @@ export function WeekView({
   const [viewDate, setViewDate] = useState(() => currentDate ?? new Date());
   const [dayStartHour, setDayStartHour] = useState(initialStartHour);
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
+  const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+
+  // Use DB venues if provided, otherwise derive from event data
+  const allVenues: VenueOption[] = useMemo(() => {
+    if (venuesProp && venuesProp.length > 0) {
+      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
+    }
+    const seen = new Map<string, string>();
+    for (const event of events) {
+      if (event.venue && !seen.has(event.venue)) {
+        seen.set(event.venue, event.venue);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [venuesProp, events]);
+
+  // Auto-select all venues when venue list changes and nothing is selected
+  useMemo(() => {
+    if (selectedVenues.length === 0 && allVenues.length > 0) {
+      setSelectedVenues(allVenues.map((v) => v.id));
+    }
+  }, [allVenues]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const multiLane = selectedVenues.length > 1;
 
   const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
   const [eventDetails, setEventDetails] = useState<Record<string, unknown> | null>(null);
@@ -455,13 +485,24 @@ export function WeekView({
         </Button>
       </div>
 
+      {/* ------- Venue Toggle ------- */}
+      {allVenues.length > 1 && (
+        <div className="bg-white px-6 border-b border-slate-200 shrink-0">
+          <VenueToggle
+            venues={allVenues}
+            selectedVenues={selectedVenues}
+            onChange={setSelectedVenues}
+          />
+        </div>
+      )}
+
       {/* ------- Unified Grid (sticky headers + time gutter + day columns) ------- */}
       <div className="flex-1 overflow-y-auto bg-white" style={{ minWidth: 0 }}>
         <div
-          className="grid min-h-full"
+          className="grid"
           style={{
             gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, 1fr)`,
-            gridTemplateRows: 'auto 1fr',
+            gridTemplateRows: `auto ${totalHeight}px`,
           }}
         >
           {/* Row 1, Col 1: Sticky empty corner above time gutter */}
@@ -470,17 +511,33 @@ export function WeekView({
             style={{ gridRow: 1 }}
           />
 
-          {/* Row 1, Cols 2-8: Sticky day headers */}
+          {/* Row 1, Cols 2-8: Sticky day headers (with optional lane sub-headers) */}
           {weekDates.map((date, idx) => (
             <div
               key={`hdr-${idx}`}
-              className={`sticky top-0 z-10 bg-white px-1.5 py-2 border-b border-slate-200 text-center box-border ${
+              className={`sticky top-0 z-10 bg-white border-b border-slate-200 text-center box-border ${
                 idx < 6 ? 'border-r border-slate-100' : ''
               }`}
               style={{ gridRow: 1 }}
             >
-              <div className="text-[11px] font-semibold tracking-[1px] text-slate-400">{DAY_LABELS[idx]}</div>
-              <div className="text-lg font-semibold text-slate-800">{date.getDate()}</div>
+              <div className="px-1.5 py-2">
+                <div className="text-[11px] font-semibold tracking-[1px] text-slate-400">{DAY_LABELS[idx]}</div>
+                <div className="text-lg font-semibold text-slate-800">{date.getDate()}</div>
+              </div>
+              {multiLane && (
+                <div className="flex border-t border-slate-100">
+                  {selectedVenues.map((venueId, laneIdx) => (
+                    <div
+                      key={venueId}
+                      className={`flex-1 text-[10px] font-medium text-slate-400 py-1 truncate px-1 ${
+                        laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
+                      }`}
+                    >
+                      {venueId}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 
@@ -509,13 +566,18 @@ export function WeekView({
             const isToday = dateKey === todayKey;
             const isDragOver = dragOverCol === dayIdx;
 
+            // Filter events to only selected venues (or show all if no venue data)
+            const filteredEvents = multiLane
+              ? dayEvents.filter((e) => !e.venue || selectedVenues.includes(e.venue))
+              : dayEvents;
+
             return (
               <div
                 key={dayIdx}
-                className={`relative px-1.5 box-border ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
+                className={`relative box-border ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
                   isToday ? 'bg-blue-50/30' : ''
                 } ${isDragOver ? 'bg-blue-50/50' : ''}`}
-                style={{ gridRow: 2, minHeight: `${totalHeight}px` }}
+                style={{ gridRow: 2 }}
                 onDragOver={
                   onEventDrop
                     ? (e) => {
@@ -581,20 +643,58 @@ export function WeekView({
                   />
                 ))}
 
-                {/* Events */}
-                {dayEvents.map((event) => (
-                  <WeekEventBlock
-                    key={event.id}
-                    event={event}
-                    dayStartHour={dayStartHour}
-                    onHover={showPopover}
-                    onLeave={hidePopover}
-                    onClick={handleEventClick}
-                    onContextMenu={onEventContextMenu}
-                    onResizeEnd={onEventResize}
-                    enableDrag={!!onEventDrop}
-                  />
-                ))}
+                {multiLane ? (
+                  /* Multi-lane rendering: split day column into venue lanes */
+                  <div className="absolute inset-0 flex">
+                    {selectedVenues.map((venueId, laneIdx) => {
+                      const laneEvents = filteredEvents.filter(
+                        (e) => e.venue === venueId || (!e.venue && laneIdx === 0),
+                      );
+                      return (
+                        <div
+                          key={venueId}
+                          className={`relative flex-1 ${
+                            laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
+                          }`}
+                          style={{
+                            backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
+                          }}
+                        >
+                          {laneEvents.map((event) => (
+                            <WeekEventBlock
+                              key={event.id}
+                              event={event}
+                              dayStartHour={dayStartHour}
+                              onHover={showPopover}
+                              onLeave={hidePopover}
+                              onClick={handleEventClick}
+                              onContextMenu={onEventContextMenu}
+                              onResizeEnd={onEventResize}
+                              enableDrag={!!onEventDrop}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Single column rendering (original behavior) */
+                  <div className="absolute inset-0 px-1.5">
+                    {filteredEvents.map((event) => (
+                      <WeekEventBlock
+                        key={event.id}
+                        event={event}
+                        dayStartHour={dayStartHour}
+                        onHover={showPopover}
+                        onLeave={hidePopover}
+                        onClick={handleEventClick}
+                        onContextMenu={onEventContextMenu}
+                        onResizeEnd={onEventResize}
+                        enableDrag={!!onEventDrop}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
