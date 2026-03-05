@@ -431,7 +431,7 @@ export default function TagsPage() {
       } else if (successCount > 0 && failedTags.length > 0) {
         showToast(
           `${successCount} tag(s) added. Failed: ${failedTags.join(', ')}`,
-          'warning'
+          'error'
         );
       } else {
         showToast(`Failed to create tags: ${failedTags.join(', ')}`, 'error');
