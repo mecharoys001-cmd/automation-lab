@@ -201,10 +201,10 @@ function WeekEventBlock({
         ref={ref}
         draggable={!!enableDrag}
         onDragStart={enableDrag ? handleDragStart : undefined}
-        className="absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden group"
+        className="absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity overflow-y-auto group"
         style={{
           top: `${top}px`,
-          height: `${Math.max(height, 28)}px`,
+          minHeight: `${Math.max(height, 28)}px`,
           backgroundColor: colors.bg,
           borderLeft: `3px solid ${colors.accent}`,
         }}
@@ -216,16 +216,16 @@ function WeekEventBlock({
           {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
         </p>
         <p
-          className="text-[11px] font-semibold leading-tight truncate mt-0.5"
+          className="text-[11px] font-semibold leading-snug whitespace-normal mt-0.5"
           style={{ color: colors.text }}
         >
           {event.title}
         </p>
-        <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+        <p className="text-[10px] text-slate-500 leading-snug whitespace-normal mt-0.5">
           {event.instructor}
         </p>
         {event.gradeLevel && (
-          <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">
+          <p className="text-[10px] text-slate-400 leading-snug whitespace-normal mt-0.5">
             {event.gradeLevel}
           </p>
         )}
