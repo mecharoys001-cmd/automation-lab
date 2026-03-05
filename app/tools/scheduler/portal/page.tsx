@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Instructor, Session, Venue, Program } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
@@ -66,11 +67,18 @@ type ViewFilter = 'upcoming' | 'past' | 'all';
 // ── Component ──────────────────────────────────────────────────────
 
 export default function InstructorPortalPage() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<SessionDisplay[]>([]);
   const [instructor, setInstructor] = useState<Instructor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewFilter, setViewFilter] = useState<ViewFilter>('upcoming');
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/tools/scheduler/portal/login');
+  }
 
   useEffect(() => {
     loadPortalData();
@@ -166,14 +174,27 @@ export default function InstructorPortalPage() {
                 ? `${instructor.first_name} ${instructor.last_name}`
                 : 'Instructor Portal'}
             </h1>
-            <Tooltip text="Return to scheduler home">
-              <Link
-                href="/tools/scheduler"
-                className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-              >
-                &larr; Back
-              </Link>
-            </Tooltip>
+            <div className="flex items-center gap-2">
+              <Tooltip text="Return to scheduler home">
+                <Link
+                  href="/tools/scheduler"
+                  className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                >
+                  &larr; Back
+                </Link>
+              </Tooltip>
+              <Tooltip text="Sign out of your account">
+                <button
+                  onClick={handleSignOut}
+                  className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                >
+                  <svg className="inline-block h-4 w-4 mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3l3-3m0 0l-3-3m3 3H9" />
+                  </svg>
+                  Sign Out
+                </button>
+              </Tooltip>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             Your teaching schedule (read-only)
