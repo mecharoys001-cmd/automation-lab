@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import {
   Search, GripVertical, Pencil, Trash2, Loader2,
   Clock, MapPin, User, SlidersHorizontal, ChevronDown, X,
+  ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { Pill } from '../ui/Pill';
@@ -447,6 +448,9 @@ export function TemplateList({
 // Table View (Event Templates page)
 // ──────────────────────────────────────────────────────────────
 
+type SortColumn = 'name' | 'subject' | 'day' | 'time' | 'instructor' | 'venue' | 'cycle' | 'status';
+type SortDirection = 'asc' | 'desc';
+
 function TableView({
   items,
   onEdit,
@@ -456,31 +460,143 @@ function TableView({
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }) {
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, start with ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortColumn) return items;
+
+    return [...items].sort((a, b) => {
+      let aVal: string | number = '';
+      let bVal: string | number = '';
+
+      switch (sortColumn) {
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'subject':
+          aVal = a.subject || '';
+          bVal = b.subject || '';
+          break;
+        case 'day':
+          aVal = a.dayLabel || '';
+          bVal = b.dayLabel || '';
+          break;
+        case 'time':
+          aVal = a.timeLabel || '';
+          bVal = b.timeLabel || '';
+          break;
+        case 'instructor':
+          aVal = a.instructor || '';
+          bVal = b.instructor || '';
+          break;
+        case 'venue':
+          aVal = a.venue || '';
+          bVal = b.venue || '';
+          break;
+        case 'cycle':
+          aVal = a.cycleLabel || '';
+          bVal = b.cycleLabel || '';
+          break;
+        case 'status':
+          aVal = a.isActive !== false ? 'Active' : 'Inactive';
+          bVal = b.isActive !== false ? 'Active' : 'Inactive';
+          break;
+      }
+
+      const comparison = String(aVal).localeCompare(String(bVal), undefined, { numeric: true, sensitivity: 'base' });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [items, sortColumn, sortDirection]);
+
+  const columns: { key: SortColumn; label: string }[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'subject', label: 'Subject' },
+    { key: 'day', label: 'Day' },
+    { key: 'time', label: 'Time' },
+    { key: 'instructor', label: 'Instructor' },
+    { key: 'venue', label: 'Venue' },
+    { key: 'cycle', label: 'Cycle' },
+    { key: 'status', label: 'Status' },
+  ];
+
   return (
     <div style={{ backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-            {['Name', 'Subject', 'Grade Groups', 'Day', 'Time', 'Instructor', 'Venue', 'Cycle', 'Status', ''].map((h) => (
+            {columns.map(({ key, label }) => (
               <th
-                key={h}
+                key={key}
+                onClick={() => handleSort(key)}
                 style={{
                   padding: '12px 16px',
                   textAlign: 'left',
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#64748B',
+                  color: sortColumn === key ? '#3B82F6' : '#64748B',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
+                  cursor: 'pointer',
+                  userSelect: 'none',
                 }}
+                className="hover:bg-slate-50 transition-colors"
               >
-                {h}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {label}
+                  {sortColumn === key && (
+                    sortDirection === 'asc' ? (
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    )
+                  )}
+                </div>
               </th>
             ))}
+            {/* Grade Groups column (non-sortable) */}
+            <th
+              style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#64748B',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Grade Groups
+            </th>
+            {/* Actions column (non-sortable) */}
+            <th
+              style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#64748B',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+            </th>
           </tr>
         </thead>
         <tbody>
-          {items.map((t) => (
+          {sortedItems.map((t) => (
             <tr
               key={t.id}
               style={{ borderBottom: '1px solid #F1F5F9' }}
@@ -493,14 +609,6 @@ function TableView({
               {/* Subject */}
               <td style={{ padding: '12px 16px', fontSize: 14, color: '#334155' }}>
                 {t.subject || '\u2014'}
-              </td>
-              {/* Grade Groups */}
-              <td style={{ padding: '12px 16px' }}>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {(t.gradeGroups ?? []).map((g) => (
-                    <Pill key={g} variant="grade">{g}</Pill>
-                  ))}
-                </div>
               </td>
               {/* Day */}
               <td style={{ padding: '12px 16px', fontSize: 14, color: '#0F172A', fontWeight: 500 }}>
@@ -546,6 +654,14 @@ function TableView({
                 >
                   {t.isActive !== false ? 'Active' : 'Inactive'}
                 </span>
+              </td>
+              {/* Grade Groups */}
+              <td style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {(t.gradeGroups ?? []).map((g) => (
+                    <Pill key={g} variant="grade">{g}</Pill>
+                  ))}
+                </div>
               </td>
               {/* Actions */}
               <td style={{ padding: '12px 16px' }}>
