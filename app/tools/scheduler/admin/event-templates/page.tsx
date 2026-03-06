@@ -591,6 +591,20 @@ export default function EventTemplatesPage() {
     };
   });
 
+  /* ── Calculate subject counts ────────────────────────────── */
+
+  const subjectCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    templates.forEach((t) => {
+      (t.required_skills ?? []).forEach((skill) => {
+        counts[skill] = (counts[skill] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1]) // Sort by count descending
+      .map(([subject, count]) => ({ subject, count }));
+  }, [templates]);
+
   /* ── Guard: no program selected ──────────────────────────── */
 
   if (!selectedProgramId) {
@@ -634,6 +648,31 @@ export default function EventTemplatesPage() {
             <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
               Create and manage session templates
             </p>
+            {/* Subject counts */}
+            {subjectCounts.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                {subjectCounts.map(({ subject, count }) => (
+                  <span
+                    key={subject}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '3px 10px',
+                      borderRadius: 9999,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      backgroundColor: '#F1F5F9',
+                      color: '#475569',
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{subject}</span>
+                    <span style={{ color: '#94A3B8' }}>·</span>
+                    <span>{count}</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
