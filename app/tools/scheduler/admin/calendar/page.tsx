@@ -53,8 +53,8 @@ const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; ce
 };
 
 const STATUS_TOOLTIPS: Record<CalendarStatusType, string> = {
-  no_school: 'No classes on this date',
-  early_dismissal: 'Classes end earlier than usual',
+  no_school: 'No events on this date',
+  early_dismissal: 'Events end earlier than usual',
   instructor_exception: 'Schedule exception for a specific instructor',
 };
 

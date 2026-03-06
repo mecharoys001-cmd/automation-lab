@@ -8,31 +8,30 @@ import interactionPlugin from '@fullcalendar/interaction';
 import type { EventClickArg, DateSelectArg, EventDropArg, EventInput, DatesSetArg } from '@fullcalendar/core';
 import type { DateClickArg } from '@fullcalendar/interaction';
 
+import { getSubjectColor } from '../lib/subjectColors';
+
 /**
  * Tag-to-emoji mapping for calendar event prefixes.
- * Matches against tag names (case-insensitive).
+ * Subject emojis are pulled from the unified color system; non-subject tags are mapped here.
  */
-const TAG_EMOJI_MAP: { patterns: string[]; emoji: string }[] = [
-  { patterns: ['percussion', 'drums'],                   emoji: '🥁' },
-  { patterns: ['choral', 'vocal', 'singing'],            emoji: '🎤' },
-  { patterns: ['strings', 'violin', 'cello'],            emoji: '🎻' },
-  { patterns: ['brass', 'trumpet', 'trombone'],          emoji: '🎺' },
-  { patterns: ['piano', 'keyboard'],                     emoji: '🎹' },
-  { patterns: ['guitar'],                                emoji: '🎸' },
-  { patterns: ['woodwind', 'flute', 'clarinet'],         emoji: '🪈' },
-  { patterns: ['field trip', 'guest artist'],             emoji: '🎭' },
-  { patterns: ['showcase'],                              emoji: '🌟' },
-  { patterns: ['ta check-in', 'ta check-ins'],           emoji: '📋' },
-  { patterns: ['lead tas away'],                         emoji: '👥' },
+const EXTRA_TAG_EMOJI_MAP: { patterns: string[]; emoji: string }[] = [
+  { patterns: ['field trip', 'guest artist'],             emoji: '\u{1F3AD}' },
+  { patterns: ['showcase'],                              emoji: '\u{1F31F}' },
+  { patterns: ['ta check-in', 'ta check-ins'],           emoji: '\u{1F4CB}' },
+  { patterns: ['lead tas away'],                         emoji: '\u{1F465}' },
 ];
 
-const DEFAULT_EMOJI = '🎵';
+const DEFAULT_EMOJI = '\u{1F3B5}';
 
 function getEmojiForTags(tags?: { name: string }[]): string {
   if (!tags || tags.length === 0) return DEFAULT_EMOJI;
   for (const tag of tags) {
     const lower = tag.name.toLowerCase();
-    for (const entry of TAG_EMOJI_MAP) {
+    // Check unified subject colors first
+    const subjectColor = getSubjectColor(tag.name);
+    if (subjectColor.emoji !== DEFAULT_EMOJI) return subjectColor.emoji;
+    // Fall back to extra non-subject patterns
+    for (const entry of EXTRA_TAG_EMOJI_MAP) {
       if (entry.patterns.some((p) => lower.includes(p))) {
         return entry.emoji;
       }

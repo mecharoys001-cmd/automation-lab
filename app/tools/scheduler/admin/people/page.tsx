@@ -16,18 +16,9 @@ import { Avatar } from '../../components/ui/Avatar';
 import { ClickToCopy } from '../../components/ui/ClickToCopy';
 import { TagSelector } from '../../components/ui/TagSelector';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
+import { SKILL_STYLES } from '../../lib/subjectColors';
 
 /* ── Constants ──────────────────────────────────────────────── */
-
-const SKILL_STYLES: Record<string, { emoji: string; bg: string; text: string }> = {
-  Percussion: { emoji: '🥁', bg: 'bg-amber-100',   text: 'text-amber-800' },
-  Strings:    { emoji: '🎻', bg: 'bg-purple-100',  text: 'text-violet-600' },
-  Brass:      { emoji: '🎺', bg: 'bg-yellow-100',  text: 'text-yellow-700' },
-  Choral:     { emoji: '🎤', bg: 'bg-pink-100',    text: 'text-pink-700' },
-  Piano:      { emoji: '🎹', bg: 'bg-blue-100',    text: 'text-blue-500' },
-  Guitar:     { emoji: '🎸', bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  Woodwind:   { emoji: '🪈', bg: 'bg-teal-100',    text: 'text-teal-800' },
-};
 
 const AVAIL_DAYS: { key: DayOfWeek; label: string }[] = [
   { key: 'sunday',    label: 'Su' },

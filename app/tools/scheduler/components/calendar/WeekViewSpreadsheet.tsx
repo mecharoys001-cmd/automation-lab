@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MoreVertical, X, RefreshCw } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { EVENT_COLORS } from '../../lib/subjectColors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,14 +30,6 @@ interface WeekViewSpreadsheetProps {
   onEventCancel?: (event: CalendarEvent) => void;
   onEventSuggestReplacements?: (event: CalendarEvent) => void;
 }
-
-const EVENT_COLORS: Record<string, { accent: string; bg: string; text: string }> = {
-  strings:    { accent: '#3B82F6', bg: '#EFF6FF', text: '#1E40AF' },
-  brass:      { accent: '#F59E0B', bg: '#FFFBEB', text: '#92400E' },
-  piano:      { accent: '#8B5CF6', bg: '#F5F3FF', text: '#5B21B6' },
-  percussion: { accent: '#EF4444', bg: '#FEF2F2', text: '#991B1B' },
-  choral:     { accent: '#10B981', bg: '#ECFDF5', text: '#065F46' },
-};
 
 // ---------------------------------------------------------------------------
 // Helper: Convert HH:MM to decimal hours

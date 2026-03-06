@@ -63,7 +63,7 @@ const TAG_DESCRIPTIONS: Record<string, string> = {
   strings: 'Violin, viola, cello, and bass',
   brass: 'Trumpet, trombone, and horn sections',
   piano: 'Piano lessons and keyboard practice',
-  guitar: 'Acoustic and electric guitar classes',
+  guitar: 'Acoustic and electric guitar sessions',
   woodwind: 'Flute, clarinet, and oboe sessions',
   'field trip': 'Off-site musical excursions',
   showcase: 'Performance and recital events',

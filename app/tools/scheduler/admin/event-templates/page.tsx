@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { TagSelector } from '../../components/ui/TagSelector';
+import { SubjectDashboard } from '../../components/ui/SubjectDashboard';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
 import { TemplateList } from '../../components/templates/TemplateList';
@@ -591,20 +592,6 @@ export default function EventTemplatesPage() {
     };
   });
 
-  /* ── Calculate subject counts ────────────────────────────── */
-
-  const subjectCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    templates.forEach((t) => {
-      (t.required_skills ?? []).forEach((skill) => {
-        counts[skill] = (counts[skill] || 0) + 1;
-      });
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1]) // Sort by count descending
-      .map(([subject, count]) => ({ subject, count }));
-  }, [templates]);
-
   /* ── Guard: no program selected ──────────────────────────── */
 
   if (!selectedProgramId) {
@@ -625,68 +612,27 @@ export default function EventTemplatesPage() {
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-                Event Templates
-              </h1>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '4px 12px',
-                  borderRadius: 9999,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  backgroundColor: '#EFF6FF',
-                  color: '#2563EB',
-                }}
-              >
-                {templates.length}
-              </span>
-            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+              Event Templates
+            </h1>
             <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
               Create and manage session templates
             </p>
-            {/* Subject counts */}
-            {subjectCounts.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                {subjectCounts.map(({ subject, count }) => (
-                  <span
-                    key={subject}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '3px 10px',
-                      borderRadius: 9999,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      backgroundColor: '#F1F5F9',
-                      color: '#475569',
-                    }}
-                  >
-                    <span style={{ fontWeight: 600 }}>{subject}</span>
-                    <span style={{ color: '#94A3B8' }}>·</span>
-                    <span>{count}</span>
-                  </span>
-                ))}
-              </div>
-            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="secondary" onClick={() => setImportOpen(true)} tooltip="Import templates from CSV">
+              <Upload className="w-4 h-4" />
+              Import CSV
+            </Button>
+            <Button variant="primary" onClick={openCreateForm} tooltip="Create a new session template">
+              <Plus className="w-4 h-4" />
+              New Event Template
+            </Button>
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button variant="secondary" onClick={() => setImportOpen(true)} tooltip="Import templates from CSV">
-            <Upload className="w-4 h-4" />
-            Import CSV
-          </Button>
-          <Button variant="primary" onClick={openCreateForm} tooltip="Create a new session template">
-            <Plus className="w-4 h-4" />
-            New Event Template
-          </Button>
-        </div>
+        {/* Subject Dashboard */}
+        <SubjectDashboard templates={templates} />
 
         {/* Template Table */}
         <TemplateList

@@ -5,6 +5,7 @@ import { Pencil, Trash2, Loader2, Check, AlertTriangle, GraduationCap } from 'lu
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 
+
 // ── Toast Notification ───────────────────────────────────────
 
 interface ToastState {
@@ -88,11 +89,11 @@ export default function ClassesPage() {
     setError(null);
     try {
       const res = await fetch(`/api/classes?_t=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`Failed to fetch classes: ${res.status}`);
+      if (!res.ok) throw new Error(`Failed to fetch event templates: ${res.status}`);
       const { classes: data } = (await res.json()) as { classes: Class[] };
       setClasses(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load classes');
+      setError(err instanceof Error ? err.message : 'Failed to load event templates');
       setClasses([]);
     } finally {
       setLoading(false);
@@ -152,20 +153,20 @@ export default function ClassesPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to save class');
-        setToast({ message: data.error || 'Failed to save class', type: 'error', id: Date.now() });
+        setError(data.error || 'Failed to save event template');
+        setToast({ message: data.error || 'Failed to save event template', type: 'error', id: Date.now() });
         return;
       }
 
       setToast({
-        message: editingId ? 'Class updated successfully' : 'Class created successfully',
+        message: editingId ? 'Event template updated successfully' : 'Event template created successfully',
         type: 'success',
         id: Date.now(),
       });
       resetForm();
       await fetchClasses();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save class';
+      const msg = err instanceof Error ? err.message : 'Failed to save event template';
       setError(msg);
       setToast({ message: msg, type: 'error', id: Date.now() });
     } finally {
@@ -191,7 +192,7 @@ export default function ClassesPage() {
       const res = await fetch(`/api/classes/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) {
-        const msg = data.error || 'Failed to delete class';
+        const msg = data.error || 'Failed to delete event template';
         setError(msg);
         setToast({ message: msg, type: 'error', id: Date.now() });
         setDeleteConfirmId(null);
@@ -199,9 +200,9 @@ export default function ClassesPage() {
       }
       setDeleteConfirmId(null);
       await fetchClasses();
-      setToast({ message: 'Class deleted successfully', type: 'success', id: Date.now() });
+      setToast({ message: 'Event template deleted successfully', type: 'success', id: Date.now() });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete class';
+      const msg = err instanceof Error ? err.message : 'Failed to delete event template';
       setError(msg);
       setToast({ message: msg, type: 'error', id: Date.now() });
     } finally {
@@ -218,17 +219,17 @@ export default function ClassesPage() {
         {/* Page Header */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-            Classes Management
+            Event Templates
           </h1>
           <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-            Create and manage class templates for schedule building
+            Create and manage event templates for schedule building
           </p>
         </div>
 
         {/* Add Button */}
         {!isAdding && (
           <div>
-            <Tooltip text="Create a new class template">
+            <Tooltip text="Create a new event template">
               <Button
                 variant="primary"
                 onClick={() => {
@@ -244,7 +245,7 @@ export default function ClassesPage() {
                 }}
               >
                 <GraduationCap className="w-4 h-4" />
-                Add Class
+                Add Event Template
               </Button>
             </Tooltip>
           </div>
@@ -264,14 +265,14 @@ export default function ClassesPage() {
             }}
           >
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              {editingId ? 'Edit Class' : 'New Class'}
+              {editingId ? 'Edit Event Template' : 'New Event Template'}
             </h2>
 
-            {/* Class Name */}
+            {/* Template Name */}
             <div>
-              <Tooltip text="Enter the class name (required)">
+              <Tooltip text="Enter the template name (required)">
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
-                  Class Name *
+                  Template Name *
                 </label>
               </Tooltip>
               <input
@@ -295,7 +296,7 @@ export default function ClassesPage() {
 
             {/* Description */}
             <div>
-              <Tooltip text="Optional description of the class">
+              <Tooltip text="Optional description of the event template">
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
                   Description
                 </label>
@@ -303,7 +304,7 @@ export default function ClassesPage() {
               <textarea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Brief description of what this class covers..."
+                placeholder="Brief description of what this event template covers..."
                 rows={3}
                 style={{
                   width: '100%',
@@ -323,7 +324,7 @@ export default function ClassesPage() {
             <div style={{ display: 'flex', gap: 16 }}>
               {/* Duration */}
               <div style={{ flex: 1 }}>
-                <Tooltip text="Default duration in minutes for this class">
+                <Tooltip text="Default duration in minutes for this event template">
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
                     Duration (minutes)
                   </label>
@@ -350,7 +351,7 @@ export default function ClassesPage() {
 
               {/* Color */}
               <div style={{ flex: 1 }}>
-                <Tooltip text="Choose a color for this class in the schedule">
+                <Tooltip text="Choose a color for this event template in the schedule">
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
                     Color
                   </label>
@@ -378,7 +379,7 @@ export default function ClassesPage() {
 
             {/* Default Instructor */}
             <div>
-              <Tooltip text="Optional default instructor for this class">
+              <Tooltip text="Optional default instructor for this event template">
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>
                   Default Instructor
                 </label>
@@ -419,7 +420,7 @@ export default function ClassesPage() {
                   Cancel
                 </Button>
               </Tooltip>
-              <Tooltip text={editingId ? "Save changes to this class" : "Create this class"}>
+              <Tooltip text={editingId ? "Save changes to this event template" : "Create this event template"}>
                 <Button
                   variant="primary"
                   onClick={handleSave}
@@ -430,7 +431,7 @@ export default function ClassesPage() {
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Saving…
                     </>
-                  ) : editingId ? 'Save Changes' : 'Create Class'}
+                  ) : editingId ? 'Save Changes' : 'Create Event Template'}
                 </Button>
               </Tooltip>
             </div>
@@ -470,7 +471,7 @@ export default function ClassesPage() {
           </div>
         )}
 
-        {/* Classes List */}
+        {/* Event Templates List */}
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[0, 1, 2].map((i) => (
@@ -494,7 +495,7 @@ export default function ClassesPage() {
             color: '#94A3B8',
             fontSize: 14,
           }}>
-            No classes yet. Click &quot;Add Class&quot; to create your first class template.
+            No event templates yet. Click &quot;Add Event Template&quot; to create your first one.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -524,7 +525,7 @@ export default function ClassesPage() {
                     }}
                   />
 
-                  {/* Class Info */}
+                  {/* Template Info */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>
                       {classItem.name}
@@ -546,7 +547,7 @@ export default function ClassesPage() {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Tooltip text="Edit this class">
+                    <Tooltip text="Edit this event template">
                       <button
                         onClick={() => handleEdit(classItem)}
                         style={{
@@ -563,7 +564,7 @@ export default function ClassesPage() {
                         <Pencil size={16} color="#94A3B8" />
                       </button>
                     </Tooltip>
-                    <Tooltip text="Delete this class">
+                    <Tooltip text="Delete this event template">
                       <button
                         onClick={() => setDeleteConfirmId(classItem.id)}
                         style={{
@@ -619,7 +620,7 @@ export default function ClassesPage() {
               gap: 16,
             }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-                Delete Class
+                Delete Event Template
               </h2>
               <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
                 Are you sure you want to delete{' '}
@@ -640,7 +641,7 @@ export default function ClassesPage() {
                   variant="danger"
                   onClick={() => handleDelete(classItem.id)}
                   disabled={deleting}
-                  tooltip="Permanently delete this class"
+                  tooltip="Permanently delete this event template"
                   style={{
                     backgroundColor: '#EF4444',
                     color: '#FFFFFF',

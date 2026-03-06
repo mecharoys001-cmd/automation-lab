@@ -35,15 +35,7 @@ type DetailTab = 'weekly' | 'tags';
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
-const TAG_COLORS: Record<string, { bg: string; text: string }> = {
-  strings:    { bg: 'bg-blue-100',    text: 'text-blue-700' },
-  brass:      { bg: 'bg-amber-100',   text: 'text-amber-800' },
-  piano:      { bg: 'bg-indigo-100',  text: 'text-indigo-800' },
-  percussion: { bg: 'bg-amber-100',   text: 'text-amber-800' },
-  choral:     { bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  woodwinds:  { bg: 'bg-teal-100',    text: 'text-teal-800' },
-  guitar:     { bg: 'bg-orange-100',  text: 'text-orange-800' },
-};
+import { getSubjectColor } from '../../../../lib/subjectColors';
 
 const TAG_BAR_COLORS = [
   'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-indigo-500',
@@ -51,8 +43,8 @@ const TAG_BAR_COLORS = [
 ];
 
 function getTagColor(tagName: string): { bg: string; text: string } {
-  const key = tagName.toLowerCase();
-  return TAG_COLORS[key] ?? { bg: 'bg-slate-100', text: 'text-slate-700' };
+  const c = getSubjectColor(tagName);
+  return { bg: c.badgeBg, text: c.badgeText };
 }
 
 function formatWeekLabel(dateStr: string): string {
