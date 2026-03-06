@@ -610,10 +610,27 @@ export default function EventTemplatesPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              Event Templates
-            </h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                Event Templates
+              </h1>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px 12px',
+                  borderRadius: 9999,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  backgroundColor: '#EFF6FF',
+                  color: '#2563EB',
+                }}
+              >
+                {templates.length}
+              </span>
+            </div>
             <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
               Create and manage session templates
             </p>
