@@ -5,6 +5,7 @@
  * Clears existing draft sessions and regenerates from templates.
  *
  * Request body: { "program_id": "uuid" }
+ * Query params: ?preview=true to dry-run without DB mutations
  * Response: SchedulerResult JSON
  *
  * Auth: Uses Supabase service role key (bypasses RLS) since this
@@ -54,9 +55,12 @@ export async function POST(request: NextRequest) {
     // Create a service-role Supabase client (bypasses RLS for admin writes)
     const supabase = createServiceClient();
 
+    // Check for preview mode via query param
+    const preview = request.nextUrl.searchParams.get('preview') === 'true';
+
     // Run the scheduler engine — pass year so it generates for the full calendar year
     const yearNum = year && !isNaN(Number(year)) ? Number(year) : undefined;
-    const result = await runScheduler(supabase, { program_id, year: yearNum });
+    const result = await runScheduler(supabase, { program_id, year: yearNum, preview });
 
     return NextResponse.json(result, {
       status: result.success ? 200 : 422,

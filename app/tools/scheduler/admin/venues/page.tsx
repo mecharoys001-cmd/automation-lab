@@ -2,10 +2,37 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Check, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, Check, AlertTriangle, Upload } from 'lucide-react';
 import type { Venue, VenueInsert, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Pill } from '../../components/ui/Pill';
+import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
+import type { CsvRow } from '@/lib/csvDedup';
+
+// ── CSV Import config ────────────────────────────────────────
+
+const VENUE_CSV_COLUMNS: CsvColumnDef[] = [
+  { csvHeader: 'name', label: 'Name', required: true },
+  { csvHeader: 'space_type', label: 'Space Type' },
+  { csvHeader: 'max_capacity', label: 'Max Capacity' },
+  { csvHeader: 'address', label: 'Address' },
+];
+
+function validateVenueCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!row.name?.trim()) {
+    errors.push({ row: rowIndex, column: 'name', message: 'Name is required' });
+  }
+  if (row.max_capacity && (isNaN(parseInt(row.max_capacity, 10)) || parseInt(row.max_capacity, 10) < 0)) {
+    errors.push({ row: rowIndex, column: 'max_capacity', message: 'Must be a positive number' });
+  }
+  return errors;
+}
+
+const VENUE_CSV_EXAMPLE = `name,space_type,max_capacity,address
+Cafe,Indoor,30,Building A
+Classroom 101,Classroom,25,Building B
+Stage,Auditorium,100,Main Building`;
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -695,6 +722,9 @@ export default function VenuesPage() {
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null);
 
+  // CSV import
+  const [importOpen, setImportOpen] = useState(false);
+
   const fetchVenues = useCallback(async () => {
     setLoading(true);
     try {
@@ -788,14 +818,25 @@ export default function VenuesPage() {
             Manage venue settings, availability, and booking parameters.
           </p>
         </div>
-        <Tooltip text="Create a new venue">
-          <button
-            onClick={openCreate}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            + New Venue
-          </button>
-        </Tooltip>
+        <div className="flex items-center gap-2">
+          <Tooltip text="Import venues from CSV">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="px-3 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors inline-flex items-center gap-1.5"
+            >
+              <Upload className="w-4 h-4" />
+              Import CSV
+            </button>
+          </Tooltip>
+          <Tooltip text="Create a new venue">
+            <button
+              onClick={openCreate}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              + New Venue
+            </button>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Venue cards */}
@@ -895,6 +936,39 @@ export default function VenuesPage() {
           onClose={closeModal}
         />
       )}
+
+      {/* CSV Import Dialog */}
+      <CsvImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import Venues from CSV"
+        columns={VENUE_CSV_COLUMNS}
+        validateRow={validateVenueCsvRow}
+        onImport={async (csvRows) => {
+          const mapped = csvRows.map((r) => ({
+            name: r.name,
+            space_type: r.space_type || undefined,
+            max_capacity: r.max_capacity ? parseInt(r.max_capacity, 10) : null,
+            address: r.address || null,
+          }));
+          const res = await fetch('/api/venues/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: mapped }),
+          });
+          if (!res.ok) {
+            const { error } = await res.json();
+            throw new Error(error || 'Import failed');
+          }
+          const result = await res.json();
+          if (result.imported > 0) {
+            fetchVenues();
+            setToast({ message: `${result.imported} venue(s) imported`, type: 'success', id: Date.now() });
+          }
+          return result;
+        }}
+        exampleCsv={VENUE_CSV_EXAMPLE}
+      />
 
       {/* Toast notifications */}
       {toast && (

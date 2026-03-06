@@ -34,6 +34,8 @@ import type { EventEditPanelData } from '../components/calendar/EventEditPanel';
 import { useEventEditPanel } from '../components/calendar/useEventEditPanel';
 import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
+import { ReadinessWidget } from '../components/ui/ReadinessWidget';
+import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -186,7 +188,7 @@ const UPCOMING_UNASSIGNED: UpcomingEvent[] = [
   { id: 'u5', title: 'Choral Sight-Reading', date: 'Fri, Feb 28', time: '1:30 PM', type: 'choral' },
 ];
 
-/** Best-effort mapping from a template's required_skills to an EventType. */
+/** Best-effort mapping from a template's required subjects to an EventType. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deriveEventType(template: any): EventType {
   const skills: string[] = template?.required_skills ?? [];
@@ -504,11 +506,17 @@ function CalendarDashboard() {
     description?: string | null;
     early_dismissal_time?: string | null;
   }>>([]);
+  const [dbVenues, setDbVenues] = useState<Array<{ id: string; name: string }>>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [schedulerResult, setSchedulerResult] = useState<any>(null);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isConfirmingGenerate, setIsConfirmingGenerate] = useState(false);
   // Portal container for Month/Year views (escapes flex hierarchy)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   // Track recently modified event IDs (eventId -> timestamp) for badge display
@@ -587,6 +595,7 @@ function CalendarDashboard() {
   useEffect(() => {
     if (useMockData) {
       setEvents(ALL_MOCK_EVENTS);
+      setDbVenues(Object.values(VENUES).map((v) => ({ id: v.id, name: v.name })));
     }
   }, [useMockData]);
 
@@ -897,11 +906,22 @@ function CalendarDashboard() {
       // Fetch school calendar data
       const calParams = new URLSearchParams({ program_id: selectedProgramId });
       const calRes = await fetch(`/api/calendar?${calParams.toString()}`, { cache: 'no-store' });
-      
+
       if (calRes.ok) {
         const calBody = await calRes.json();
         if (Array.isArray(calBody.entries)) {
           setSchoolCalendar(calBody.entries);
+        }
+      }
+
+      // Fetch all venues from DB (includes empty venues with no events).
+      // Don't filter by program_id — venues are physical spaces shared across programs.
+      const venueRes = await fetch('/api/venues', { cache: 'no-store' });
+
+      if (venueRes.ok) {
+        const venueBody = await venueRes.json();
+        if (Array.isArray(venueBody.venues)) {
+          setDbVenues(venueBody.venues.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name })));
         }
       }
     } catch (err) {
@@ -915,7 +935,7 @@ function CalendarDashboard() {
     fetchSessions();
   }, [fetchSessions]);
 
-  // Auto-generate draft schedule from template placements (full year)
+  // Auto-generate draft schedule — first shows preview, then confirms
   const handleGenerateSchedule = useCallback(async () => {
     if (useMockData) {
       showToast('Switch to Live Mode to generate a real schedule.', 'info');
@@ -930,7 +950,9 @@ function CalendarDashboard() {
       const anchor = selectedDate ?? new Date();
       const year = anchor.getFullYear();
       const payload = { program_id: selectedProgramId, year };
-      const res = await fetch('/api/sessions/generate', {
+
+      // Run preview first (no DB mutations)
+      const res = await fetch('/api/scheduler/generate?preview=true', {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
@@ -939,32 +961,66 @@ function CalendarDashboard() {
 
       const body = await res.json();
 
-      if (!res.ok) {
-        throw new Error(body.error || 'Generation failed');
+      if (!res.ok || !body.success) {
+        throw new Error(body.error || 'Preview failed');
       }
 
-      const generated = body.sessions;
-      if (Array.isArray(generated) && generated.length > 0) {
-        await fetchSessions();
-        showToast(
-          `${generated.length} draft session${generated.length !== 1 ? 's' : ''} generated!`,
-        );
-      } else {
-        showToast(
-          body.message || 'No new sessions generated — templates may already be scheduled.',
-          'info',
-        );
-      }
+      // Show preview modal
+      setSchedulerResult(body);
+      setIsPreviewMode(true);
+      setShowResultModal(true);
     } catch (err) {
       console.error('[handleGenerateSchedule]', err);
       showToast(
-        err instanceof Error ? err.message : 'Failed to generate schedule',
+        err instanceof Error ? err.message : 'Failed to generate preview',
         'error',
       );
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedProgramId, selectedDate, fetchSessions, useMockData]);
+  }, [selectedProgramId, selectedDate, useMockData]);
+
+  // Confirm generation after preview
+  const handleConfirmGenerate = useCallback(async () => {
+    if (!selectedProgramId) return;
+    setIsConfirmingGenerate(true);
+    try {
+      const anchor = selectedDate ?? new Date();
+      const year = anchor.getFullYear();
+      const payload = { program_id: selectedProgramId, year };
+
+      // Run for real (clears drafts + inserts sessions)
+      const res = await fetch('/api/scheduler/generate', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await res.json();
+
+      if (!res.ok || !body.success) {
+        throw new Error(body.error || 'Generation failed');
+      }
+
+      // Show results modal
+      setSchedulerResult(body);
+      setIsPreviewMode(false);
+      setShowResultModal(true);
+
+      // Refresh calendar
+      await fetchSessions();
+    } catch (err) {
+      console.error('[handleConfirmGenerate]', err);
+      showToast(
+        err instanceof Error ? err.message : 'Failed to generate schedule',
+        'error',
+      );
+      setShowResultModal(false);
+    } finally {
+      setIsConfirmingGenerate(false);
+    }
+  }, [selectedProgramId, selectedDate, fetchSessions]);
 
   // Clear all events for the current program
   const handleClearEvents = useCallback(async () => {
@@ -1152,23 +1208,26 @@ function CalendarDashboard() {
         {/* Auto-Generate Draft */}
         <Button
           variant="secondary"
-          tooltip="Auto-generate a draft schedule using templates and AI"
+          tooltip="Preview and generate a draft schedule using templates"
           icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-500 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-500" />}
           onClick={handleGenerateSchedule}
           disabled={isGenerating}
         >
-          {isGenerating ? 'Generating...' : 'Auto-Generate Draft'}
+          {isGenerating ? 'Previewing...' : 'Auto-Generate Draft'}
         </Button>
 
-        {/* Publish Schedule */}
-        <Button
-          variant="primary"
-          tooltip="Publish the current schedule to instructors"
-          onClick={handlePublishSchedule}
-          disabled={isPublishing}
-        >
-          {isPublishing ? 'Publishing...' : 'Publish Schedule'}
-        </Button>
+        {/* Publish Schedule + Readiness */}
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <ReadinessWidget programId={selectedProgramId} />
+          <Button
+            variant="primary"
+            tooltip="Publish the current schedule to instructors"
+            onClick={handlePublishSchedule}
+            disabled={isPublishing}
+          >
+            {isPublishing ? 'Publishing...' : 'Publish Schedule'}
+          </Button>
+        </div>
       </div>
 
       {/* ================================================================= */}
@@ -1189,6 +1248,7 @@ function CalendarDashboard() {
           <>
             <WeekView
               events={filteredEvents}
+              venues={dbVenues}
               onEventClick={handleEditEvent}
               onEventContextMenu={handleEventContextMenu}
               onOpenEditPanel={openPanel}
@@ -1222,6 +1282,7 @@ function CalendarDashboard() {
         {currentView === 'day' && (
           <DayView
             events={filteredEvents}
+            venues={dbVenues}
             currentDate={selectedDate}
             onBackToMonth={() => setCurrentView('month')}
             conflicts={1}
@@ -1242,6 +1303,7 @@ function CalendarDashboard() {
       {currentView === 'month' && portalContainer && createPortal(
         <MonthView
           events={filteredEvents}
+          venues={dbVenues}
           schoolCalendar={schoolCalendar}
           onDayClick={handleDayClick}
           onOpenEditPanel={openPanel}
@@ -1253,6 +1315,7 @@ function CalendarDashboard() {
       {currentView === 'year' && portalContainer && createPortal(
         <YearView
           events={filteredEvents}
+          venues={dbVenues}
           schoolCalendar={schoolCalendar}
           onTodayClick={() => setCurrentView('week')}
           onOpenEditPanel={openPanel}
@@ -1289,6 +1352,21 @@ function CalendarDashboard() {
         onConfirm={handleClearEvents}
         isClearing={isClearing}
       />
+
+      {/* Scheduler Preview / Results Modal */}
+      {schedulerResult && (
+        <SchedulerResultModal
+          open={showResultModal}
+          onClose={() => {
+            setShowResultModal(false);
+            setSchedulerResult(null);
+          }}
+          result={schedulerResult}
+          isPreview={isPreviewMode}
+          onConfirm={handleConfirmGenerate}
+          isConfirming={isConfirmingGenerate}
+        />
+      )}
     </div>
   );
 }

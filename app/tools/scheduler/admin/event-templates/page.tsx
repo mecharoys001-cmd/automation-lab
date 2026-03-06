@@ -574,6 +574,7 @@ export default function EventTemplatesPage() {
     const cycleLabel = t.week_cycle_length && t.week_cycle_length > 1
       ? `Wk ${(t.week_in_cycle ?? 0) + 1}/${t.week_cycle_length}`
       : 'Weekly';
+    const subject = (t.required_skills ?? []).join(', ') || '\u2014';
     return {
       id: t.id,
       name: (t.grade_groups ?? []).join(', ') || '\u2014',
@@ -582,6 +583,7 @@ export default function EventTemplatesPage() {
       gradeGroups: t.grade_groups ?? [],
       instructor: getInstructorName(t.instructor_id),
       venue: getVenueName(t),
+      subject,
       typeLabel: TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type,
       cycleLabel,
       tags: t.required_skills ?? [],

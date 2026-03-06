@@ -22,7 +22,7 @@ const variantStyles: Record<PillVariant, string> = {
 
 // Common presets for quick use
 export const PILL_PRESETS = {
-  // Skill pills
+  // Subject pills
   strings:    { bgColor: 'bg-blue-100',    textColor: 'text-blue-500' },
   brass:      { bgColor: 'bg-amber-100',   textColor: 'text-amber-800' },
   piano:      { bgColor: 'bg-indigo-100',  textColor: 'text-indigo-800' },

@@ -196,6 +196,183 @@ function AvailabilityGrid({ availability }: { availability: AvailabilityJson | n
   );
 }
 
+/* ── Availability Editor (Interactive) ─────────────────────── */
+
+const EDITOR_DAYS = ALL_DAYS; // Mon–Sun
+const EDITOR_HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM – 8 PM
+
+function AvailabilityEditor({
+  value,
+  onChange,
+}: {
+  value: AvailabilityJson | null;
+  onChange: (v: AvailabilityJson | null) => void;
+}) {
+  const avail = value ?? {};
+
+  // Check if a day has any availability blocks
+  const isDayEnabled = (day: DayOfWeek) => {
+    const blocks = avail[day];
+    return blocks !== undefined && blocks.length > 0;
+  };
+
+  // Check if a specific hour cell is active
+  const isCellActive = (day: DayOfWeek, hour: number) => {
+    const blocks = avail[day];
+    if (!blocks) return false;
+    return isHourAvailable(hour, blocks);
+  };
+
+  // Rebuild blocks from individual hour toggles for a given day
+  const buildBlocks = (day: DayOfWeek, hours: Set<number>): TimeBlock[] => {
+    if (hours.size === 0) return [];
+    const sorted = [...hours].sort((a, b) => a - b);
+    const blocks: TimeBlock[] = [];
+    let start = sorted[0];
+    let end = sorted[0] + 1;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] === end) {
+        end = sorted[i] + 1;
+      } else {
+        blocks.push({ start: `${String(start).padStart(2, '0')}:00`, end: `${String(end).padStart(2, '0')}:00` });
+        start = sorted[i];
+        end = sorted[i] + 1;
+      }
+    }
+    blocks.push({ start: `${String(start).padStart(2, '0')}:00`, end: `${String(end).padStart(2, '0')}:00` });
+    return blocks;
+  };
+
+  // Get currently active hours for a day
+  const getActiveHours = (day: DayOfWeek): Set<number> => {
+    const hours = new Set<number>();
+    EDITOR_HOURS.forEach((h) => {
+      if (isCellActive(day, h)) hours.add(h);
+    });
+    return hours;
+  };
+
+  // Toggle an entire day on/off
+  const toggleDay = (day: DayOfWeek) => {
+    const next = { ...avail };
+    if (isDayEnabled(day)) {
+      // Turn off: set to empty array (explicitly unavailable)
+      next[day] = [];
+    } else {
+      // Turn on: set full day 8am–8pm
+      next[day] = [{ start: '08:00', end: '20:00' }];
+    }
+    onChange(Object.keys(next).length > 0 ? next : null);
+  };
+
+  // Toggle a single hour cell
+  const toggleCell = (day: DayOfWeek, hour: number) => {
+    const hours = getActiveHours(day);
+    if (hours.has(hour)) {
+      hours.delete(hour);
+    } else {
+      hours.add(hour);
+    }
+    const next = { ...avail };
+    next[day] = buildBlocks(day, hours);
+    onChange(next);
+  };
+
+  // Dragging state for painting multiple cells
+  const [dragging, setDragging] = useState<{ painting: boolean } | null>(null);
+
+  const handleMouseDown = (day: DayOfWeek, hour: number) => {
+    const painting = !isCellActive(day, hour);
+    setDragging({ painting });
+    toggleCell(day, hour);
+  };
+
+  const handleMouseEnter = (day: DayOfWeek, hour: number) => {
+    if (!dragging) return;
+    const active = isCellActive(day, hour);
+    if (dragging.painting && !active) toggleCell(day, hour);
+    if (!dragging.painting && active) toggleCell(day, hour);
+  };
+
+  const handleMouseUp = () => setDragging(null);
+
+  // Clear all availability
+  const clearAll = () => onChange(null);
+
+  // Set all days to full availability
+  const setAllFull = () => {
+    const full: AvailabilityJson = {};
+    EDITOR_DAYS.forEach((d) => { full[d.key] = [{ start: '08:00', end: '20:00' }]; });
+    onChange(full);
+  };
+
+  return (
+    <div className="space-y-2" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+      {/* Quick actions */}
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={setAllFull}
+          className="text-[11px] font-medium text-blue-500 hover:text-blue-600 transition-colors">
+          Select All
+        </button>
+        <span className="text-slate-300">·</span>
+        <button type="button" onClick={clearAll}
+          className="text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors">
+          Clear All
+        </button>
+      </div>
+
+      {/* Grid */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[400px] select-none">
+          <div
+            className="grid gap-px rounded-lg border border-slate-200 overflow-hidden"
+            style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}
+          >
+            {/* Header row: day checkboxes */}
+            <div className="bg-slate-50 p-1" />
+            {EDITOR_DAYS.map((d) => (
+              <Tooltip key={d.key} text={`Toggle ${d.short} on/off`}>
+                <button
+                  type="button"
+                  onClick={() => toggleDay(d.key)}
+                  className={`py-1.5 text-center text-xs font-medium transition-colors ${
+                    isDayEnabled(d.key) ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'
+                  }`}
+                >
+                  {d.short}
+                </button>
+              </Tooltip>
+            ))}
+
+            {/* Hour rows */}
+            {EDITOR_HOURS.map((hour) => (
+              <div key={hour} className="contents">
+                <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-400 bg-white h-6 border-t border-slate-200">
+                  {formatHourLabel(hour)}
+                </div>
+                {EDITOR_DAYS.map((d) => {
+                  const active = isCellActive(d.key, hour);
+                  return (
+                    <div
+                      key={`${d.key}-${hour}`}
+                      onMouseDown={() => handleMouseDown(d.key, hour)}
+                      onMouseEnter={() => handleMouseEnter(d.key, hour)}
+                      className={`h-6 border-t border-l border-slate-200 cursor-pointer transition-colors ${
+                        active ? 'bg-emerald-500/40 hover:bg-emerald-500/60' : 'bg-white hover:bg-emerald-100'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-slate-400">Click or drag to set available hours. Green = available.</p>
+    </div>
+  );
+}
+
 /* ── Venue Detail / Edit Modal ─────────────────────────────── */
 
 function VenueDetailModal({
@@ -626,9 +803,9 @@ function InstructorDetailModal({
 
         <div className="h-px bg-slate-200" />
 
-        {/* Skills (clickable → calendar filter) */}
+        {/* Subjects (clickable → calendar filter) */}
         <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Skills</span>
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Subjects</span>
           {(instructor.skills ?? []).map((skill) => {
             const s = SKILL_STYLES[skill];
             return (
@@ -644,7 +821,7 @@ function InstructorDetailModal({
             );
           })}
           {(!instructor.skills || instructor.skills.length === 0) && (
-            <span className="text-sm text-slate-400">No skills listed</span>
+            <span className="text-sm text-slate-400">No subjects listed</span>
           )}
         </div>
 
@@ -739,6 +916,7 @@ interface InstructorFormData {
   notes: string;
   is_active: boolean;
   skills: string[];
+  availability_json: AvailabilityJson | null;
 }
 
 const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
@@ -749,6 +927,7 @@ const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
   notes: '',
   is_active: true,
   skills: [],
+  availability_json: null,
 };
 
 function InstructorEditModal({
@@ -777,6 +956,7 @@ function InstructorEditModal({
           notes: instructor.notes ?? '',
           is_active: instructor.is_active,
           skills: instructor.skills ?? [],
+          availability_json: instructor.availability_json ?? null,
         }
       : { ...EMPTY_INSTRUCTOR_FORM },
   );
@@ -882,15 +1062,15 @@ function InstructorEditModal({
             </Tooltip>
           </div>
 
-          {/* Skills */}
+          {/* Subjects */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-2">Skills</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-2">Subjects</label>
             <Tooltip text="Select the instrument families this instructor can teach">
               <TagSelector
                 value={form.skills}
                 onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
                 category="Skills"
-                placeholder="Select instructor skills..."
+                placeholder="Select instructor subjects..."
               />
             </Tooltip>
           </div>
@@ -907,6 +1087,15 @@ function InstructorEditModal({
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
               />
             </Tooltip>
+          </div>
+
+          {/* Availability */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-2">Availability</label>
+            <AvailabilityEditor
+              value={form.availability_json}
+              onChange={(v) => setField('availability_json', v)}
+            />
           </div>
 
           {/* Active Toggle */}
@@ -1346,6 +1535,7 @@ export default function PeoplePage() {
         notes: data.notes.trim() || null,
         is_active: data.is_active,
         skills: data.skills.length > 0 ? data.skills : null,
+        availability_json: data.availability_json,
       };
       const url = isNew ? '/api/instructors' : `/api/instructors/${editingInstructor!.id}`;
       const method = isNew ? 'POST' : 'PATCH';
@@ -1450,7 +1640,7 @@ export default function PeoplePage() {
         <div className="flex-1" />
 
         {/* Search Bar (260px) */}
-        <Tooltip text="Search by name, email, or skill">
+        <Tooltip text="Search by name, email, or subject">
           <div className="flex items-center w-[260px] border border-slate-200 rounded-lg px-3 py-2 gap-2">
             <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
             <input
@@ -1591,7 +1781,7 @@ export default function PeoplePage() {
                       )}
                     </div>
 
-                    {/* Skill Pills (click → filter calendar by tag) */}
+                    {/* Subject Pills (click → filter calendar by tag) */}
                     <div className="flex flex-wrap gap-1.5">
                       {(inst.skills ?? []).map((skill) => {
                         const s = SKILL_STYLES[skill];
@@ -1609,7 +1799,7 @@ export default function PeoplePage() {
                         );
                       })}
                       {(!inst.skills || inst.skills.length === 0) && (
-                        <span className="text-[11px] text-slate-400">No skills listed</span>
+                        <span className="text-[11px] text-slate-400">No subjects listed</span>
                       )}
                     </div>
 

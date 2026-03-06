@@ -5,6 +5,7 @@ import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
+import { VenueToggle } from '../../components/ui/VenueToggle';
 import { TemplateList } from '../../components/templates/TemplateList';
 import type { TemplateListItem } from '../../components/templates/TemplateList';
 
@@ -16,7 +17,7 @@ interface Template {
   id: string;
   name: string;
   gradeLevel?: string;
-  subject?: string;
+
   instructor?: string;
   venue?: string;
   days: number[]; // indices into DAYS array
@@ -36,8 +37,8 @@ interface Template {
   venueId?: string | null;
   /** template_type from DB */
   templateType?: string;
-  /** required_skills from DB */
-  requiredSkills?: string[] | null;
+  /** Maps from DB required_skills */
+  subjects?: string[] | null;
   /** is_active from DB */
   isActive?: boolean;
   /** sort_order from DB */
@@ -50,6 +51,17 @@ interface PlacedTemplate {
   dayIndex: number;
   startHour: number;
   durationHours: number;
+  /** Which week this placement belongs to (0-indexed). Default 0. */
+  weekIndex: number;
+  /** The venue this placement was assigned to (may differ from template's venueId). */
+  venueId?: string | null;
+}
+
+interface Conflict {
+  id: string;
+  type: 'venue' | 'instructor';
+  message: string;
+  placedIds: string[];
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -58,7 +70,7 @@ interface PlacedTemplate {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const HOUR_HEIGHT = 72;
+const HOUR_HEIGHT = 60;
 const DEFAULT_DAY_START = 8;
 const DEFAULT_DAY_END = 16;
 const TIME_COL_WIDTH = 72;
@@ -81,6 +93,8 @@ const INSTRUCTOR_OPTIONS = [
 const VENUE_OPTIONS = [
   'Room A1', 'Room B2', 'Auditorium', 'Piano Lab', 'Music Hall', 'Choir Room', 'Virtual Studio',
 ];
+
+const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const AUTO_FILL_DAYS_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const AUTO_FILL_WEEKDAY_INDICES = [1, 2, 3, 4, 5]; // Mo–Fr pre-checked
@@ -111,22 +125,28 @@ const TIME_OPTIONS = generateTimeOptions();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function fromDbTemplate(db: Record<string, any>, index: number): Template {
   const gradeGroups: string[] = db.grade_groups ?? [];
-  const startTime = ((db.start_time as string) ?? '09:00').slice(0, 5);
-  const endTime = ((db.end_time as string) ?? '10:00').slice(0, 5);
+  const hasTime = db.start_time != null && db.end_time != null;
+  const timeSlot = hasTime
+    ? { start: (db.start_time as string).slice(0, 5), end: (db.end_time as string).slice(0, 5) }
+    : undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const venue = db.venue as Record<string, any> | null;
 
   return {
     id: db.id as string,
-    name: gradeGroups.length > 0
-      ? `${gradeGroups.join(', ')} ${formatTimeSlot({ start: startTime, end: endTime })}`
-      : 'Untitled Template',
+    name: (() => {
+      const subject = (db.required_skills as string[] | null)?.[0] ?? '';
+      const grade = gradeGroups.join(', ');
+      if (subject && grade) return `${subject} - ${grade}`;
+      if (subject) return subject;
+      if (grade) return grade;
+      return 'Untitled Template';
+    })(),
     gradeLevel: gradeGroups[0] ?? '',
-    subject: '',
     instructor: '',
     venue: (venue?.name as string) ?? '',
     days: db.day_of_week != null ? [db.day_of_week as number] : [],
-    timeSlot: { start: startTime, end: endTime },
+    timeSlot,
     instructorRotation: db.rotation_mode === 'rotate',
     color: TEMPLATE_COLORS[index % TEMPLATE_COLORS.length],
     weekCycleLength: (db.week_cycle_length as number | null) ?? null,
@@ -136,7 +156,7 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
     instructorId: (db.instructor_id as string | null) ?? null,
     venueId: (db.venue_id as string | null) ?? null,
     templateType: (db.template_type as string) ?? 'fully_defined',
-    requiredSkills: (db.required_skills as string[] | null) ?? null,
+    subjects: (db.required_skills as string[] | null) ?? null,
     isActive: db.is_active !== false,
     sortOrder: (db.sort_order as number | null) ?? null,
   };
@@ -174,7 +194,7 @@ function toDbPayload(t: Template, programId: string) {
     // Preserve DB-synced fields
     instructor_id: t.instructorId ?? null,
     venue_id: t.venueId ?? null,
-    required_skills: t.requiredSkills ?? null,
+    required_skills: t.subjects ?? null,
     sort_order: t.sortOrder ?? null,
   };
 }
@@ -216,9 +236,9 @@ function formatSchedule(template: Template): string {
   return dayStr ? `${dayStr} ${time}` : time;
 }
 
-/** Build a short display name that includes subject/skill AND grade for distinguishing blocks. */
+/** Build a short display name that includes subject AND grade for distinguishing blocks. */
 function getBlockDisplayName(template: Template): string {
-  const subject = template.subject || template.name;
+  const subject = template.subjects?.join(', ') || template.name;
   const grade = template.gradeLevel;
   if (grade) {
     return `${subject} - Grade ${grade}`;
@@ -249,7 +269,7 @@ function emptyTemplate(): Template {
     id: '',
     name: '',
     gradeLevel: '',
-    subject: '',
+
     instructor: '',
     venue: '',
     days: [],
@@ -586,12 +606,14 @@ function EditTemplateModal({
   onSave,
   onClose,
   isSaving,
+  venues,
 }: {
   template: Template;
   isNew: boolean;
   onSave: (t: Template) => void;
   onClose: () => void;
   isSaving?: boolean;
+  venues?: { id: string; name: string }[];
 }) {
   const [local, setLocal] = useState<Template>({ ...template });
 
@@ -638,13 +660,28 @@ function EditTemplateModal({
               placeholder="e.g., Weekly Strings K-2"
               tooltip="Enter a name to identify this template"
             />
-            <FormSelect
-              label="Venue"
-              value={local.venue ?? ''}
-              onChange={(v) => update('venue', v)}
-              options={VENUE_OPTIONS}
-              tooltip="Assign a room or location for this template"
-            />
+            <div>
+              <label className="block text-[13px] font-medium text-slate-900 mb-1.5">Venue</label>
+              <Tooltip text="Assign a room or location for this template" className="block">
+                <div className="relative">
+                  <select
+                    value={local.venueId ?? ''}
+                    onChange={(e) => {
+                      const id = e.target.value || null;
+                      const name = venues?.find((v) => v.id === id)?.name ?? '';
+                      setLocal((prev) => ({ ...prev, venueId: id, venue: name }));
+                    }}
+                    className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">No venue</option>
+                    {(venues ?? []).map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+              </Tooltip>
+            </div>
             <FormSelect
               label="Grade Level"
               value={local.gradeLevel ?? ''}
@@ -659,8 +696,8 @@ function EditTemplateModal({
             />
             <FormSelect
               label="Subject"
-              value={local.subject ?? ''}
-              onChange={(v) => update('subject', v)}
+              value={local.subjects?.[0] ?? ''}
+              onChange={(v) => update('subjects', v ? [v] : [])}
               options={SUBJECT_OPTIONS}
               tooltip="Choose the music subject for this template"
             />
@@ -723,7 +760,6 @@ interface AutoFillSettings {
   startTime: string;
   endTime: string;
   selectedDays: number[]; // indices into AUTO_FILL_DAYS_LABELS (0=Su..6=Sa)
-  strategy: 'fill_gaps' | 'spread_evenly';
   priorityTags: string[];
   schedulePattern: 'same' | 'rotating' | 'random';
   rotationOrder: string[]; // template IDs in rotation order
@@ -745,7 +781,6 @@ function AutoFillModal({
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('15:00');
   const [selectedDays, setSelectedDays] = useState<number[]>([...AUTO_FILL_WEEKDAY_INDICES]);
-  const [strategy, setStrategy] = useState<'fill_gaps' | 'spread_evenly'>('fill_gaps');
   const [priorityTags, setPriorityTags] = useState<string[]>([]);
   const [schedulePattern, setSchedulePattern] = useState<'same' | 'rotating' | 'random'>('same');
   const [rotationOrder, setRotationOrder] = useState<string[]>(() => templates.map((t) => t.id));
@@ -803,7 +838,6 @@ function AutoFillModal({
       startTime,
       endTime,
       selectedDays,
-      strategy,
       priorityTags,
       schedulePattern,
       rotationOrder,
@@ -1068,43 +1102,6 @@ function AutoFillModal({
             )}
           </div>
 
-          {/* Fill Strategy */}
-          <div>
-            <label className="block text-[13px] font-medium text-slate-900 mb-1.5">Fill Strategy</label>
-            <div className="space-y-2">
-              <Tooltip text="Place templates in every available time slot with no gaps">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="fill-strategy"
-                    checked={strategy === 'fill_gaps'}
-                    onChange={() => setStrategy('fill_gaps')}
-                    className="w-4 h-4 accent-violet-500"
-                  />
-                  <div>
-                    <span className="text-[13px] font-medium text-slate-900">Fill all gaps</span>
-                    <p className="text-xs text-slate-500">Place templates in every available time slot</p>
-                  </div>
-                </label>
-              </Tooltip>
-              <Tooltip text="Distribute templates with spacing between them for a balanced schedule">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="fill-strategy"
-                    checked={strategy === 'spread_evenly'}
-                    onChange={() => setStrategy('spread_evenly')}
-                    className="w-4 h-4 accent-violet-500"
-                  />
-                  <div>
-                    <span className="text-[13px] font-medium text-slate-900">Spread evenly</span>
-                    <p className="text-xs text-slate-500">Distribute templates with spacing between them</p>
-                  </div>
-                </label>
-              </Tooltip>
-            </div>
-          </div>
-
           {/* Priority Tags */}
           <div>
             <label className="block text-[13px] font-medium text-slate-900 mb-1.5">
@@ -1176,6 +1173,8 @@ function PlacedTemplateBlock({
   isSelected,
   dayStartHour,
   dayEndHour,
+  hasConflict,
+  conflictMessages,
 }: {
   placed: PlacedTemplate;
   template: Template;
@@ -1185,6 +1184,8 @@ function PlacedTemplateBlock({
   isSelected: boolean;
   dayStartHour: number;
   dayEndHour: number;
+  hasConflict?: boolean;
+  conflictMessages?: string[];
 }) {
   const [resizing, setResizing] = useState<'top' | 'bottom' | null>(null);
   const blockRef = useRef<HTMLDivElement>(null);
@@ -1242,15 +1243,20 @@ function PlacedTemplateBlock({
   return (
     <div
       ref={blockRef}
-      className={`absolute left-1 right-1 rounded-md overflow-hidden group cursor-pointer transition-shadow ${
-        isSelected ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md'
+      className={`absolute left-0.5 right-0.5 rounded-md overflow-hidden group cursor-pointer transition-shadow flex flex-col justify-start ${
+        hasConflict
+          ? 'ring-2 ring-red-500 shadow-lg'
+          : isSelected
+            ? 'ring-2 ring-blue-500 shadow-lg'
+            : 'hover:shadow-md'
       }`}
       style={{
         top: `${top}px`,
         height: `${Math.max(height, 24)}px`,
-        backgroundColor: `${template.color}20`,
-        borderLeft: `3px solid ${template.color}`,
+        backgroundColor: hasConflict ? '#FEF2F2' : `${template.color}20`,
+        borderLeft: `3px solid ${hasConflict ? '#EF4444' : template.color}`,
       }}
+      title={hasConflict && conflictMessages?.length ? conflictMessages.join('\n') : undefined}
       onClick={onSelect}
     >
       {/* Top resize handle */}
@@ -1262,35 +1268,38 @@ function PlacedTemplateBlock({
         />
       </Tooltip>
 
-      <Tooltip text={`Click to edit ${getBlockDisplayName(template)}`}>
-        <div className="px-2 py-1.5">
-          <div className="flex items-center gap-1">
-            <p className="text-xs font-bold leading-tight flex-1 truncate" style={{ color: template.color }}>
+      <Tooltip text={hasConflict && conflictMessages?.length ? conflictMessages.join(' | ') : `Click to edit ${getBlockDisplayName(template)}`}>
+        <div className="px-1.5 py-0.5 overflow-hidden" style={{ textDecoration: 'none' }}>
+          <p className={`${height < 45 ? 'text-[9px]' : 'text-[11px]'} font-bold text-slate-900 leading-tight truncate`}>
+            {getBlockDisplayName(template)}
+          </p>
+          <div className="flex items-center gap-0.5 mt-0.5">
+            {hasConflict && (
+              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
+            )}
+            <p className={`${height < 45 ? 'text-[9px]' : 'text-[11px]'} font-bold leading-tight flex-1 truncate`} style={{ color: hasConflict ? '#EF4444' : template.color }}>
               {formatHour(placed.startHour)} – {formatHour(placed.startHour + placed.durationHours)}
             </p>
             {template.weekCycleLength != null && template.weekCycleLength >= 2 && (
               <Tooltip text={`Runs on Week ${(template.weekInCycle ?? 0) + 1} of a ${template.weekCycleLength}-week cycle`}>
-                <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-indigo-100 text-indigo-600 whitespace-nowrap">
+                <span className="inline-flex items-center px-0.5 py-0 rounded text-[8px] font-bold leading-tight bg-indigo-100 text-indigo-600 whitespace-nowrap">
                   W{(template.weekInCycle ?? 0) + 1}/{template.weekCycleLength}
                 </span>
               </Tooltip>
             )}
           </div>
-          <p className="text-xs font-bold text-slate-900 leading-tight truncate mt-0.5">
-            {template.name}
-          </p>
-          {template.subject && template.subject !== template.name && (
-            <p className="text-[11px] text-slate-700 leading-tight truncate">
-              {template.subject}
+          {height > 40 && template.subjects && template.subjects.length > 0 && template.subjects.join(', ') !== template.name && (
+            <p className="text-[10px] text-slate-700 leading-tight truncate">
+              {template.subjects.join(', ')}
             </p>
           )}
-          {height > 48 && template.gradeLevel && (
-            <p className="text-[10px] text-slate-600 leading-tight truncate">
+          {height > 50 && template.gradeLevel && (
+            <p className="text-[9px] text-slate-600 leading-tight truncate">
               {template.gradeLevel}
             </p>
           )}
-          {height > 48 && template.instructor && (
-            <p className="text-[10px] text-slate-600 leading-tight truncate">{template.instructor}</p>
+          {height > 50 && template.instructor && (
+            <p className="text-[9px] text-slate-600 leading-tight truncate">{template.instructor}</p>
           )}
         </div>
       </Tooltip>
@@ -1345,7 +1354,7 @@ function DragGhostPreview({
         className="px-3 py-2 rounded-md shadow-lg text-xs font-semibold text-white min-w-[120px]"
         style={{ backgroundColor: template.color }}
       >
-        {template.name}
+        {getBlockDisplayName(template)}
       </div>
     </div>
   );
@@ -1560,6 +1569,10 @@ export default function TemplatesPage() {
   const [isNewTemplate, setIsNewTemplate] = useState(false);
   const [dropPreview, setDropPreview] = useState<{ dayIndex: number; hour: number } | null>(null);
 
+  // ── Venue scoping ──
+  const [venues, setVenues] = useState<{ id: string; name: string }[]>([]);
+  const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+
   // ── Template CRUD loading state ──
 
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
@@ -1587,6 +1600,70 @@ export default function TemplatesPage() {
   const [lunchEnabled, setLunchEnabled] = useState(false);
   const [lunchStart, setLunchStart] = useState(12); // hour (e.g. 12 = noon)
   const [lunchEnd, setLunchEnd] = useState(13);     // hour (e.g. 13 = 1 PM)
+
+  // ── Multi-week ──
+  const [totalWeeks, setTotalWeeks] = useState(1);
+
+  // ── Conflict detection ──
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
+  const [showConflictPanel, setShowConflictPanel] = useState(false);
+
+  const conflictingPlacedIds = new Set(conflicts.flatMap((c) => c.placedIds));
+
+  const detectConflicts = useCallback(
+    (placements: PlacedTemplate[], tpls: Template[]): Conflict[] => {
+      const found: Conflict[] = [];
+
+      for (let i = 0; i < placements.length; i++) {
+        for (let j = i + 1; j < placements.length; j++) {
+          const p1 = placements[i];
+          const p2 = placements[j];
+
+          // Must be on same day and same week
+          if (p1.dayIndex !== p2.dayIndex || (p1.weekIndex ?? 0) !== (p2.weekIndex ?? 0)) continue;
+
+          const t1 = tpls.find((t) => t.id === p1.templateId);
+          const t2 = tpls.find((t) => t.id === p2.templateId);
+          if (!t1 || !t2) continue;
+
+          // Check time overlap
+          const p1End = p1.startHour + p1.durationHours;
+          const p2End = p2.startHour + p2.durationHours;
+          const overlaps = p1.startHour < p2End && p2.startHour < p1End;
+          if (!overlaps) continue;
+
+          const dayName = DAYS[p1.dayIndex] ?? `Day ${p1.dayIndex}`;
+
+          // Venue conflict: same venue (use placed.venueId if available)
+          const v1 = p1.venueId ?? t1.venueId;
+          const v2 = p2.venueId ?? t2.venueId;
+          if (v1 && v2 && v1 === v2) {
+            const venueName = t1.venue || t2.venue || 'Unknown venue';
+            found.push({
+              id: `venue-${p1.id}-${p2.id}`,
+              type: 'venue',
+              message: `Venue conflict: "${venueName}" on ${dayName} — ${t1.name} & ${t2.name} overlap`,
+              placedIds: [p1.id, p2.id],
+            });
+          }
+
+          // Instructor conflict: same instructor (check across all venues)
+          if (t1.instructorId && t2.instructorId && t1.instructorId === t2.instructorId) {
+            const instrName = t1.instructor || 'Unknown instructor';
+            found.push({
+              id: `instructor-${p1.id}-${p2.id}`,
+              type: 'instructor',
+              message: `Instructor conflict: ${instrName} on ${dayName} — ${t1.name} & ${t2.name} overlap`,
+              placedIds: [p1.id, p2.id],
+            });
+          }
+        }
+      }
+
+      return found;
+    },
+    [],
+  );
 
   // ── Buffer time ──
   const [bufferEnabled, setBufferEnabled] = useState(false);
@@ -1624,7 +1701,8 @@ export default function TemplatesPage() {
     try {
       const res = await fetch(`/api/templates/placements?program_id=${encodeURIComponent(selectedProgramId)}&_t=${Date.now()}`);
       if (!res.ok) return; // silently skip if endpoint not available
-      const { placements: dbPlacements } = await res.json();
+      const data = await res.json();
+      const dbPlacements = data.placements;
       if (Array.isArray(dbPlacements) && dbPlacements.length > 0) {
         setPlacedTemplates(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1634,8 +1712,17 @@ export default function TemplatesPage() {
             dayIndex: p.day_index,
             startHour: p.start_hour,
             durationHours: p.duration_hours,
+            weekIndex: p.week_index ?? 0,
           })),
         );
+        // Restore total weeks from saved data
+        if (typeof data.total_weeks === 'number' && data.total_weeks >= 1) {
+          setTotalWeeks(data.total_weeks);
+        } else {
+          // Infer from max weekIndex in placements
+          const maxWeek = Math.max(0, ...dbPlacements.map((p: any) => p.week_index ?? 0));
+          if (maxWeek > 0) setTotalWeeks(maxWeek + 1);
+        }
       }
     } catch {
       // Non-critical — placements will just start empty
@@ -1657,11 +1744,39 @@ export default function TemplatesPage() {
     }
   }, []);
 
+  // ── Fetch venues for venue selector ──
+
+  const fetchVenues = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/venues`);
+      if (!res.ok) return;
+      const { venues: dbVenues } = await res.json();
+      setVenues((dbVenues ?? []).map((v: { id: string; name: string }) => ({ id: v.id, name: v.name })));
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
+  // Auto-select all venues on first load only
+  const venuesInitialized = useRef(false);
+  useEffect(() => {
+    if (venues.length > 0 && !venuesInitialized.current) {
+      venuesInitialized.current = true;
+      setSelectedVenues(venues.map((v) => v.id));
+    }
+  }, [venues]);
+
   useEffect(() => {
     fetchTemplates();
     fetchPlacements();
     fetchBufferSettings();
-  }, [fetchTemplates, fetchPlacements, fetchBufferSettings]);
+    fetchVenues();
+  }, [fetchTemplates, fetchPlacements, fetchBufferSettings, fetchVenues]);
+
+  // Re-run conflict detection when templates change (e.g. venue/instructor edits) or after initial load
+  useEffect(() => {
+    setConflicts(detectConflicts(placedTemplates, templates));
+  }, [templates, placedTemplates, detectConflicts]);
 
   // Warn on navigate-away when there are unsaved changes
   useEffect(() => {
@@ -1715,11 +1830,13 @@ export default function TemplatesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           program_id: selectedProgramId,
+          total_weeks: totalWeeks,
           placements: placedTemplates.map((p) => ({
             templateId: p.templateId,
             dayIndex: p.dayIndex,
             startHour: p.startHour,
             durationHours: p.durationHours,
+            weekIndex: p.weekIndex ?? 0,
           })),
         }),
       });
@@ -1750,11 +1867,13 @@ export default function TemplatesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           program_id: selectedProgramId,
+          total_weeks: totalWeeks,
           placements: placedTemplates.map((p) => ({
             templateId: p.templateId,
             dayIndex: p.dayIndex,
             startHour: p.startHour,
             durationHours: p.durationHours,
+            weekIndex: p.weekIndex ?? 0,
           })),
         }),
       });
@@ -1782,220 +1901,189 @@ export default function TemplatesPage() {
   // ── Auto-Fill ──
 
   const handleAutoFill = async (settings: AutoFillSettings) => {
-    if (templates.length === 0) {
-      setToast({ message: 'No templates available to fill schedule', type: 'error', id: Date.now() });
-      return;
-    }
-
     setIsAutoFilling(true);
-    // Brief delay for UX feedback
-    await new Promise((r) => setTimeout(r, 500));
-
-    // Map selected auto-fill days to grid dayIndices (only Mon–Fri exist on the grid)
-    const gridDays = settings.selectedDays
-      .map((d) => AUTO_FILL_DAY_TO_GRID[d])
-      .filter((d): d is number => d !== undefined);
-
-    if (gridDays.length === 0) {
-      setToast({ message: 'No valid weekdays selected', type: 'error', id: Date.now() });
-      setIsAutoFilling(false);
-      return;
-    }
-
-    // Resolve per-day time ranges: if custom, filter out disabled days
-    const getTimeRange = (autoFillDayIdx: number): { start: number; end: number } | null => {
-      if (settings.usePerDayTimes) {
-        const conf = settings.perDayTimes[autoFillDayIdx];
-        if (!conf || !conf.enabled) return null;
-        const s = timeStringToHour(conf.startTime);
-        const e = timeStringToHour(conf.endTime);
-        return e > s ? { start: s, end: e } : null;
-      }
-      const s = timeStringToHour(settings.startTime);
-      const e = timeStringToHour(settings.endTime);
-      return e > s ? { start: s, end: e } : null;
-    };
-
-    // Validate that at least one day has a valid time range
-    const validDays = settings.selectedDays.filter((d) => getTimeRange(d) !== null);
-    if (validDays.length === 0) {
-      setToast({ message: 'End time must be after start time', type: 'error', id: Date.now() });
-      setIsAutoFilling(false);
-      return;
-    }
-
-    const getTemplateDuration = (t: Template): number => {
-      if (t.timeSlot) {
-        const s = timeStringToHour(t.timeSlot.start);
-        const e = timeStringToHour(t.timeSlot.end);
-        if (e > s) return e - s;
-      }
-      return 1;
-    };
-
-    // Build template list based on schedule pattern
-    // Both 'same' and 'rotating' cycle through ALL templates within each day.
-    // 'same' uses the same order every day; 'rotating' shifts the starting point each day.
-    const buildTemplateListForDay = (daySeqIndex: number): Template[] => {
-      // Sort templates: priority tags first, then by name
-      const sortedTemplates = [...templates].sort((a, b) => {
-        const aPri = settings.priorityTags.length > 0 && settings.priorityTags.includes(a.subject ?? '') ? 0 : 1;
-        const bPri = settings.priorityTags.length > 0 && settings.priorityTags.includes(b.subject ?? '') ? 0 : 1;
-        if (aPri !== bPri) return aPri - bPri;
-        return a.name.localeCompare(b.name);
-      });
-
-      if (settings.schedulePattern === 'same') {
-        // Same order every day — cycles through all templates within each day
-        return sortedTemplates;
-      }
-
-      if (settings.schedulePattern === 'rotating') {
-        // Use rotation order, shifted by daySeqIndex so each day starts at a different template
-        const rotationIds = settings.rotationOrder.filter((id) => templates.some((t) => t.id === id));
-        if (rotationIds.length === 0) return sortedTemplates;
-        const offset = daySeqIndex % rotationIds.length;
-        const rotated = [...rotationIds.slice(offset), ...rotationIds.slice(0, offset)];
-        return rotated.map((id) => templates.find((t) => t.id === id)!).filter(Boolean);
-      }
-
-      if (settings.schedulePattern === 'random') {
-        // Fisher-Yates shuffle
-        const shuffled = [...sortedTemplates];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-      }
-
-      return sortedTemplates;
-    };
-
     const newPlacements: PlacedTemplate[] = [];
-    let daysAffected = 0;
+    let totalPlaced = 0;
 
-    // Track the sequential day index (for rotation)
-    let daySeqIndex = 0;
+    // Helpers
+    const timeStringToHour = (t: string): number => {
+      const [h, m] = t.split(':').map(Number);
+      return h + m / 60;
+    };
 
-    for (const autoFillDayIdx of settings.selectedDays) {
-      const dayIndex = AUTO_FILL_DAY_TO_GRID[autoFillDayIdx];
-      if (dayIndex === undefined) continue;
+    const getTimeRange = (dayIdx: number) => {
+      if (settings.usePerDayTimes && settings.perDayTimes[dayIdx]?.enabled) {
+        const custom = settings.perDayTimes[dayIdx];
+        return { start: timeStringToHour(custom.startTime), end: timeStringToHour(custom.endTime) };
+      }
+      return { start: timeStringToHour(settings.startTime), end: timeStringToHour(settings.endTime) };
+    };
 
-      const range = getTimeRange(autoFillDayIdx);
-      if (!range) { daySeqIndex++; continue; }
-      const { start: rangeStart, end: rangeEnd } = range;
+    const overlapsLunchBlock = (start: number, dur: number): boolean => {
+      if (!lunchEnabled) return false;
+      const end = start + dur;
+      return !(end <= lunchStart || start >= lunchEnd);
+    };
 
-      // Get all existing placements on this day, sorted by start
-      const existingOnDay = [...placedTemplates, ...newPlacements]
-        .filter((p) => p.dayIndex === dayIndex)
-        .sort((a, b) => a.startHour - b.startHour);
+    const getDuration = (t: Template): number => {
+      if (t.timeSlot) {
+        return timeStringToHour(t.timeSlot.end) - timeStringToHour(t.timeSlot.start);
+      }
+      return 0.75; // default 45 min
+    };
 
-      // Find gaps within the time range
-      const gaps: { start: number; end: number }[] = [];
-      let cursor = rangeStart;
+    const isGradeUsed = (templateId: string, weekIdx: number): boolean => {
+      return [...placedTemplates, ...newPlacements].some(
+        p => p.templateId === templateId && (p.weekIndex ?? 0) === weekIdx
+      );
+    };
 
-      for (const p of existingOnDay) {
-        const pStart = p.startHour;
+    const hasVenueConflict = (venueId: string, dayIdx: number, weekIdx: number, start: number, end: number): boolean => {
+      for (const p of [...placedTemplates, ...newPlacements]) {
+        if (p.dayIndex !== dayIdx || (p.weekIndex ?? 0) !== weekIdx) continue;
+        const pTemplate = templates.find(t => t.id === p.templateId);
+        if (!pTemplate) continue;
+        const pVenueId = p.venueId ?? pTemplate.venueId;
+        if (pVenueId !== venueId) continue;
         const pEnd = p.startHour + p.durationHours;
-        // Only consider placements that overlap the range
-        if (pEnd <= rangeStart || pStart >= rangeEnd) continue;
-
-        const gapStart = Math.max(cursor, rangeStart);
-        const gapEnd = Math.min(pStart, rangeEnd);
-        if (gapEnd > gapStart + 0.2) {
-          gaps.push({ start: gapStart, end: gapEnd });
-        }
-        cursor = Math.max(cursor, pEnd);
+        if (start < pEnd && p.startHour < end) return true;
       }
-      // Trailing gap
-      if (cursor < rangeEnd) {
-        const gapStart = Math.max(cursor, rangeStart);
-        if (rangeEnd > gapStart + 0.2) {
-          gaps.push({ start: gapStart, end: rangeEnd });
+      return false;
+    };
+
+    const hasInstructorConflict = (instructorId: string | null | undefined, dayIdx: number, weekIdx: number, start: number, end: number): boolean => {
+      if (!instructorId) return false;
+      for (const p of [...placedTemplates, ...newPlacements]) {
+        if (p.dayIndex !== dayIdx || (p.weekIndex ?? 0) !== weekIdx) continue;
+        const pTemplate = templates.find(t => t.id === p.templateId);
+        if (!pTemplate || pTemplate.instructorId !== instructorId) continue;
+        const pEnd = p.startHour + p.durationHours;
+        if (start < pEnd && p.startHour < end) return true;
+      }
+      return false;
+    };
+
+    // Find all valid slots for a template
+    const findAllValidSlots = (
+      template: Template,
+      dayIdx: number,
+      weekIdx: number,
+      range: { start: number; end: number }
+    ): Array<{ venueId: string; start: number }> => {
+      const dur = getDuration(template);
+      const validSlots: Array<{ venueId: string; start: number }> = [];
+      const candidateVenues = template.venueId ? [template.venueId] : venues.map(v => v.id);
+
+      for (const venueId of candidateVenues) {
+        for (let t = range.start; t + dur <= range.end + 0.01; t += 0.25) {
+          if (overlapsLunchBlock(t, dur)) continue;
+          if (hasVenueConflict(venueId, dayIdx, weekIdx, t, t + dur)) continue;
+          if (hasInstructorConflict(template.instructorId, dayIdx, weekIdx, t, t + dur)) continue;
+          validSlots.push({ venueId, start: t });
         }
       }
 
-      if (gaps.length === 0) { daySeqIndex++; continue; }
+      return validSlots;
+    };
 
-      const dayTemplates = buildTemplateListForDay(daySeqIndex);
-      let dayPlaced = 0;
-      // Use a cycling index so templates rotate: Slot1=T0, Slot2=T1, ... wrapping around
-      let templateIdx = 0;
+    console.log('[AutoFill] Constraint-based scheduler');
+    console.log('Templates:', templates.length, 'Weeks:', totalWeeks);
 
-      // Helper: find the next template in cycle that fits the available duration
-      const pickNextTemplate = (maxDuration: number): Template | null => {
-        for (let i = 0; i < dayTemplates.length; i++) {
-          const candidate = dayTemplates[(templateIdx + i) % dayTemplates.length];
-          if (getTemplateDuration(candidate) <= maxDuration + 0.01) {
-            templateIdx = (templateIdx + i + 1) % dayTemplates.length;
-            return candidate;
+    const AUTO_FILL_DAY_TO_GRID: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4 };
+
+    for (let weekIdx = 0; weekIdx < totalWeeks; weekIdx++) {
+      for (const autoFillDayIdx of settings.selectedDays) {
+        const dayIndex = AUTO_FILL_DAY_TO_GRID[autoFillDayIdx];
+        if (dayIndex === undefined) continue;
+
+        const range = getTimeRange(autoFillDayIdx);
+        console.log(`[Week ${weekIdx}] [Day ${autoFillDayIdx}] Range: ${range.start}-${range.end}`);
+
+        // Get templates for this day that haven't been placed yet this week
+        const dayTemplates = templates.filter(t => 
+          t.isActive !== false && 
+          (t.days.length === 0 || t.days.includes(autoFillDayIdx)) &&
+          !isGradeUsed(t.id, weekIdx)
+        );
+
+        console.log(`  Day templates: ${dayTemplates.length}`);
+
+        // Sort by constraint: fixed-time first, then by number of valid venues (most constrained first)
+        const sorted = dayTemplates.sort((a, b) => {
+          if (a.timeSlot && !b.timeSlot) return -1;
+          if (!a.timeSlot && b.timeSlot) return 1;
+          const aVenues = a.venueId ? 1 : venues.length;
+          const bVenues = b.venueId ? 1 : venues.length;
+          return aVenues - bVenues;
+        });
+
+        // Place each template
+        for (const t of sorted) {
+          // For fixed-time templates, only check at the exact time
+          if (t.timeSlot) {
+            const fixedStart = timeStringToHour(t.timeSlot.start);
+            const dur = getDuration(t);
+            const candidateVenues = t.venueId ? [t.venueId] : venues.map(v => v.id);
+
+            for (const venueId of candidateVenues) {
+              if (!overlapsLunchBlock(fixedStart, dur) &&
+                  !hasVenueConflict(venueId, dayIndex, weekIdx, fixedStart, fixedStart + dur) &&
+                  !hasInstructorConflict(t.instructorId, dayIndex, weekIdx, fixedStart, fixedStart + dur)) {
+                newPlacements.push({
+                  id: `placed-${Date.now()}-${Math.random()}`,
+                  templateId: t.id,
+                  dayIndex,
+                  startHour: fixedStart,
+                  durationHours: dur,
+                  weekIndex: weekIdx,
+                  venueId,
+                });
+                totalPlaced++;
+                console.log(`  ✓ ${t.name} at ${fixedStart} (${venues.find(v => v.id === venueId)?.name})`);
+                break;
+              }
+            }
+          } else {
+            // Flexible templates: find ALL valid slots, pick the earliest
+            const validSlots = findAllValidSlots(t, dayIndex, weekIdx, range);
+            if (validSlots.length > 0) {
+              // Pick earliest slot
+              validSlots.sort((a, b) => a.start - b.start);
+              const slot = validSlots[0];
+              const dur = getDuration(t);
+              newPlacements.push({
+                id: `placed-${Date.now()}-${Math.random()}`,
+                templateId: t.id,
+                dayIndex,
+                startHour: slot.start,
+                durationHours: dur,
+                weekIndex: weekIdx,
+                venueId: slot.venueId,
+              });
+              totalPlaced++;
+              console.log(`  ✓ ${t.name} at ${slot.start} (${venues.find(v => v.id === slot.venueId)?.name})`);
+            } else {
+              console.warn(`  ✗ ${t.name} - no valid slots`);
+            }
           }
         }
-        return null;
-      };
-
-      for (const gap of gaps) {
-        if (settings.strategy === 'spread_evenly') {
-          // Place one template centered in each gap
-          const gapDuration = gap.end - gap.start;
-          const pick = pickNextTemplate(gapDuration);
-          if (!pick) continue;
-
-          const dur = getTemplateDuration(pick);
-          // Center the template in the gap, snapped to 15-min
-          const offset = Math.floor(((gapDuration - dur) / 2) * 4) / 4;
-          newPlacements.push({
-            id: `placed-${Date.now()}-${Math.random()}`,
-            templateId: pick.id,
-            dayIndex,
-            startHour: gap.start + offset,
-            durationHours: dur,
-          });
-          dayPlaced++;
-        } else {
-          // Fill all gaps — pack templates greedily, cycling through the template list
-          let currentTime = gap.start;
-          while (currentTime < gap.end - 0.2) {
-            const remaining = gap.end - currentTime;
-            const pick = pickNextTemplate(remaining);
-            if (!pick) break;
-
-            const dur = getTemplateDuration(pick);
-            newPlacements.push({
-              id: `placed-${Date.now()}-${Math.random()}`,
-              templateId: pick.id,
-              dayIndex,
-              startHour: currentTime,
-              durationHours: dur,
-            });
-            currentTime += dur;
-            dayPlaced++;
-          }
-        }
       }
-
-      if (dayPlaced > 0) daysAffected++;
-      daySeqIndex++;
     }
+
+    console.log(`[AutoFill] Complete: placed ${totalPlaced}/${templates.length} templates`);
 
     if (newPlacements.length === 0) {
-      setToast({ message: 'No empty slots found in the selected time range', type: 'error', id: Date.now() });
+      setToast({ message: 'No valid slots found', type: 'error', id: Date.now() });
       setIsAutoFilling(false);
       return;
     }
 
-    setPlacedTemplates((prev) => [...prev, ...newPlacements]);
+    setPlacedTemplates(prev => [...prev, ...newPlacements]);
     setIsDirty(true);
     setShowAutoFillModal(false);
     setIsAutoFilling(false);
-    setToast({
-      message: `Auto-filled ${newPlacements.length} session${newPlacements.length === 1 ? '' : 's'} across ${daysAffected} day${daysAffected === 1 ? '' : 's'}`,
-      type: 'success',
-      id: Date.now(),
-    });
+    setToast({ message: `Auto-filled ${totalPlaced} sessions`, type: 'success', id: Date.now() });
   };
-
   // ── Drag & Drop ──
 
   const handleDragStart = (template: Template) => {
@@ -2010,17 +2098,28 @@ export default function TemplatesPage() {
   const handleDragOver = (dayIndex: number, e: React.DragEvent) => {
     e.preventDefault();
 
-    const gridRect = e.currentTarget.getBoundingClientRect();
-    const relativeY = e.clientY - gridRect.top;
-    const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
-    const snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
-
-    // Compute duration for overlap check
+    // Compute duration from template's time slot or default to 1h
     let durationHours = 1;
+    let fixedStartHour: number | null = null;
     if (draggingTemplate?.timeSlot) {
       const start = timeStringToHour(draggingTemplate.timeSlot.start);
       const end = timeStringToHour(draggingTemplate.timeSlot.end);
-      if (end > start) durationHours = end - start;
+      if (end > start) {
+        durationHours = end - start;
+        fixedStartHour = start;
+      }
+    }
+
+    let snappedHour: number;
+    if (fixedStartHour !== null) {
+      // Template has a fixed time: always snap to it
+      snappedHour = fixedStartHour;
+    } else {
+      // Free placement: follow mouse
+      const gridRect = e.currentTarget.getBoundingClientRect();
+      const relativeY = e.clientY - gridRect.top;
+      const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
+      snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
     }
 
     if (overlapsLunch(snappedHour, durationHours, lunchEnabled, lunchStart, lunchEnd)) {
@@ -2037,28 +2136,68 @@ export default function TemplatesPage() {
     setDropPreview(null);
   };
 
-  const handleDrop = (dayIndex: number, e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (dayIndex: number, weekIdx: number, e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropPreview(null);
 
     const templateToPlace = draggingTemplate ?? templates.find((t) => t.id === e.dataTransfer.getData('text/plain'));
     if (!templateToPlace) return;
 
-    const gridRect = e.currentTarget.getBoundingClientRect();
-    const relativeY = e.clientY - gridRect.top;
-    const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
-    const startHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
+    // Only prevent duplicates if template has specific grades assigned
+    // Templates without grades can be placed multiple times (once per grade)
+    const hasGrades = templateToPlace.gradeLevel || (templateToPlace.gradeGroups && templateToPlace.gradeGroups.length > 0);
+    const alreadyPlaced = hasGrades && placedTemplates.some(
+      (p) => p.templateId === templateToPlace.id && p.weekIndex === weekIdx,
+    );
+    if (alreadyPlaced) {
+      setToast({ message: 'This event is already scheduled this week', type: 'error', id: Date.now() });
+      setDraggingTemplate(null);
+      return;
+    }
 
-    // Compute duration from template's time slot or default to 1h
+    // Compute duration and check for fixed start time
     let durationHours = 1;
+    let fixedStartHour: number | null = null;
     if (templateToPlace.timeSlot) {
       const start = timeStringToHour(templateToPlace.timeSlot.start);
       const end = timeStringToHour(templateToPlace.timeSlot.end);
-      if (end > start) durationHours = end - start;
+      if (end > start) {
+        durationHours = end - start;
+        fixedStartHour = start;
+      }
+    }
+
+    let startHour: number;
+    if (fixedStartHour !== null) {
+      // Template has a fixed time: always use it
+      startHour = fixedStartHour;
+    } else {
+      // Free placement: use mouse position
+      const gridRect = e.currentTarget.getBoundingClientRect();
+      const relativeY = e.clientY - gridRect.top;
+      const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
+      startHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
     }
 
     // Block placement during lunch
     if (overlapsLunch(startHour, durationHours, lunchEnabled, lunchStart, lunchEnd)) {
+      setDraggingTemplate(null);
+      return;
+    }
+
+    // Conflict detection - always check, even for templates without assigned venues
+    const endHour = startHour + durationHours;
+    const dropVenueId = templateToPlace.venueId ?? null;
+    const conflict = placedTemplates.find((p) => {
+      if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
+      const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
+      if (pVenueId !== dropVenueId) return false;
+      const pEnd = p.startHour + p.durationHours;
+      return startHour < pEnd && p.startHour < endHour;
+    });
+    if (conflict) {
+      const venueName = templateToPlace.venue || venues.find((v) => v.id === templateToPlace.venueId)?.name || 'this slot';
+      setToast({ message: `Conflict: ${venueName} is already booked at this time`, type: 'error', id: Date.now() });
       setDraggingTemplate(null);
       return;
     }
@@ -2069,6 +2208,8 @@ export default function TemplatesPage() {
       dayIndex,
       startHour,
       durationHours,
+      weekIndex: weekIdx,
+      venueId: templateToPlace.venueId ?? null,
     };
 
     setPlacedTemplates((prev) => [...prev, newPlaced]);
@@ -2081,6 +2222,28 @@ export default function TemplatesPage() {
   const handleResizePlaced = (placedId: string, newStart: number, newDuration: number) => {
     // Block resizing into lunch
     if (overlapsLunch(newStart, newDuration, lunchEnabled, lunchStart, lunchEnd)) return;
+
+    // Venue conflict detection
+    const placed = placedTemplates.find((p) => p.id === placedId);
+    if (placed) {
+      const tmpl = templates.find((t) => t.id === placed.templateId);
+      if (!tmpl) return; // Early return if template not found
+      // Conflict detection - always check, even for templates without assigned venues
+      const newEnd = newStart + newDuration;
+      const placedVenueId = placed.venueId ?? tmpl.venueId ?? null;
+      const conflict = placedTemplates.find((p) => {
+        if (p.id === placedId || p.dayIndex !== placed.dayIndex || p.weekIndex !== placed.weekIndex) return false;
+        const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
+        if (pVenueId !== placedVenueId) return false;
+        const pEnd = p.startHour + p.durationHours;
+        return newStart < pEnd && p.startHour < newEnd;
+      });
+      if (conflict) {
+        const venueName = tmpl.venue || venues.find((v) => v.id === tmpl.venueId)?.name || 'this slot';
+        setToast({ message: `Conflict: ${venueName} is already booked at this time`, type: 'error', id: Date.now() });
+        return;
+      }
+    }
 
     setPlacedTemplates((prev) =>
       prev.map((p) => (p.id === placedId ? { ...p, startHour: newStart, durationHours: newDuration } : p)),
@@ -2100,6 +2263,12 @@ export default function TemplatesPage() {
     const newT = emptyTemplate();
     newT.id = `t-${Date.now()}`;
     newT.color = TEMPLATE_COLORS[templates.length % TEMPLATE_COLORS.length];
+    // Auto-assign first selected venue
+    if (selectedVenues.length === 1) {
+      newT.venueId = selectedVenues[0];
+      const venue = venues.find((v) => v.id === selectedVenues[0]);
+      if (venue) newT.venue = venue.name;
+    }
     setEditModalTemplate(newT);
     setIsNewTemplate(true);
   };
@@ -2197,7 +2366,23 @@ export default function TemplatesPage() {
     );
   }
 
-  const templateListItems: TemplateListItem[] = templates.map((t) => ({
+  // ── Venue-scoped filtering ──
+  const multiLane = selectedVenues.length > 1;
+
+  // Templates: show all that belong to any selected venue (or unassigned)
+  const venueFilteredTemplates = selectedVenues.length === 0
+    ? templates
+    : templates.filter((t) => t.venueId ? selectedVenues.includes(t.venueId) : true);
+
+  // Placements: show all that belong to any selected venue (or unassigned)
+  const venueFilteredPlacements = selectedVenues.length === 0
+    ? placedTemplates
+    : placedTemplates.filter((p) => {
+        const effectiveVenueId = p.venueId ?? templates.find((tmpl) => tmpl.id === p.templateId)?.venueId ?? null;
+        return effectiveVenueId ? selectedVenues.includes(effectiveVenueId) : true;
+      });
+
+  const templateListItems: TemplateListItem[] = venueFilteredTemplates.map((t) => ({
     id: t.id,
     name: getBlockDisplayName(t),
     dayLabel: t.days.length === 5
@@ -2209,7 +2394,7 @@ export default function TemplatesPage() {
     venue: t.venue,
     instructorRotation: t.instructorRotation,
     color: t.color,
-    tags: t.requiredSkills ?? [],
+    tags: t.subjects ?? [],
     scheduleLabel: formatSchedule(t),
     cycleBadge: t.weekCycleLength != null && t.weekCycleLength >= 2
       ? {
@@ -2232,9 +2417,23 @@ export default function TemplatesPage() {
               </Tooltip>
             </div>
             <p className="text-sm text-slate-500 mt-1">
-              Build a weekly schedule template. This pattern will repeat when you publish to the calendar.
+              Build a weekly schedule template per venue. This pattern will repeat when you publish to the calendar.
             </p>
           </div>
+          {conflicts.length > 0 && (
+            <Tooltip text={`${conflicts.length} scheduling conflict${conflicts.length === 1 ? '' : 's'} detected — click to view details`}>
+              <button
+                onClick={() => setShowConflictPanel(!showConflictPanel)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                <span className="text-xs font-medium text-red-600">
+                  {conflicts.length} Conflict{conflicts.length === 1 ? '' : 's'}
+                </span>
+                <ChevronDown className={`w-3 h-3 text-red-400 transition-transform ${showConflictPanel ? 'rotate-180' : ''}`} />
+              </button>
+            </Tooltip>
+          )}
           {isDirty && (
             <Tooltip text="You have unsaved changes">
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
@@ -2243,17 +2442,21 @@ export default function TemplatesPage() {
               </span>
             </Tooltip>
           )}
+        </div>
+        <div className="flex items-center gap-2">
           {/* Day Schedule Settings */}
           <div className="relative">
-            <Tooltip text="Day Start/End Times">
+            <Tooltip text="Configure day start/end times, lunch breaks, and buffer settings">
               <button
                 onClick={() => setShowDaySettings(!showDaySettings)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors cursor-pointer ${
-                  showDaySettings ? 'bg-blue-50 text-blue-500' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer border ${
+                  showDaySettings
+                    ? 'bg-blue-50 text-blue-600 border-blue-300'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50 hover:border-slate-400'
                 }`}
               >
                 <Clock className="w-4 h-4" />
-                <span className="hidden sm:inline">Day Start/End Times</span>
+                Day Start/End Times
               </button>
             </Tooltip>
             {showDaySettings && (
@@ -2276,8 +2479,6 @@ export default function TemplatesPage() {
               />
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
           <Tooltip text="Remove all template placements from the weekly grid">
             <button
               onClick={() => setShowClearConfirm(true)}
@@ -2286,16 +2487,6 @@ export default function TemplatesPage() {
             >
               <Trash2 className="w-4 h-4" />
               Clear Schedule
-            </button>
-          </Tooltip>
-          <Tooltip text="Automatically assign events to empty time slots">
-            <button
-              onClick={() => setShowAutoFillModal(true)}
-              disabled={templates.length === 0 || isAutoFilling}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-violet-500 text-white hover:bg-violet-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Zap className="w-4 h-4" />
-              Auto-Fill
             </button>
           </Tooltip>
           <Button
@@ -2309,7 +2500,17 @@ export default function TemplatesPage() {
           </Button>
           <Tooltip text="Generate calendar sessions from template schedule">
             <button
-              onClick={() => setShowPublishConfirm(true)}
+              onClick={() => {
+                if (conflicts.length > 0) {
+                  setToast({
+                    message: `Cannot publish: ${conflicts.length} conflict${conflicts.length === 1 ? '' : 's'} must be resolved first`,
+                    type: 'error',
+                    id: Date.now(),
+                  });
+                  return;
+                }
+                setShowPublishConfirm(true);
+              }}
               disabled={isDirty || isPublishing || isSaving || placedTemplates.length === 0}
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -2317,33 +2518,137 @@ export default function TemplatesPage() {
               {isPublishing ? 'Publishing…' : 'Publish Schedule'}
             </button>
           </Tooltip>
-          <div className="w-px h-8 bg-slate-200" />
-          <Button
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={handleCreateTemplate}
-            tooltip="Create a new template"
-          >
-            Create Template
-          </Button>
+          <div className="flex-1" />
+          <Tooltip text="Automatically assign events to empty time slots">
+            <button
+              onClick={() => setShowAutoFillModal(true)}
+              disabled={venueFilteredTemplates.length === 0 || isAutoFilling}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-violet-500 text-white hover:bg-violet-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap className="w-4 h-4" />
+              Create Schedule
+            </button>
+          </Tooltip>
         </div>
       </div>
+
+      {/* Conflict panel */}
+      {showConflictPanel && conflicts.length > 0 && (
+        <div className="bg-red-50 px-8 py-3 border-b border-red-200 shrink-0">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-red-800 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4" />
+              {conflicts.length} Scheduling Conflict{conflicts.length === 1 ? '' : 's'}
+            </h3>
+            <button
+              onClick={() => setShowConflictPanel(false)}
+              className="p-1 rounded hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
+            {conflicts.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-start gap-2 px-3 py-2 bg-white rounded-md border border-red-100 text-sm"
+              >
+                <span className={`mt-0.5 shrink-0 w-2 h-2 rounded-full ${c.type === 'venue' ? 'bg-red-500' : 'bg-orange-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mr-1.5">
+                    {c.type}
+                  </span>
+                  <span className="text-slate-700 text-[13px]">{c.message}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Venue toggle (multi-select, like calendar Week View) */}
+      {venues.length > 1 && (
+        <div className="bg-white px-8 py-3 border-b border-slate-200 shrink-0">
+          <div className="flex items-center gap-2 mb-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Venues</label>
+            <button
+              onClick={() =>
+                setSelectedVenues(
+                  selectedVenues.length === venues.length ? [] : venues.map((v) => v.id)
+                )
+              }
+              className="text-[11px] font-medium text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
+            >
+              {selectedVenues.length === venues.length ? 'Deselect All' : 'Select All'}
+            </button>
+          </div>
+          <VenueToggle
+            venues={venues}
+            selectedVenues={selectedVenues}
+            onChange={setSelectedVenues}
+          />
+        </div>
+      )}
 
       {/* Main content: Grid + Sidebar */}
       <div className="flex-1 flex min-h-0">
         {/* Left: Weekly Grid */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-8 mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-base font-semibold text-slate-900">Your Weekly Template</h2>
-              <p className="text-sm text-slate-500">— Drag events from the library to build your ideal week</p>
+          <div className="mx-8 mt-6 mb-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-slate-900">Your Schedule</h2>
+              <p className="text-sm text-slate-500">— Drag events from the library to build your schedule</p>
+              <Tooltip text="Add another week to the schedule">
+                <button
+                  onClick={() => {
+                    setTotalWeeks((prev) => prev + 1);
+                    setIsDirty(true);
+                  }}
+                  className="ml-auto p-1.5 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-slate-600 hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </Tooltip>
             </div>
           </div>
-          <div className="mx-8 mb-8 bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="flex min-w-full">
+          {Array.from({ length: totalWeeks }, (_, weekIdx) => {
+            const weekPlacementCount = venueFilteredPlacements.filter((p) => (p.weekIndex ?? 0) === weekIdx).length;
+            return (
+          <div key={weekIdx} className="mx-8 mb-8">
+            {totalWeeks > 1 && (
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Week {weekIdx + 1} of {totalWeeks}
+                  {weekPlacementCount > 0 && (
+                    <span className="ml-1.5 text-[11px] font-normal text-slate-400">
+                      ({weekPlacementCount} event{weekPlacementCount === 1 ? '' : 's'})
+                    </span>
+                  )}
+                </h3>
+                {totalWeeks > 1 && weekIdx === totalWeeks - 1 && (
+                  <Tooltip text="Remove this week">
+                    <button
+                      onClick={() => {
+                        setPlacedTemplates((prev) => prev.filter((p) => (p.weekIndex ?? 0) !== weekIdx));
+                        setTotalWeeks((prev) => Math.max(1, prev - 1));
+                        setIsDirty(true);
+                      }}
+                      className="p-1 rounded-lg border border-dashed border-red-200 text-red-300 hover:text-red-500 hover:border-red-400 hover:bg-red-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+            <div className="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+          <div className="flex" style={multiLane ? { minWidth: `${TIME_COL_WIDTH + selectedVenues.length * 120 * DAYS.length}px` } : undefined}>
             {/* Time column */}
-            <div className="shrink-0" style={{ width: TIME_COL_WIDTH }}>
-              <div className="h-12 border-b border-slate-200" />
+            <div className="shrink-0 sticky left-0 z-10 bg-white" style={{ width: TIME_COL_WIDTH }}>
+              <div className={`border-b border-slate-200 ${multiLane ? '' : 'h-12'}`}>
+                <div className="h-12" />
+                {multiLane && <div className="border-t border-slate-100 py-1 text-[10px]">&nbsp;</div>}
+              </div>
               {Array.from({ length: dayEndHour - dayStartHour }).map((_, i) => {
                 const hour = dayStartHour + i;
                 const isLunch = isLunchHour(hour, lunchEnabled, lunchStart, lunchEnd);
@@ -2363,19 +2668,39 @@ export default function TemplatesPage() {
 
             {/* Day columns */}
             {DAYS.map((day, dayIndex) => (
-              <div key={day} className="flex-1 min-w-[160px] border-l border-slate-200">
+              <div key={day} className={`flex-1 border-l border-slate-200 ${multiLane ? '' : 'min-w-[130px]'}`} style={multiLane ? { minWidth: `${selectedVenues.length * 120}px` } : undefined}>
                 {/* Day header */}
-                <div className="h-12 border-b border-slate-200 flex items-center justify-center">
-                  <Tooltip text={`Drag events here to schedule on ${day}`}>
-                    <span className="text-sm font-semibold text-slate-700">{day}</span>
-                  </Tooltip>
+                <div className="border-b border-slate-200">
+                  <div className="h-12 flex items-center justify-center">
+                    <Tooltip text={`Drag events here to schedule on ${day}`}>
+                      <span className="text-sm font-semibold text-slate-700">{day}</span>
+                    </Tooltip>
+                  </div>
+                  {multiLane && (
+                    <div className="flex border-t border-slate-100">
+                      {selectedVenues.map((venueId, laneIdx) => {
+                        const venueName = venues.find((v) => v.id === venueId)?.name ?? venueId;
+                        return (
+                          <div
+                            key={venueId}
+                            className={`flex-1 text-[10px] font-medium text-slate-500 py-0.5 px-1 text-center whitespace-nowrap ${
+                              laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
+                            }`}
+                            style={{ minWidth: 120 }}
+                          >
+                            {venueName}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Schedule grid */}
                 <div
                   className="schedule-grid relative"
                   style={{ height: (dayEndHour - dayStartHour) * HOUR_HEIGHT }}
-                  onDrop={(e) => handleDrop(dayIndex, e)}
+                  onDrop={(e) => handleDrop(dayIndex, weekIdx, e)}
                   onDragOver={(e) => handleDragOver(dayIndex, e)}
                   onDragLeave={handleDragLeave}
                 >
@@ -2410,58 +2735,149 @@ export default function TemplatesPage() {
                     </div>
                   )}
 
-                  {/* Drop preview ghost */}
-                  {dropPreview && dropPreview.dayIndex === dayIndex && draggingTemplate && (
-                    <div
-                      className="absolute left-1 right-1 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75"
-                      style={{
-                        top: `${(dropPreview.hour - dayStartHour) * HOUR_HEIGHT}px`,
-                        height: `${HOUR_HEIGHT}px`,
-                        borderColor: draggingTemplate.color,
-                        backgroundColor: `${draggingTemplate.color}15`,
-                      }}
-                    >
-                      <div className="px-2 py-1.5">
-                        <p className="text-xs font-bold" style={{ color: draggingTemplate.color }}>
-                          {formatHour(dropPreview.hour)}
-                        </p>
-                        <p className="text-xs font-semibold text-slate-500 truncate">
-                          {getBlockDisplayName(draggingTemplate)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  {/* Valid slot highlight (shown on all day columns when dragging a time-fixed template) */}
+                  {draggingTemplate && draggingTemplate.timeSlot && (() => {
+                    const tStart = timeStringToHour(draggingTemplate.timeSlot!.start);
+                    const tEnd = timeStringToHour(draggingTemplate.timeSlot!.end);
+                    if (tEnd <= tStart) return null;
+                    const slotTop = (tStart - dayStartHour) * HOUR_HEIGHT;
+                    const slotHeight = (tEnd - tStart) * HOUR_HEIGHT;
+                    if (slotTop < 0 || tStart >= dayEndHour) return null;
+                    return (
+                      <div
+                        className="absolute left-0 right-0 pointer-events-none border-y-2 border-dashed transition-all duration-150"
+                        style={{
+                          top: `${slotTop}px`,
+                          height: `${slotHeight}px`,
+                          borderColor: `${draggingTemplate.color}40`,
+                          backgroundColor: `${draggingTemplate.color}08`,
+                        }}
+                      />
+                    );
+                  })()}
 
-                  {/* Placed templates */}
-                  {placedTemplates
-                    .filter((p) => p.dayIndex === dayIndex)
-                    .map((placed) => {
-                      const template = templates.find((t) => t.id === placed.templateId);
-                      if (!template) return null;
-                      return (
-                        <PlacedTemplateBlock
-                          key={placed.id}
-                          placed={placed}
-                          template={template}
-                          onSelect={() => {
-                            setSelectedPlacedId(placed.id === selectedPlacedId ? null : placed.id);
-                            handleEditTemplate(template);
-                          }}
-                          onResize={(newStart, newDuration) =>
-                            handleResizePlaced(placed.id, newStart, newDuration)
-                          }
-                          onDelete={() => handleDeletePlaced(placed.id)}
-                          isSelected={selectedPlacedId === placed.id}
-                          dayStartHour={dayStartHour}
-                          dayEndHour={dayEndHour}
-                        />
-                      );
-                    })}
+                  {/* Drop preview ghost */}
+                  {dropPreview && dropPreview.dayIndex === dayIndex && draggingTemplate && (() => {
+                    let previewDuration = 1;
+                    if (draggingTemplate.timeSlot) {
+                      const s = timeStringToHour(draggingTemplate.timeSlot.start);
+                      const e = timeStringToHour(draggingTemplate.timeSlot.end);
+                      if (e > s) previewDuration = e - s;
+                    }
+                    return (
+                      <div
+                        className="absolute left-0.5 right-0.5 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75"
+                        style={{
+                          top: `${(dropPreview.hour - dayStartHour) * HOUR_HEIGHT}px`,
+                          height: `${previewDuration * HOUR_HEIGHT}px`,
+                          borderColor: draggingTemplate.color,
+                          backgroundColor: `${draggingTemplate.color}15`,
+                        }}
+                      >
+                        <div className="px-1.5 py-1">
+                          <p className="text-[11px] font-bold" style={{ color: draggingTemplate.color }}>
+                            {formatHour(dropPreview.hour)}
+                            {draggingTemplate.timeSlot ? ` – ${formatHour(dropPreview.hour + previewDuration)}` : ''}
+                          </p>
+                          <p className="text-[11px] font-semibold text-slate-500 truncate">
+                            {getBlockDisplayName(draggingTemplate)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {multiLane ? (
+                    /* Multi-lane rendering: split day column into venue lanes */
+                    <div className="absolute inset-0 flex">
+                      {selectedVenues.map((venueId, laneIdx) => {
+                        const lanePlacements = venueFilteredPlacements.filter(
+                          (p) => {
+                            if (p.dayIndex !== dayIndex || (p.weekIndex ?? 0) !== weekIdx) return false;
+                            const t = templates.find((tmpl) => tmpl.id === p.templateId);
+                            if (!t) return false;
+                            const effectiveVenueId = p.venueId ?? t.venueId ?? null;
+                            return effectiveVenueId === venueId || (!effectiveVenueId && laneIdx === 0);
+                          },
+                        );
+                        return (
+                          <div
+                            key={venueId}
+                            className={`relative flex-1 ${
+                              laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
+                            }`}
+                            style={{
+                              minWidth: 120,
+                              backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
+                            }}
+                          >
+                            {lanePlacements.map((placed) => {
+                              const template = templates.find((t) => t.id === placed.templateId);
+                              if (!template) return null;
+                              return (
+                                <PlacedTemplateBlock
+                                  key={placed.id}
+                                  placed={placed}
+                                  template={template}
+                                  onSelect={() => {
+                                    setSelectedPlacedId(placed.id === selectedPlacedId ? null : placed.id);
+                                    handleEditTemplate(template);
+                                  }}
+                                  onResize={(newStart, newDuration) =>
+                                    handleResizePlaced(placed.id, newStart, newDuration)
+                                  }
+                                  onDelete={() => handleDeletePlaced(placed.id)}
+                                  isSelected={selectedPlacedId === placed.id}
+                                  dayStartHour={dayStartHour}
+                                  dayEndHour={dayEndHour}
+                                  hasConflict={conflictingPlacedIds.has(placed.id)}
+                                  conflictMessages={conflicts.filter((c) => c.placedIds.includes(placed.id)).map((c) => c.message)}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Single venue / all venues — original rendering */
+                    <>
+                      {venueFilteredPlacements
+                        .filter((p) => p.dayIndex === dayIndex && (p.weekIndex ?? 0) === weekIdx)
+                        .map((placed) => {
+                          const template = templates.find((t) => t.id === placed.templateId);
+                          if (!template) return null;
+                          return (
+                            <PlacedTemplateBlock
+                              key={placed.id}
+                              placed={placed}
+                              template={template}
+                              onSelect={() => {
+                                setSelectedPlacedId(placed.id === selectedPlacedId ? null : placed.id);
+                                handleEditTemplate(template);
+                              }}
+                              onResize={(newStart, newDuration) =>
+                                handleResizePlaced(placed.id, newStart, newDuration)
+                              }
+                              onDelete={() => handleDeletePlaced(placed.id)}
+                              isSelected={selectedPlacedId === placed.id}
+                              dayStartHour={dayStartHour}
+                              dayEndHour={dayEndHour}
+                              hasConflict={conflictingPlacedIds.has(placed.id)}
+                              conflictMessages={conflicts.filter((c) => c.placedIds.includes(placed.id)).map((c) => c.message)}
+                            />
+                          );
+                        })}
+                    </>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
+          </div>
+            );
+          })}
         </div>
 
         {/* Right: Event Library Sidebar */}
@@ -2502,6 +2918,7 @@ export default function TemplatesPage() {
             setIsNewTemplate(false);
           }}
           isSaving={isSavingTemplate}
+          venues={venues}
         />
       )}
 
@@ -2514,7 +2931,7 @@ export default function TemplatesPage() {
             setIsAutoFilling(false);
           }}
           isFilling={isAutoFilling}
-          templates={templates}
+          templates={venueFilteredTemplates}
         />
       )}
 

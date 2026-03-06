@@ -12,7 +12,7 @@ import { Pill } from '../ui/Pill';
 // Types
 // ──────────────────────────────────────────────────────────────
 
-/** Minimal template shape that works for both the Classes page (SessionTemplate)
+/** Minimal template shape that works for both the Event Templates page (SessionTemplate)
  *  and the Schedule Builder (its local Template type). Each consumer maps its
  *  data into this shape before passing it in. */
 export interface TemplateListItem {
@@ -29,6 +29,8 @@ export interface TemplateListItem {
   instructor?: string;
   /** Venue display name. */
   venue?: string;
+  /** Subject display name. For table mode. */
+  subject?: string;
   /** Template type label (e.g. "Fully Defined"). For table mode. */
   typeLabel?: string;
   /** Cycle label (e.g. "Wk 1/2" or "Weekly"). For table mode. */
@@ -48,7 +50,7 @@ export interface TemplateListItem {
 }
 
 export interface TemplateListProps {
-  /** Display mode: 'table' for Classes page, 'draggable' for Schedule Builder. */
+  /** Display mode: 'table' for Event Templates page, 'draggable' for Schedule Builder. */
   mode: 'table' | 'draggable';
   /** Templates to display (pre-mapped to TemplateListItem). */
   templates: TemplateListItem[];
@@ -418,7 +420,7 @@ export function TemplateList({
           {search.trim() || activeFilterCount > 0
             ? 'No events match your search or filters.'
             : mode === 'table'
-              ? 'No class templates yet. Click \u201cNew Class\u201d to create your first template.'
+              ? 'No event templates yet. Click \u201cNew Event Template\u201d to create your first template.'
               : 'No events yet. Click \u201cCreate Template\u201d to add one.'}
         </div>
       ) : mode === 'table' ? (
@@ -442,7 +444,7 @@ export function TemplateList({
 }
 
 // ──────────────────────────────────────────────────────────────
-// Table View (Classes page)
+// Table View (Event Templates page)
 // ──────────────────────────────────────────────────────────────
 
 function TableView({
@@ -459,7 +461,7 @@ function TableView({
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-            {['Grade Groups', 'Day', 'Time', 'Type', 'Instructor', 'Venue', 'Cycle', 'Status', ''].map((h) => (
+            {['Name', 'Subject', 'Grade Groups', 'Day', 'Time', 'Instructor', 'Venue', 'Cycle', 'Status', ''].map((h) => (
               <th
                 key={h}
                 style={{
@@ -484,6 +486,14 @@ function TableView({
               style={{ borderBottom: '1px solid #F1F5F9' }}
               className="hover:bg-slate-50 transition-colors"
             >
+              {/* Name */}
+              <td style={{ padding: '12px 16px', fontSize: 14, color: '#0F172A', fontWeight: 600 }}>
+                {t.name || '\u2014'}
+              </td>
+              {/* Subject */}
+              <td style={{ padding: '12px 16px', fontSize: 14, color: '#334155' }}>
+                {t.subject || '\u2014'}
+              </td>
               {/* Grade Groups */}
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -502,10 +512,6 @@ function TableView({
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   {t.timeLabel}
                 </div>
-              </td>
-              {/* Type */}
-              <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>
-                {t.typeLabel ?? '\u2014'}
               </td>
               {/* Instructor */}
               <td style={{ padding: '12px 16px' }}>

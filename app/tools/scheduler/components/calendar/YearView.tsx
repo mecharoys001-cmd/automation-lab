@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Calendar, ChevronUp, Loader2 } from 'lucide-react';
+import { Calendar, ChevronUp, Loader2, Ban, Clock } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import type { CalendarEvent, EventType } from './types';
 import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
+import { VenueToggle } from '../ui/VenueToggle';
+import type { VenueOption } from '../ui/VenueToggle';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -14,6 +16,8 @@ import { useEventPopover } from './useEventPopover';
 
 interface YearViewProps {
   events: CalendarEvent[];
+  /** All venues from database (shows empty venues too). Falls back to deriving from events. */
+  venues?: Array<{ id: string; name: string }>;
   onEventClick?: (event: CalendarEvent) => void;
   onDayClick?: (date: Date) => void;
   onTodayClick?: () => void;
@@ -46,6 +50,14 @@ const MONTH_NAMES = [
 ];
 
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
+
+/** Abbreviate a venue name for compact display (e.g. "Auditorium" → "Aud") */
+function venueAbbrev(name: string): string {
+  if (name.length <= 4) return name;
+  return name.slice(0, 3);
+}
 
 /** How many months to initially show before and after the current month */
 const INITIAL_RANGE = 6;
@@ -184,6 +196,8 @@ function MonthGrid({
   eventsByDate,
   todayKey,
   schoolCalendarByDate,
+  selectedVenues,
+  multiLane,
   onEventHover,
   onEventLeave,
   onEventClick,
@@ -194,6 +208,8 @@ function MonthGrid({
   eventsByDate: Record<string, CalendarEvent[]>;
   todayKey: string;
   schoolCalendarByDate: Record<string, { date: string; status_type: string; description?: string | null; early_dismissal_time?: string | null }>;
+  selectedVenues: string[];
+  multiLane: boolean;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
   onEventLeave: () => void;
   onEventClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -278,39 +294,71 @@ function MonthGrid({
                 </span>
 
                 {schoolEntry && (
-                  <div className="mb-2">
+                  <div className="mb-1 flex justify-center">
                     {schoolEntry.status_type === 'no_school' && (
-                      <div className="bg-amber-100 border border-amber-300 rounded-md px-1 py-1 text-center">
-                        <div className="text-[11px] font-bold text-amber-900">NO SCHOOL</div>
-                        {schoolEntry.description && (
-                          <div className="text-[9px] text-amber-700 mt-0.5 line-clamp-1">{schoolEntry.description}</div>
-                        )}
-                      </div>
+                      <Tooltip text={`No School${schoolEntry.description ? ': ' + schoolEntry.description : ''}`}>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 border border-amber-300">
+                          <Ban className="w-3 h-3 text-amber-700" />
+                        </div>
+                      </Tooltip>
                     )}
                     {schoolEntry.status_type === 'early_dismissal' && (
-                      <div className="bg-blue-100 border border-blue-300 rounded-md px-1 py-1 text-center">
-                        <div className="text-[11px] font-bold text-blue-900">EARLY DISMISSAL</div>
-                        {schoolEntry.early_dismissal_time && (
-                          <div className="text-[9px] text-blue-700 mt-0.5">
-                            {schoolEntry.early_dismissal_time.slice(0, 5)}
-                          </div>
-                        )}
-                      </div>
+                      <Tooltip text={`Early Dismissal${schoolEntry.early_dismissal_time ? ' at ' + schoolEntry.early_dismissal_time.slice(0, 5) : ''}`}>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 border border-blue-300">
+                          <Clock className="w-3 h-3 text-blue-700" />
+                        </div>
+                      </Tooltip>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-0.5">
-                  {dayEvents.map((event) => (
-                    <EventChip
-                      key={event.id}
-                      event={event}
-                      onHover={onEventHover}
-                      onLeave={onEventLeave}
-                      onClick={onEventClick}
-                    />
-                  ))}
-                </div>
+                {multiLane ? (
+                  <div className="flex gap-px">
+                    {selectedVenues.map((venueId, laneIdx) => {
+                      const laneEvents = dayEvents.filter(
+                        (e) => e.venue === venueId || (!e.venue && laneIdx === 0),
+                      );
+                      return (
+                        <div
+                          key={venueId}
+                          className="flex-1 min-w-0"
+                          style={{
+                            backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
+                            borderRadius: '3px',
+                            padding: '1px',
+                          }}
+                        >
+                          <div className="text-[8px] font-bold text-slate-400 text-center leading-tight mb-0.5 truncate">
+                            {venueAbbrev(venueId)}
+                          </div>
+                          <div className="space-y-0.5">
+                            {laneEvents.map((event) => (
+                              <EventChip
+                                key={event.id}
+                                event={event}
+                                onHover={onEventHover}
+                                onLeave={onEventLeave}
+                                onClick={onEventClick}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {dayEvents.map((event) => (
+                      <EventChip
+                        key={event.id}
+                        event={event}
+                        onHover={onEventHover}
+                        onLeave={onEventLeave}
+                        onClick={onEventClick}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </Tooltip>
           );
@@ -326,6 +374,7 @@ function MonthGrid({
 
 export function YearView({
   events,
+  venues: venuesProp,
   onEventClick,
   onDayClick,
   onTodayClick,
@@ -339,6 +388,7 @@ export function YearView({
   const [visibleMonths, setVisibleMonths] = useState(buildInitialMonths);
   const [loadingTop, setLoadingTop] = useState(false);
   const [loadingBottom, setLoadingBottom] = useState(false);
+  const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -370,6 +420,29 @@ export function YearView({
     });
     return map;
   }, [schoolCalendar]);
+
+  // Use DB venues if provided, otherwise derive from event data
+  const allVenues: VenueOption[] = useMemo(() => {
+    if (venuesProp && venuesProp.length > 0) {
+      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
+    }
+    const seen = new Map<string, string>();
+    for (const event of events) {
+      if (event.venue && !seen.has(event.venue)) {
+        seen.set(event.venue, event.venue);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [venuesProp, events]);
+
+  // Auto-select all venues when venue list changes and nothing is selected
+  useMemo(() => {
+    if (selectedVenues.length === 0 && allVenues.length > 0) {
+      setSelectedVenues(allVenues.map((v) => v.id));
+    }
+  }, [allVenues]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const multiLane = selectedVenues.length > 1;
 
   // Unique event types for legend
   const activeTypes = useMemo(() => {
@@ -557,6 +630,17 @@ export function YearView({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* ------- Venue Toggle ------- */}
+      {allVenues.length > 1 && (
+        <div className="bg-white px-6 border-b border-slate-200 shrink-0">
+          <VenueToggle
+            venues={allVenues}
+            selectedVenues={selectedVenues}
+            onChange={setSelectedVenues}
+          />
+        </div>
+      )}
+
       {/* ------- Scrollable Months ------- */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-[#F8FAFC] px-6 py-4">
         {/* Top sentinel for loading earlier months */}
@@ -579,6 +663,8 @@ export function YearView({
                   eventsByDate={eventsByDate}
                   todayKey={todayKey}
                   schoolCalendarByDate={schoolCalendarByDate}
+                  selectedVenues={selectedVenues}
+                  multiLane={multiLane}
                   onEventHover={showPopover}
                   onEventLeave={hidePopover}
                   onEventClick={handleEventClick}

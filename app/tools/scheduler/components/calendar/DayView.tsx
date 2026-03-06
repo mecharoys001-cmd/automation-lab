@@ -9,6 +9,8 @@ import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { TimeRangeSelector } from './TimeRangeSelector';
+import { VenueToggle } from '../ui/VenueToggle';
+import type { VenueOption } from '../ui/VenueToggle';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -16,6 +18,8 @@ import { TimeRangeSelector } from './TimeRangeSelector';
 
 interface DayViewProps {
   events: CalendarEvent[];
+  /** All venues from database (shows empty venues too). Falls back to deriving from events. */
+  venues?: Array<{ id: string; name: string }>;
   currentDate?: Date;
   onDateChange?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
@@ -45,6 +49,7 @@ interface DayViewProps {
 const DEFAULT_START = 8;   // 8 AM
 const DEFAULT_END = 15;    // 3 PM
 const HOUR_HEIGHT = 64;    // px per hour
+const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_NAMES = [
@@ -111,6 +116,7 @@ function DayEventBlock({
 
   const top = (startHour - gridStartHour) * HOUR_HEIGHT;
   const height = duration * HOUR_HEIGHT - 4;
+  const isCompact = height < 32; // ≤30min events: single-line display
 
   const blockTooltip = `${event.title} — ${event.time}${event.endTime ? ` – ${event.endTime}` : ''}${event.instructor ? ` · ${event.instructor}` : ''} (${EVENT_TYPE_LABELS[event.type]})`;
 
@@ -118,30 +124,43 @@ function DayEventBlock({
     <Tooltip text={blockTooltip}>
       <div
         ref={ref}
-        className="absolute left-1 right-2 rounded-md px-2.5 py-1.5 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden"
+        className={`absolute left-1 right-2 rounded-md cursor-pointer hover:opacity-90 transition-opacity overflow-hidden ${isCompact ? 'px-2 py-0.5 flex items-center gap-1.5' : 'px-2.5 py-1.5'}`}
         style={{
           top: `${top}px`,
-          height: `${Math.max(height, 28)}px`,
+          height: `${Math.max(height, 22)}px`,
           backgroundColor: colors.bg,
           borderLeft: `3px solid ${colors.accent}`,
         }}
         onClick={(e) => { e.stopPropagation(); ref.current && onClick(event, ref.current); }}
       >
-        <p
-          className="text-[11px] font-semibold leading-tight truncate"
-          style={{ color: colors.text }}
-        >
-          {event.title}
-        </p>
-        <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
-          {event.instructor}
-          {event.venue ? ` · ${event.venue}` : ''}
-        </p>
-        {height > 40 && (
-          <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">
-            {event.time}
-            {event.endTime ? ` – ${event.endTime}` : ''}
-          </p>
+        {isCompact ? (
+          <>
+            <p className="text-[10px] font-semibold leading-none truncate" style={{ color: colors.text }}>
+              {event.title}
+            </p>
+            <p className="text-[9px] text-slate-500 leading-none shrink-0">
+              {event.time}
+            </p>
+          </>
+        ) : (
+          <>
+            <p
+              className="text-[11px] font-semibold leading-tight truncate"
+              style={{ color: colors.text }}
+            >
+              {event.title}
+            </p>
+            <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+              {event.instructor}
+              {event.venue ? ` · ${event.venue}` : ''}
+            </p>
+            {height > 40 && (
+              <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">
+                {event.time}
+                {event.endTime ? ` – ${event.endTime}` : ''}
+              </p>
+            )}
+          </>
         )}
       </div>
     </Tooltip>
@@ -154,6 +173,7 @@ function DayEventBlock({
 
 export function DayView({
   events,
+  venues: venuesProp,
   currentDate,
   onDateChange,
   onEventClick,
@@ -172,6 +192,30 @@ export function DayView({
   );
   const [dayStartHour, setDayStartHour] = useState(initialStartHour);
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
+  const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+
+  // Use DB venues if provided, otherwise derive from event data
+  const allVenues: VenueOption[] = useMemo(() => {
+    if (venuesProp && venuesProp.length > 0) {
+      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
+    }
+    const seen = new Map<string, string>();
+    for (const event of events) {
+      if (event.venue && !seen.has(event.venue)) {
+        seen.set(event.venue, event.venue);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [venuesProp, events]);
+
+  // Auto-select all venues when venue list changes and nothing is selected
+  useMemo(() => {
+    if (selectedVenues.length === 0 && allVenues.length > 0) {
+      setSelectedVenues(allVenues.map((v) => v.id));
+    }
+  }, [allVenues]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const multiLane = selectedVenues.length > 1;
 
   const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
   const [eventDetails, setEventDetails] = useState<Record<string, unknown> | null>(null);
@@ -260,10 +304,20 @@ export function DayView({
     [events, dateKey],
   );
 
+  // Filter events to only selected venues
+  const filteredEvents = useMemo(
+    () => multiLane
+      ? dayEvents.filter((e) => !e.venue || selectedVenues.includes(e.venue))
+      : dayEvents,
+    [dayEvents, multiLane, selectedVenues],
+  );
+
   const hours = Array.from(
     { length: dayEndHour - dayStartHour + 1 },
     (_, i) => dayStartHour + i,
   );
+
+  const totalHeight = hours.length * HOUR_HEIGHT;
 
   const navigate = (delta: number) => {
     const next = new Date(viewDate);
@@ -333,55 +387,147 @@ export function DayView({
         </Button>
       </div>
 
-      {/* ------- Warning Banner ------- */}
-      {conflicts > 0 && (
-        <Tooltip text={`${conflicts} scheduling conflict${conflicts !== 1 ? 's' : ''} on this day`}>
-          <div className="flex items-center gap-2 bg-amber-100 px-6 py-2.5 shrink-0">
-            <TriangleAlert className="w-4 h-4 text-amber-500 shrink-0" />
-            <span className="text-[13px] font-medium text-amber-800">
-              Needs Attention: {conflicts} conflict{conflicts !== 1 ? 's' : ''} found
-            </span>
-          </div>
-        </Tooltip>
+      {/* ------- Venue Toggle ------- */}
+      {allVenues.length > 1 && (
+        <div className="bg-white px-6 border-b border-slate-200 shrink-0">
+          <VenueToggle
+            venues={allVenues}
+            selectedVenues={selectedVenues}
+            onChange={setSelectedVenues}
+          />
+        </div>
       )}
 
-      {/* ------- Day Content (Time Column + Event Grid) ------- */}
-      <div className="flex flex-1 bg-white overflow-y-auto">
-        {/* Time Column */}
-        <div className="w-[60px] shrink-0 border-r border-slate-200">
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className="flex items-start justify-end pr-2 text-[11px] font-medium text-slate-400"
-              style={{ height: `${HOUR_HEIGHT}px` }}
-            >
-              <span className="-mt-1.5">{formatHourLabel(hour)}</span>
+      {/* ------- Conflict Icon ------- */}
+      {conflicts > 0 && (
+        <div className="px-6 py-1.5 shrink-0 flex items-center">
+          <Tooltip text={`Needs Attention: ${conflicts} scheduling conflict${conflicts !== 1 ? 's' : ''} on this day`}>
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100">
+              <TriangleAlert className="w-3.5 h-3.5 text-amber-600" />
             </div>
-          ))}
+          </Tooltip>
         </div>
+      )}
 
-        {/* Event Grid */}
-        <div className="flex-1 relative">
-          {/* Hour grid lines */}
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className="border-b border-slate-100"
-              style={{ height: `${HOUR_HEIGHT}px` }}
-            />
-          ))}
+      {/* ------- Day Content (Time Column + Lane Headers + Event Grid) ------- */}
+      <div className="flex-1 overflow-y-auto bg-white" style={{ minWidth: 0 }}>
+        <div
+          className="grid min-h-full"
+          style={{
+            gridTemplateColumns: `60px 1fr`,
+            gridTemplateRows: multiLane ? 'auto 1fr' : '1fr',
+          }}
+        >
+          {/* Lane sub-headers (only when multi-lane) */}
+          {multiLane && (
+            <>
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-200" style={{ gridRow: 1 }} />
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex" style={{ gridRow: 1 }}>
+                {selectedVenues.map((venueId, laneIdx) => (
+                  <div
+                    key={venueId}
+                    className={`flex-1 text-[11px] font-semibold text-slate-500 py-2 text-center truncate px-1 ${
+                      laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
+                    }`}
+                  >
+                    {venueId}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-          {/* Event blocks (absolute-positioned) */}
-          {dayEvents.map((event) => (
-            <DayEventBlock
-              key={event.id}
-              event={event}
-              gridStartHour={dayStartHour}
-              onHover={showPopover}
-              onLeave={hidePopover}
-              onClick={handleEventClick}
-            />
-          ))}
+          {/* Time gutter */}
+          <div
+            className="border-r border-slate-200 bg-slate-50"
+            style={{ gridRow: multiLane ? 2 : 1 }}
+          >
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                className="flex items-start justify-end pr-2 text-[11px] font-medium text-slate-400"
+                style={{ height: `${HOUR_HEIGHT}px` }}
+              >
+                <span className="-mt-1.5">{formatHourLabel(hour)}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Event grid area */}
+          <div
+            className="relative"
+            style={{ gridRow: multiLane ? 2 : 1, minHeight: `${totalHeight}px` }}
+          >
+            {/* Hour grid lines */}
+            {hours.map((hour, hIdx) => (
+              <div
+                key={hour}
+                className="absolute left-0 right-0 border-b border-slate-100"
+                style={{
+                  top: `${hIdx * HOUR_HEIGHT}px`,
+                  height: `${HOUR_HEIGHT}px`,
+                }}
+              />
+            ))}
+
+            {/* Half-hour dashed lines */}
+            {hours.map((hour, hIdx) => (
+              <div
+                key={`half-${hour}`}
+                className="absolute left-0 right-0 border-b border-dashed border-slate-50"
+                style={{
+                  top: `${hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
+                }}
+              />
+            ))}
+
+            {multiLane ? (
+              /* Multi-lane rendering: split into venue lanes */
+              <div className="absolute inset-0 flex">
+                {selectedVenues.map((venueId, laneIdx) => {
+                  const laneEvents = filteredEvents.filter(
+                    (e) => e.venue === venueId || (!e.venue && laneIdx === 0),
+                  );
+                  return (
+                    <div
+                      key={venueId}
+                      className={`relative flex-1 ${
+                        laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
+                      }`}
+                      style={{
+                        backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
+                      }}
+                    >
+                      {laneEvents.map((event) => (
+                        <DayEventBlock
+                          key={event.id}
+                          event={event}
+                          gridStartHour={dayStartHour}
+                          onHover={showPopover}
+                          onLeave={hidePopover}
+                          onClick={handleEventClick}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Single column rendering */
+              <div className="absolute inset-0 px-1.5">
+                {filteredEvents.map((event) => (
+                  <DayEventBlock
+                    key={event.id}
+                    event={event}
+                    gridStartHour={dayStartHour}
+                    onHover={showPopover}
+                    onLeave={hidePopover}
+                    onClick={handleEventClick}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

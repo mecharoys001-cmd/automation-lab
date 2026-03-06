@@ -71,7 +71,7 @@ export async function runScheduler(
   supabase: SupabaseClient<Database>,
   input: SchedulerInput
 ): Promise<SchedulerResult> {
-  const { program_id, year: yearOverride } = input;
+  const { program_id, year: yearOverride, preview = false } = input;
 
   // ----------------------------------------------------------
   // 1. Load all required data
@@ -121,8 +121,9 @@ export async function runScheduler(
 
   // ----------------------------------------------------------
   // 2. Clear existing draft sessions for this program
+  //    (skipped in preview mode — no DB mutations)
   // ----------------------------------------------------------
-  const draftsCleared = await clearDraftSessions(supabase, program_id);
+  const draftsCleared = preview ? 0 : await clearDraftSessions(supabase, program_id);
 
   // ----------------------------------------------------------
   // 3. Build lookup structures
@@ -423,8 +424,9 @@ export async function runScheduler(
 
   // ----------------------------------------------------------
   // 5. Batch insert generated sessions
+  //    (skipped in preview mode — no DB mutations)
   // ----------------------------------------------------------
-  if (generatedSessions.length > 0) {
+  if (generatedSessions.length > 0 && !preview) {
     const insertError = await insertSessions(supabase, generatedSessions);
     if (insertError) {
       return {

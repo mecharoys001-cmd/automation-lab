@@ -39,7 +39,7 @@ export type ActiveFilters = Record<string, string[]>;
 interface DynamicFilterBarProps {
   /** Static filters (instructor, venue, status, etc.) */
   staticFilters?: FilterConfig[];
-  /** Which tag categories to show as filters (e.g., ['Skills', 'Subject', 'Event Type']) */
+  /** Which tag categories to show as filters (e.g., ['Skills', 'Subject', 'Event Type']). 'Skills' displays as 'Subjects'. */
   tagCategories?: string[];
   /** Active filter state */
   activeFilters: ActiveFilters;
@@ -236,13 +236,17 @@ export function DynamicFilterBar({
   }, [tagCategories.length]);
 
   // Build dynamic tag filters
+  // Map DB category names to user-facing display labels
+  const CATEGORY_DISPLAY_NAMES: Record<string, string> = { Skills: 'Subjects' };
+
   const tagFilters: FilterConfig[] = tagCategories.map(category => {
     const categoryTags = tags.filter(t => t.category === category);
+    const displayName = CATEGORY_DISPLAY_NAMES[category] ?? category;
     return {
       key: `tag_${category.toLowerCase().replace(/\s+/g, '_')}`,
-      label: category,
+      label: displayName,
       icon: getCategoryIcon(category),
-      tooltip: `Filter by ${category}`,
+      tooltip: `Filter by ${displayName.toLowerCase()}`,
       options: categoryTags.map(tag => ({
         value: tag.name,
         label: tag.name,

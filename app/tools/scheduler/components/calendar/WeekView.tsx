@@ -145,6 +145,7 @@ function WeekEventBlock({
 
   const top = (startHour - dayStartHour) * HOUR_HEIGHT;
   const height = duration * HOUR_HEIGHT - 2;
+  const isCompact = height < 36; // ≤30min events: show title only
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -201,36 +202,52 @@ function WeekEventBlock({
         ref={ref}
         draggable={!!enableDrag}
         onDragStart={enableDrag ? handleDragStart : undefined}
-        className="absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity overflow-y-auto group"
+        className={`absolute left-1 right-1 rounded-md cursor-pointer hover:opacity-90 transition-opacity overflow-hidden group ${isCompact ? 'px-1.5 py-0.5 flex items-center gap-1' : 'px-2 py-1'}`}
         style={{
           top: `${top}px`,
-          minHeight: `${Math.max(height, 28)}px`,
+          height: `${Math.max(height, 22)}px`,
           backgroundColor: colors.bg,
           borderLeft: `3px solid ${colors.accent}`,
         }}
         onClick={(e) => { e.stopPropagation(); ref.current && onClick(event, ref.current); }}
         onContextMenu={handleContextMenu}
       >
-        {/* Time shown prominently inside event */}
-        <p className="text-[10px] font-bold leading-tight" style={{ color: colors.accent }}>
-          {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
-        </p>
-        <p
-          className="text-[11px] font-semibold leading-snug whitespace-normal mt-0.5"
-          style={{ color: colors.text }}
-        >
-          {event.title}
-        </p>
-        <p className="text-[10px] text-slate-500 leading-snug whitespace-normal mt-0.5">
-          {event.instructor}
-        </p>
-        {event.gradeLevel && (
-          <p className="text-[10px] text-slate-400 leading-snug whitespace-normal mt-0.5">
-            {event.gradeLevel}
-          </p>
+        {isCompact ? (
+          /* Compact: single line with title + time */
+          <>
+            <p className="text-[10px] font-semibold leading-none truncate" style={{ color: colors.text }}>
+              {event.title}
+            </p>
+            <p className="text-[9px] font-bold leading-none shrink-0" style={{ color: colors.accent }}>
+              {event.time}
+            </p>
+          </>
+        ) : (
+          /* Normal: full details */
+          <>
+            <p
+              className="text-[11px] font-semibold leading-snug whitespace-normal"
+              style={{ color: colors.text }}
+            >
+              {event.title}
+            </p>
+            <p className="text-[10px] font-bold leading-tight mt-0.5" style={{ color: colors.accent }}>
+              {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
+            </p>
+            {height >= 50 && (
+              <p className="text-[10px] text-slate-500 leading-snug whitespace-normal mt-0.5">
+                {event.instructor}
+              </p>
+            )}
+            {height >= 64 && event.gradeLevel && (
+              <p className="text-[10px] text-slate-400 leading-snug whitespace-normal mt-0.5">
+                {event.gradeLevel}
+              </p>
+            )}
+          </>
         )}
         {/* Resize handle at bottom edge */}
-        {onResizeEnd && height > 28 && (
+        {onResizeEnd && !isCompact && (
           <div
             className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ backgroundColor: colors.accent + '40' }}

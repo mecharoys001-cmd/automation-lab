@@ -138,7 +138,7 @@ export function TagSelector({
           <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
             {allTags.length === 0 ? (
               <div className="px-3 py-2 text-sm text-slate-400 text-center">
-                No tags available{category && ` in "${category}" category`}
+                No tags available{category && ` in "${category === 'Skills' ? 'Subjects' : category}" category`}
               </div>
             ) : (
               allTags.map(tag => {

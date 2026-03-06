@@ -40,7 +40,7 @@ export interface NavItem {
 
 export const adminNavItems: NavItem[] = [
   { label: 'Calendar',         href: adminPath(),              icon: Calendar,       tooltip: 'View and manage session calendar' },
-  { label: 'Schedule Builder', href: adminPath('templates'),   icon: LayoutTemplate, tooltip: 'Build weekly class templates and schedule' },
+  { label: 'Schedule Builder', href: adminPath('templates'),   icon: LayoutTemplate, tooltip: 'Build weekly event templates and schedule' },
   { label: 'Tags',             href: adminPath('tags'),        icon: Tags,           tooltip: 'Create and manage session tags' },
   { label: 'People & Places',  href: adminPath('people'),      icon: Users,          tooltip: 'Manage instructors, venues, and availability' },
   { label: 'School Calendar',  href: adminPath('calendar'),    icon: Clock,          tooltip: 'Manage school events and special dates' },

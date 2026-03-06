@@ -149,9 +149,9 @@ export function InstructorDetailModal({
 
         <div className="h-px bg-slate-200" />
 
-        {/* ── Skills ───────────────────────────────────────── */}
+        {/* ── Subjects ───────────────────────────────────────── */}
         <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Skills</span>
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Subjects</span>
           {data.skills.length > 0 ? (
             data.skills.map((skill) => (
               <Pill
@@ -159,13 +159,13 @@ export function InstructorDetailModal({
                 variant="skill"
                 bgColor={skill.bgColor ?? 'bg-blue-100'}
                 textColor={skill.textColor ?? 'text-blue-500'}
-                tooltip={`Skill: ${skill.name}`}
+                tooltip={`Subject: ${skill.name}`}
               >
                 {skill.emoji ? `${skill.emoji} ` : ''}{skill.name}
               </Pill>
             ))
           ) : (
-            <span className="text-sm text-slate-400">No skills listed</span>
+            <span className="text-sm text-slate-400">No subjects listed</span>
           )}
         </div>
 

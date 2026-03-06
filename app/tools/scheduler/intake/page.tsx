@@ -228,7 +228,7 @@ export default function IntakePage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
-    if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one skill';
+    if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one subject';
     if (selectedSlots.size === 0) newErrors.availability = 'Please select your availability';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -327,7 +327,7 @@ export default function IntakePage() {
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold sm:text-3xl">Instructor Intake Form</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Please provide your contact information, skills, and weekly availability.
+            Please provide your contact information, subjects, and weekly availability.
           </p>
         </div>
 
@@ -416,9 +416,9 @@ export default function IntakePage() {
             </div>
           </div>
 
-          {/* ── Skills ──────────────────────────────────── */}
+          {/* ── Subjects ──────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
-            <h2 className="text-lg font-semibold mb-1">Skills</h2>
+            <h2 className="text-lg font-semibold mb-1">Subjects</h2>
             <p className="text-xs text-muted-foreground mb-4">
               Select all areas you are qualified to teach. <span className="text-red-400">*</span>
             </p>
@@ -427,7 +427,7 @@ export default function IntakePage() {
               {SKILLS.map((skill) => {
                 const checked = selectedSkills.has(skill);
                 return (
-                  <Tooltip key={skill} text={`Toggle ${skill} teaching skill`}>
+                  <Tooltip key={skill} text={`Toggle ${skill} teaching subject`}>
                     <label
                       className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
                         checked

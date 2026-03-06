@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase-service';
+import { trackScheduleChange } from '@/lib/track-change';
+
+const DAY_MAP: Record<string, number> = {
+  sunday: 0, sun: 0,
+  monday: 1, mon: 1,
+  tuesday: 2, tue: 2,
+  wednesday: 3, wed: 3,
+  thursday: 4, thu: 4,
+  friday: 5, fri: 5,
+  saturday: 6, sat: 6,
+};
+
+interface TemplateRow {
+  name: string;
+  day: string;
+  start_time: string;
+  end_time: string;
+  venue?: string;
+  instructor?: string;
+  subjects?: string;
+  grades?: string;
+}
+
+function parseTime(t: string): string | null {
+  const m = t.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+}
+
+function parseDayOfWeek(day: string): number | null {
+  const num = parseInt(day, 10);
+  if (!isNaN(num) && num >= 0 && num <= 6) return num;
+  return DAY_MAP[day.toLowerCase().trim()] ?? null;
+}
+
+function timeDiffMinutes(start: string, end: string): number {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = createServiceClient();
+    const { rows, program_id } = (await request.json()) as {
+      rows: TemplateRow[];
+      program_id: string;
+    };
+
+    if (!program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
+    }
+
+    // Fetch venues and instructors for name-to-ID mapping
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [venuesRes, instructorsRes] = await Promise.all([
+      (supabase.from('venues') as any).select('id, name'),
+      (supabase.from('instructors') as any).select('id, first_name, last_name'),
+    ]);
+
+    const venueMap = new Map<string, string>();
+    for (const v of venuesRes.data ?? []) {
+      venueMap.set(v.name.toLowerCase().trim(), v.id);
+    }
+
+    const instructorMap = new Map<string, string>();
+    for (const i of instructorsRes.data ?? []) {
+      const full = `${i.first_name} ${i.last_name}`.toLowerCase().trim();
+      instructorMap.set(full, i.id);
+      // Also map by last name only
+      instructorMap.set(i.last_name.toLowerCase().trim(), i.id);
+    }
+
+    const toInsert: Record<string, unknown>[] = [];
+    let skipped = 0;
+
+    for (const row of rows) {
+      const dayOfWeek = parseDayOfWeek(row.day);
+      const startTime = parseTime(row.start_time);
+      const endTime = parseTime(row.end_time);
+
+      if (dayOfWeek === null || !startTime || !endTime) {
+        skipped++;
+        continue;
+      }
+
+      const duration = timeDiffMinutes(startTime, endTime);
+      if (duration <= 0) {
+        skipped++;
+        continue;
+      }
+
+      const venueId = row.venue
+        ? venueMap.get(row.venue.toLowerCase().trim()) ?? null
+        : null;
+
+      const instructorId = row.instructor
+        ? instructorMap.get(row.instructor.toLowerCase().trim()) ?? null
+        : null;
+
+      const grades = row.grades
+        ? row.grades.split(';').map((g) => g.trim()).filter(Boolean)
+        : [];
+
+      const subjects = row.subjects
+        ? row.subjects.split(';').map((s) => s.trim()).filter(Boolean)
+        : [];
+
+      toInsert.push({
+        program_id,
+        template_type: 'fully_defined',
+        rotation_mode: 'consistent',
+        day_of_week: dayOfWeek,
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: duration,
+        venue_id: venueId,
+        instructor_id: instructorId,
+        grade_groups: grades,
+        required_skills: subjects.length > 0 ? subjects : null,
+        is_active: true,
+      });
+    }
+
+    if (toInsert.length === 0) {
+      return NextResponse.json({ imported: 0, skipped, total: rows.length });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from('session_templates') as any)
+      .insert(toInsert)
+      .select();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    trackScheduleChange();
+
+    return NextResponse.json({
+      imported: (data ?? []).length,
+      skipped,
+      total: rows.length,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}

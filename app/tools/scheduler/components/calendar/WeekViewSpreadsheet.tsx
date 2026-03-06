@@ -135,15 +135,15 @@ function EventBlock({
             borderLeft: `3px solid ${colors.accent}`,
           }}
         >
-          {/* Time badge at top */}
-          <div className="text-[10px] font-semibold mb-1" style={{ color: colors.text }}>
-            {formatTime(event.startTime)} - {formatTime(event.endTime)}
-          </div>
-
-          {/* Title */}
-          <p className="text-[11px] font-bold leading-tight truncate" style={{ color: colors.text }}>
+          {/* Title first */}
+          <p className="text-[11px] font-bold leading-tight truncate mb-0.5" style={{ color: colors.text }}>
             {event.title}
           </p>
+
+          {/* Time */}
+          <div className="text-[10px] font-semibold" style={{ color: colors.text }}>
+            {formatTime(event.startTime)} - {formatTime(event.endTime)}
+          </div>
 
           {/* Subtitle */}
           <p className="text-[10px] text-slate-600 leading-tight truncate mt-0.5">

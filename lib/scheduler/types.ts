@@ -30,6 +30,9 @@ export interface SchedulerInput {
   /** When set, the engine generates sessions for Jan 1 – Dec 31 of this year
    *  instead of the program's start_date/end_date. */
   year?: number;
+  /** When true, run scheduling logic without clearing drafts or inserting sessions.
+   *  Returns what WOULD be generated. */
+  preview?: boolean;
 }
 
 /** What the engine returns after generating sessions */

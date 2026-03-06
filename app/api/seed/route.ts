@@ -123,49 +123,62 @@ export async function POST() {
       ]);
     }
 
-    // ── Event Templates — Full weekly pattern ──────────────
-    // Mix of fixed-time (~40%) and flexible/NULL-time (~60%) templates
-    // Durations: 30, 45, 60, 90 min — Grades K-8 — Subjects: Strings, Percussion, Choral, Woodwinds, Brass, Theory, Ensemble
+    // ── Event Templates ─────────────────────────────────────
+    // 36 templates: full 6×6 matrix (grades 1-6 × 6 subjects).
+    // All fully flexible (no fixed times, no pinned instructors/venues).
+    // Distribution: Mon=8, Tue=7, Wed=7, Thu=7, Fri=7
+    // Durations: mostly 45min, a few 60min
     const templateDefs: Array<{
       day_of_week: number; grade_groups: string[];
       start_time: string | null; end_time: string | null; duration_minutes: number;
-      venue: string; skills: string[]; sort_order: number;
+      venue: string | null; skills: string[];
+      instructor_index: number | null; sort_order: number;
     }> = [
-      // ── Monday (day_of_week=1) ──
-      { day_of_week: 1, grade_groups: ['2'],      start_time: '08:00', end_time: '08:30', duration_minutes: 30, venue: 'Classroom',      skills: ['Choral'],      sort_order: 1 },
-      { day_of_week: 1, grade_groups: ['K'],      start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 2 },
-      { day_of_week: 1, grade_groups: ['1'],      start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 3 },
-      { day_of_week: 1, grade_groups: ['3', '4'], start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 4 },
-      { day_of_week: 1, grade_groups: ['5'],      start_time: null,    end_time: null,     duration_minutes: 60, venue: 'Stage',          skills: ['Woodwinds'],   sort_order: 5 },
+      // ═══ MONDAY (8 templates) ═════════════════════════════
+      { day_of_week: 1, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Strings'],    instructor_index: null, sort_order: 1 },
+      { day_of_week: 1, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Piano'],      instructor_index: null, sort_order: 2 },
+      { day_of_week: 1, grade_groups: ['2'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Brass'],      instructor_index: null, sort_order: 3 },
+      { day_of_week: 1, grade_groups: ['2'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Percussion'], instructor_index: null, sort_order: 4 },
+      { day_of_week: 1, grade_groups: ['3'], start_time: null, end_time: null, duration_minutes: 60, venue: null, skills: ['Woodwinds'],  instructor_index: null, sort_order: 5 },
+      { day_of_week: 1, grade_groups: ['3'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Choral'],     instructor_index: null, sort_order: 6 },
+      { day_of_week: 1, grade_groups: ['4'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Strings'],    instructor_index: null, sort_order: 7 },
+      { day_of_week: 1, grade_groups: ['4'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Piano'],      instructor_index: null, sort_order: 8 },
 
-      // ── Tuesday (day_of_week=2) ──
-      { day_of_week: 2, grade_groups: ['3', '4', '5'], start_time: '12:30', end_time: '13:30', duration_minutes: 60, venue: 'Classroom',  skills: ['Woodwinds'],   sort_order: 1 },
-      { day_of_week: 2, grade_groups: ['5'],            start_time: null,    end_time: null,     duration_minutes: 30, venue: 'Classroom',  skills: ['Theory'],      sort_order: 2 },
-      { day_of_week: 2, grade_groups: ['1'],            start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Stage',      skills: ['Choral'],      sort_order: 3 },
-      { day_of_week: 2, grade_groups: ['6'],            start_time: '14:00', end_time: '15:00',  duration_minutes: 60, venue: 'Stage',      skills: ['Strings'],     sort_order: 4 },
-      { day_of_week: 2, grade_groups: ['4'],            start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Classroom',  skills: ['Strings'],     sort_order: 5 },
+      // ═══ TUESDAY (7 templates) ════════════════════════════
+      { day_of_week: 2, grade_groups: ['4'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Brass'],      instructor_index: null, sort_order: 9 },
+      { day_of_week: 2, grade_groups: ['4'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Percussion'], instructor_index: null, sort_order: 10 },
+      { day_of_week: 2, grade_groups: ['5'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Woodwinds'],  instructor_index: null, sort_order: 11 },
+      { day_of_week: 2, grade_groups: ['5'], start_time: null, end_time: null, duration_minutes: 60, venue: null, skills: ['Choral'],     instructor_index: null, sort_order: 12 },
+      { day_of_week: 2, grade_groups: ['5'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Strings'],    instructor_index: null, sort_order: 13 },
+      { day_of_week: 2, grade_groups: ['5'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Piano'],      instructor_index: null, sort_order: 14 },
+      { day_of_week: 2, grade_groups: ['6'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Brass'],      instructor_index: null, sort_order: 15 },
 
-      // ── Wednesday (day_of_week=3) ──
-      { day_of_week: 3, grade_groups: ['K'],      start_time: '12:00', end_time: '12:45', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 1 },
-      { day_of_week: 3, grade_groups: ['1'],      start_time: '12:50', end_time: '13:35', duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 2 },
-      { day_of_week: 3, grade_groups: ['2'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Classroom',      skills: ['Choral'],      sort_order: 3 },
-      { day_of_week: 3, grade_groups: ['3', '4'], start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 4 },
-      { day_of_week: 3, grade_groups: ['5'],      start_time: null,    end_time: null,     duration_minutes: 60, venue: 'Google Meet',    skills: ['Theory'],      sort_order: 5 },
+      // ═══ WEDNESDAY (7 templates) ══════════════════════════
+      { day_of_week: 3, grade_groups: ['6'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Percussion'], instructor_index: null, sort_order: 16 },
+      { day_of_week: 3, grade_groups: ['6'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Woodwinds'],  instructor_index: null, sort_order: 17 },
+      { day_of_week: 3, grade_groups: ['6'], start_time: null, end_time: null, duration_minutes: 60, venue: null, skills: ['Choral'],     instructor_index: null, sort_order: 18 },
+      { day_of_week: 3, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Brass'],      instructor_index: null, sort_order: 19 },
+      { day_of_week: 3, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Percussion'], instructor_index: null, sort_order: 20 },
+      { day_of_week: 3, grade_groups: ['2'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Strings'],    instructor_index: null, sort_order: 21 },
+      { day_of_week: 3, grade_groups: ['2'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Piano'],      instructor_index: null, sort_order: 22 },
 
-      // ── Thursday (day_of_week=4) ──
-      { day_of_week: 4, grade_groups: ['5'],      start_time: '10:00', end_time: '10:45', duration_minutes: 45, venue: 'Stage',          skills: ['Brass'],       sort_order: 1 },
-      { day_of_week: 4, grade_groups: ['6'],      start_time: '14:00', end_time: '15:00', duration_minutes: 60, venue: 'Classroom',      skills: ['Woodwinds'],   sort_order: 2 },
-      { day_of_week: 4, grade_groups: ['7'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 3 },
-      { day_of_week: 4, grade_groups: ['8'],      start_time: null,    end_time: null,     duration_minutes: 60, venue: 'Stage',          skills: ['Strings'],     sort_order: 4 },
-      { day_of_week: 4, grade_groups: ['7', '8'], start_time: '15:30', end_time: '17:00', duration_minutes: 90, venue: 'Stage',          skills: ['Ensemble'],    sort_order: 5 },
-      { day_of_week: 4, grade_groups: ['K'],      start_time: null,    end_time: null,     duration_minutes: 30, venue: 'Classroom',      skills: ['Choral'],      sort_order: 6 },
+      // ═══ THURSDAY (7 templates) ═══════════════════════════
+      { day_of_week: 4, grade_groups: ['2'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Woodwinds'],  instructor_index: null, sort_order: 23 },
+      { day_of_week: 4, grade_groups: ['2'], start_time: null, end_time: null, duration_minutes: 60, venue: null, skills: ['Choral'],     instructor_index: null, sort_order: 24 },
+      { day_of_week: 4, grade_groups: ['3'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Strings'],    instructor_index: null, sort_order: 25 },
+      { day_of_week: 4, grade_groups: ['3'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Piano'],      instructor_index: null, sort_order: 26 },
+      { day_of_week: 4, grade_groups: ['3'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Brass'],      instructor_index: null, sort_order: 27 },
+      { day_of_week: 4, grade_groups: ['3'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Percussion'], instructor_index: null, sort_order: 28 },
+      { day_of_week: 4, grade_groups: ['4'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Woodwinds'],  instructor_index: null, sort_order: 29 },
 
-      // ── Friday (day_of_week=5) ──
-      { day_of_week: 5, grade_groups: ['K'],      start_time: '08:00', end_time: '08:30', duration_minutes: 30, venue: 'Classroom',      skills: ['Choral'],      sort_order: 1 },
-      { day_of_week: 5, grade_groups: ['7', '8'], start_time: '10:00', end_time: '11:00', duration_minutes: 60, venue: 'Cafegymatorium', skills: ['Brass'],       sort_order: 2 },
-      { day_of_week: 5, grade_groups: ['6'],      start_time: null,    end_time: null,     duration_minutes: 30, venue: 'Google Meet',    skills: ['Theory'],      sort_order: 3 },
-      { day_of_week: 5, grade_groups: ['4'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Cafegymatorium', skills: ['Percussion'],  sort_order: 4 },
-      { day_of_week: 5, grade_groups: ['3'],      start_time: null,    end_time: null,     duration_minutes: 45, venue: 'Stage',          skills: ['Strings'],     sort_order: 5 },
+      // ═══ FRIDAY (7 templates) ═════════════════════════════
+      { day_of_week: 5, grade_groups: ['4'], start_time: null, end_time: null, duration_minutes: 60, venue: null, skills: ['Choral'],     instructor_index: null, sort_order: 30 },
+      { day_of_week: 5, grade_groups: ['5'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Brass'],      instructor_index: null, sort_order: 31 },
+      { day_of_week: 5, grade_groups: ['5'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Percussion'], instructor_index: null, sort_order: 32 },
+      { day_of_week: 5, grade_groups: ['6'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Strings'],    instructor_index: null, sort_order: 33 },
+      { day_of_week: 5, grade_groups: ['6'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Piano'],      instructor_index: null, sort_order: 34 },
+      { day_of_week: 5, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 60, venue: null, skills: ['Woodwinds'],  instructor_index: null, sort_order: 35 },
+      { day_of_week: 5, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Choral'],     instructor_index: null, sort_order: 36 },
     ];
 
     const { data: templatesData, error: templatesError } = await sb.from('session_templates').insert(
@@ -176,8 +189,9 @@ export async function POST() {
         start_time: t.start_time,
         end_time: t.end_time,
         duration_minutes: t.duration_minutes,
-        venue_id: venueMap[t.venue],
+        venue_id: t.venue ? venueMap[t.venue] : null,
         required_skills: t.skills,
+        instructor_id: t.instructor_index !== null ? instIds[t.instructor_index] : null,
         sort_order: t.sort_order,
         is_active: true,
       }))
