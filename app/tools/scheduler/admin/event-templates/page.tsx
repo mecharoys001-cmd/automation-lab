@@ -688,37 +688,6 @@ export default function EventTemplatesPage() {
                     Filtered by {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label} {form.start_time}–{form.end_time}
                   </span>
                 )}
-                {selectedInstructorTimeBlocks && selectedInstructorTimeBlocks.length > 0 && (
-                  <div style={{
-                    marginTop: 8,
-                    padding: 10,
-                    backgroundColor: '#F0F9FF',
-                    borderRadius: 6,
-                    border: '1px solid #BFDBFE',
-                  }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#1E40AF', marginBottom: 6 }}>
-                      Available on {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label}:
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {selectedInstructorTimeBlocks.map((block, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 500,
-                            color: '#1E40AF',
-                            backgroundColor: '#DBEAFE',
-                            padding: '3px 8px',
-                            borderRadius: 4,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {formatTime(block.start)} – {formatTime(block.end)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </FormField>
               <FormField label="Venue">
                 <select
@@ -783,6 +752,38 @@ export default function EventTemplatesPage() {
                 />
               </FormField>
             </div>
+
+            {/* Instructor Time Availability */}
+            {selectedInstructorTimeBlocks && selectedInstructorTimeBlocks.length > 0 && (
+              <div style={{
+                padding: 12,
+                backgroundColor: '#F0F9FF',
+                borderRadius: 8,
+                border: '1px solid #BFDBFE',
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#1E40AF', marginBottom: 8 }}>
+                  Instructor available on {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label}:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {selectedInstructorTimeBlocks.map((block, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: '#1E40AF',
+                        backgroundColor: '#DBEAFE',
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {formatTime(block.start)} – {formatTime(block.end)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Grade Groups */}
             <FormField label="Grade Groups">
