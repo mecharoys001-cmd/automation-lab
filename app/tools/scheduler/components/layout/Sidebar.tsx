@@ -94,10 +94,11 @@ export function Sidebar({
 
   const isActive = (href: string) => {
     const fullHref = `${basePath}${href}`;
-    // Exact match for the base admin path (empty href = root)
-    if (href === '') {
+    // Exact match for empty href or root-level routes
+    if (href === '' || href === '/admin') {
       return pathname === fullHref;
     }
+    // Prefix match for other routes
     return pathname.startsWith(fullHref);
   };
 
