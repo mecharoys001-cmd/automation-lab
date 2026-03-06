@@ -420,6 +420,23 @@ export default function EventTemplatesPage() {
     return DAYS_OF_WEEK.map((d) => ({ ...d, available: availDays.includes(d.value) }));
   }, [instructors, form.instructor_id]);
 
+  /** Get time blocks for selected instructor on selected day */
+  const selectedInstructorTimeBlocks = useMemo(() => {
+    if (!form.instructor_id) return null;
+    const inst = instructors.find((i) => i.id === form.instructor_id);
+    if (!inst || !inst.availability_json) return null;
+    
+    const availability = parseAvailability(inst.availability_json);
+    if (!availability) return null;
+    
+    const dayName = DAY_NUM_TO_NAME[form.day_of_week];
+    const blocks = availability[dayName];
+    
+    if (!blocks || blocks.length === 0) return null;
+    
+    return blocks;
+  }, [instructors, form.instructor_id, form.day_of_week]);
+
   /** Selected venue info for capacity hint */
   const selectedVenue = useMemo(() => {
     if (!form.venue_id) return null;
@@ -670,6 +687,37 @@ export default function EventTemplatesPage() {
                     <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
                     Filtered by {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label} {form.start_time}–{form.end_time}
                   </span>
+                )}
+                {selectedInstructorTimeBlocks && selectedInstructorTimeBlocks.length > 0 && (
+                  <div style={{
+                    marginTop: 8,
+                    padding: 10,
+                    backgroundColor: '#F0F9FF',
+                    borderRadius: 6,
+                    border: '1px solid #BFDBFE',
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#1E40AF', marginBottom: 6 }}>
+                      Available on {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label}:
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {selectedInstructorTimeBlocks.map((block, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 500,
+                            color: '#1E40AF',
+                            backgroundColor: '#DBEAFE',
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {formatTime(block.start)} – {formatTime(block.end)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </FormField>
               <FormField label="Venue">
