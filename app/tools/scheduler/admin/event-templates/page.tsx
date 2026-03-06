@@ -424,15 +424,37 @@ export default function EventTemplatesPage() {
   const selectedInstructorTimeBlocks = useMemo(() => {
     if (!form.instructor_id) return null;
     const inst = instructors.find((i) => i.id === form.instructor_id);
-    if (!inst || !inst.availability_json) return null;
+    if (!inst) {
+      console.log('[EventTemplates] No instructor found for id:', form.instructor_id);
+      return null;
+    }
+    
+    console.log('[EventTemplates] Instructor:', inst.first_name, inst.last_name);
+    console.log('[EventTemplates] availability_json:', inst.availability_json);
+    
+    if (!inst.availability_json) {
+      console.log('[EventTemplates] No availability_json on instructor');
+      return null;
+    }
     
     const availability = parseAvailability(inst.availability_json);
-    if (!availability) return null;
+    console.log('[EventTemplates] Parsed availability:', availability);
+    
+    if (!availability) {
+      console.log('[EventTemplates] Failed to parse availability');
+      return null;
+    }
     
     const dayName = DAY_NUM_TO_NAME[form.day_of_week];
-    const blocks = availability[dayName];
+    console.log('[EventTemplates] Looking for day:', dayName, '(day_of_week:', form.day_of_week, ')');
     
-    if (!blocks || blocks.length === 0) return null;
+    const blocks = availability[dayName];
+    console.log('[EventTemplates] Blocks for', dayName, ':', blocks);
+    
+    if (!blocks || blocks.length === 0) {
+      console.log('[EventTemplates] No blocks found or empty array');
+      return null;
+    }
     
     return blocks;
   }, [instructors, form.instructor_id, form.day_of_week]);
