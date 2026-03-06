@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button';
 interface ImportResults {
   venues?: { created: number; skipped: number };
   tags?: { created: number; skipped: number };
-  classes?: { created: number; skipped: number };
+  event_templates?: { created: number; skipped: number };
 }
 
 export default function ImportPage() {
@@ -33,18 +33,18 @@ export default function ImportPage() {
       { name: 'Field Trip / Guest Artist', emoji: '🎭', description: 'Field trips or guest artist visits' },
       { name: 'Showcase', emoji: '🌟', description: 'Student showcase performances' },
       { name: 'Choral Sessions', emoji: '🎤', description: 'Vocal and choir training' },
-      { name: 'Percussion Sessions', emoji: '🥁', description: 'Drumming and percussion classes' },
+      { name: 'Percussion Sessions', emoji: '🥁', description: 'Drumming and percussion sessions' },
     ],
-    classes: [
-      { name: 'Grade K Music', description: 'Kindergarten music class', duration_minutes: 30, color: '#3B82F6' },
-      { name: 'Grade 1 Music', description: 'Grade 1 music class', duration_minutes: 30, color: '#10B981' },
-      { name: 'Grade 2 Music', description: 'Grade 2 music class', duration_minutes: 30, color: '#8B5CF6' },
-      { name: 'Grade 3 Music', description: 'Grade 3 music class', duration_minutes: 40, color: '#EC4899' },
-      { name: 'Grade 4 Music', description: 'Grade 4 music class', duration_minutes: 40, color: '#F59E0B' },
-      { name: 'Grade 5 Music', description: 'Grade 5 music class', duration_minutes: 45, color: '#EF4444' },
-      { name: 'Grade 6 Music', description: 'Grade 6 music class', duration_minutes: 45, color: '#14B8A6' },
-      { name: 'Grade 7 Music', description: 'Grade 7 music class', duration_minutes: 45, color: '#6366F1' },
-      { name: 'Grade 8 Music', description: 'Grade 8 music class', duration_minutes: 45, color: '#F97316' },
+    event_templates: [
+      { name: 'Grade K Music', description: 'Kindergarten music session', duration_minutes: 30, color: '#3B82F6' },
+      { name: 'Grade 1 Music', description: 'Grade 1 music session', duration_minutes: 30, color: '#10B981' },
+      { name: 'Grade 2 Music', description: 'Grade 2 music session', duration_minutes: 30, color: '#8B5CF6' },
+      { name: 'Grade 3 Music', description: 'Grade 3 music session', duration_minutes: 40, color: '#EC4899' },
+      { name: 'Grade 4 Music', description: 'Grade 4 music session', duration_minutes: 40, color: '#F59E0B' },
+      { name: 'Grade 5 Music', description: 'Grade 5 music session', duration_minutes: 45, color: '#EF4444' },
+      { name: 'Grade 6 Music', description: 'Grade 6 music session', duration_minutes: 45, color: '#14B8A6' },
+      { name: 'Grade 7 Music', description: 'Grade 7 music session', duration_minutes: 45, color: '#6366F1' },
+      { name: 'Grade 8 Music', description: 'Grade 8 music session', duration_minutes: 45, color: '#F97316' },
     ],
   };
 
@@ -109,10 +109,10 @@ export default function ImportPage() {
             <ul style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6, paddingLeft: 20 }}>
               <li><strong>8 Venues:</strong> Stage, Classroom, Google Meet, Grade 5 & 7 classrooms, Cafegymatorium, etc.</li>
               <li><strong>6 Tags:</strong> Lead TA's Away, TA Check-ins, Field Trip / Guest Artist, Showcase, Choral Sessions, Percussion Sessions</li>
-              <li><strong>9 Classes:</strong> Music classes for grades K-8 with appropriate durations</li>
+              <li><strong>9 Event Templates:</strong> Music sessions for grades K-8 with appropriate durations</li>
             </ul>
             <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>
-              ⚠️ This will create new venues, tags, and classes. Existing items with the same names will be skipped.
+              ⚠️ This will create new venues, tags, and event templates. Existing items with the same names will be skipped.
             </p>
           </div>
 
@@ -178,9 +178,9 @@ export default function ImportPage() {
                   <strong>Tags:</strong> {results.tags.created} created, {results.tags.skipped} skipped
                 </div>
               )}
-              {results.classes && (
+              {results.event_templates && (
                 <div style={{ fontSize: 14, color: '#64748B' }}>
-                  <strong>Classes:</strong> {results.classes.created} created, {results.classes.skipped} skipped
+                  <strong>Event Templates:</strong> {results.event_templates.created} created, {results.event_templates.skipped} skipped
                 </div>
               )}
             </div>
@@ -256,7 +256,7 @@ export default function ImportPage() {
             </div>
           </div>
 
-          {/* Classes Preview */}
+          {/* Event Templates Preview */}
           <div
             style={{
               backgroundColor: '#FFFFFF',
@@ -266,10 +266,10 @@ export default function ImportPage() {
             }}
           >
             <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0F172A', marginBottom: 12 }}>
-              Classes ({seedData.classes.length})
+              Event Templates ({seedData.event_templates.length})
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {seedData.classes.map((cls, idx) => (
+              {seedData.event_templates.map((cls, idx) => (
                 <div key={idx} style={{ fontSize: 13, color: '#64748B', paddingLeft: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div
                     style={{

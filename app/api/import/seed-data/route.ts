@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const results: {
       venues?: { created: number; skipped: number };
       tags?: { created: number; skipped: number };
-      classes?: { created: number; skipped: number };
+      event_templates?: { created: number; skipped: number };
     } = {};
 
     // Import Venues
@@ -91,13 +91,13 @@ export async function POST(request: NextRequest) {
       results.tags = { created: tagsCreated, skipped: tagsSkipped };
     }
 
-    // Import Classes
-    if (body.classes && Array.isArray(body.classes)) {
-      let classesCreated = 0;
-      let classesSkipped = 0;
+    // Import Event Templates
+    if (body.event_templates && Array.isArray(body.event_templates)) {
+      let templatesCreated = 0;
+      let templatesSkipped = 0;
 
-      for (const cls of body.classes) {
-        // Check if class already exists
+      for (const cls of body.event_templates) {
+        // Check if event template already exists
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: existing } = await (supabase.from('classes') as any)
           .select('id')
@@ -105,11 +105,11 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (existing) {
-          classesSkipped++;
+          templatesSkipped++;
           continue;
         }
 
-        // Create class
+        // Create event template
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase.from('classes') as any)
           .insert({
@@ -120,14 +120,14 @@ export async function POST(request: NextRequest) {
           });
 
         if (error) {
-          console.error(`Failed to create class ${cls.name}:`, error);
-          classesSkipped++;
+          console.error(`Failed to create event template ${cls.name}:`, error);
+          templatesSkipped++;
         } else {
-          classesCreated++;
+          templatesCreated++;
         }
       }
 
-      results.classes = { created: classesCreated, skipped: classesSkipped };
+      results.event_templates = { created: templatesCreated, skipped: templatesSkipped };
     }
 
     return NextResponse.json({ success: true, results });

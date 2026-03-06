@@ -25,14 +25,14 @@ import {
 const adminNavItems = [
   { href: '/admin', label: 'Calendar', icon: LayoutDashboard, tooltip: 'View and manage the session calendar' },
   { href: '/admin/templates', label: 'Schedule Builder', icon: FileText, tooltip: 'Build weekly schedule templates and configure day times' },
-  { href: '/admin/classes', label: 'Classes', icon: GraduationCap, tooltip: 'Create and manage class templates for scheduling' },
+  { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Create and manage event templates for scheduling' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
   { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Manage instructors, their availability, and venue spaces' },
   { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'View and manage school calendar and special dates' },
   { href: '/admin/exceptions', label: 'Exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'View usage reports and export data' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Save, publish, and revert schedule versions' },
-  { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import venues, tags, and classes from CSV data' },
+  { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import venues, tags, and event templates from CSV data' },
   { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Configure programs, admins, and system settings' },
   { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Manage user roles and access levels' },
 ];
