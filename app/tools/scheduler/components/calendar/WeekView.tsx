@@ -457,6 +457,8 @@ export function WeekView({
   const navigate = useCallback((delta: number) => {
     const next = new Date(viewDate);
     next.setDate(next.getDate() + delta * 7);
+    // eslint-disable-next-line no-console
+    console.log('[WeekView] navigate called:', { delta, viewDate, next, hasOnDateChange: !!onDateChange });
     setViewDate(next);
     onDateChange?.(next);
   }, [viewDate, onDateChange]);

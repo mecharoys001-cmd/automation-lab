@@ -498,6 +498,11 @@ export default function CalendarDashboardPage() {
 function CalendarDashboard() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  
+  // Debug: log when selectedDate changes
+  useEffect(() => {
+    console.log('[Admin] selectedDate changed:', selectedDate);
+  }, [selectedDate]);
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [contextMenu, setContextMenu] = useState<{
     event: CalendarEvent;
@@ -887,6 +892,7 @@ function CalendarDashboard() {
 
     try {
       const { start_date, end_date } = getFetchDateRange();
+      console.log('[Admin] Fetching sessions:', { currentView, selectedDate, start_date, end_date });
 
       const params = new URLSearchParams({
         program_id: selectedProgramId,
