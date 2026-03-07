@@ -498,11 +498,6 @@ export default function CalendarDashboardPage() {
 function CalendarDashboard() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  
-  // Debug: log when selectedDate changes
-  useEffect(() => {
-    console.log('[Admin] selectedDate changed:', selectedDate);
-  }, [selectedDate]);
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [contextMenu, setContextMenu] = useState<{
     event: CalendarEvent;
@@ -892,8 +887,6 @@ function CalendarDashboard() {
 
     try {
       const { start_date, end_date } = getFetchDateRange();
-      console.log('[Admin] Fetching sessions:', { currentView, selectedDate, start_date, end_date });
-
       const params = new URLSearchParams({
         program_id: selectedProgramId,
         start_date,
@@ -932,7 +925,6 @@ function CalendarDashboard() {
         const venueBody = await venueRes.json();
         if (Array.isArray(venueBody.venues)) {
           const mappedVenues = venueBody.venues.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name }));
-          console.log('[Admin] Fetched venues from API:', mappedVenues);
           setDbVenues(mappedVenues);
         }
       } else {
@@ -1335,6 +1327,8 @@ function CalendarDashboard() {
         <YearView
           events={filteredEvents}
           venues={dbVenues}
+          currentDate={selectedDate}
+          onDateChange={setSelectedDate}
           schoolCalendar={schoolCalendar}
           onTodayClick={() => setCurrentView('week')}
           onOpenEditPanel={openPanel}

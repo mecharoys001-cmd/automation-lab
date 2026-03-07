@@ -19,6 +19,8 @@ interface YearViewProps {
   events: CalendarEvent[];
   /** All venues from database (shows empty venues too). Falls back to deriving from events. */
   venues?: Array<{ id: string; name: string }>;
+  currentDate?: Date;
+  onDateChange?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
   onDayClick?: (date: Date) => void;
   onTodayClick?: () => void;
@@ -384,6 +386,8 @@ function MonthGrid({
 export function YearView({
   events,
   venues: venuesProp,
+  currentDate,
+  onDateChange,
   onEventClick,
   onDayClick,
   onTodayClick,
@@ -627,6 +631,11 @@ export function YearView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleDayClick = useCallback((date: Date) => {
+    onDateChange?.(date);
+    onDayClick?.(date);
+  }, [onDateChange, onDayClick]);
+
   const scrollToToday = useCallback(() => {
     if (todayRef.current) {
       todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -678,7 +687,7 @@ export function YearView({
                   onEventHover={showPopover}
                   onEventLeave={hidePopover}
                   onEventClick={handleEventClick}
-                  onDayClick={onDayClick}
+                  onDayClick={handleDayClick}
                 />
               </div>
             );

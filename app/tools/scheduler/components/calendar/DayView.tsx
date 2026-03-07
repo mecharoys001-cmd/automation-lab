@@ -198,6 +198,11 @@ export function DayView({
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
 
+  // Sync viewDate when parent changes currentDate externally
+  useEffect(() => {
+    if (currentDate) setViewDate(currentDate);
+  }, [currentDate]);
+
   // Use DB venues if provided, otherwise derive from event data
   const allVenues: VenueOption[] = useMemo(() => {
     if (venuesProp && venuesProp.length > 0) {

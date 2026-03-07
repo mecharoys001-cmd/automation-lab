@@ -158,6 +158,12 @@ export function MonthView({
     () => currentDate ?? new Date(),
   );
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+
+  // Sync viewDate when parent changes currentDate externally
+  useEffect(() => {
+    if (currentDate) setViewDate(currentDate);
+  }, [currentDate]);
+
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 

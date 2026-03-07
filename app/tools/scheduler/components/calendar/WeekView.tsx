@@ -294,13 +294,15 @@ export function WeekView({
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
 
+  // Sync viewDate when parent changes currentDate externally
+  useEffect(() => {
+    if (currentDate) setViewDate(currentDate);
+  }, [currentDate]);
+
   // Use DB venues if provided, otherwise derive from event data
   const allVenues: VenueOption[] = useMemo(() => {
     if (venuesProp && venuesProp.length > 0) {
-      const mapped = venuesProp.map((v) => ({ id: v.name, name: v.name }));
-      // eslint-disable-next-line no-console
-      console.log('[WeekView] Using DB venues:', mapped);
-      return mapped;
+      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
     }
     const seen = new Map<string, string>();
     for (const event of events) {
@@ -308,19 +310,13 @@ export function WeekView({
         seen.set(event.venue, event.venue);
       }
     }
-    const derived = Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
-    // eslint-disable-next-line no-console
-    console.log('[WeekView] Derived venues from events:', derived);
-    return derived;
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [venuesProp, events]);
 
   // Always sync selectedVenues to include all available venues on view/data change
   useEffect(() => {
     if (allVenues.length > 0) {
-      const allVenueIds = allVenues.map((v) => v.id);
-      // eslint-disable-next-line no-console
-      console.log('[WeekView] Auto-selecting venues:', { allVenues: allVenues.map(v => v.name), allVenueIds });
-      setSelectedVenues(allVenueIds);
+      setSelectedVenues(allVenues.map((v) => v.id));
     }
   }, [allVenues]);
 
@@ -431,19 +427,6 @@ export function WeekView({
       if (!map[event.date]) map[event.date] = [];
       map[event.date].push(event);
     }
-    // Debug: show total events, week range, and how many matched this week
-    const weekEnd = weekDateKeys[weekDateKeys.length - 1];
-    const matchedCount = weekDateKeys.reduce((sum, key) => sum + (map[key]?.length ?? 0), 0);
-    // eslint-disable-next-line no-console
-    console.log('[WeekView] Received', events.length, 'events, showing week', weekDateKeys[0], 'to', weekEnd, 'matched:', matchedCount);
-    if (events.length > 0 && matchedCount === 0) {
-      const sampleDates = [...new Set(events.slice(0, 10).map(e => e.date))];
-      const sampleEvents = events.slice(0, 3).map(e => ({ id: e.id, date: e.date, venue: e.venue, title: e.title }));
-      // eslint-disable-next-line no-console
-      console.log('[WeekView] Sample event dates:', sampleDates, '— none match week keys:', weekDateKeys);
-      // eslint-disable-next-line no-console
-      console.log('[WeekView] Sample events:', sampleEvents);
-    }
     return map;
   }, [events, weekDateKeys]);
 
@@ -457,8 +440,6 @@ export function WeekView({
   const navigate = useCallback((delta: number) => {
     const next = new Date(viewDate);
     next.setDate(next.getDate() + delta * 7);
-    // eslint-disable-next-line no-console
-    console.log('[WeekView] navigate called:', { delta, viewDate, next, hasOnDateChange: !!onDateChange });
     setViewDate(next);
     onDateChange?.(next);
   }, [viewDate, onDateChange]);
