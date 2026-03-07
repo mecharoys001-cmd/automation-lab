@@ -297,7 +297,10 @@ export function WeekView({
   // Use DB venues if provided, otherwise derive from event data
   const allVenues: VenueOption[] = useMemo(() => {
     if (venuesProp && venuesProp.length > 0) {
-      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
+      const mapped = venuesProp.map((v) => ({ id: v.name, name: v.name }));
+      // eslint-disable-next-line no-console
+      console.log('[WeekView] Using DB venues:', mapped);
+      return mapped;
     }
     const seen = new Map<string, string>();
     for (const event of events) {
@@ -305,7 +308,10 @@ export function WeekView({
         seen.set(event.venue, event.venue);
       }
     }
-    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+    const derived = Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+    // eslint-disable-next-line no-console
+    console.log('[WeekView] Derived venues from events:', derived);
+    return derived;
   }, [venuesProp, events]);
 
   // Always sync selectedVenues to include all available venues on view/data change

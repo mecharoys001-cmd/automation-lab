@@ -925,8 +925,12 @@ function CalendarDashboard() {
       if (venueRes.ok) {
         const venueBody = await venueRes.json();
         if (Array.isArray(venueBody.venues)) {
-          setDbVenues(venueBody.venues.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name })));
+          const mappedVenues = venueBody.venues.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name }));
+          console.log('[Admin] Fetched venues from API:', mappedVenues);
+          setDbVenues(mappedVenues);
         }
+      } else {
+        console.warn('[Admin] Failed to fetch venues:', venueRes.status, venueRes.statusText);
       }
     } catch (err) {
       console.error('[fetchSessions]', err);
