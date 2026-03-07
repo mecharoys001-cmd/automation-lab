@@ -453,7 +453,7 @@ export function MonthView({
                               {venueAbbrev(venueId)}
                             </div>
                             <div className="space-y-0.5">
-                              {laneEvents.map((event) => (
+                              {laneEvents.slice(0, 2).map((event) => (
                                 <EventChip
                                   key={event.id}
                                   event={event}
@@ -462,6 +462,11 @@ export function MonthView({
                                   onClick={handleEventClick}
                                 />
                               ))}
+                              {laneEvents.length > 2 && (
+                                <div className="text-[8px] text-slate-400 text-center">
+                                  +{laneEvents.length - 2}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -469,7 +474,7 @@ export function MonthView({
                     </div>
                   ) : (
                     <div className="space-y-0.5">
-                      {dayEvents.map((event) => (
+                      {dayEvents.slice(0, 3).map((event) => (
                         <EventChip
                           key={event.id}
                           event={event}
@@ -478,6 +483,14 @@ export function MonthView({
                           onClick={handleEventClick}
                         />
                       ))}
+                      {dayEvents.length > 3 && (
+                        <button
+                          className="w-full text-[10px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
+                          onClick={(e) => { e.stopPropagation(); onDayClick?.(date); }}
+                        >
+                          +{dayEvents.length - 3} more
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

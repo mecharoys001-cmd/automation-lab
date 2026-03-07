@@ -343,7 +343,7 @@ function MonthGrid({
                             {venueAbbrev(venueId)}
                           </div>
                           <div className="space-y-0.5">
-                            {laneEvents.map((event) => (
+                            {laneEvents.slice(0, 1).map((event) => (
                               <EventChip
                                 key={event.id}
                                 event={event}
@@ -352,6 +352,11 @@ function MonthGrid({
                                 onClick={onEventClick}
                               />
                             ))}
+                            {laneEvents.length > 1 && (
+                              <div className="text-[7px] text-slate-400 text-center">
+                                +{laneEvents.length - 1}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -359,7 +364,7 @@ function MonthGrid({
                   </div>
                 ) : (
                   <div className="space-y-0.5">
-                    {dayEvents.map((event) => (
+                    {dayEvents.slice(0, 2).map((event) => (
                       <EventChip
                         key={event.id}
                         event={event}
@@ -368,6 +373,11 @@ function MonthGrid({
                         onClick={onEventClick}
                       />
                     ))}
+                    {dayEvents.length > 2 && (
+                      <div className="text-[8px] text-slate-400 text-center leading-tight">
+                        +{dayEvents.length - 2}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
