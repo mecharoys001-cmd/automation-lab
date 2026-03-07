@@ -212,7 +212,10 @@ export async function runScheduler(
   const templatesByDay = new Map<number, SessionTemplate[]>();
   for (const tmpl of validTemplates) {
     const placement = placementMap.get(tmpl.id);
-    const effectiveDay = placement ? placement.day_index : tmpl.day_of_week;
+    // Convert from template/placement convention (0=Mon…4=Fri) to JS Date.getDay()
+    // convention (1=Mon…5=Fri) so datesForDayOfWeek, dayIndexToName, availability
+    // checks, and blackout lookups all use the correct day.
+    const effectiveDay = (placement ? placement.day_index : tmpl.day_of_week) + 1;
     const group = templatesByDay.get(effectiveDay) ?? [];
     group.push(tmpl);
     templatesByDay.set(effectiveDay, group);
