@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { Button } from '../ui/Button';
 import type { CalendarEvent } from './types';
 import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
+import { getSubjectColor } from '../../lib/subjectColors';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { TimeRangeSelector } from './TimeRangeSelector';
@@ -109,7 +110,10 @@ function DayEventBlock({
   onClick: (event: CalendarEvent, el: HTMLElement) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const colors = EVENT_COLORS[event.type];
+  const subjectColor = event.subjects?.[0] ? getSubjectColor(event.subjects[0]) : null;
+  const colors = subjectColor
+    ? { accent: subjectColor.accent, bg: subjectColor.eventBg, text: subjectColor.eventText }
+    : EVENT_COLORS[event.type] ?? { accent: '#64748B', bg: '#F8FAFC', text: '#334155' };
   const startHour = parseTimeToHour(event.time);
   const endHour = event.endTime ? parseTimeToHour(event.endTime) : startHour + 1;
   const duration = Math.max(endHour - startHour, 0.5);
@@ -118,7 +122,7 @@ function DayEventBlock({
   const height = duration * HOUR_HEIGHT - 4;
   const isCompact = height < 32; // ≤30min events: single-line display
 
-  const blockTooltip = `${event.title} — ${event.time}${event.endTime ? ` – ${event.endTime}` : ''}${event.instructor ? ` · ${event.instructor}` : ''} (${EVENT_TYPE_LABELS[event.type]})`;
+  const blockTooltip = `${event.title} — ${event.time}${event.endTime ? ` – ${event.endTime}` : ''}${event.instructor ? ` · ${event.instructor}` : ''}${event.venue ? ` · ${event.venue}` : ''} (${EVENT_TYPE_LABELS[event.type]})`;
 
   return (
     <Tooltip text={blockTooltip}>
@@ -208,12 +212,13 @@ export function DayView({
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [venuesProp, events]);
 
-  // Auto-select all venues when venue list changes and nothing is selected
-  useMemo(() => {
-    if (selectedVenues.length === 0 && allVenues.length > 0) {
-      setSelectedVenues(allVenues.map((v) => v.id));
+  // Always sync selectedVenues to include all available venues on view/data change
+  useEffect(() => {
+    if (allVenues.length > 0) {
+      const allVenueIds = allVenues.map((v) => v.id);
+      setSelectedVenues(allVenueIds);
     }
-  }, [allVenues]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allVenues]);
 
   const multiLane = selectedVenues.length > 1;
 
