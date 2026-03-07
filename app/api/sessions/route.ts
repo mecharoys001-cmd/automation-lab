@@ -63,69 +63,59 @@ export async function GET(request: NextRequest) {
       instructorId = (instructor as { id: string }).id;
     }
 
-    // Build query with relations via Supabase's PostgREST syntax
+    // Build query with relations via Supabase's PostgREST syntax.
+    // Supabase enforces a server-side max_rows (default 1000) that cannot
+    // be overridden by the client .limit(). We paginate with .range() to
+    // fetch all matching rows regardless of the server cap.
+
+    function buildQuery() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase.from('sessions') as any)
+        .select(`
+          *,
+          instructor:instructors(*),
+          venue:venues(*),
+          template:session_templates(*),
+          session_tags(tag:tags(*))
+        `)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      if (programId && programId !== 'all') q = q.eq('program_id', programId);
+      if (instructorId) q = q.eq('instructor_id', instructorId);
+      if (date) q = q.eq('date', date);
+      if (startDate && endDate) q = q.gte('date', startDate).lte('date', endDate);
+      if (statusFilter) q = q.eq('status', statusFilter);
+      if (excludeStatus) q = q.neq('status', excludeStatus);
+      if (excludeId) q = q.neq('id', excludeId);
+      if (templateId) q = q.eq('template_id', templateId);
+      if (instructorIdParam === 'null') q = q.is('instructor_id', null);
+      else if (instructorIdParam) q = q.eq('instructor_id', instructorIdParam);
+      return q;
+    }
+
+    // Paginate to bypass Supabase max_rows cap (typically 1000)
+    const PAGE_SIZE = 1000;
+    const MAX_ROWS = 50000; // safety cap
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase.from('sessions') as any)
-      .select(`
-        *,
-        instructor:instructors(*),
-        venue:venues(*),
-        template:session_templates(*),
-        session_tags(tag:tags(*))
-      `)
-      .order('date', { ascending: true })
-      .order('start_time', { ascending: true })
-      .limit(50000); // Override Supabase default (1000); date-range filtering keeps actual result sets small
+    const result: any[] = [];
+    let offset = 0;
 
-    if (programId && programId !== 'all') {
-      query = query.eq('program_id', programId);
+    while (offset < MAX_ROWS) {
+      const { data: page, error: pageError } = await buildQuery().range(offset, offset + PAGE_SIZE - 1);
+
+      if (pageError) {
+        return NextResponse.json(
+          { error: `Failed to fetch sessions: ${pageError.message}` },
+          { status: 500 }
+        );
+      }
+
+      if (!page || page.length === 0) break;
+      result.push(...page);
+      if (page.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
-
-    if (instructorId) {
-      query = query.eq('instructor_id', instructorId);
-    }
-
-    if (date) {
-      query = query.eq('date', date);
-    }
-
-    // Date range filtering (start_date/end_date take precedence over exact date)
-    if (startDate && endDate) {
-      query = query.gte('date', startDate).lte('date', endDate);
-    }
-
-    if (statusFilter) {
-      query = query.eq('status', statusFilter);
-    }
-
-    if (excludeStatus) {
-      query = query.neq('status', excludeStatus);
-    }
-
-    if (excludeId) {
-      query = query.neq('id', excludeId);
-    }
-
-    if (templateId) {
-      query = query.eq('template_id', templateId);
-    }
-
-    if (instructorIdParam === 'null') {
-      query = query.is('instructor_id', null);
-    } else if (instructorIdParam) {
-      query = query.eq('instructor_id', instructorIdParam);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json(
-        { error: `Failed to fetch sessions: ${error.message}` },
-        { status: 500 }
-      );
-    }
-
-    const result = data ?? [];
 
     // Flatten the session_tags junction into a tags array
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
