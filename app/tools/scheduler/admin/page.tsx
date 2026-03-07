@@ -1257,6 +1257,8 @@ function CalendarDashboard() {
             <WeekView
               events={filteredEvents}
               venues={dbVenues}
+              currentDate={selectedDate}
+              onDateChange={setSelectedDate}
               onEventClick={handleEditEvent}
               onEventContextMenu={handleEventContextMenu}
               onOpenEditPanel={openPanel}
@@ -1292,6 +1294,7 @@ function CalendarDashboard() {
             events={filteredEvents}
             venues={dbVenues}
             currentDate={selectedDate}
+            onDateChange={setSelectedDate}
             onBackToMonth={() => setCurrentView('month')}
             conflicts={1}
             onOpenEditPanel={openPanel}
@@ -1312,6 +1315,8 @@ function CalendarDashboard() {
         <MonthView
           events={filteredEvents}
           venues={dbVenues}
+          currentDate={selectedDate}
+          onDateChange={setSelectedDate}
           schoolCalendar={schoolCalendar}
           onDayClick={handleDayClick}
           onOpenEditPanel={openPanel}
