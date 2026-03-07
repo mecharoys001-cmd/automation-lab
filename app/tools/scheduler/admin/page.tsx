@@ -497,7 +497,7 @@ export default function CalendarDashboardPage() {
 
 function CalendarDashboard() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [contextMenu, setContextMenu] = useState<{
     event: CalendarEvent;
@@ -841,10 +841,10 @@ function CalendarDashboard() {
   }, [events]);
 
   // Compute the date range to fetch from the API based on the current view.
-  // Includes a buffer around the visible window so nearby navigation doesn't
-  // trigger an extra round-trip.
-  const getFetchDateRange = useCallback((): { start_date: string; end_date: string } => {
-    const anchor = selectedDate ?? new Date();
+  // Plain function — not memoized — to avoid creating extra callback identities
+  // that trigger redundant fetches.
+  function getFetchDateRange(): { start_date: string; end_date: string } {
+    const anchor = selectedDate;
     const fmt = (d: Date) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -877,11 +877,13 @@ function CalendarDashboard() {
         return { start_date: fmt(start), end_date: fmt(end) };
       }
     }
-  }, [currentView, selectedDate]);
+  }
 
   // Fetch sessions for the visible date range (with buffer) instead of the
   // entire year.  This avoids hitting row limits and keeps payloads small.
-  const fetchSessions = useCallback(async () => {
+  // Uses direct deps instead of memoized getFetchDateRange to prevent
+  // callback-identity churn from triggering redundant fetches.
+  const fetchSessions = useCallback(async (signal?: AbortSignal) => {
     if (useMockData) return;
     if (!selectedProgramId) return;
 
@@ -893,7 +895,7 @@ function CalendarDashboard() {
         end_date,
       });
 
-      const res = await fetch(`/api/sessions?${params.toString()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/sessions?${params.toString()}`, { cache: 'no-store', signal });
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -908,7 +910,7 @@ function CalendarDashboard() {
 
       // Fetch school calendar data
       const calParams = new URLSearchParams({ program_id: selectedProgramId });
-      const calRes = await fetch(`/api/calendar?${calParams.toString()}`, { cache: 'no-store' });
+      const calRes = await fetch(`/api/calendar?${calParams.toString()}`, { cache: 'no-store', signal });
 
       if (calRes.ok) {
         const calBody = await calRes.json();
@@ -919,7 +921,7 @@ function CalendarDashboard() {
 
       // Fetch all venues from DB (includes empty venues with no events).
       // Don't filter by program_id — venues are physical spaces shared across programs.
-      const venueRes = await fetch('/api/venues', { cache: 'no-store' });
+      const venueRes = await fetch('/api/venues', { cache: 'no-store', signal });
 
       if (venueRes.ok) {
         const venueBody = await venueRes.json();
@@ -931,14 +933,19 @@ function CalendarDashboard() {
         console.warn('[Admin] Failed to fetch venues:', venueRes.status, venueRes.statusText);
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('[fetchSessions]', err);
       showToast('Failed to load sessions — check console for details', 'error');
     }
-  }, [selectedProgramId, useMockData, getFetchDateRange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProgramId, useMockData, currentView, selectedDate]);
 
-  // Fetch sessions from DB on page load and when program changes
+  // Fetch sessions from DB on page load and when program/view/date changes.
+  // AbortController cancels stale in-flight requests so the last fetch wins.
   useEffect(() => {
-    fetchSessions();
+    const controller = new AbortController();
+    fetchSessions(controller.signal);
+    return () => controller.abort();
   }, [fetchSessions]);
 
   // Auto-generate draft schedule — first shows preview, then confirms
@@ -953,7 +960,7 @@ function CalendarDashboard() {
     }
     setIsGenerating(true);
     try {
-      const anchor = selectedDate ?? new Date();
+      const anchor = selectedDate;
       const year = anchor.getFullYear();
       const payload = { program_id: selectedProgramId, year };
 
@@ -991,7 +998,7 @@ function CalendarDashboard() {
     if (!selectedProgramId) return;
     setIsConfirmingGenerate(true);
     try {
-      const anchor = selectedDate ?? new Date();
+      const anchor = selectedDate;
       const year = anchor.getFullYear();
       const payload = { program_id: selectedProgramId, year };
 
