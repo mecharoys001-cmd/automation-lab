@@ -54,6 +54,10 @@ export interface SchedulerResult {
   summary: string;
   /** Error message if success=false */
   error?: string;
+  /** Preview statistics: session counts by venue name */
+  byVenue?: Record<string, number>;
+  /** Preview statistics: session counts by week start date */
+  byWeek?: Record<string, number>;
 }
 
 /** Per-template statistics */

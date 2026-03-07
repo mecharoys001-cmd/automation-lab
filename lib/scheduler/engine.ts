@@ -48,6 +48,8 @@ import {
   timeToMinutes,
   dayIndexToName,
   weeksSinceStart,
+  parseDate,
+  formatDate,
 } from './utils';
 import {
   findInstructorForTaggedSlot,
@@ -121,10 +123,10 @@ export async function runScheduler(
     placementMap.set(p.template_id, p);
   }
 
-  // Derive full-year date range: explicit year param or program start year
-  const year = yearOverride ?? new Date(program.start_date + 'T00:00:00').getFullYear();
-  const yearStartDate = `${year}-01-01`;
-  const yearEndDate = `${year}-12-31`;
+  // Use program date range for session generation.
+  // If a year override is provided, use Jan 1 – Dec 31 of that year instead.
+  const rangeStartDate = yearOverride ? `${yearOverride}-01-01` : program.start_date;
+  const rangeEndDate = yearOverride ? `${yearOverride}-12-31` : program.end_date;
 
   // ----------------------------------------------------------
   // 1b. Load global buffer time settings
@@ -217,8 +219,8 @@ export async function runScheduler(
   }
 
   for (const [dayOfWeek, dayTemplates] of templatesByDay) {
-    // Generate all dates for this day-of-week within the full year
-    const dates = datesForDayOfWeek(yearStartDate, yearEndDate, dayOfWeek);
+    // Generate all dates for this day-of-week within the program date range
+    const dates = datesForDayOfWeek(rangeStartDate, rangeEndDate, dayOfWeek);
 
     // Sort templates by sort_order for consistent processing
     dayTemplates.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -332,18 +334,8 @@ export async function runScheduler(
         }
 
         // --- Resolve venue ---
-        const venueId = tmpl.venue_id ?? program.default_venue_id;
-        
-        // Debug: log venue assignment for this template
-        if (i === 0) {  // Only log once per template to avoid spam
-          console.log('[Scheduler] Template venue assignment:', {
-            templateId: tmpl.id,
-            templateVenueId: tmpl.venue_id,
-            programDefaultVenueId: program.default_venue_id,
-            resolvedVenueId: venueId,
-            venueName: data.venues.find(v => v.id === venueId)?.name
-          });
-        }
+        // Use effective template (which includes placement overrides) for venue resolution
+        const venueId = effectiveTmpl.venue_id ?? program.default_venue_id;
 
         // --- Check venue availability ---
         if (venueId) {
@@ -540,6 +532,25 @@ export async function runScheduler(
   const totalCreated = generatedSessions.length;
   const totalUnassigned = statsArray.reduce((sum, s) => sum + s.sessions_unassigned, 0);
 
+  // Build preview statistics: byVenue and byWeek
+  const byVenue: Record<string, number> = {};
+  const byWeek: Record<string, number> = {};
+  const venueNameMap = new Map(data.venues.map((v) => [v.id, v.name]));
+
+  for (const draft of generatedSessions) {
+    // byVenue: count by venue name
+    const venueName = (draft.venue_id ? venueNameMap.get(draft.venue_id) : null) ?? 'Unassigned';
+    byVenue[venueName] = (byVenue[venueName] ?? 0) + 1;
+
+    // byWeek: count by Monday of the session's week
+    const sessionDate = parseDate(draft.date);
+    const dayOfWk = sessionDate.getDay();
+    const monday = new Date(sessionDate);
+    monday.setDate(monday.getDate() - ((dayOfWk + 6) % 7));
+    const weekKey = formatDate(monday);
+    byWeek[weekKey] = (byWeek[weekKey] ?? 0) + 1;
+  }
+
   const summary = [
     `Generated ${totalCreated} draft session${totalCreated !== 1 ? 's' : ''} for "${program.name}".`,
     totalUnassigned > 0
@@ -567,6 +578,8 @@ export async function runScheduler(
     template_stats: statsArray,
     skipped_dates: skippedDates,
     summary,
+    byVenue,
+    byWeek,
   };
 }
 

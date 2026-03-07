@@ -58,9 +58,21 @@ export async function POST(request: NextRequest) {
     // Check for preview mode via query param
     const preview = request.nextUrl.searchParams.get('preview') === 'true';
 
-    // Run the scheduler engine — pass year so it generates for the full calendar year
+    // Run the scheduler engine
     const yearNum = year && !isNaN(Number(year)) ? Number(year) : undefined;
     const result = await runScheduler(supabase, { program_id, year: yearNum, preview });
+
+    // When preview mode, include a preview summary with totals by venue and week
+    if (preview && result.success) {
+      return NextResponse.json({
+        ...result,
+        preview: {
+          total: result.sessions_created,
+          byVenue: result.byVenue ?? {},
+          byWeek: result.byWeek ?? {},
+        },
+      });
+    }
 
     return NextResponse.json(result, {
       status: result.success ? 200 : 422,
