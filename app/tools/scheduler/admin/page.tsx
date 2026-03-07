@@ -887,8 +887,10 @@ function CalendarDashboard() {
     if (useMockData) return;
     if (!selectedProgramId) return;
 
+    const fetchId = `fetch-${Date.now()}`;
     try {
       const { start_date, end_date } = getFetchDateRange();
+      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
       const params = new URLSearchParams({
         program_id: selectedProgramId,
         start_date,
@@ -905,7 +907,12 @@ function CalendarDashboard() {
 
       const body = await res.json();
       if (Array.isArray(body.sessions)) {
-        setEvents(body.sessions.map(sessionToCalendarEvent));
+        const mappedEvents = body.sessions.map(sessionToCalendarEvent);
+        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+          firstDate: mappedEvents[0]?.date,
+          lastDate: mappedEvents[mappedEvents.length - 1]?.date
+        });
+        setEvents(mappedEvents);
       }
 
       // Fetch school calendar data
@@ -933,7 +940,10 @@ function CalendarDashboard() {
         console.warn('[Admin] Failed to fetch venues:', venueRes.status, venueRes.statusText);
       }
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.log(`[${fetchId}] Aborted`);
+        return;
+      }
       console.error('[fetchSessions]', err);
       showToast('Failed to load sessions — check console for details', 'error');
     }
@@ -943,9 +953,13 @@ function CalendarDashboard() {
   // Fetch sessions from DB on page load and when program/view/date changes.
   // AbortController cancels stale in-flight requests so the last fetch wins.
   useEffect(() => {
+    console.log('[useEffect] Triggering fetchSessions due to dependency change');
     const controller = new AbortController();
     fetchSessions(controller.signal);
-    return () => controller.abort();
+    return () => {
+      console.log('[useEffect] Cleanup: aborting previous fetch');
+      controller.abort();
+    };
   }, [fetchSessions]);
 
   // Auto-generate draft schedule — first shows preview, then confirms
