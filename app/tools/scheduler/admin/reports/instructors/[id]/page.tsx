@@ -37,10 +37,7 @@ type DetailTab = 'weekly' | 'tags';
 
 import { getSubjectColor } from '../../../../lib/subjectColors';
 
-const TAG_BAR_COLORS = [
-  'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-indigo-500',
-  'bg-teal-500', 'bg-orange-500', 'bg-violet-500', 'bg-rose-500',
-];
+import { getBarColor } from '../../../../lib/subjectColors';
 
 function getTagColor(tagName: string): { bg: string; text: string } {
   const c = getSubjectColor(tagName);
@@ -388,7 +385,7 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
         <div className="divide-y divide-slate-100">
           {rows.map((row, idx) => {
             const colors = getTagColor(row.tag_name);
-            const barColor = TAG_BAR_COLORS[idx % TAG_BAR_COLORS.length];
+            const barColor = getBarColor(row.tag_name, idx);
             const pct = maxHours > 0 ? (row.hours / maxHours) * 100 : 0;
             const percentage = totalHours > 0 ? Math.round((row.hours / totalHours) * 1000) / 10 : 0;
 
@@ -412,8 +409,8 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
                   <div className="pl-4 pr-2">
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${barColor} rounded-full transition-all`}
-                        style={{ width: `${pct}%` }}
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: barColor }}
                       />
                     </div>
                   </div>

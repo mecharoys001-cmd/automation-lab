@@ -124,6 +124,26 @@ export const EVENT_COLORS: Record<string, { accent: string; bg: string; text: st
 );
 
 /**
+ * Get a hex bar/chart color for a subject name.
+ * Falls back to a deterministic color from a cycle for unknown subjects.
+ */
+const BAR_FALLBACK_CYCLE = [
+  '#64748B', '#6366F1', '#F97316', '#EC4899',
+  '#06B6D4', '#84CC16', '#A855F7', '#EF4444',
+];
+
+export function getBarColor(name: string, index?: number): string {
+  const key = name.toLowerCase().replace(/s$/, '');
+  const entry = SUBJECT_COLORS[key];
+  if (entry) return entry.accent;
+  // Deterministic fallback based on index or string hash
+  if (index !== undefined) return BAR_FALLBACK_CYCLE[index % BAR_FALLBACK_CYCLE.length];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return BAR_FALLBACK_CYCLE[Math.abs(hash) % BAR_FALLBACK_CYCLE.length];
+}
+
+/**
  * Build SKILL_STYLES record used by the people page.
  * Provides backwards-compatible { emoji, bg, text } shape with title-cased keys.
  */

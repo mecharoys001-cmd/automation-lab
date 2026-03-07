@@ -50,20 +50,7 @@ const TAG_EMOJI: Record<string, string> = {
   woodwinds:  '\u{1F3B5}',
 };
 
-const TAG_BAR_COLORS: Record<string, string> = {
-  strings:    '#3B82F6',
-  brass:      '#10B981',
-  choral:     '#F59E0B',
-  piano:      '#8B5CF6',
-  percussion: '#EF4444',
-  guitar:     '#06B6D4',
-  woodwinds:  '#14B8A6',
-};
-
-const BAR_COLOR_CYCLE = [
-  '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
-  '#EF4444', '#06B6D4', '#F97316', '#EC4899',
-];
+import { getBarColor } from '../../../lib/subjectColors';
 
 /* ── Helpers ───────────────────────────────────────────── */
 
@@ -139,7 +126,7 @@ export default function HoursByTagPage() {
           totalHours: Math.round(t.total_hours),
           sessions: sessionCount,
           avgDuration,
-          barColor: TAG_BAR_COLORS[key] ?? BAR_COLOR_CYCLE[idx % BAR_COLOR_CYCLE.length],
+          barColor: getBarColor(key, idx),
         };
       });
   }, [reportData]);
