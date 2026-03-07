@@ -156,10 +156,16 @@ export async function POST(request: NextRequest) {
     // ── Optionally clear existing instructors ──────────────
     let deleted = 0;
     if (clearFirst) {
-      const { data: delData } = await sb.from('instructors')
+      const { data: delData, error: delError } = await sb.from('instructors')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000')
         .select('id');
+      if (delError) {
+        return NextResponse.json(
+          { error: `Failed to clear instructors: ${delError.message}` },
+          { status: 500 },
+        );
+      }
       deleted = delData?.length ?? 0;
     }
 
@@ -195,12 +201,12 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < instructorRecords.length; i += 50) {
       const batch = instructorRecords.slice(i, i + 50);
       const { data, error } = await sb.from('instructors')
-        .insert(batch)
+        .upsert(batch, { onConflict: 'email' })
         .select('id, first_name, last_name, skills');
 
       if (error) {
         return NextResponse.json(
-          { error: `Failed to insert instructors batch ${i}: ${error.message}` },
+          { error: `Failed to upsert instructors batch ${i}: ${error.message}` },
           { status: 500 },
         );
       }

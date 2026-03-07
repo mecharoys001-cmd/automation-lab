@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -12,8 +12,16 @@ import {
   LayoutTemplate,
   Sparkles,
   X,
+  Wand2,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { showToast } from '../../lib/toast';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface TemplateStats {
   template_id: string;
@@ -42,6 +50,25 @@ interface SchedulerResult {
   error?: string;
 }
 
+interface Instructor {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  skills: string[] | null;
+  is_active: boolean;
+}
+
+interface UnassignedSession {
+  id: string;
+  date: string;
+  template_id: string | null;
+  instructor_id: string | null;
+  grade_groups: string[];
+  start_time: string;
+  end_time: string;
+}
+
 interface SchedulerResultModalProps {
   open: boolean;
   onClose: () => void;
@@ -50,6 +77,10 @@ interface SchedulerResultModalProps {
   isPreview?: boolean;
   onConfirm?: () => void;
   isConfirming?: boolean;
+  /** Program ID for fetching sessions/instructors */
+  programId?: string;
+  /** Callback after assignments change so parent can refresh */
+  onAssignmentsChanged?: () => void;
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -67,10 +98,53 @@ const REASON_LABELS: Record<string, string> = {
   week_cycle_skip: 'Week Cycle Skip',
 };
 
+// ---------------------------------------------------------------------------
+// Auto-assign suggestion logic
+// ---------------------------------------------------------------------------
+
+function suggestInstructor(
+  session: UnassignedSession,
+  instructors: Instructor[],
+  templateSkills: string[] | null,
+  assignmentCounts: Map<string, number>,
+): Instructor | null {
+  let candidates = instructors.filter((i) => i.is_active);
+
+  // Filter by required skills if the template specifies them
+  if (templateSkills && templateSkills.length > 0) {
+    candidates = candidates.filter((i) =>
+      templateSkills.every((skill) => i.skills?.includes(skill)),
+    );
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Pick the instructor with the fewest existing assignments (round-robin)
+  candidates.sort(
+    (a, b) => (assignmentCounts.get(a.id) ?? 0) - (assignmentCounts.get(b.id) ?? 0),
+  );
+
+  return candidates[0];
+}
+
+// ---------------------------------------------------------------------------
+// Helper: format date as "Week of Mon DD"
+// ---------------------------------------------------------------------------
+
+function formatWeekLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  return `${month} ${day}`;
+}
+
+// ---------------------------------------------------------------------------
+// SkippedDatesSection (unchanged)
+// ---------------------------------------------------------------------------
+
 function SkippedDatesSection({ skippedDates }: { skippedDates: SkippedDate[] }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Group skipped dates by reason
   const byReason = new Map<string, SkippedDate[]>();
   for (const sd of skippedDates) {
     const group = byReason.get(sd.reason) ?? [];
@@ -122,6 +196,285 @@ function SkippedDatesSection({ skippedDates }: { skippedDates: SkippedDate[] }) 
   );
 }
 
+// ---------------------------------------------------------------------------
+// UnassignedPanel — shown when user clicks an unassigned badge
+// ---------------------------------------------------------------------------
+
+function UnassignedPanel({
+  templateStats,
+  programId,
+  onAssigned,
+}: {
+  templateStats: TemplateStats;
+  programId: string;
+  onAssigned: () => void;
+}) {
+  const [sessions, setSessions] = useState<UnassignedSession[]>([]);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch unassigned sessions and instructors on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [sessRes, instrRes] = await Promise.all([
+          fetch(
+            `/api/sessions?template_id=${templateStats.template_id}&instructor_id=null&program_id=${programId}&status=draft`,
+          ),
+          fetch('/api/instructors?is_active=true'),
+        ]);
+
+        if (!sessRes.ok) throw new Error('Failed to fetch sessions');
+        if (!instrRes.ok) throw new Error('Failed to fetch instructors');
+
+        const sessData = await sessRes.json();
+        const instrData = await instrRes.json();
+
+        if (!cancelled) {
+          setSessions(sessData.sessions ?? []);
+          setInstructors(instrData.instructors ?? []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load data');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [templateStats.template_id, programId]);
+
+  const handleAssign = (sessionId: string, instructorId: string) => {
+    setAssignments((prev) => {
+      if (instructorId === '') {
+        const next = { ...prev };
+        delete next[sessionId];
+        return next;
+      }
+      return { ...prev, [sessionId]: instructorId };
+    });
+  };
+
+  const handleAutoAssignOne = (session: UnassignedSession) => {
+    const counts = new Map<string, number>();
+    // Count existing assignments in our local state
+    for (const iid of Object.values(assignments)) {
+      counts.set(iid, (counts.get(iid) ?? 0) + 1);
+    }
+    const match = suggestInstructor(session, instructors, null, counts);
+    if (match) {
+      setAssignments((prev) => ({ ...prev, [session.id]: match.id }));
+    } else {
+      showToast('No matching instructor found', 'info');
+    }
+  };
+
+  const handleAutoAssignAll = () => {
+    const counts = new Map<string, number>();
+    const newAssignments = { ...assignments };
+    let assigned = 0;
+
+    for (const session of sessions) {
+      if (newAssignments[session.id]) {
+        counts.set(newAssignments[session.id], (counts.get(newAssignments[session.id]) ?? 0) + 1);
+      }
+    }
+
+    for (const session of sessions) {
+      if (newAssignments[session.id]) continue;
+      const match = suggestInstructor(session, instructors, null, counts);
+      if (match) {
+        newAssignments[session.id] = match.id;
+        counts.set(match.id, (counts.get(match.id) ?? 0) + 1);
+        assigned++;
+      }
+    }
+
+    setAssignments(newAssignments);
+    if (assigned > 0) {
+      showToast(`Auto-assigned ${assigned} session${assigned !== 1 ? 's' : ''}`);
+    } else {
+      showToast('No sessions could be auto-assigned', 'info');
+    }
+  };
+
+  const handleSave = async () => {
+    const toSave = Object.entries(assignments).filter(([id]) => !savedIds.has(id));
+    if (toSave.length === 0) {
+      showToast('No new assignments to save', 'info');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch('/api/sessions/bulk-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignments: toSave.map(([id, instructor_id]) => ({ id, instructor_id })),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save assignments');
+      }
+
+      const data = await res.json();
+      const newSaved = new Set(savedIds);
+      for (const [id] of toSave) newSaved.add(id);
+      setSavedIds(newSaved);
+
+      showToast(`${data.updated} session${data.updated !== 1 ? 's' : ''} assigned`);
+      if (data.failed > 0) {
+        showToast(`${data.failed} assignment${data.failed !== 1 ? 's' : ''} failed`, 'error');
+      }
+      onAssigned();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to save', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pendingCount = Object.keys(assignments).filter((id) => !savedIds.has(id)).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-3 px-3">
+        <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+        <span className="text-[11px] text-slate-500">Loading unassigned sessions...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-2 px-3">
+        <p className="text-[11px] text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="py-2 px-3">
+        <p className="text-[11px] text-slate-500">No unassigned sessions found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-amber-50/50 border border-amber-200 rounded-lg mx-3 mb-1 overflow-hidden">
+      {/* Panel header */}
+      <div className="flex items-center justify-between px-3 py-2 bg-amber-100/60 border-b border-amber-200">
+        <span className="text-[11px] font-semibold text-amber-800">
+          Unassigned Sessions for {DAY_NAMES[templateStats.day_of_week]} &mdash;{' '}
+          {templateStats.grade_groups.length > 0
+            ? templateStats.grade_groups.join(', ')
+            : 'All grades'}
+        </span>
+        <button
+          onClick={handleAutoAssignAll}
+          disabled={saving || instructors.length === 0}
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-amber-700 bg-amber-200/60 rounded hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <Wand2 className="w-3 h-3" />
+          Auto-assign All
+        </button>
+      </div>
+
+      {/* Session rows */}
+      <div className="max-h-[180px] overflow-y-auto divide-y divide-amber-100">
+        {sessions.map((session) => {
+          const isSaved = savedIds.has(session.id);
+          return (
+            <div
+              key={session.id}
+              className="flex items-center gap-2 px-3 py-1.5"
+            >
+              {isSaved ? (
+                <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+              ) : (
+                <div className="w-3 h-3 shrink-0" />
+              )}
+              <span className="text-[11px] text-slate-600 w-16 shrink-0 tabular-nums">
+                {formatWeekLabel(session.date)}
+              </span>
+              <select
+                value={assignments[session.id] ?? ''}
+                onChange={(e) => handleAssign(session.id, e.target.value)}
+                disabled={saving}
+                className="flex-1 text-[11px] text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-0.5 min-w-0 disabled:opacity-50"
+              >
+                <option value="">Select Instructor...</option>
+                {instructors.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.first_name} {inst.last_name}
+                    {inst.skills && inst.skills.length > 0
+                      ? ` (${inst.skills.join(', ')})`
+                      : ''}
+                  </option>
+                ))}
+                <option value="" disabled>
+                  ──────────
+                </option>
+                <option value="">Leave Unassigned</option>
+              </select>
+              <button
+                onClick={() => handleAutoAssignOne(session)}
+                disabled={saving || instructors.length === 0}
+                title="Auto-assign"
+                className="p-0.5 text-amber-600 hover:bg-amber-100 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                <Wand2 className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Panel footer */}
+      <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-amber-200 bg-amber-50/60">
+        {pendingCount > 0 && (
+          <span className="text-[10px] text-amber-600 mr-auto">
+            {pendingCount} unsaved change{pendingCount !== 1 ? 's' : ''}
+          </span>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving || pendingCount === 0}
+          className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-white bg-amber-600 rounded hover:bg-amber-700 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Assignments'
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main modal
+// ---------------------------------------------------------------------------
+
 export function SchedulerResultModal({
   open,
   onClose,
@@ -129,7 +482,12 @@ export function SchedulerResultModal({
   isPreview = false,
   onConfirm,
   isConfirming = false,
+  programId,
+  onAssignmentsChanged,
 }: SchedulerResultModalProps) {
+  const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
+  const [autoAssigningAll, setAutoAssigningAll] = useState(false);
+
   if (!open) return null;
 
   const headerIcon = isPreview ? (
@@ -158,13 +516,78 @@ export function SchedulerResultModal({
       ? `${result.sessions_created} session${result.sessions_created !== 1 ? 's' : ''} created`
       : result.error ?? 'An error occurred';
 
+  const templateKey = (ts: TemplateStats) => `${ts.template_id}-${ts.day_of_week}`;
+
+  const handleAutoAssignAll = async () => {
+    if (!programId) return;
+    setAutoAssigningAll(true);
+    try {
+      // Fetch all unassigned draft sessions for this program
+      const [sessRes, instrRes] = await Promise.all([
+        fetch(`/api/sessions?program_id=${programId}&instructor_id=null&status=draft`),
+        fetch('/api/instructors?is_active=true'),
+      ]);
+
+      if (!sessRes.ok || !instrRes.ok) throw new Error('Failed to fetch data');
+
+      const { sessions } = await sessRes.json() as { sessions: UnassignedSession[] };
+      const { instructors } = await instrRes.json() as { instructors: Instructor[] };
+
+      if (sessions.length === 0) {
+        showToast('No unassigned sessions found', 'info');
+        return;
+      }
+
+      // Build assignments using round-robin suggestion
+      const counts = new Map<string, number>();
+      const assignmentList: { id: string; instructor_id: string }[] = [];
+
+      for (const session of sessions) {
+        const match = suggestInstructor(session, instructors, null, counts);
+        if (match) {
+          assignmentList.push({ id: session.id, instructor_id: match.id });
+          counts.set(match.id, (counts.get(match.id) ?? 0) + 1);
+        }
+      }
+
+      if (assignmentList.length === 0) {
+        showToast('No instructors available for auto-assignment', 'info');
+        return;
+      }
+
+      const res = await fetch('/api/sessions/bulk-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignments: assignmentList }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save assignments');
+      }
+
+      const data = await res.json();
+      showToast(
+        `Auto-assigned ${data.updated} of ${sessions.length} session${sessions.length !== 1 ? 's' : ''}`,
+      );
+      if (data.failed > 0) {
+        showToast(`${data.failed} assignment${data.failed !== 1 ? 's' : ''} failed`, 'error');
+      }
+      onAssignmentsChanged?.();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Auto-assign failed', 'error');
+    } finally {
+      setAutoAssigningAll(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-50 w-[500px] max-h-[80vh] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden flex flex-col">
+      <div className="relative z-50 w-[540px] max-h-[85vh] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden flex flex-col">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -176,10 +599,30 @@ export function SchedulerResultModal({
         {/* Header */}
         <div className="flex items-center gap-3 px-6 pt-6 pb-2">
           {headerIcon}
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
             <p className="text-[12px] text-slate-500">{subtitle}</p>
           </div>
+          {/* Global Auto-assign All */}
+          {result.unassigned_count > 0 && isPreview && programId && (
+            <button
+              onClick={handleAutoAssignAll}
+              disabled={autoAssigningAll}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {autoAssigningAll ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Assigning...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Auto-assign All
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Body */}
@@ -222,35 +665,67 @@ export function SchedulerResultModal({
                 </span>
               </div>
               <div className="space-y-1">
-                {result.template_stats.map((ts) => (
-                  <div
-                    key={`${ts.template_id}-${ts.day_of_week}`}
-                    className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-medium text-slate-500 w-8">
-                        {DAY_NAMES[ts.day_of_week]}
-                      </span>
-                      <span className="text-[12px] text-slate-700">
-                        {ts.grade_groups.length > 0
-                          ? ts.grade_groups.join(', ')
-                          : 'All grades'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-medium text-slate-900 tabular-nums">
-                        {ts.sessions_generated}
-                      </span>
-                      {ts.sessions_unassigned > 0 && (
-                        <Tooltip text={`${ts.sessions_unassigned} session(s) without instructor`}>
-                          <span className="text-[11px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                            {ts.sessions_unassigned} unassigned
+                {result.template_stats.map((ts) => {
+                  const key = templateKey(ts);
+                  const isExpanded = expandedTemplate === key;
+                  const canExpand = ts.sessions_unassigned > 0 && isPreview && !!programId;
+
+                  return (
+                    <div key={key}>
+                      <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-medium text-slate-500 w-8">
+                            {DAY_NAMES[ts.day_of_week]}
                           </span>
-                        </Tooltip>
+                          <span className="text-[12px] text-slate-700">
+                            {ts.grade_groups.length > 0
+                              ? ts.grade_groups.join(', ')
+                              : 'All grades'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-medium text-slate-900 tabular-nums">
+                            {ts.sessions_generated}
+                          </span>
+                          {ts.sessions_unassigned > 0 && (
+                            canExpand ? (
+                              <button
+                                onClick={() =>
+                                  setExpandedTemplate(isExpanded ? null : key)
+                                }
+                                className="inline-flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                              >
+                                {ts.sessions_unassigned} unassigned
+                                {isExpanded ? (
+                                  <ChevronUp className="w-3 h-3" />
+                                ) : (
+                                  <ChevronDown className="w-3 h-3" />
+                                )}
+                              </button>
+                            ) : (
+                              <Tooltip text={`${ts.sessions_unassigned} session(s) without instructor`}>
+                                <span className="text-[11px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                  {ts.sessions_unassigned} unassigned
+                                </span>
+                              </Tooltip>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Expandable assignment panel */}
+                      {isExpanded && programId && (
+                        <div className="mt-1">
+                          <UnassignedPanel
+                            templateStats={ts}
+                            programId={programId}
+                            onAssigned={() => onAssignmentsChanged?.()}
+                          />
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -308,6 +783,10 @@ export function SchedulerResultModal({
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// StatCard
+// ---------------------------------------------------------------------------
 
 function StatCard({
   icon,

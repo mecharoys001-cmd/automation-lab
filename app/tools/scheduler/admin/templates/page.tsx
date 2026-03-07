@@ -1743,6 +1743,7 @@ export default function TemplatesPage() {
             startHour: p.start_hour,
             durationHours: p.duration_hours,
             weekIndex: p.week_index ?? 0,
+            venueId: p.venue_id ?? null,
           })),
         );
         // Restore total weeks from saved data
@@ -1867,6 +1868,7 @@ export default function TemplatesPage() {
             startHour: p.startHour,
             durationHours: p.durationHours,
             weekIndex: p.weekIndex ?? 0,
+            venueId: p.venueId ?? null,
           })),
         }),
       });
@@ -1904,6 +1906,7 @@ export default function TemplatesPage() {
             startHour: p.startHour,
             durationHours: p.durationHours,
             weekIndex: p.weekIndex ?? 0,
+            venueId: p.venueId ?? null,
           })),
         }),
       });

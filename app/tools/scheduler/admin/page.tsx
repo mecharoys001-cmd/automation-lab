@@ -1365,6 +1365,7 @@ function CalendarDashboard() {
           isPreview={isPreviewMode}
           onConfirm={handleConfirmGenerate}
           isConfirming={isConfirmingGenerate}
+          programId={selectedProgramId ?? undefined}
         />
       )}
     </div>

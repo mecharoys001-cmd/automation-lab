@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Build session rows
     const sessionRows = placements.map(
-      (p: { templateId: string; dayIndex: number; startHour: number; durationHours: number }) => {
+      (p: { templateId: string; dayIndex: number; startHour: number; durationHours: number; venueId?: string | null }) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tpl = templateMap.get(p.templateId) as Record<string, any> | undefined;
         const startTime = hourToTimeString(p.startHour);
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
           program_id,
           template_id: p.templateId,
           instructor_id: tpl?.instructor_id ?? null,
-          venue_id: tpl?.venue_id ?? null,
+          venue_id: p.venueId ?? tpl?.venue_id ?? null,
           grade_groups: tpl?.grade_groups ?? [],
           date: getNextDateForDay(p.dayIndex),
           start_time: startTime,

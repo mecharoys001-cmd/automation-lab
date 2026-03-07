@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
     const statusFilter = searchParams.get('status');
     const excludeStatus = searchParams.get('exclude_status');
     const excludeId = searchParams.get('exclude_id');
+    const templateId = searchParams.get('template_id');
+    const instructorIdParam = searchParams.get('instructor_id');
 
     // If filtering by instructor email, resolve to instructor_id first
     let instructorId: string | null = null;
@@ -102,6 +104,16 @@ export async function GET(request: NextRequest) {
 
     if (excludeId) {
       query = query.neq('id', excludeId);
+    }
+
+    if (templateId) {
+      query = query.eq('template_id', templateId);
+    }
+
+    if (instructorIdParam === 'null') {
+      query = query.is('instructor_id', null);
+    } else if (instructorIdParam) {
+      query = query.eq('instructor_id', instructorIdParam);
     }
 
     const { data, error } = await query;

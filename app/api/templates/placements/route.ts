@@ -12,6 +12,8 @@
  *   day_index     int  (0=Mon … 4=Fri)
  *   start_hour    numeric  (e.g. 9.25 = 9:15 AM)
  *   duration_hours numeric  (e.g. 1.5 = 1h 30m)
+ *   week_index    int  (0-indexed week within cycle)
+ *   venue_id      uuid FK → venues (nullable)
  *   created_at    timestamptz
  */
 
@@ -115,12 +117,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ placements: [] });
     }
 
-    const rows = placements.map((p: { templateId: string; dayIndex: number; startHour: number; durationHours: number }) => ({
+    const rows = placements.map((p: { templateId: string; dayIndex: number; startHour: number; durationHours: number; weekIndex?: number; venueId?: string | null }) => ({
       program_id,
       template_id: p.templateId,
       day_index: p.dayIndex,
       start_hour: p.startHour,
       duration_hours: p.durationHours,
+      week_index: p.weekIndex ?? 0,
+      venue_id: p.venueId ?? null,
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
