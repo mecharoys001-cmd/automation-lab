@@ -327,7 +327,7 @@ function MonthGrid({
                   <div className="flex gap-px">
                     {selectedVenues.map((venueId, laneIdx) => {
                       const laneEvents = dayEvents.filter(
-                        (e) => e.venue === venueId || (!e.venue && laneIdx === 0),
+                        (e) => e.venue === venueId,
                       );
                       return (
                         <div

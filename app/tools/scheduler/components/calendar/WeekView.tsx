@@ -669,7 +669,7 @@ export function WeekView({
                   <div className="absolute inset-0 flex">
                     {selectedVenues.map((venueId, laneIdx) => {
                       const laneEvents = filteredEvents.filter(
-                        (e) => e.venue === venueId || (!e.venue && laneIdx === 0),
+                        (e) => e.venue === venueId,
                       );
                       return (
                         <div
