@@ -333,6 +333,17 @@ export async function runScheduler(
 
         // --- Resolve venue ---
         const venueId = tmpl.venue_id ?? program.default_venue_id;
+        
+        // Debug: log venue assignment for this template
+        if (i === 0) {  // Only log once per template to avoid spam
+          console.log('[Scheduler] Template venue assignment:', {
+            templateId: tmpl.id,
+            templateVenueId: tmpl.venue_id,
+            programDefaultVenueId: program.default_venue_id,
+            resolvedVenueId: venueId,
+            venueName: data.venues.find(v => v.id === venueId)?.name
+          });
+        }
 
         // --- Check venue availability ---
         if (venueId) {

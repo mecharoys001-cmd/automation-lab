@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
+    
+    console.log('[Templates API] GET request for program:', programId);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('session_templates') as any)
@@ -23,6 +25,14 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Debug: log venue assignments
+    const venueStats = (data ?? []).reduce((acc: Record<string, number>, t: any) => {
+      const venueName = t.venue?.name ?? 'NULL';
+      acc[venueName] = (acc[venueName] ?? 0) + 1;
+      return acc;
+    }, {});
+    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
 
     return NextResponse.json({ templates: data ?? [] });
   } catch (err) {
