@@ -27,6 +27,7 @@ export interface CalendarEvent {
   venue?: string;
   gradeLevel?: string; // e.g. "3rd Grade", "K-2"
   status?: 'draft' | 'published' | 'canceled' | 'completed';
+  subjects?: string[]; // e.g. ['strings'], from template.required_skills
   tags?: string[];
   notes?: string;      // session notes
 }

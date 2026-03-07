@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { XCircle, UserPlus, RefreshCw, Copy, Trash2 } from 'lucide-react';
 import type { CalendarEvent } from './types';
 import { EVENT_COLORS } from './types';
+import { getSubjectColor } from '../../lib/subjectColors';
 import { Tooltip } from '../ui/Tooltip';
 
 // ---------------------------------------------------------------------------
@@ -67,7 +68,10 @@ export function EventContextMenu({
   onAction,
 }: EventContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const colors = EVENT_COLORS[event.type];
+  const subjectColor = event.subjects?.[0] ? getSubjectColor(event.subjects[0]) : null;
+  const colors = subjectColor
+    ? { accent: subjectColor.accent, bg: subjectColor.eventBg, text: subjectColor.eventText }
+    : EVENT_COLORS[event.type] ?? { accent: '#64748B', bg: '#F8FAFC', text: '#334155' };
 
   // Close on click outside or Escape
   useEffect(() => {

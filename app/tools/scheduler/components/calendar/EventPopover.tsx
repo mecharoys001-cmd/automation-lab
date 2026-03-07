@@ -28,6 +28,7 @@ import { Pill } from '../ui/Pill';
 import { Tooltip } from '../ui/Tooltip';
 import type { CalendarEvent, EventType } from './types';
 import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
+import { getSubjectColor } from '../../lib/subjectColors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -163,7 +164,10 @@ export function EventPopover({
   const [placed, setPlaced] = useState(false);
   const [animatedIn, setAnimatedIn] = useState(false);
 
-  const colors = EVENT_COLORS[event.type];
+  const subjectColor = event.subjects?.[0] ? getSubjectColor(event.subjects[0]) : null;
+  const colors = subjectColor
+    ? { accent: subjectColor.accent, bg: subjectColor.eventBg, text: subjectColor.eventText }
+    : EVENT_COLORS[event.type] ?? { accent: '#64748B', bg: '#F8FAFC', text: '#334155' };
 
   // -------------------------------------------------------------------------
   // Positioning

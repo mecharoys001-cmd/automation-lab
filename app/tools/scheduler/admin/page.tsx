@@ -167,7 +167,7 @@ const MOCK_SESSIONS: SessionWithRelations[] = [
 // Helpers — map generated sessions to CalendarEvent
 // ---------------------------------------------------------------------------
 
-const KNOWN_EVENT_TYPES = ['strings', 'brass', 'piano', 'percussion', 'choral'] as const;
+const KNOWN_EVENT_TYPES = ['strings', 'brass', 'piano', 'percussion', 'choral', 'guitar', 'woodwind'] as const;
 
 const ALL_MOCK_EVENTS = MOCK_SESSIONS.map(sessionToCalendarEvent);
 
@@ -243,12 +243,15 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     ? session.tags.map((t: { name?: string }) => t.name).filter(Boolean)
     : [];
 
+  const gradeLabel = session.grade_groups?.length
+    ? `Grade ${session.grade_groups.join(', ')}`
+    : '';
+
   return {
     id: session.id,
     title: buildSessionTitle(session),
-    subtitle: session.grade_groups?.length
-      ? `Grade ${session.grade_groups.join(', ')}`
-      : '',
+    subtitle: gradeLabel,
+    gradeLevel: gradeLabel || undefined,
     instructor: instructorName,
     type: deriveEventType(session.template),
     time: formatTimeDisplay(session.start_time),
@@ -256,6 +259,7 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     date: session.date,
     status: session.status ?? 'draft',
     venue: session.venue?.name,
+    subjects: Array.isArray(session.template?.required_skills) ? session.template.required_skills : [],
     tags: tagNames,
     notes: session.notes ?? undefined,
   };

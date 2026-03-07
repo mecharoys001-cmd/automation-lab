@@ -114,6 +114,8 @@ export interface TemplatePlacement {
   start_hour: number;
   /** Duration in fractional hours (e.g. 1.5 = 90 min) */
   duration_hours: number;
+  /** Optional venue override from the Schedule Builder grid */
+  venue_id?: string | null;
 }
 
 /** A session ready to be inserted (before the DB generates id/timestamps) */

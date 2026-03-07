@@ -312,6 +312,8 @@ export function WeekView({
   useEffect(() => {
     if (allVenues.length > 0) {
       const allVenueIds = allVenues.map((v) => v.id);
+      // eslint-disable-next-line no-console
+      console.log('[WeekView] Auto-selecting venues:', { allVenues: allVenues.map(v => v.name), allVenueIds });
       setSelectedVenues(allVenueIds);
     }
   }, [allVenues]);
@@ -430,8 +432,11 @@ export function WeekView({
     console.log('[WeekView] Received', events.length, 'events, showing week', weekDateKeys[0], 'to', weekEnd, 'matched:', matchedCount);
     if (events.length > 0 && matchedCount === 0) {
       const sampleDates = [...new Set(events.slice(0, 10).map(e => e.date))];
+      const sampleEvents = events.slice(0, 3).map(e => ({ id: e.id, date: e.date, venue: e.venue, title: e.title }));
       // eslint-disable-next-line no-console
       console.log('[WeekView] Sample event dates:', sampleDates, '— none match week keys:', weekDateKeys);
+      // eslint-disable-next-line no-console
+      console.log('[WeekView] Sample events:', sampleEvents);
     }
     return map;
   }, [events, weekDateKeys]);

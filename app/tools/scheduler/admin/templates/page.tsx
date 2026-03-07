@@ -1894,6 +1894,29 @@ export default function TemplatesPage() {
     setIsPublishing(true);
     setShowPublishConfirm(false);
     try {
+      // Persist placements to DB first so scheduler engine has latest data
+      const saveRes = await fetch('/api/templates/placements', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          program_id: selectedProgramId,
+          total_weeks: totalWeeks,
+          placements: placedTemplates.map((p) => ({
+            templateId: p.templateId,
+            dayIndex: p.dayIndex,
+            startHour: p.startHour,
+            durationHours: p.durationHours,
+            weekIndex: p.weekIndex ?? 0,
+            venueId: p.venueId ?? null,
+          })),
+        }),
+      });
+      if (!saveRes.ok) {
+        const body = await saveRes.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to save placements');
+      }
+      setIsDirty(false);
+
       const res = await fetch('/api/templates/placements/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2111,11 +2134,45 @@ export default function TemplatesPage() {
       return;
     }
 
-    setPlacedTemplates(prev => [...prev, ...newPlacements]);
-    setIsDirty(true);
+    const mergedPlacements = [...placedTemplates, ...newPlacements];
+    setPlacedTemplates(mergedPlacements);
     setShowAutoFillModal(false);
     setIsAutoFilling(false);
-    setToast({ message: `Auto-filled ${totalPlaced} sessions`, type: 'success', id: Date.now() });
+
+    // Auto-save placements to DB so the scheduler engine can use them
+    if (selectedProgramId) {
+      try {
+        const res = await fetch('/api/templates/placements', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            program_id: selectedProgramId,
+            total_weeks: totalWeeks,
+            placements: mergedPlacements.map((p) => ({
+              templateId: p.templateId,
+              dayIndex: p.dayIndex,
+              startHour: p.startHour,
+              durationHours: p.durationHours,
+              weekIndex: p.weekIndex ?? 0,
+              venueId: p.venueId ?? null,
+            })),
+          }),
+        });
+        if (res.ok) {
+          setIsDirty(false);
+          setToast({ message: `Auto-filled ${totalPlaced} sessions (saved)`, type: 'success', id: Date.now() });
+        } else {
+          setIsDirty(true);
+          setToast({ message: `Auto-filled ${totalPlaced} sessions (save failed — click Save to retry)`, type: 'error', id: Date.now() });
+        }
+      } catch {
+        setIsDirty(true);
+        setToast({ message: `Auto-filled ${totalPlaced} sessions (save failed — click Save to retry)`, type: 'error', id: Date.now() });
+      }
+    } else {
+      setIsDirty(true);
+      setToast({ message: `Auto-filled ${totalPlaced} sessions`, type: 'success', id: Date.now() });
+    }
   };
   // ── Drag & Drop ──
 
@@ -2631,7 +2688,7 @@ export default function TemplatesPage() {
                 }
                 setShowPublishConfirm(true);
               }}
-              disabled={isDirty || isPublishing || isSaving || placedTemplates.length === 0}
+              disabled={isPublishing || isSaving || placedTemplates.length === 0}
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

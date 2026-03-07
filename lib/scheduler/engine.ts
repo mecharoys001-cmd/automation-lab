@@ -61,6 +61,14 @@ import {
 // Helpers
 // ============================================================
 
+/** Returns true if a template has valid, non-empty start and end times. */
+function hasValidTimes(template: SessionTemplate): boolean {
+  if (!template.start_time || !template.end_time) return false;
+  const start = timeToMinutes(template.start_time);
+  const end = timeToMinutes(template.end_time);
+  return !isNaN(start) && !isNaN(end) && start < end;
+}
+
 /** Convert a fractional hour (e.g. 9.25) to "HH:MM" string (e.g. "09:15"). */
 function hourToTime(hour: number): string {
   const h = Math.floor(hour);
@@ -138,6 +146,32 @@ export async function runScheduler(
   }
 
   // ----------------------------------------------------------
+  // 1c. Filter out templates with invalid start/end times
+  // ----------------------------------------------------------
+  const validTemplates = templates.filter(hasValidTimes);
+  const skippedTemplates = templates.filter((t) => !hasValidTimes(t));
+  if (skippedTemplates.length > 0) {
+    console.warn(
+      '[scheduler] Skipped templates with invalid times:',
+      skippedTemplates.map((t) => t.id)
+    );
+  }
+
+  if (validTemplates.length === 0) {
+    return {
+      success: false,
+      sessions_created: 0,
+      unassigned_count: 0,
+      sessions_with_warnings: 0,
+      drafts_cleared: 0,
+      template_stats: [],
+      skipped_dates: [],
+      summary: 'All active templates have invalid start/end times.',
+      error: 'All active templates have invalid start/end times.',
+    };
+  }
+
+  // ----------------------------------------------------------
   // 2. Clear existing draft sessions for this program
   //    (skipped in preview mode — no DB mutations)
   // ----------------------------------------------------------
@@ -174,7 +208,7 @@ export async function runScheduler(
 
   // Group templates by effective day_of_week (placement overrides template)
   const templatesByDay = new Map<number, SessionTemplate[]>();
-  for (const tmpl of templates) {
+  for (const tmpl of validTemplates) {
     const placement = placementMap.get(tmpl.id);
     const effectiveDay = placement ? placement.day_index : tmpl.day_of_week;
     const group = templatesByDay.get(effectiveDay) ?? [];
@@ -243,7 +277,13 @@ export async function runScheduler(
         // Create an effective template with resolved times so auto-assign
         // functions see the correct values without modifying the original.
         const effectiveTmpl = placement
-          ? { ...tmpl, start_time: startTime, end_time: endTime, duration_minutes: durationMinutes }
+          ? {
+              ...tmpl,
+              start_time: startTime,
+              end_time: endTime,
+              duration_minutes: durationMinutes,
+              venue_id: placement.venue_id ?? tmpl.venue_id
+            }
           : tmpl;
 
         // Initialize template stats
