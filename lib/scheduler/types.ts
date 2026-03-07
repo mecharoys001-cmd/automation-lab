@@ -99,6 +99,21 @@ export interface SchedulerData {
   venues: Venue[];
   /** Existing non-draft sessions for conflict checking */
   existing_sessions: Session[];
+  /** Schedule Builder visual placements (override template day/time) */
+  template_placements: TemplatePlacement[];
+}
+
+/** A saved placement from the Schedule Builder grid */
+export interface TemplatePlacement {
+  id: string;
+  program_id: string;
+  template_id: string;
+  /** 0=Mon … 4=Fri */
+  day_index: number;
+  /** Fractional hours since midnight (e.g. 9.25 = 9:15 AM) */
+  start_hour: number;
+  /** Duration in fractional hours (e.g. 1.5 = 90 min) */
+  duration_hours: number;
 }
 
 /** A session ready to be inserted (before the DB generates id/timestamps) */

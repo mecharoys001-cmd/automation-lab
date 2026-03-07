@@ -279,15 +279,21 @@ export function findInstructorForTaggedSlot(
   ctx: AutoAssignContext,
   rotationMap: Map<string, RotationState>
 ): AutoAssignResult {
+  const requiredSkills = template.required_skills ?? [];
+
   // Filter by partial skill match first
   const skillFiltered = ctx.instructors.filter((i) =>
     skillsMatchPartial(i.skills, template.required_skills)
   );
 
   if (skillFiltered.length === 0) {
+    console.log(
+      `[auto-assign] tagged_slot SKILL MISMATCH — template requires [${requiredSkills.join(', ')}], ` +
+      `instructors have: ${ctx.instructors.map(i => `${i.first_name} ${i.last_name}=[${(i.skills ?? []).join(', ')}]`).join('; ')}`
+    );
     return {
       instructor: null,
-      scheduling_notes: `No instructor with matching skills (${(template.required_skills ?? []).join(', ')}) found`,
+      scheduling_notes: `No instructor with matching skills (${requiredSkills.join(', ')}) found`,
     };
   }
 
@@ -298,12 +304,20 @@ export function findInstructorForTaggedSlot(
     ctx
   );
 
+  if (candidates.length === 0) {
+    console.log(
+      `[auto-assign] tagged_slot AVAILABILITY MISS — ${skillFiltered.length} skill-matched instructors ` +
+      `(${skillFiltered.map(i => `${i.first_name} ${i.last_name}`).join(', ')}) ` +
+      `all unavailable on ${ctx.date} (day ${ctx.dayOfWeek}) for ${template.start_time ?? 'null'}-${template.end_time ?? 'null'}`
+    );
+  }
+
   const selected = selectWithRotation(candidates, template, rotationMap);
 
   if (!selected) {
     return {
       instructor: null,
-      scheduling_notes: `No available instructor with skills (${(template.required_skills ?? []).join(', ')}) on this date`,
+      scheduling_notes: `No available instructor with skills (${requiredSkills.join(', ')}) on this date`,
     };
   }
 

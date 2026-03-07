@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info, Lock } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -1170,7 +1170,10 @@ function PlacedTemplateBlock({
   onSelect,
   onResize,
   onDelete,
+  onDragStart,
+  onDragEnd,
   isSelected,
+  isDragging,
   dayStartHour,
   dayEndHour,
   hasConflict,
@@ -1181,7 +1184,10 @@ function PlacedTemplateBlock({
   onSelect: () => void;
   onResize: (newStart: number, newDuration: number) => void;
   onDelete: () => void;
+  onDragStart: (placedId: string, templateId: string) => void;
+  onDragEnd: () => void;
   isSelected: boolean;
+  isDragging: boolean;
   dayStartHour: number;
   dayEndHour: number;
   hasConflict?: boolean;
@@ -1243,7 +1249,23 @@ function PlacedTemplateBlock({
   return (
     <div
       ref={blockRef}
-      className={`absolute left-0.5 right-0.5 rounded-md overflow-hidden group cursor-pointer transition-shadow flex flex-col justify-start ${
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/placed-event', JSON.stringify({ placedId: placed.id, templateId: template.id }));
+        e.dataTransfer.effectAllowed = 'move';
+        // Create ghost image
+        const ghost = document.getElementById('drag-ghost');
+        if (ghost) {
+          ghost.style.display = 'block';
+          e.dataTransfer.setDragImage(ghost, 60, 16);
+          requestAnimationFrame(() => { ghost.style.display = 'none'; });
+        }
+        onDragStart(placed.id, template.id);
+      }}
+      onDragEnd={onDragEnd}
+      className={`absolute left-0.5 right-0.5 rounded-md overflow-hidden group cursor-grab transition-shadow flex flex-col justify-start ${
+        isDragging ? 'opacity-30' : ''
+      } ${
         hasConflict
           ? 'ring-2 ring-red-500 shadow-lg'
           : isSelected
@@ -1268,11 +1290,17 @@ function PlacedTemplateBlock({
         />
       </Tooltip>
 
-      <Tooltip text={hasConflict && conflictMessages?.length ? conflictMessages.join(' | ') : `Click to edit ${getBlockDisplayName(template)}`}>
+      <Tooltip text={hasConflict && conflictMessages?.length ? conflictMessages.join(' | ') : template.timeSlot ? `Fixed time: ${formatHour(timeStringToHour(template.timeSlot.start))} – ${formatHour(timeStringToHour(template.timeSlot.end))} (drag to change day)` : `Drag to move · Click to edit`}>
         <div className="px-1.5 py-0.5 overflow-hidden" style={{ textDecoration: 'none' }}>
-          <p className={`${height < 45 ? 'text-[9px]' : 'text-[11px]'} font-bold text-slate-900 leading-tight truncate`}>
-            {getBlockDisplayName(template)}
-          </p>
+          <div className="flex items-start gap-0.5">
+            <GripVertical className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-60 shrink-0 mt-0.5 cursor-grab" />
+            <p className={`${height < 45 ? 'text-[9px]' : 'text-[11px]'} font-bold text-slate-900 leading-tight truncate flex-1`}>
+              {getBlockDisplayName(template)}
+            </p>
+            {template.timeSlot && (
+              <Lock className="w-2.5 h-2.5 text-slate-400 shrink-0 mt-0.5" />
+            )}
+          </div>
           <div className="flex items-center gap-0.5 mt-0.5">
             {hasConflict && (
               <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
@@ -1568,6 +1596,8 @@ export default function TemplatesPage() {
   const [editModalTemplate, setEditModalTemplate] = useState<Template | null>(null);
   const [isNewTemplate, setIsNewTemplate] = useState(false);
   const [dropPreview, setDropPreview] = useState<{ dayIndex: number; hour: number } | null>(null);
+  const [draggingPlacedId, setDraggingPlacedId] = useState<string | null>(null);
+  const [dropConflict, setDropConflict] = useState<'none' | 'venue' | 'instructor' | 'lunch' | 'fixed-time'>('none');
 
   // ── Venue scoping ──
   const [venues, setVenues] = useState<{ id: string; name: string }[]>([]);
@@ -2088,14 +2118,25 @@ export default function TemplatesPage() {
 
   const handleDragStart = (template: Template) => {
     setDraggingTemplate(template);
+    setDraggingPlacedId(null);
+  };
+
+  const handlePlacedDragStart = (placedId: string, templateId: string) => {
+    const t = templates.find((tmpl) => tmpl.id === templateId);
+    if (t) {
+      setDraggingTemplate(t);
+      setDraggingPlacedId(placedId);
+    }
   };
 
   const handleDragEnd = () => {
     setDraggingTemplate(null);
+    setDraggingPlacedId(null);
     setDropPreview(null);
+    setDropConflict('none');
   };
 
-  const handleDragOver = (dayIndex: number, e: React.DragEvent) => {
+  const handleDragOver = (dayIndex: number, weekIdx: number, e: React.DragEvent) => {
     e.preventDefault();
 
     // Compute duration from template's time slot or default to 1h
@@ -2122,37 +2163,89 @@ export default function TemplatesPage() {
       snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour - 1, hourAtMouse)));
     }
 
+    // Check lunch overlap
     if (overlapsLunch(snappedHour, durationHours, lunchEnabled, lunchStart, lunchEnd)) {
       e.dataTransfer.dropEffect = 'none';
-      setDropPreview(null);
+      setDropPreview({ dayIndex, hour: snappedHour });
+      setDropConflict('lunch');
       return;
     }
 
-    e.dataTransfer.dropEffect = 'copy';
+    // Check for conflicts at drop target
+    const endHour = snappedHour + durationHours;
+    const dropVenueId = draggingTemplate?.venueId ?? null;
+    let conflictType: 'none' | 'venue' | 'instructor' | 'lunch' | 'fixed-time' = 'none';
+
+    // Venue conflict
+    const venueConflict = placedTemplates.find((p) => {
+      if (draggingPlacedId && p.id === draggingPlacedId) return false; // skip self
+      if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
+      const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
+      if (pVenueId !== dropVenueId) return false;
+      const pEnd = p.startHour + p.durationHours;
+      return snappedHour < pEnd && p.startHour < endHour;
+    });
+    if (venueConflict) conflictType = 'venue';
+
+    // Instructor conflict
+    if (!conflictType && draggingTemplate?.instructorId) {
+      const instructorConflict = placedTemplates.find((p) => {
+        if (draggingPlacedId && p.id === draggingPlacedId) return false;
+        if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
+        const pTemplate = templates.find((t) => t.id === p.templateId);
+        if (!pTemplate || pTemplate.instructorId !== draggingTemplate.instructorId) return false;
+        const pEnd = p.startHour + p.durationHours;
+        return snappedHour < pEnd && p.startHour < endHour;
+      });
+      if (instructorConflict) conflictType = 'instructor';
+    }
+
+    setDropConflict(conflictType);
+    e.dataTransfer.dropEffect = draggingPlacedId ? 'move' : 'copy';
     setDropPreview({ dayIndex, hour: snappedHour });
   };
 
   const handleDragLeave = () => {
     setDropPreview(null);
+    setDropConflict('none');
   };
 
   const handleDrop = (dayIndex: number, weekIdx: number, e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropPreview(null);
+    setDropConflict('none');
 
-    const templateToPlace = draggingTemplate ?? templates.find((t) => t.id === e.dataTransfer.getData('text/plain'));
+    // Check if this is a move of an existing placed event
+    let movingPlacedId: string | null = draggingPlacedId;
+    let templateToPlace = draggingTemplate;
+
+    // Also check dataTransfer for placed event data (in case drag started from PlacedTemplateBlock)
+    const placedData = e.dataTransfer.getData('application/placed-event');
+    if (placedData) {
+      try {
+        const parsed = JSON.parse(placedData);
+        movingPlacedId = parsed.placedId;
+        templateToPlace = templateToPlace ?? templates.find((t) => t.id === parsed.templateId) ?? null;
+      } catch { /* ignore */ }
+    }
+
+    if (!templateToPlace) {
+      templateToPlace = templates.find((t) => t.id === e.dataTransfer.getData('text/plain')) ?? null;
+    }
     if (!templateToPlace) return;
 
-    // Only prevent duplicates if template has specific grades assigned
-    // Templates without grades can be placed multiple times (once per grade)
-    const hasGrades = templateToPlace.gradeLevel || (templateToPlace.gradeGroups && templateToPlace.gradeGroups.length > 0);
-    const alreadyPlaced = hasGrades && placedTemplates.some(
-      (p) => p.templateId === templateToPlace.id && p.weekIndex === weekIdx,
-    );
-    if (alreadyPlaced) {
-      setToast({ message: 'This event is already scheduled this week', type: 'error', id: Date.now() });
-      setDraggingTemplate(null);
-      return;
+    // Only prevent duplicates for NEW placements (not moves)
+    if (!movingPlacedId) {
+      const hasGrades = templateToPlace.gradeLevel || (templateToPlace.gradeGroups && templateToPlace.gradeGroups.length > 0);
+      const alreadyPlaced = hasGrades && placedTemplates.some(
+        (p) => p.templateId === templateToPlace!.id && p.weekIndex === weekIdx,
+      );
+      if (alreadyPlaced) {
+        setToast({ message: 'This event is already scheduled this week', type: 'error', id: Date.now() });
+        setDraggingTemplate(null);
+        setDraggingPlacedId(null);
+        return;
+      }
     }
 
     // Compute duration and check for fixed start time
@@ -2167,9 +2260,17 @@ export default function TemplatesPage() {
       }
     }
 
+    // For moved placed events, preserve original duration
+    if (movingPlacedId) {
+      const existingPlaced = placedTemplates.find((p) => p.id === movingPlacedId);
+      if (existingPlaced) {
+        durationHours = existingPlaced.durationHours;
+      }
+    }
+
     let startHour: number;
     if (fixedStartHour !== null) {
-      // Template has a fixed time: always use it
+      // Template has a fixed time: always use it (only day can change)
       startHour = fixedStartHour;
     } else {
       // Free placement: use mouse position
@@ -2182,13 +2283,15 @@ export default function TemplatesPage() {
     // Block placement during lunch
     if (overlapsLunch(startHour, durationHours, lunchEnabled, lunchStart, lunchEnd)) {
       setDraggingTemplate(null);
+      setDraggingPlacedId(null);
       return;
     }
 
-    // Conflict detection - always check, even for templates without assigned venues
+    // Conflict detection - skip self when moving
     const endHour = startHour + durationHours;
     const dropVenueId = templateToPlace.venueId ?? null;
     const conflict = placedTemplates.find((p) => {
+      if (movingPlacedId && p.id === movingPlacedId) return false; // skip self
       if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
       const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
       if (pVenueId !== dropVenueId) return false;
@@ -2196,24 +2299,38 @@ export default function TemplatesPage() {
       return startHour < pEnd && p.startHour < endHour;
     });
     if (conflict) {
-      const venueName = templateToPlace.venue || venues.find((v) => v.id === templateToPlace.venueId)?.name || 'this slot';
+      const venueName = templateToPlace.venue || venues.find((v) => v.id === templateToPlace!.venueId)?.name || 'this slot';
       setToast({ message: `Conflict: ${venueName} is already booked at this time`, type: 'error', id: Date.now() });
       setDraggingTemplate(null);
+      setDraggingPlacedId(null);
       return;
     }
 
-    const newPlaced: PlacedTemplate = {
-      id: `placed-${Date.now()}-${Math.random()}`,
-      templateId: templateToPlace.id,
-      dayIndex,
-      startHour,
-      durationHours,
-      weekIndex: weekIdx,
-      venueId: templateToPlace.venueId ?? null,
-    };
+    if (movingPlacedId) {
+      // Moving existing placed event: update in place
+      setPlacedTemplates((prev) =>
+        prev.map((p) =>
+          p.id === movingPlacedId
+            ? { ...p, dayIndex, startHour, weekIndex: weekIdx }
+            : p
+        ),
+      );
+    } else {
+      // New placement
+      const newPlaced: PlacedTemplate = {
+        id: `placed-${Date.now()}-${Math.random()}`,
+        templateId: templateToPlace.id,
+        dayIndex,
+        startHour,
+        durationHours,
+        weekIndex: weekIdx,
+        venueId: templateToPlace.venueId ?? null,
+      };
+      setPlacedTemplates((prev) => [...prev, newPlaced]);
+    }
 
-    setPlacedTemplates((prev) => [...prev, newPlaced]);
     setDraggingTemplate(null);
+    setDraggingPlacedId(null);
     setIsDirty(true);
   };
 
@@ -2701,7 +2818,7 @@ export default function TemplatesPage() {
                   className="schedule-grid relative"
                   style={{ height: (dayEndHour - dayStartHour) * HOUR_HEIGHT }}
                   onDrop={(e) => handleDrop(dayIndex, weekIdx, e)}
-                  onDragOver={(e) => handleDragOver(dayIndex, e)}
+                  onDragOver={(e) => handleDragOver(dayIndex, weekIdx, e)}
                   onDragLeave={handleDragLeave}
                 >
                   {/* Hour rows */}
@@ -2764,24 +2881,62 @@ export default function TemplatesPage() {
                       const e = timeStringToHour(draggingTemplate.timeSlot.end);
                       if (e > s) previewDuration = e - s;
                     }
+                    // If moving an existing placed event, use its duration
+                    if (draggingPlacedId) {
+                      const existingPlaced = placedTemplates.find((p) => p.id === draggingPlacedId);
+                      if (existingPlaced) previewDuration = existingPlaced.durationHours;
+                    }
+
+                    // Conflict-aware colors
+                    const previewBorderColor = dropConflict === 'venue' || dropConflict === 'instructor'
+                      ? '#EF4444'
+                      : dropConflict === 'lunch'
+                        ? '#F59E0B'
+                        : dropConflict === 'fixed-time'
+                          ? '#94A3B8'
+                          : '#22C55E'; // green = valid
+                    const previewBgColor = dropConflict === 'venue' || dropConflict === 'instructor'
+                      ? '#FEF2F215'
+                      : dropConflict === 'lunch'
+                        ? '#FFFBEB15'
+                        : dropConflict === 'fixed-time'
+                          ? '#F1F5F915'
+                          : `${draggingTemplate.color}15`;
+
                     return (
                       <div
                         className="absolute left-0.5 right-0.5 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75"
                         style={{
                           top: `${(dropPreview.hour - dayStartHour) * HOUR_HEIGHT}px`,
                           height: `${previewDuration * HOUR_HEIGHT}px`,
-                          borderColor: draggingTemplate.color,
-                          backgroundColor: `${draggingTemplate.color}15`,
+                          borderColor: previewBorderColor,
+                          backgroundColor: previewBgColor,
                         }}
                       >
                         <div className="px-1.5 py-1">
-                          <p className="text-[11px] font-bold" style={{ color: draggingTemplate.color }}>
-                            {formatHour(dropPreview.hour)}
-                            {draggingTemplate.timeSlot ? ` – ${formatHour(dropPreview.hour + previewDuration)}` : ''}
-                          </p>
+                          <div className="flex items-center gap-1">
+                            {dropConflict === 'lunch' && <Coffee className="w-3 h-3 text-amber-500" />}
+                            {(dropConflict === 'venue' || dropConflict === 'instructor') && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                            {dropConflict === 'fixed-time' && <Lock className="w-3 h-3 text-slate-400" />}
+                            <p className="text-[11px] font-bold" style={{
+                              color: dropConflict !== 'none' ? previewBorderColor : draggingTemplate.color,
+                            }}>
+                              {formatHour(dropPreview.hour)}
+                              {(draggingTemplate.timeSlot || draggingPlacedId) ? ` – ${formatHour(dropPreview.hour + previewDuration)}` : ''}
+                            </p>
+                          </div>
                           <p className="text-[11px] font-semibold text-slate-500 truncate">
-                            {getBlockDisplayName(draggingTemplate)}
+                            {draggingPlacedId ? '↳ Moving' : ''} {getBlockDisplayName(draggingTemplate)}
                           </p>
+                          {dropConflict === 'venue' && (
+                            <p className="text-[9px] text-red-500 font-medium">Venue conflict</p>
+                          )}
+                          {dropConflict === 'instructor' && (
+                            <p className="text-[9px] text-red-500 font-medium">Instructor conflict</p>
+                          )}
+                          {dropConflict === 'lunch' && (
+                            <p className="text-[9px] text-amber-600 font-medium">Overlaps lunch</p>
+                          )}
                         </div>
                       </div>
                     );
@@ -2827,7 +2982,10 @@ export default function TemplatesPage() {
                                     handleResizePlaced(placed.id, newStart, newDuration)
                                   }
                                   onDelete={() => handleDeletePlaced(placed.id)}
+                                  onDragStart={handlePlacedDragStart}
+                                  onDragEnd={handleDragEnd}
                                   isSelected={selectedPlacedId === placed.id}
+                                  isDragging={draggingPlacedId === placed.id}
                                   dayStartHour={dayStartHour}
                                   dayEndHour={dayEndHour}
                                   hasConflict={conflictingPlacedIds.has(placed.id)}
@@ -2860,7 +3018,10 @@ export default function TemplatesPage() {
                                 handleResizePlaced(placed.id, newStart, newDuration)
                               }
                               onDelete={() => handleDeletePlaced(placed.id)}
+                              onDragStart={handlePlacedDragStart}
+                              onDragEnd={handleDragEnd}
                               isSelected={selectedPlacedId === placed.id}
+                              isDragging={draggingPlacedId === placed.id}
                               dayStartHour={dayStartHour}
                               dayEndHour={dayEndHour}
                               hasConflict={conflictingPlacedIds.has(placed.id)}

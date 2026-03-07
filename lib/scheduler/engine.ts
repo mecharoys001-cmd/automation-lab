@@ -35,6 +35,7 @@ import type {
   Session,
   SchoolCalendar,
   TimeWindow,
+  TemplatePlacement,
 } from './types';
 import {
   datesForDayOfWeek,
@@ -55,6 +56,17 @@ import {
   createRotationMap,
   type AutoAssignContext,
 } from './auto-assign';
+
+// ============================================================
+// Helpers
+// ============================================================
+
+/** Convert a fractional hour (e.g. 9.25) to "HH:MM" string (e.g. "09:15"). */
+function hourToTime(hour: number): string {
+  const h = Math.floor(hour);
+  const m = Math.round((hour - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
 
 // ============================================================
 // Main entry point
@@ -93,7 +105,13 @@ export async function runScheduler(
     };
   }
 
-  const { program, templates, calendar, rules, instructors, existing_sessions } = data;
+  const { program, templates, calendar, rules, instructors, existing_sessions, template_placements } = data;
+
+  // Build placement map: template_id → placement (Schedule Builder overrides)
+  const placementMap = new Map<string, TemplatePlacement>();
+  for (const p of template_placements) {
+    placementMap.set(p.template_id, p);
+  }
 
   // Derive full-year date range: explicit year param or program start year
   const year = yearOverride ?? new Date(program.start_date + 'T00:00:00').getFullYear();
@@ -154,12 +172,14 @@ export async function runScheduler(
   // 4. Generate sessions: iterate templates × dates
   // ----------------------------------------------------------
 
-  // Group templates by day_of_week for efficient date generation
+  // Group templates by effective day_of_week (placement overrides template)
   const templatesByDay = new Map<number, SessionTemplate[]>();
   for (const tmpl of templates) {
-    const group = templatesByDay.get(tmpl.day_of_week) ?? [];
+    const placement = placementMap.get(tmpl.id);
+    const effectiveDay = placement ? placement.day_index : tmpl.day_of_week;
+    const group = templatesByDay.get(effectiveDay) ?? [];
     group.push(tmpl);
-    templatesByDay.set(tmpl.day_of_week, group);
+    templatesByDay.set(effectiveDay, group);
   }
 
   for (const [dayOfWeek, dayTemplates] of templatesByDay) {
@@ -207,11 +227,30 @@ export async function runScheduler(
 
       // --- Process each template for this date ---
       for (const tmpl of dayTemplates) {
+        // --- Resolve effective times from Schedule Builder placement ---
+        // When a placement exists, override the template's day/time so all
+        // downstream logic (venue checks, instructor matching, draft creation)
+        // uses the Schedule Builder values.
+        const placement = placementMap.get(tmpl.id);
+        const startTime = placement ? hourToTime(placement.start_hour) : tmpl.start_time;
+        const endTime = placement
+          ? hourToTime(placement.start_hour + placement.duration_hours)
+          : tmpl.end_time;
+        const durationMinutes = placement
+          ? Math.round(placement.duration_hours * 60)
+          : tmpl.duration_minutes;
+
+        // Create an effective template with resolved times so auto-assign
+        // functions see the correct values without modifying the original.
+        const effectiveTmpl = placement
+          ? { ...tmpl, start_time: startTime, end_time: endTime, duration_minutes: durationMinutes }
+          : tmpl;
+
         // Initialize template stats
         if (!templateStats.has(tmpl.id)) {
           templateStats.set(tmpl.id, {
             template_id: tmpl.id,
-            day_of_week: tmpl.day_of_week,
+            day_of_week: dayOfWeek,
             grade_groups: tmpl.grade_groups,
             sessions_generated: 0,
             sessions_unassigned: 0,
@@ -240,13 +279,13 @@ export async function runScheduler(
         // --- Early dismissal check ---
         if (earlyDismissal && earlyDismissal.early_dismissal_time) {
           const dismissalMinutes = timeToMinutes(earlyDismissal.early_dismissal_time);
-          const sessionStartMinutes = timeToMinutes(tmpl.start_time);
+          const sessionStartMinutes = timeToMinutes(startTime);
           if (sessionStartMinutes >= dismissalMinutes) {
             skippedDates.push({
               date: targetDate,
               template_id: tmpl.id,
               reason: 'early_dismissal',
-              detail: `Session starts at ${tmpl.start_time}, dismissal at ${earlyDismissal.early_dismissal_time}`,
+              detail: `Session starts at ${startTime}, dismissal at ${earlyDismissal.early_dismissal_time}`,
             });
             continue;
           }
@@ -270,13 +309,13 @@ export async function runScheduler(
               continue;
             }
 
-            const sessionWindow = toTimeWindow(tmpl.start_time, tmpl.end_time);
+            const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(venue.availability_json, dayOfWeek, sessionWindow)) {
               skippedDates.push({
                 date: targetDate,
                 template_id: tmpl.id,
                 reason: 'venue_unavailable',
-                detail: `Venue "${venue.name} - ${venue.space_type}" not available at ${tmpl.start_time}-${tmpl.end_time}`,
+                detail: `Venue "${venue.name} - ${venue.space_type}" not available at ${startTime}-${endTime}`,
               });
               continue;
             }
@@ -286,8 +325,8 @@ export async function runScheduler(
               const atCapacity = checkVenueCapacity(
                 venue,
                 targetDate,
-                tmpl.start_time,
-                tmpl.end_time,
+                startTime,
+                endTime,
                 existing_sessions,
                 generatedSessions,
                 bufferSettings
@@ -297,7 +336,7 @@ export async function runScheduler(
                   date: targetDate,
                   template_id: tmpl.id,
                   reason: 'venue_at_capacity',
-                  detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${tmpl.start_time}-${tmpl.end_time}`,
+                  detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${startTime}-${endTime}`,
                 });
                 continue;
               }
@@ -333,7 +372,7 @@ export async function runScheduler(
               // Fallback to best-fit matching for legacy templates without instructor_id
               matchedInstructor = findBestInstructor(
                 instructors,
-                tmpl,
+                effectiveTmpl,
                 targetDate,
                 dayOfWeek,
                 calendarEntries,
@@ -347,21 +386,21 @@ export async function runScheduler(
           }
 
           case 'tagged_slot': {
-            const result = findInstructorForTaggedSlot(tmpl, autoCtx, rotationMap);
+            const result = findInstructorForTaggedSlot(effectiveTmpl, autoCtx, rotationMap);
             matchedInstructor = result.instructor;
             schedulingNotes = result.scheduling_notes;
             break;
           }
 
           case 'auto_assign': {
-            const result = findInstructorForAutoAssign(tmpl, autoCtx, rotationMap);
+            const result = findInstructorForAutoAssign(effectiveTmpl, autoCtx, rotationMap);
             matchedInstructor = result.instructor;
             schedulingNotes = result.scheduling_notes;
             break;
           }
 
           case 'time_block': {
-            const result = findInstructorForTimeBlock(tmpl, autoCtx, rotationMap);
+            const result = findInstructorForTimeBlock(effectiveTmpl, autoCtx, rotationMap);
             matchedInstructor = result.instructor;
             schedulingNotes = result.scheduling_notes;
             break;
@@ -371,7 +410,7 @@ export async function runScheduler(
             // Unknown template type — fall back to best-fit
             matchedInstructor = findBestInstructor(
               instructors,
-              tmpl,
+              effectiveTmpl,
               targetDate,
               dayOfWeek,
               calendarEntries,
@@ -393,9 +432,9 @@ export async function runScheduler(
             ? []
             : tmpl.grade_groups,
           date: targetDate,
-          start_time: tmpl.start_time,
-          end_time: tmpl.end_time,
-          duration_minutes: tmpl.duration_minutes,
+          start_time: startTime,
+          end_time: endTime,
+          duration_minutes: durationMinutes,
           status: 'draft',
           is_makeup: false,
           replaces_session_id: null,
@@ -497,6 +536,7 @@ async function loadSchedulerData(
     instructorsRes,
     venuesRes,
     existingRes,
+    placementsRes,
   ] = await Promise.all([
     supabase.from('programs').select('*').eq('id', programId).single(),
     supabase
@@ -516,6 +556,11 @@ async function loadSchedulerData(
       .select('*')
       .eq('program_id', programId)
       .in('status', ['published', 'completed']),
+    // Load Schedule Builder placements (may not exist yet)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from('template_placements') as any)
+      .select('*')
+      .eq('program_id', programId),
   ]);
 
   if (programRes.error) throw new Error(`Program not found: ${programRes.error.message}`);
@@ -525,6 +570,9 @@ async function loadSchedulerData(
   if (instructorsRes.error) throw new Error(`Failed to load instructors: ${instructorsRes.error.message}`);
   if (venuesRes.error) throw new Error(`Failed to load venues: ${venuesRes.error.message}`);
   if (existingRes.error) throw new Error(`Failed to load existing sessions: ${existingRes.error.message}`);
+  // Placements are optional — table may not exist yet
+  const placements: TemplatePlacement[] =
+    placementsRes.error ? [] : (placementsRes.data ?? []);
 
   return {
     program: programRes.data,
@@ -534,6 +582,7 @@ async function loadSchedulerData(
     instructors: instructorsRes.data ?? [],
     venues: venuesRes.data ?? [],
     existing_sessions: existingRes.data ?? [],
+    template_placements: placements,
   };
 }
 
@@ -738,20 +787,26 @@ function findBestInstructor(
 ): Instructor | null {
   const sessionWindow = toTimeWindow(template.start_time, template.end_time);
   const candidates: InstructorCandidate[] = [];
+  const rejections: { name: string; reason: string }[] = [];
 
   for (const instructor of instructors) {
+    const name = `${instructor.first_name} ${instructor.last_name}`;
+
     // 1. Skills check
     if (!skillsMatch(instructor.skills, template.required_skills)) {
+      rejections.push({ name, reason: `skills [${(instructor.skills ?? []).join(', ')}] don't match required [${(template.required_skills ?? []).join(', ')}]` });
       continue;
     }
 
     // 2. Availability check — instructor's weekly availability must cover this time window
     if (!availabilityCoversWindow(instructor.availability_json, dayOfWeek, sessionWindow)) {
+      rejections.push({ name, reason: `not available day=${dayOfWeek} time=${template.start_time ?? 'null'}-${template.end_time ?? 'null'}` });
       continue;
     }
 
     // 3. Double-booking check — instructor can't be in two places at once
     if (isInstructorBooked(instructor.id, date, sessionWindow, existingSessions, generatedSessions, bufferSettings)) {
+      rejections.push({ name, reason: 'already booked' });
       continue;
     }
 
@@ -762,6 +817,7 @@ function findBestInstructor(
         e.target_instructor_id === instructor.id
     );
     if (hasException) {
+      rejections.push({ name, reason: 'calendar exception' });
       continue;
     }
 
@@ -772,7 +828,14 @@ function findBestInstructor(
     });
   }
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) {
+    console.log(
+      `[scheduler] findBestInstructor FAILED — template requires [${(template.required_skills ?? []).join(', ')}] ` +
+      `on ${date} (day ${dayOfWeek}) ${template.start_time ?? 'null'}-${template.end_time ?? 'null'}. ` +
+      `Rejections: ${rejections.map(r => `${r.name}: ${r.reason}`).join('; ')}`
+    );
+    return null;
+  }
 
   // 5. Load balancing — pick the candidate with the fewest sessions
   candidates.sort((a, b) => a.session_count - b.session_count);

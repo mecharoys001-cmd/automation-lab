@@ -35,7 +35,8 @@ export function dayIndexToName(dayIndex: number): string {
  * Parses a time string ("HH:MM" or "HH:MM:SS") to minutes since midnight.
  * Returns NaN for invalid input.
  */
-export function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string | null | undefined): number {
+  if (!time) return NaN;
   const parts = time.split(':');
   const hours = parseInt(parts[0], 10);
   const minutes = parseInt(parts[1], 10);
@@ -62,8 +63,12 @@ export function toTimeWindow(startTime: string, endTime: string): TimeWindow {
  * Checks if two time windows overlap.
  * Two windows overlap when one starts before the other ends AND ends after the other starts.
  * Adjacent windows (one ends exactly when the other starts) do NOT overlap.
+ * Returns false if either window has NaN values (unknown times can't conflict).
  */
 export function timeWindowsOverlap(a: TimeWindow, b: TimeWindow): boolean {
+  if (isNaN(a.start_minutes) || isNaN(a.end_minutes) || isNaN(b.start_minutes) || isNaN(b.end_minutes)) {
+    return false;
+  }
   return a.start_minutes < b.end_minutes && a.end_minutes > b.start_minutes;
 }
 
@@ -85,6 +90,8 @@ export function timeWindowContains(outer: TimeWindow, inner: TimeWindow): boolea
  *
  * Returns true if at least one block in the day's schedule contains the window.
  * Returns true if availability_json is null (treat as "always available").
+ * Returns true if sessionWindow has NaN values (null-time templates are
+ * unconstrained — just check the instructor has ANY availability on this day).
  */
 export function availabilityCoversWindow(
   availability: AvailabilityJson | null,
@@ -99,6 +106,12 @@ export function availabilityCoversWindow(
 
   // No blocks defined for this day = unavailable
   if (!blocks || blocks.length === 0) return false;
+
+  // NaN session window = template has no fixed time (flexible placement).
+  // Just verify the instructor has at least one block on this day.
+  if (isNaN(sessionWindow.start_minutes) || isNaN(sessionWindow.end_minutes)) {
+    return true; // blocks.length > 0 already verified above
+  }
 
   // At least one block must fully contain the session window
   return blocks.some((block) => {
@@ -120,7 +133,8 @@ export function formatDate(date: Date): string {
 }
 
 /** Parses "YYYY-MM-DD" to a Date (at midnight UTC to avoid timezone issues) */
-export function parseDate(dateStr: string): Date {
+export function parseDate(dateStr: string | null | undefined): Date {
+  if (!dateStr) return new Date(NaN);
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
