@@ -58,7 +58,6 @@ import {
   createRotationMap,
   type AutoAssignContext,
 } from './auto-assign';
-import { optimizeWithLocalSearch } from './local-search';
 
 // ============================================================
 // Helpers
@@ -586,52 +585,11 @@ export async function runScheduler(
   }
 
   // ----------------------------------------------------------
-  // 4b. Local search optimization (Week 2)
-  //     Post-process generated sessions to reduce unassigned count
-  // ----------------------------------------------------------
-  console.log('[scheduler] Running local search optimization...');
-  const assignedSessions = generatedSessions.filter(s => s.instructor_id !== null);
-  const unassignedSessions = generatedSessions.filter(s => s.instructor_id === null);
-  
-  const optimizationResult = optimizeWithLocalSearch(
-    assignedSessions,
-    unassignedSessions,
-    {
-      instructors,
-      existingSessions: existing_sessions,
-      bufferSettings,
-    },
-    500 // Max iterations for large programs
-  );
-
-  // Replace generatedSessions with optimized version
-  const optimizedSessions = optimizationResult.optimized;
-  const optimizationImprovement = unassignedSessions.length - optimizationResult.unassignedCount;
-  
-  if (optimizationImprovement > 0) {
-    console.log(`[scheduler] Local search assigned ${optimizationImprovement} additional sessions`);
-  }
-
-  // Update stats to reflect optimization results
-  for (const session of optimizedSessions) {
-    if (session.instructor_id && session.template_id && unassignedSessions.some(u => u.template_id === session.template_id && u.date === session.date)) {
-      // This session was unassigned but is now assigned
-      const stats = templateStats.get(session.template_id);
-      if (stats) {
-        stats.sessions_unassigned = Math.max(0, stats.sessions_unassigned - 1);
-      }
-    }
-  }
-
-  // Use optimized sessions for insertion
-  const finalSessions = optimizedSessions;
-
-  // ----------------------------------------------------------
   // 5. Batch insert generated sessions
   //    (skipped in preview mode — no DB mutations)
   // ----------------------------------------------------------
-  if (finalSessions.length > 0 && !preview) {
-    const insertError = await insertSessions(supabase, finalSessions);
+  if (generatedSessions.length > 0 && !preview) {
+    const insertError = await insertSessions(supabase, generatedSessions);
     if (insertError) {
       return {
         success: false,
@@ -651,7 +609,7 @@ export async function runScheduler(
   // 6. Build result
   // ----------------------------------------------------------
   const statsArray = Array.from(templateStats.values());
-  const totalCreated = finalSessions.length;
+  const totalCreated = generatedSessions.length;
   const totalUnassigned = statsArray.reduce((sum, s) => sum + s.sessions_unassigned, 0);
 
   // Build preview statistics: byVenue and byWeek
@@ -659,7 +617,7 @@ export async function runScheduler(
   const byWeek: Record<string, number> = {};
   const venueNameMap = new Map(data.venues.map((v) => [v.id, v.name]));
 
-  for (const draft of finalSessions) {
+  for (const draft of generatedSessions) {
     // byVenue: count by venue name
     const venueName = (draft.venue_id ? venueNameMap.get(draft.venue_id) : null) ?? 'Unassigned';
     byVenue[venueName] = (byVenue[venueName] ?? 0) + 1;
