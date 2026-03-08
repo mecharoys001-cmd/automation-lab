@@ -631,6 +631,17 @@ export async function runScheduler(
     byWeek[weekKey] = (byWeek[weekKey] ?? 0) + 1;
   }
 
+  // Build skip reason breakdown for diagnostics
+  const skipReasonCounts = new Map<string, number>();
+  for (const skip of skippedDates) {
+    const count = skipReasonCounts.get(skip.reason) ?? 0;
+    skipReasonCounts.set(skip.reason, count + 1);
+  }
+  
+  const skipBreakdown = Array.from(skipReasonCounts.entries())
+    .map(([reason, count]) => `${count} ${reason}`)
+    .join(', ');
+
   const summary = [
     `Generated ${totalCreated} draft session${totalCreated !== 1 ? 's' : ''} for "${program.name}".`,
     totalUnassigned > 0
@@ -643,7 +654,7 @@ export async function runScheduler(
       ? `Cleared ${draftsCleared} previous draft${draftsCleared !== 1 ? 's' : ''} before regeneration.`
       : '',
     skippedDates.length > 0
-      ? `Skipped ${skippedDates.length} date/template combination${skippedDates.length !== 1 ? 's' : ''} (blackouts, early dismissals, conflicts).`
+      ? `Skipped ${skippedDates.length} date/template combination${skippedDates.length !== 1 ? 's' : ''}: ${skipBreakdown}`
       : '',
   ]
     .filter(Boolean)
