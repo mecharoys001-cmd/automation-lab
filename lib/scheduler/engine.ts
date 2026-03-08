@@ -690,7 +690,7 @@ async function clearDraftSessions(
   supabase: SupabaseClient<Database>,
   programId: string
 ): Promise<number> {
-  const BATCH = 2000;
+  const BATCH = 200;
   let totalDeleted = 0;
 
   while (true) {

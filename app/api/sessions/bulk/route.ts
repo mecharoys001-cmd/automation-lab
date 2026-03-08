@@ -33,7 +33,8 @@ export async function DELETE(request: NextRequest) {
     // Batch delete using paginated ID fetches to avoid both:
     //   - Supabase max_rows cap (1000) on SELECT
     //   - PostgreSQL statement_timeout on large single DELETEs
-    const BATCH = 2000;
+    // PostgREST .in() has a URL length limit — 200 UUIDs ≈ 7KB, well under the ~8KB cap
+    const BATCH = 200;
     let totalDeleted = 0;
 
     // eslint-disable-next-line no-constant-condition
