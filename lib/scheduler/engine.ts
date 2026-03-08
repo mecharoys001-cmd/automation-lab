@@ -417,7 +417,37 @@ export async function runScheduler(
 
         // --- Resolve venue ---
         // Use effective template (which includes placement overrides) for venue resolution
-        const venueId = effectiveTmpl.venue_id ?? program.default_venue_id;
+        let venueId = effectiveTmpl.venue_id ?? program.default_venue_id;
+
+        // --- Auto-assign venue when none specified ---
+        if (!venueId && data.venues.length > 0) {
+          for (const candidateVenue of data.venues) {
+            // Skip if venue is blacked out
+            if (isVenueBlackoutDate(candidateVenue, targetDate)) continue;
+
+            // Skip if venue not available at this time
+            const sessionWindow = toTimeWindow(startTime, endTime);
+            if (!availabilityCoversWindow(candidateVenue.availability_json, dayOfWeek, sessionWindow)) continue;
+
+            // Skip if venue at capacity
+            if (!program.allows_mixing) {
+              const atCapacity = checkVenueCapacity(
+                candidateVenue,
+                targetDate,
+                startTime,
+                endTime,
+                existing_sessions,
+                generatedSessions,
+                bufferSettings
+              );
+              if (atCapacity) continue;
+            }
+
+            // Found an available venue
+            venueId = candidateVenue.id;
+            break;
+          }
+        }
 
         // --- Check venue availability ---
         if (venueId) {
