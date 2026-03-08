@@ -851,24 +851,31 @@ function findBestInstructor(
 ): { instructor: Instructor | null; scheduling_notes: string | null } {
   const sessionWindow = toTimeWindow(template.start_time, template.end_time);
   const candidates: InstructorCandidate[] = [];
-  const rejectionCounts = { skills: 0, availability: 0, booked: 0, exception: 0 };
+
+  // Track qualified instructors (have the right skills) and why they were rejected
+  const qualifiedRejections: { name: string; reason: string }[] = [];
+  let unqualifiedCount = 0;
 
   for (const instructor of instructors) {
+    const name = `${instructor.first_name} ${instructor.last_name}`;
+
     // 1. Skills check
     if (!skillsMatch(instructor.skills, template.required_skills)) {
-      rejectionCounts.skills++;
+      unqualifiedCount++;
       continue;
     }
 
+    // This instructor IS qualified — track why they can't be assigned
+
     // 2. Availability check — instructor's weekly availability must cover this time window
     if (!availabilityCoversWindow(instructor.availability_json, dayOfWeek, sessionWindow)) {
-      rejectionCounts.availability++;
+      qualifiedRejections.push({ name, reason: 'not available at this time' });
       continue;
     }
 
     // 3. Double-booking check — instructor can't be in two places at once
     if (isInstructorBooked(instructor.id, date, sessionWindow, existingSessions, generatedSessions, bufferSettings)) {
-      rejectionCounts.booked++;
+      qualifiedRejections.push({ name, reason: 'already booked' });
       continue;
     }
 
@@ -879,7 +886,7 @@ function findBestInstructor(
         e.target_instructor_id === instructor.id
     );
     if (hasException) {
-      rejectionCounts.exception++;
+      qualifiedRejections.push({ name, reason: 'calendar exception' });
       continue;
     }
 
@@ -891,27 +898,35 @@ function findBestInstructor(
   }
 
   if (candidates.length === 0) {
-    // Build a human-readable explanation of why no instructor was found
-    const reasons: string[] = [];
     const required = template.required_skills ?? [];
-    if (rejectionCounts.skills > 0) {
-      reasons.push(`${rejectionCounts.skills} lack required skills (${required.join(', ')})`);
-    }
-    if (rejectionCounts.availability > 0) {
-      reasons.push(`${rejectionCounts.availability} not available at ${template.start_time?.slice(0, 5) ?? '?'}–${template.end_time?.slice(0, 5) ?? '?'} on ${dayIndexToName(dayOfWeek)}`);
-    }
-    if (rejectionCounts.booked > 0) {
-      reasons.push(`${rejectionCounts.booked} already booked at this time`);
-    }
-    if (rejectionCounts.exception > 0) {
-      reasons.push(`${rejectionCounts.exception} have calendar exceptions on ${date}`);
-    }
-    if (reasons.length === 0) {
-      reasons.push('No active instructors in the system');
+    const timeSlot = `${template.start_time?.slice(0, 5) ?? '?'}–${template.end_time?.slice(0, 5) ?? '?'}`;
+    const day = dayIndexToName(dayOfWeek);
+
+    if (qualifiedRejections.length === 0 && unqualifiedCount > 0) {
+      // Nobody has the skill at all
+      const notes = `No instructor with ${required.join(', ')} skills`;
+      return { instructor: null, scheduling_notes: notes };
     }
 
-    const notes = `No instructor available: ${reasons.join('; ')}`;
-    return { instructor: null, scheduling_notes: notes };
+    if (qualifiedRejections.length > 0) {
+      // Qualified instructors exist but can't make it — this is the actionable info
+      const byReason = new Map<string, string[]>();
+      for (const r of qualifiedRejections) {
+        const names = byReason.get(r.reason) ?? [];
+        names.push(r.name);
+        byReason.set(r.reason, names);
+      }
+
+      const parts: string[] = [];
+      for (const [reason, names] of byReason) {
+        parts.push(`${names.join(', ')} — ${reason}`);
+      }
+
+      const notes = `${qualifiedRejections.length} qualified instructor${qualifiedRejections.length > 1 ? 's' : ''} for ${required.join(', ')} can't teach ${day} ${timeSlot}: ${parts.join('; ')}`;
+      return { instructor: null, scheduling_notes: notes };
+    }
+
+    return { instructor: null, scheduling_notes: 'No active instructors in the system' };
   }
 
   // 5. Load balancing — pick the candidate with the fewest sessions
