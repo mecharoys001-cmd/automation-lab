@@ -29,6 +29,8 @@ interface TemplateStats {
   grade_groups: string[];
   sessions_generated: number;
   sessions_unassigned: number;
+  unassigned_reason?: string;
+  required_skills?: string[];
 }
 
 interface SkippedDate {
@@ -671,47 +673,60 @@ export function SchedulerResultModal({
                   const isExpanded = expandedTemplate === key;
                   const canExpand = ts.sessions_unassigned > 0 && isPreview && !!programId;
 
+                  const hasIssue = ts.sessions_unassigned > 0;
+
                   return (
                     <div key={key}>
-                      <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-medium text-slate-500 w-8">
-                            {DAY_NAMES[ts.day_of_week]}
-                          </span>
-                          <span className="text-[12px] text-slate-700">
-                            {ts.grade_groups.length > 0
-                              ? ts.grade_groups.join(', ')
-                              : 'All grades'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-medium text-slate-900 tabular-nums">
-                            {ts.sessions_generated}
-                          </span>
-                          {ts.sessions_unassigned > 0 && (
-                            canExpand ? (
-                              <button
-                                onClick={() =>
-                                  setExpandedTemplate(isExpanded ? null : key)
-                                }
-                                className="inline-flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
-                              >
-                                {ts.sessions_unassigned} unassigned
-                                {isExpanded ? (
-                                  <ChevronUp className="w-3 h-3" />
-                                ) : (
-                                  <ChevronDown className="w-3 h-3" />
-                                )}
-                              </button>
-                            ) : (
-                              <Tooltip text={`${ts.sessions_unassigned} session(s) without instructor`}>
-                                <span className="text-[11px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                      <div className={`rounded-lg px-3 py-2 ${hasIssue ? 'bg-amber-50/60 border border-amber-200' : 'bg-slate-50'}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] font-medium text-slate-500 w-8 shrink-0">
+                              {DAY_NAMES[ts.day_of_week]}
+                            </span>
+                            <span className="text-[12px] text-slate-700 truncate">
+                              {ts.grade_groups.length > 0
+                                ? ts.grade_groups.join(', ')
+                                : 'All grades'}
+                            </span>
+                            {ts.required_skills && ts.required_skills.length > 0 && (
+                              <span className="text-[10px] text-slate-400 truncate">
+                                ({ts.required_skills.join(', ')})
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[12px] font-medium text-slate-900 tabular-nums">
+                              {ts.sessions_generated}
+                            </span>
+                            {hasIssue && (
+                              canExpand ? (
+                                <button
+                                  onClick={() =>
+                                    setExpandedTemplate(isExpanded ? null : key)
+                                  }
+                                  className="inline-flex items-center gap-1 text-[11px] text-amber-600 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                                >
+                                  {ts.sessions_unassigned} unassigned
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-3 h-3" />
+                                  ) : (
+                                    <ChevronDown className="w-3 h-3" />
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">
                                   {ts.sessions_unassigned} unassigned
                                 </span>
-                              </Tooltip>
-                            )
-                          )}
+                              )
+                            )}
+                          </div>
                         </div>
+                        {/* Inline reason for unassigned */}
+                        {hasIssue && ts.unassigned_reason && (
+                          <p className="text-[10px] text-amber-700 mt-1 ml-10 leading-relaxed">
+                            ⚠ {ts.unassigned_reason}
+                          </p>
+                        )}
                       </div>
 
                       {/* Expandable assignment panel */}

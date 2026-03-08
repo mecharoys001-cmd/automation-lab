@@ -69,6 +69,10 @@ export interface TemplateStats {
   grade_groups: string[];
   sessions_generated: number;
   sessions_unassigned: number;
+  /** Human-readable reason why sessions are unassigned (if any) */
+  unassigned_reason?: string;
+  /** Required skills from the template */
+  required_skills?: string[];
 }
 
 /** Record of a skipped date with reason */

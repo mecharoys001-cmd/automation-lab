@@ -493,8 +493,12 @@ export async function runScheduler(
           instructorSessionCounts.set(matchedInstructor.id, count + 1);
         } else {
           stats.sessions_unassigned++;
-          // Record the reason for the unassigned summary
+          // Attach the reason to the template stat and the global summary
           const reason = schedulingNotes ?? 'No instructor available (unknown reason)';
+          if (!stats.unassigned_reason) {
+            stats.unassigned_reason = reason;
+            stats.required_skills = tmpl.required_skills ?? [];
+          }
           unassignedReasons.set(reason, (unassignedReasons.get(reason) ?? 0) + 1);
         }
       }
