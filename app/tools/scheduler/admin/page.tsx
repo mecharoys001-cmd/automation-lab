@@ -1056,19 +1056,26 @@ function CalendarDashboard() {
       const url = `/api/sessions/bulk?program_id=${encodeURIComponent(selectedProgramId ?? '')}`;
       let totalDeleted = 0;
 
-      // Delete in chunks — each request deletes one batch and returns { done, deleted }
+      // Fire parallel delete requests — each clears one day's drafts.
+      // Run 10 concurrent requests for speed. Stop when any returns done=true.
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const res = await fetch(url, { method: 'DELETE', cache: 'no-store' });
-        const body = await res.json().catch(() => ({}));
+        const PARALLEL = 10;
+        const results = await Promise.all(
+          Array.from({ length: PARALLEL }, () =>
+            fetch(url, { method: 'DELETE', cache: 'no-store' })
+              .then((r) => r.json())
+              .catch(() => ({ done: false, deleted: 0, error: true }))
+          )
+        );
 
-        if (!res.ok) {
-          throw new Error(body.error || 'Failed to clear events');
+        let allDone = false;
+        for (const body of results) {
+          totalDeleted += body.deleted ?? 0;
+          if (body.done) allDone = true;
         }
 
-        totalDeleted += body.deleted ?? 0;
-
-        if (body.done) break;
+        if (allDone) break;
       }
 
       setEvents([]);

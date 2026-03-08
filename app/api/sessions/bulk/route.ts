@@ -1,19 +1,19 @@
 /**
  * DELETE /api/sessions/bulk
  *
- * Deletes all sessions for a given program.
+ * Deletes draft sessions for a program, one week at a time to avoid
+ * PostgreSQL statement_timeout. Client calls repeatedly until done.
  *
  * Query params:
- *   - program_id (required): UUID of the program whose sessions should be deleted
+ *   - program_id (required)
  *
- * Response: { success: true, deleted: number }
+ * Response: { success: true, deleted: number, done: boolean }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 
-// Allow up to 60s for bulk deletes (Vercel Pro/Enterprise)
 export const maxDuration = 60;
 
 export async function DELETE(request: NextRequest) {
@@ -30,51 +30,49 @@ export async function DELETE(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Batch delete using paginated ID fetches to avoid both:
-    //   - Supabase max_rows cap (1000) on SELECT
-    //   - PostgreSQL statement_timeout on large single DELETEs
-    // Delete one batch per request — client calls repeatedly until done.
-    // This avoids Vercel's 10s timeout on the free tier.
-    const BATCH = 200;
-
+    // Find the date range of remaining drafts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: batch, error: fetchErr } = await (supabase.from('sessions') as any)
-      .select('id')
+    const { data: range, error: rangeErr } = await (supabase.from('sessions') as any)
+      .select('date')
       .eq('program_id', programId)
       .eq('status', 'draft')
-      .range(0, BATCH - 1);
+      .order('date', { ascending: true })
+      .limit(1)
+      .single();
 
-    if (fetchErr) {
-      return NextResponse.json(
-        { error: `Failed to fetch sessions: ${fetchErr.message}` },
-        { status: 500 },
-      );
-    }
-
-    if (!batch || batch.length === 0) {
+    if (rangeErr || !range) {
+      // No drafts left
       trackScheduleChange();
       return NextResponse.json({ success: true, deleted: 0, done: true });
     }
 
-    const ids = batch.map((s: { id: string }) => s.id);
+    // Delete one day at a time — a single day's sessions (even 300+) is small
+    // enough for PostgreSQL to handle without statement_timeout.
+    const targetDate = range.date;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: delErr } = await (supabase.from('sessions') as any)
+    const { data: deleted, error: delErr } = await (supabase.from('sessions') as any)
       .delete()
-      .in('id', ids);
+      .eq('program_id', programId)
+      .eq('status', 'draft')
+      .eq('date', targetDate)
+      .select('id');
 
     if (delErr) {
       return NextResponse.json(
-        { error: `Failed to delete batch: ${delErr.message}` },
+        { error: `Failed to delete sessions for ${targetDate}: ${delErr.message}` },
         { status: 500 },
       );
     }
 
-    const totalDeleted = ids.length;
-    const hasMore = ids.length === BATCH;
+    const count = deleted?.length ?? 0;
 
-    if (!hasMore) trackScheduleChange();
-    return NextResponse.json({ success: true, deleted: totalDeleted, done: !hasMore });
+    return NextResponse.json({
+      success: true,
+      deleted: count,
+      done: false, // Client should call again to check for more
+      date: targetDate,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
