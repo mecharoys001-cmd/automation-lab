@@ -13,6 +13,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 
+// Allow up to 60s for bulk deletes (Vercel Pro/Enterprise)
+export const maxDuration = 60;
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -27,35 +30,48 @@ export async function DELETE(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Get count first, then delete in one statement.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count, error: countError } = await (supabase.from('sessions') as any)
-      .select('*', { count: 'exact', head: true })
-      .eq('program_id', programId)
-      .eq('status', 'draft');
+    // Batch delete using paginated ID fetches to avoid both:
+    //   - Supabase max_rows cap (1000) on SELECT
+    //   - PostgreSQL statement_timeout on large single DELETEs
+    const BATCH = 2000;
+    let totalDeleted = 0;
 
-    if (countError) {
-      return NextResponse.json(
-        { error: `Failed to count sessions: ${countError.message}` },
-        { status: 500 },
-      );
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // Fetch a page of IDs using .range() to bypass max_rows
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: batch, error: fetchErr } = await (supabase.from('sessions') as any)
+        .select('id')
+        .eq('program_id', programId)
+        .eq('status', 'draft')
+        .range(0, BATCH - 1);
+
+      if (fetchErr) {
+        return NextResponse.json(
+          { error: `Failed to fetch sessions: ${fetchErr.message}` },
+          { status: 500 },
+        );
+      }
+
+      if (!batch || batch.length === 0) break;
+
+      const ids = batch.map((s: { id: string }) => s.id);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: delErr } = await (supabase.from('sessions') as any)
+        .delete()
+        .in('id', ids);
+
+      if (delErr) {
+        return NextResponse.json(
+          { error: `Failed to delete batch: ${delErr.message}` },
+          { status: 500 },
+        );
+      }
+
+      totalDeleted += ids.length;
+      if (ids.length < BATCH) break;
     }
-
-    // Single bulk DELETE — PostgREST executes as one SQL statement server-side.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: deleteError } = await (supabase.from('sessions') as any)
-      .delete()
-      .eq('program_id', programId)
-      .eq('status', 'draft');
-
-    if (deleteError) {
-      return NextResponse.json(
-        { error: `Failed to delete sessions: ${deleteError.message}` },
-        { status: 500 },
-      );
-    }
-
-    const totalDeleted = count ?? 0;
 
     trackScheduleChange();
     return NextResponse.json({ success: true, deleted: totalDeleted });

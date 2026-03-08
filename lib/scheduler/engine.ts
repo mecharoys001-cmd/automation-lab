@@ -685,35 +685,46 @@ async function loadBufferSettings(
 // Draft management
 // ============================================================
 
-/** Deletes all draft sessions for a program. Returns count deleted. */
+/** Deletes all draft sessions for a program in small batches to avoid statement timeout. */
 async function clearDraftSessions(
   supabase: SupabaseClient<Database>,
   programId: string
 ): Promise<number> {
-  // Count first, then delete in a single SQL statement (no batch loops).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count, error: countError } = await (supabase.from('sessions') as any)
-    .select('*', { count: 'exact', head: true })
-    .eq('program_id', programId)
-    .eq('status', 'draft');
+  const BATCH = 2000;
+  let totalDeleted = 0;
 
-  if (countError) {
-    console.error('Failed to count draft sessions:', countError.message);
-    return 0;
+  while (true) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: batch, error: fetchErr } = await (supabase.from('sessions') as any)
+      .select('id')
+      .eq('program_id', programId)
+      .eq('status', 'draft')
+      .range(0, BATCH - 1);
+
+    if (fetchErr) {
+      console.error('Failed to fetch draft session IDs:', fetchErr.message);
+      break;
+    }
+
+    if (!batch || batch.length === 0) break;
+
+    const ids = batch.map((s: { id: string }) => s.id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: delErr } = await (supabase.from('sessions') as any)
+      .delete()
+      .in('id', ids);
+
+    if (delErr) {
+      console.error('Failed to delete draft batch:', delErr.message);
+      break;
+    }
+
+    totalDeleted += ids.length;
+    if (ids.length < BATCH) break;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: deleteError } = await (supabase.from('sessions') as any)
-    .delete()
-    .eq('program_id', programId)
-    .eq('status', 'draft');
-
-  if (deleteError) {
-    console.error('Failed to delete draft sessions:', deleteError.message);
-    return 0;
-  }
-
-  return count ?? 0;
+  return totalDeleted;
 }
 
 /** Batch inserts sessions in chunks to avoid payload limits. */
