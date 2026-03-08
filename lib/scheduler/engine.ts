@@ -203,6 +203,8 @@ export async function runScheduler(
   const rotationMap = createRotationMap();
   // Counter for sessions with scheduling warnings
   let sessionsWithWarnings = 0;
+  // Track unassigned reasons for user-facing diagnostics
+  const unassignedReasons = new Map<string, number>();
 
   // ----------------------------------------------------------
   // 4. Generate sessions: iterate templates × dates
@@ -413,17 +415,13 @@ export async function runScheduler(
               }
             } else {
               // Fallback to best-fit matching for legacy templates without instructor_id
-              matchedInstructor = findBestInstructor(
-                instructors,
-                effectiveTmpl,
-                targetDate,
-                dayOfWeek,
-                calendarEntries,
-                existing_sessions,
-                generatedSessions,
-                instructorSessionCounts,
-                bufferSettings
+              const result = findBestInstructor(
+                instructors, effectiveTmpl, targetDate, dayOfWeek,
+                calendarEntries, existing_sessions, generatedSessions,
+                instructorSessionCounts, bufferSettings
               );
+              matchedInstructor = result.instructor;
+              schedulingNotes = result.scheduling_notes;
             }
             break;
           }
@@ -451,17 +449,13 @@ export async function runScheduler(
 
           default: {
             // Unknown template type — fall back to best-fit
-            matchedInstructor = findBestInstructor(
-              instructors,
-              effectiveTmpl,
-              targetDate,
-              dayOfWeek,
-              calendarEntries,
-              existing_sessions,
-              generatedSessions,
-              instructorSessionCounts,
-              bufferSettings
+            const result = findBestInstructor(
+              instructors, effectiveTmpl, targetDate, dayOfWeek,
+              calendarEntries, existing_sessions, generatedSessions,
+              instructorSessionCounts, bufferSettings
             );
+            matchedInstructor = result.instructor;
+            schedulingNotes = result.scheduling_notes;
           }
         }
 
@@ -499,6 +493,9 @@ export async function runScheduler(
           instructorSessionCounts.set(matchedInstructor.id, count + 1);
         } else {
           stats.sessions_unassigned++;
+          // Record the reason for the unassigned summary
+          const reason = schedulingNotes ?? 'No instructor available (unknown reason)';
+          unassignedReasons.set(reason, (unassignedReasons.get(reason) ?? 0) + 1);
         }
       }
     }
@@ -573,6 +570,7 @@ export async function runScheduler(
     success: true,
     sessions_created: totalCreated,
     unassigned_count: totalUnassigned,
+    unassigned_reasons: Object.fromEntries(unassignedReasons),
     sessions_with_warnings: sessionsWithWarnings,
     drafts_cleared: draftsCleared,
     template_stats: statsArray,
@@ -846,29 +844,27 @@ function findBestInstructor(
   generatedSessions: DraftSession[],
   sessionCounts: Map<string, number>,
   bufferSettings: BufferSettings
-): Instructor | null {
+): { instructor: Instructor | null; scheduling_notes: string | null } {
   const sessionWindow = toTimeWindow(template.start_time, template.end_time);
   const candidates: InstructorCandidate[] = [];
-  const rejections: { name: string; reason: string }[] = [];
+  const rejectionCounts = { skills: 0, availability: 0, booked: 0, exception: 0 };
 
   for (const instructor of instructors) {
-    const name = `${instructor.first_name} ${instructor.last_name}`;
-
     // 1. Skills check
     if (!skillsMatch(instructor.skills, template.required_skills)) {
-      rejections.push({ name, reason: `skills [${(instructor.skills ?? []).join(', ')}] don't match required [${(template.required_skills ?? []).join(', ')}]` });
+      rejectionCounts.skills++;
       continue;
     }
 
     // 2. Availability check — instructor's weekly availability must cover this time window
     if (!availabilityCoversWindow(instructor.availability_json, dayOfWeek, sessionWindow)) {
-      rejections.push({ name, reason: `not available day=${dayOfWeek} time=${template.start_time ?? 'null'}-${template.end_time ?? 'null'}` });
+      rejectionCounts.availability++;
       continue;
     }
 
     // 3. Double-booking check — instructor can't be in two places at once
     if (isInstructorBooked(instructor.id, date, sessionWindow, existingSessions, generatedSessions, bufferSettings)) {
-      rejections.push({ name, reason: 'already booked' });
+      rejectionCounts.booked++;
       continue;
     }
 
@@ -879,7 +875,7 @@ function findBestInstructor(
         e.target_instructor_id === instructor.id
     );
     if (hasException) {
-      rejections.push({ name, reason: 'calendar exception' });
+      rejectionCounts.exception++;
       continue;
     }
 
@@ -891,17 +887,32 @@ function findBestInstructor(
   }
 
   if (candidates.length === 0) {
-    console.log(
-      `[scheduler] findBestInstructor FAILED — template requires [${(template.required_skills ?? []).join(', ')}] ` +
-      `on ${date} (day ${dayOfWeek}) ${template.start_time ?? 'null'}-${template.end_time ?? 'null'}. ` +
-      `Rejections: ${rejections.map(r => `${r.name}: ${r.reason}`).join('; ')}`
-    );
-    return null;
+    // Build a human-readable explanation of why no instructor was found
+    const reasons: string[] = [];
+    const required = template.required_skills ?? [];
+    if (rejectionCounts.skills > 0) {
+      reasons.push(`${rejectionCounts.skills} lack required skills (${required.join(', ')})`);
+    }
+    if (rejectionCounts.availability > 0) {
+      reasons.push(`${rejectionCounts.availability} not available at ${template.start_time?.slice(0, 5) ?? '?'}–${template.end_time?.slice(0, 5) ?? '?'} on ${dayIndexToName(dayOfWeek)}`);
+    }
+    if (rejectionCounts.booked > 0) {
+      reasons.push(`${rejectionCounts.booked} already booked at this time`);
+    }
+    if (rejectionCounts.exception > 0) {
+      reasons.push(`${rejectionCounts.exception} have calendar exceptions on ${date}`);
+    }
+    if (reasons.length === 0) {
+      reasons.push('No active instructors in the system');
+    }
+
+    const notes = `No instructor available: ${reasons.join('; ')}`;
+    return { instructor: null, scheduling_notes: notes };
   }
 
   // 5. Load balancing — pick the candidate with the fewest sessions
   candidates.sort((a, b) => a.session_count - b.session_count);
-  return candidates[0].instructor;
+  return { instructor: candidates[0].instructor, scheduling_notes: null };
 }
 
 /**

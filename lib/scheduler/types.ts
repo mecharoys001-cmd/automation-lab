@@ -58,6 +58,8 @@ export interface SchedulerResult {
   byVenue?: Record<string, number>;
   /** Preview statistics: session counts by week start date */
   byWeek?: Record<string, number>;
+  /** Summary of why sessions were left unassigned (reason → count) */
+  unassigned_reasons?: Record<string, number>;
 }
 
 /** Per-template statistics */

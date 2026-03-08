@@ -48,6 +48,7 @@ interface SchedulerResult {
   skipped_dates: SkippedDate[];
   summary: string;
   error?: string;
+  unassigned_reasons?: Record<string, number>;
 }
 
 interface Instructor {
@@ -726,6 +727,32 @@ export function SchedulerResultModal({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Unassigned reasons */}
+          {result.unassigned_count > 0 && result.unassigned_reasons && Object.keys(result.unassigned_reasons).length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-[12px] font-semibold text-amber-800">
+                  Why {result.unassigned_count} session{result.unassigned_count !== 1 ? 's are' : ' is'} unassigned
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {Object.entries(result.unassigned_reasons)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([reason, count]) => (
+                    <div key={reason} className="flex items-start gap-2">
+                      <span className="text-[11px] font-medium text-amber-700 bg-amber-100 rounded px-1.5 py-0.5 tabular-nums shrink-0">
+                        {count}×
+                      </span>
+                      <span className="text-[11px] text-amber-900 leading-relaxed">
+                        {reason}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
