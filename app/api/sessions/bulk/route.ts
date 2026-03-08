@@ -33,49 +33,48 @@ export async function DELETE(request: NextRequest) {
     // Batch delete using paginated ID fetches to avoid both:
     //   - Supabase max_rows cap (1000) on SELECT
     //   - PostgreSQL statement_timeout on large single DELETEs
-    // PostgREST .in() has a URL length limit — 200 UUIDs ≈ 7KB, well under the ~8KB cap
+    // Delete one batch per request — client calls repeatedly until done.
+    // This avoids Vercel's 10s timeout on the free tier.
     const BATCH = 200;
-    let totalDeleted = 0;
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      // Fetch a page of IDs using .range() to bypass max_rows
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: batch, error: fetchErr } = await (supabase.from('sessions') as any)
-        .select('id')
-        .eq('program_id', programId)
-        .eq('status', 'draft')
-        .range(0, BATCH - 1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: batch, error: fetchErr } = await (supabase.from('sessions') as any)
+      .select('id')
+      .eq('program_id', programId)
+      .eq('status', 'draft')
+      .range(0, BATCH - 1);
 
-      if (fetchErr) {
-        return NextResponse.json(
-          { error: `Failed to fetch sessions: ${fetchErr.message}` },
-          { status: 500 },
-        );
-      }
-
-      if (!batch || batch.length === 0) break;
-
-      const ids = batch.map((s: { id: string }) => s.id);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: delErr } = await (supabase.from('sessions') as any)
-        .delete()
-        .in('id', ids);
-
-      if (delErr) {
-        return NextResponse.json(
-          { error: `Failed to delete batch: ${delErr.message}` },
-          { status: 500 },
-        );
-      }
-
-      totalDeleted += ids.length;
-      if (ids.length < BATCH) break;
+    if (fetchErr) {
+      return NextResponse.json(
+        { error: `Failed to fetch sessions: ${fetchErr.message}` },
+        { status: 500 },
+      );
     }
 
-    trackScheduleChange();
-    return NextResponse.json({ success: true, deleted: totalDeleted });
+    if (!batch || batch.length === 0) {
+      trackScheduleChange();
+      return NextResponse.json({ success: true, deleted: 0, done: true });
+    }
+
+    const ids = batch.map((s: { id: string }) => s.id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: delErr } = await (supabase.from('sessions') as any)
+      .delete()
+      .in('id', ids);
+
+    if (delErr) {
+      return NextResponse.json(
+        { error: `Failed to delete batch: ${delErr.message}` },
+        { status: 500 },
+      );
+    }
+
+    const totalDeleted = ids.length;
+    const hasMore = ids.length === BATCH;
+
+    if (!hasMore) trackScheduleChange();
+    return NextResponse.json({ success: true, deleted: totalDeleted, done: !hasMore });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

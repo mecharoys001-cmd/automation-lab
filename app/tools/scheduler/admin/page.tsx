@@ -1054,19 +1054,26 @@ function CalendarDashboard() {
     setIsClearing(true);
     try {
       const url = `/api/sessions/bulk?program_id=${encodeURIComponent(selectedProgramId ?? '')}`;
-      const res = await fetch(url, { method: 'DELETE', cache: 'no-store' });
-      const body = await res.json().catch(() => ({}));
+      let totalDeleted = 0;
 
-      if (!res.ok) {
-        throw new Error(body.error || 'Failed to clear events');
+      // Delete in chunks — each request deletes one batch and returns { done, deleted }
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const res = await fetch(url, { method: 'DELETE', cache: 'no-store' });
+        const body = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(body.error || 'Failed to clear events');
+        }
+
+        totalDeleted += body.deleted ?? 0;
+
+        if (body.done) break;
       }
 
-      // Clear local state immediately
       setEvents([]);
       setShowClearModal(false);
-      showToast(`All events cleared (${body.deleted ?? 0} deleted)`);
-
-      // Force re-fetch to ensure we're in sync with DB
+      showToast(`All events cleared (${totalDeleted} deleted)`);
       await fetchSessions();
     } catch (err) {
       console.error('[handleClearEvents]', err);
