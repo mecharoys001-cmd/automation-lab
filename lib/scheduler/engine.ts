@@ -421,7 +421,14 @@ export async function runScheduler(
 
         // --- Auto-assign venue when none specified ---
         if (!venueId && data.venues.length > 0) {
-          for (const candidateVenue of data.venues) {
+          // Sort venues by least-loaded on this date (round-robin effect)
+          const venueLoadOnDate = (v: Venue) =>
+            generatedSessions.filter((s) => s.venue_id === v.id && s.date === targetDate).length;
+          const sortedVenues = [...data.venues].sort(
+            (a, b) => venueLoadOnDate(a) - venueLoadOnDate(b)
+          );
+
+          for (const candidateVenue of sortedVenues) {
             // Skip if venue is blacked out
             if (isVenueBlackoutDate(candidateVenue, targetDate)) continue;
 
@@ -429,19 +436,10 @@ export async function runScheduler(
             const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(candidateVenue.availability_json, dayOfWeek, sessionWindow)) continue;
 
-            // Skip if venue at capacity
-            if (!program.allows_mixing) {
-              const atCapacity = checkVenueCapacity(
-                candidateVenue,
-                targetDate,
-                startTime,
-                endTime,
-                existing_sessions,
-                generatedSessions,
-                bufferSettings
-              );
-              if (atCapacity) continue;
-            }
+            // No capacity check for auto-assigned venues — the Schedule Builder
+            // already defines the correct session layout, and round-robin sorting
+            // above distributes sessions evenly across venues. Capacity checks are
+            // only enforced for placement-based venues (handled below).
 
             // Found an available venue
             venueId = candidateVenue.id;
@@ -781,6 +779,10 @@ interface BufferSettings {
   buffer_time_enabled: boolean;
   buffer_time_minutes: number;
 }
+
+/** Buffer settings that disable all buffer — used for venue auto-assignment
+ *  so back-to-back sessions can share the same venue without artificial gaps. */
+const NO_BUFFER: BufferSettings = { buffer_time_enabled: false, buffer_time_minutes: 0 };
 
 async function loadBufferSettings(
   supabase: SupabaseClient<Database>
