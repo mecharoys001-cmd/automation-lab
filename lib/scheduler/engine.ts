@@ -285,7 +285,8 @@ export async function runScheduler(
   const templatesByDay = new Map<number, SessionTemplate[]>();
   for (const tmpl of validTemplates) {
     const placement = placementMap.get(tmpl.id);
-    const effectiveDay = placement ? placement.day_index : tmpl.day_of_week;
+    // Convert placement.day_index (0=Mon..4=Fri) to JS day_of_week (0=Sun..6=Sat)
+    const effectiveDay = placement ? placement.day_index + 1 : tmpl.day_of_week;
     const group = templatesByDay.get(effectiveDay) ?? [];
     group.push(tmpl);
     templatesByDay.set(effectiveDay, group);
