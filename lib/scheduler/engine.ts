@@ -281,10 +281,15 @@ export async function runScheduler(
 
   // ----------------------------------------------------------
   // 3b. Constraint propagation pre-flight check (Week 3-4)
-  //     Calculate domains and detect impossible assignments early
+  //     TEMPORARILY DISABLED for Phase A testing
   // ----------------------------------------------------------
-  console.log('[scheduler] Running constraint propagation pre-flight...');
+  // console.log('[scheduler] Running constraint propagation pre-flight...');
   
+  // Placeholder empty domains for now (constraint propagation disabled)
+  const slotDomains = new Map<string, Set<string>>();
+  const impossibleSlots = new Set<string>();
+
+  /* DISABLED - Will re-enable in Phase B after fixing timing issues
   // Collect all potential session slots
   const allSlots: SessionSlot[] = [];
   for (const tmpl of validTemplates) {
@@ -331,6 +336,7 @@ export async function runScheduler(
   if (propagationResult.impossible.length > 0) {
     console.log(`[scheduler] ⚠️  Detected ${propagationResult.impossible.length} impossible sessions before generation`);
   }
+  END DISABLED */
 
   // ----------------------------------------------------------
   // 4. Generate sessions: iterate templates × dates
@@ -527,32 +533,20 @@ export async function runScheduler(
         let matchedInstructor: Instructor | null = null;
         let schedulingNotes: string | null = null;
 
-        // Check constraint propagation results
-        const slotId = `${tmpl.id}-${targetDate}-${startTime}`;
-        const slotDomain = slotDomains.get(slotId);
-        
-        // If this slot was flagged as impossible during propagation, skip assignment
-        if (impossibleSlots.has(slotId)) {
-          schedulingNotes = 'No valid instructor (detected by constraint propagation)';
-          matchedInstructor = null;
-        } else {
-          // Filter instructors to domain when available (constraint-guided search)
-          const domainInstructors = slotDomain && slotDomain.size > 0
-            ? instructors.filter(i => slotDomain.has(i.id))
-            : instructors; // Fallback to all instructors if domain not available
+        // Constraint propagation DISABLED for Phase A testing
+        // Using all instructors (no domain filtering)
+        const autoCtx: AutoAssignContext = {
+          instructors,
+          date: targetDate,
+          dayOfWeek,
+          calendarEntries,
+          existingSessions: existing_sessions,
+          generatedSessions,
+          sessionCounts: instructorSessionCounts,
+          bufferSettings,
+        };
 
-          const autoCtx: AutoAssignContext = {
-            instructors: domainInstructors,
-            date: targetDate,
-            dayOfWeek,
-            calendarEntries,
-            existingSessions: existing_sessions,
-            generatedSessions,
-            sessionCounts: instructorSessionCounts,
-            bufferSettings,
-          };
-
-          switch (tmpl.template_type) {
+        switch (tmpl.template_type) {
           case 'fully_defined': {
             // Use the template's pre-assigned instructor
             if (tmpl.instructor_id) {
@@ -605,8 +599,7 @@ export async function runScheduler(
             matchedInstructor = result.instructor;
             schedulingNotes = result.scheduling_notes;
           }
-          } // End switch
-        } // End if-else for constraint propagation check
+        } // End switch
 
         // --- Create draft session ---
         const draft: DraftSession = {
@@ -675,6 +668,7 @@ export async function runScheduler(
 
   // Replace generatedSessions with optimized version
   const optimizedSessions = optimizationResult.optimized;
+  const stillUnassignedSessions = optimizationResult.stillUnassigned;
   const optimizationImprovement = unassignedSessions.length - optimizationResult.unassignedCount;
   
   if (optimizationImprovement > 0) {
@@ -692,8 +686,8 @@ export async function runScheduler(
     }
   }
 
-  // Use optimized sessions for insertion
-  const finalSessions = optimizedSessions;
+  // ✅ FIX: Include both assigned AND unassigned sessions
+  const finalSessions = [...optimizedSessions, ...stillUnassignedSessions];
 
   // ----------------------------------------------------------
   // 5. Batch insert generated sessions
