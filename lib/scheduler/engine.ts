@@ -59,7 +59,6 @@ import {
   type AutoAssignContext,
 } from './auto-assign';
 import { optimizeWithLocalSearch } from './local-search';
-import { runConstraintPropagation, type SessionSlot } from './constraint-propagation';
 
 // ============================================================
 // Helpers
@@ -280,59 +279,6 @@ export async function runScheduler(
   const unassignedReasons = new Map<string, number>();
 
   // ----------------------------------------------------------
-  // 3b. Constraint propagation pre-flight check (Week 3-4)
-  //     Calculate domains and detect impossible assignments early
-  // ----------------------------------------------------------
-  console.log('[scheduler] Running constraint propagation pre-flight...');
-  
-  // Collect all potential session slots
-  const allSlots: SessionSlot[] = [];
-  for (const tmpl of validTemplates) {
-    const placement = placementMap.get(tmpl.id);
-    const effectiveDay = placement ? placement.day_index : tmpl.day_of_week;
-    const dates = datesForDayOfWeek(rangeStartDate, rangeEndDate, effectiveDay);
-    
-    for (const date of dates) {
-      // Skip blackouts (quick filter before full propagation)
-      if (blackoutDays.has(effectiveDay)) continue;
-      const calendarEntries = calendarMap.get(date) ?? [];
-      if (calendarEntries.some(e => e.status_type === 'no_school' && e.target_instructor_id === null)) continue;
-
-      const startTime = placement ? hourToTime(placement.start_hour) : tmpl.start_time;
-      const endTime = placement
-        ? hourToTime(placement.start_hour + placement.duration_hours)
-        : tmpl.end_time;
-
-      allSlots.push({
-        id: `${tmpl.id}-${date}-${startTime}`,
-        template_id: tmpl.id,
-        date,
-        day_of_week: effectiveDay,
-        start_time: startTime,
-        end_time: endTime,
-        required_skills: tmpl.required_skills ?? [],
-        grade_groups: tmpl.grade_groups,
-      });
-    }
-  }
-
-  const propagationResult = runConstraintPropagation(
-    allSlots,
-    instructors,
-    existing_sessions,
-    calendarMap,
-    bufferSettings
-  );
-
-  // Store domain information for use during assignment
-  const slotDomains = propagationResult.domains;
-  const impossibleSlots = new Set(propagationResult.impossible.map(s => s.id));
-
-  if (propagationResult.impossible.length > 0) {
-    console.log(`[scheduler] ⚠️  Detected ${propagationResult.impossible.length} impossible sessions before generation`);
-  }
-
-  // ----------------------------------------------------------
   // 4. Generate sessions: iterate templates × dates
   // ----------------------------------------------------------
 
@@ -527,32 +473,18 @@ export async function runScheduler(
         let matchedInstructor: Instructor | null = null;
         let schedulingNotes: string | null = null;
 
-        // Check constraint propagation results
-        const slotId = `${tmpl.id}-${targetDate}-${startTime}`;
-        const slotDomain = slotDomains.get(slotId);
-        
-        // If this slot was flagged as impossible during propagation, skip assignment
-        if (impossibleSlots.has(slotId)) {
-          schedulingNotes = 'No valid instructor (detected by constraint propagation)';
-          matchedInstructor = null;
-        } else {
-          // Filter instructors to domain when available (constraint-guided search)
-          const domainInstructors = slotDomain && slotDomain.size > 0
-            ? instructors.filter(i => slotDomain.has(i.id))
-            : instructors; // Fallback to all instructors if domain not available
+        const autoCtx: AutoAssignContext = {
+          instructors,
+          date: targetDate,
+          dayOfWeek,
+          calendarEntries,
+          existingSessions: existing_sessions,
+          generatedSessions,
+          sessionCounts: instructorSessionCounts,
+          bufferSettings,
+        };
 
-          const autoCtx: AutoAssignContext = {
-            instructors: domainInstructors,
-            date: targetDate,
-            dayOfWeek,
-            calendarEntries,
-            existingSessions: existing_sessions,
-            generatedSessions,
-            sessionCounts: instructorSessionCounts,
-            bufferSettings,
-          };
-
-          switch (tmpl.template_type) {
+        switch (tmpl.template_type) {
           case 'fully_defined': {
             // Use the template's pre-assigned instructor
             if (tmpl.instructor_id) {
@@ -605,8 +537,7 @@ export async function runScheduler(
             matchedInstructor = result.instructor;
             schedulingNotes = result.scheduling_notes;
           }
-          } // End switch
-        } // End if-else for constraint propagation check
+        }
 
         // --- Create draft session ---
         const draft: DraftSession = {
