@@ -78,6 +78,77 @@ function hourToTime(hour: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+/**
+ * Calculates urgency score for a template.
+ * Higher urgency = more constrained = should be assigned first.
+ * 
+ * Urgency = sessions_needed / (qualified_instructors × available_slots + 1)
+ * 
+ * @returns Urgency score (higher = more constrained, Infinity = impossible to assign)
+ */
+function calculateTemplateUrgency(
+  template: SessionTemplate,
+  instructors: Instructor[],
+  programStartDate: string,
+  programEndDate: string,
+  blackoutDays: Set<number>
+): number {
+  // Count qualified instructors
+  const qualifiedCount = instructors.filter(i =>
+    i.is_active && skillsMatch(i.skills, template.required_skills)
+  ).length;
+
+  if (qualifiedCount === 0) return Infinity; // Most urgent - impossible to assign
+
+  // Count sessions to generate (dates for this day_of_week in range)
+  const dates = datesForDayOfWeek(programStartDate, programEndDate, template.day_of_week);
+  const validDates = dates.filter(d => !blackoutDays.has(template.day_of_week));
+  const sessionsNeeded = validDates.length;
+
+  if (sessionsNeeded === 0) return 0; // No sessions needed - lowest urgency
+
+  // Calculate available slots per instructor (simplified: assume 8 hour days)
+  // In practice this would check actual availability windows
+  const avgSlotsPerInstructor = 8; // Conservative estimate
+
+  const urgency = sessionsNeeded / (qualifiedCount * avgSlotsPerInstructor + 1);
+  return urgency;
+}
+
+/**
+ * Finds the specific session blocking an instructor from being assigned.
+ * Used for enhanced conflict diagnostics.
+ */
+function findBlockingSession(
+  instructorId: string,
+  date: string,
+  sessionWindow: TimeWindow,
+  existingSessions: Session[],
+  generatedSessions: DraftSession[]
+): Session | DraftSession | null {
+  // Check existing sessions
+  for (const session of existingSessions) {
+    if (session.instructor_id === instructorId && session.date === date && session.status !== 'canceled') {
+      const window = toTimeWindow(session.start_time, session.end_time);
+      if (timeWindowsOverlap(sessionWindow, window)) {
+        return session;
+      }
+    }
+  }
+  
+  // Check generated sessions
+  for (const draft of generatedSessions) {
+    if (draft.instructor_id === instructorId && draft.date === date) {
+      const window = toTimeWindow(draft.start_time, draft.end_time);
+      if (timeWindowsOverlap(sessionWindow, window)) {
+        return draft;
+      }
+    }
+  }
+  
+  return null;
+}
+
 // ============================================================
 // Main entry point
 // ============================================================
@@ -224,13 +295,21 @@ export async function runScheduler(
     // Generate all dates for this day-of-week within the program date range
     const dates = datesForDayOfWeek(rangeStartDate, rangeEndDate, dayOfWeek);
 
-    // Sort templates by sort_order for consistent processing
-    dayTemplates.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    // Sort templates by urgency (most constrained first) for optimal assignment
+    const templatesWithUrgency = dayTemplates.map(tmpl => ({
+      template: tmpl,
+      urgency: calculateTemplateUrgency(tmpl, instructors, rangeStartDate, rangeEndDate, blackoutDays)
+    }));
+    templatesWithUrgency.sort((a, b) => b.urgency - a.urgency);
+    const sortedDayTemplates = templatesWithUrgency.map(t => t.template);
+    
+    // Use sorted templates instead of original dayTemplates
+    const processTemplates = sortedDayTemplates;
 
     for (const targetDate of dates) {
       // --- Check recurring blackout rules ---
       if (blackoutDays.has(dayOfWeek)) {
-        for (const tmpl of dayTemplates) {
+        for (const tmpl of processTemplates) {
           skippedDates.push({
             date: targetDate,
             template_id: tmpl.id,
@@ -247,7 +326,7 @@ export async function runScheduler(
         (e) => e.status_type === 'no_school' && e.target_instructor_id === null
       );
       if (noSchoolEntry) {
-        for (const tmpl of dayTemplates) {
+        for (const tmpl of processTemplates) {
           skippedDates.push({
             date: targetDate,
             template_id: tmpl.id,
@@ -264,7 +343,7 @@ export async function runScheduler(
       );
 
       // --- Process each template for this date ---
-      for (const tmpl of dayTemplates) {
+      for (const tmpl of processTemplates) {
         // --- Resolve effective times from Schedule Builder placement ---
         // When a placement exists, override the template's day/time so all
         // downstream logic (venue checks, instructor matching, draft creation)
@@ -875,7 +954,12 @@ function findBestInstructor(
 
     // 3. Double-booking check — instructor can't be in two places at once
     if (isInstructorBooked(instructor.id, date, sessionWindow, existingSessions, generatedSessions, bufferSettings)) {
-      qualifiedRejections.push({ name, reason: 'already booked' });
+      // Find WHICH session is blocking them for better diagnostics
+      const blockingSession = findBlockingSession(instructor.id, date, sessionWindow, existingSessions, generatedSessions);
+      const blockingDetail = blockingSession
+        ? `teaching ${blockingSession.grade_groups?.join('/') || 'class'} ${blockingSession.start_time.slice(0, 5)}-${blockingSession.end_time.slice(0, 5)}`
+        : 'already booked';
+      qualifiedRejections.push({ name, reason: blockingDetail });
       continue;
     }
 
