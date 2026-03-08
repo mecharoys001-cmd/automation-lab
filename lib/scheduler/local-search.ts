@@ -57,7 +57,7 @@ export function optimizeWithLocalSearch(
   unassigned: DraftSession[],
   ctx: LocalSearchContext,
   maxIterations = 500
-): { optimized: DraftSession[]; stillUnassigned: DraftSession[]; unassignedCount: number } {
+): { optimized: DraftSession[]; unassignedCount: number } {
   // Combine assigned and unassigned into single working set
   const allSessions = [...sessions, ...unassigned];
   let improved = true;
@@ -124,7 +124,6 @@ export function optimizeWithLocalSearch(
 
   return {
     optimized,
-    stillUnassigned,  // ✅ FIX: Return unassigned sessions, not just count
     unassignedCount: stillUnassigned.length,
   };
 }
