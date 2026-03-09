@@ -2212,6 +2212,14 @@ export default function TemplatesPage() {
             // Fixed-time templates: only check at the exact time
             const fixedStart = timeStringToHour(t.timeSlot.start);
             const dur = getDuration(t);
+            const fixedEnd = fixedStart + dur;
+            
+            // Skip if fixed time is outside the auto-fill time range
+            if (fixedStart < range.start || fixedEnd > range.end) {
+              console.log(`  ✗ ${t.gradeGroups?.join(',') || t.name} skipped (fixed time ${fixedStart}-${fixedEnd} outside range ${range.start}-${range.end})`);
+              continue;
+            }
+            
             const candidateVenues = t.venueId ? [t.venueId] : venues.map(v => v.id);
 
             for (const venueId of candidateVenues) {
