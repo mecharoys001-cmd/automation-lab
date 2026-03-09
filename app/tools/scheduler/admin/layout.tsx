@@ -1,11 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
+import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import {
   Music,
   LayoutDashboard,
@@ -80,12 +81,31 @@ function SidebarProgramSelector() {
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    // Check if onboarding has been dismissed
+    const dismissed = localStorage.getItem('onboarding_dismissed');
+    if (!dismissed) {
+      setShowOnboarding(true);
+    }
+
+    // Listen for custom event to re-open onboarding from Settings
+    const handleReopenOnboarding = () => setShowOnboarding(true);
+    window.addEventListener('reopen-onboarding', handleReopenOnboarding);
+    return () => window.removeEventListener('reopen-onboarding', handleReopenOnboarding);
+  }, []);
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/tools/scheduler');
   }, [router]);
+
+  const handleCloseOnboarding = useCallback(() => {
+    localStorage.setItem('onboarding_dismissed', 'true');
+    setShowOnboarding(false);
+  }, []);
 
   return (
     <div className="flex h-screen">
@@ -98,6 +118,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* Onboarding Checklist (bottom-right corner) */}
+      {showOnboarding && <OnboardingChecklist onClose={handleCloseOnboarding} />}
     </div>
   );
 }

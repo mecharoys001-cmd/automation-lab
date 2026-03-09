@@ -773,8 +773,40 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
+      {/* SECTION 4 — Getting Started Guide                                 */}
       {/* ================================================================= */}
-      {/* SECTION 4 — Data Management                                       */}
+      <section className={cardBodyClass}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
+            <svg className="w-[18px] h-[18px] text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className={sectionTitleClass}>Getting Started</h2>
+            <p className={sectionDescClass}>View the onboarding checklist and setup guide</p>
+          </div>
+        </div>
+
+        <p className="text-[13px] text-slate-600 mb-4">
+          Show the setup checklist that walks you through creating your first program, adding instructors, and generating a schedule.
+        </p>
+
+        <Tooltip text="Reopen the getting started checklist in the bottom-right corner">
+          <button
+            onClick={() => window.dispatchEvent(new Event('reopen-onboarding'))}
+            className={btnPrimary}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Show Getting Started Checklist
+          </button>
+        </Tooltip>
+      </section>
+
+      {/* ================================================================= */}
+      {/* SECTION 5 — Data Management                                       */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
         <div className="flex items-center gap-2.5 mb-5">
@@ -920,7 +952,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 5 — Clear Data (Danger Zone)                              */}
+      {/* SECTION 6 — Clear Data (Danger Zone)                              */}
       {/* ================================================================= */}
       <section className="rounded-lg border border-red-200 bg-white shadow-sm p-5">
         <div className="flex items-center gap-2.5 mb-5">
