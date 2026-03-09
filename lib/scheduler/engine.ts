@@ -344,7 +344,13 @@ export async function runScheduler(
       );
 
       // --- Process each template for this date ---
-      for (const tmpl of processTemplates) {
+      // Two-pass approach: placed templates first (they have specific venue
+      // assignments from the Schedule Builder), then unplaced templates get
+      // auto-assigned to remaining capacity.
+      const placedTemplates = processTemplates.filter(t => placementMap.has(t.id));
+      const unplacedTemplates = processTemplates.filter(t => !placementMap.has(t.id));
+
+      for (const tmpl of [...placedTemplates, ...unplacedTemplates]) {
         // --- Resolve effective times from Schedule Builder placement ---
         // When a placement exists, override the template's day/time so all
         // downstream logic (venue checks, instructor matching, draft creation)
