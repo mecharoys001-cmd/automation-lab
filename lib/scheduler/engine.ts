@@ -377,14 +377,17 @@ function runSingleAttempt(
         let venueId = effectiveTmpl.venue_id ?? program.default_venue_id;
 
         // --- Auto-assign venue when none specified ---
+        // Deterministic per template: hash the template ID to pick a consistent
+        // base venue index so the same template always lands in the same venue.
         if (!venueId && venues.length > 0) {
-          const venueLoadOnDate = (v: Venue) =>
-            generatedSessions.filter((s) => s.venue_id === v.id && s.date === targetDate).length;
-          const sortedVenues = [...venues].sort(
-            (a, b) => venueLoadOnDate(a) - venueLoadOnDate(b)
-          );
+          let hash = 0;
+          for (let i = 0; i < tmpl.id.length; i++) {
+            hash = ((hash << 5) - hash + tmpl.id.charCodeAt(i)) | 0;
+          }
+          const baseIndex = ((hash % venues.length) + venues.length) % venues.length;
 
-          for (const candidateVenue of sortedVenues) {
+          for (let offset = 0; offset < venues.length; offset++) {
+            const candidateVenue = venues[(baseIndex + offset) % venues.length];
             if (isVenueBlackoutDate(candidateVenue, targetDate)) continue;
             const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(candidateVenue.availability_json, dayOfWeek, sessionWindow)) continue;
