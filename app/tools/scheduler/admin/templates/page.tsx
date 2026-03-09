@@ -1961,10 +1961,55 @@ export default function TemplatesPage() {
     const newPlacements: PlacedTemplate[] = [];
     let totalPlaced = 0;
 
-    // Helpers
+    // ── Fetch instructor data for availability-aware scheduling ──
+    interface InstructorData {
+      id: string;
+      first_name: string;
+      last_name: string;
+      skills: string[] | null;
+      availability_json: Record<string, { start: string; end: string }[]> | null;
+      is_active: boolean;
+    }
+    let allInstructors: InstructorData[] = [];
+    try {
+      const res = await fetch('/api/instructors?is_active=true');
+      if (res.ok) {
+        const data = await res.json();
+        allInstructors = data.instructors ?? [];
+      }
+    } catch { /* Non-critical — falls back to no-instructor-awareness */ }
+
+    // ── Fetch full venue data for availability/capacity checks ──
+    interface VenueData {
+      id: string;
+      name: string;
+      availability_json: Record<string, { start: string; end: string }[]> | null;
+      max_concurrent_bookings: number | null;
+      buffer_minutes: number | null;
+    }
+    let allVenueData: VenueData[] = [];
+    try {
+      const res = await fetch('/api/venues');
+      if (res.ok) {
+        const data = await res.json();
+        allVenueData = data.venues ?? [];
+      }
+    } catch { /* Falls back to basic venue list */ }
+
+    // ── Helpers ──
     const timeStringToHour = (t: string): number => {
       const [h, m] = t.split(':').map(Number);
       return h + m / 60;
+    };
+
+    const hourToTimeString = (h: number): string => {
+      const hours = Math.floor(h);
+      const mins = Math.round((h - hours) * 60);
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    };
+
+    const DAY_INDEX_TO_NAME: Record<number, string> = {
+      0: 'monday', 1: 'tuesday', 2: 'wednesday', 3: 'thursday', 4: 'friday',
     };
 
     const getTimeRange = (dayIdx: number) => {
@@ -1995,16 +2040,21 @@ export default function TemplatesPage() {
     };
 
     const hasVenueConflict = (venueId: string, dayIdx: number, weekIdx: number, start: number, end: number): boolean => {
+      const venueData = allVenueData.find(v => v.id === venueId);
+      const maxConcurrent = venueData?.max_concurrent_bookings ?? 1;
+      const buffer = (venueData?.buffer_minutes ?? 0) / 60; // convert to hours
+
+      // Count overlapping bookings at this venue
+      let overlaps = 0;
       for (const p of [...placedTemplates, ...newPlacements]) {
         if (p.dayIndex !== dayIdx || (p.weekIndex ?? 0) !== weekIdx) continue;
-        const pTemplate = templates.find(t => t.id === p.templateId);
-        if (!pTemplate) continue;
-        const pVenueId = p.venueId ?? pTemplate.venueId;
+        const pVenueId = p.venueId ?? templates.find(t => t.id === p.templateId)?.venueId;
         if (pVenueId !== venueId) continue;
-        const pEnd = p.startHour + p.durationHours;
-        if (start < pEnd && p.startHour < end) return true;
+        const pStart = p.startHour - buffer;
+        const pEnd = p.startHour + p.durationHours + buffer;
+        if (start < pEnd && end > pStart) overlaps++;
       }
-      return false;
+      return overlaps >= maxConcurrent;
     };
 
     const hasInstructorConflict = (instructorId: string | null | undefined, dayIdx: number, weekIdx: number, start: number, end: number): boolean => {
@@ -2019,31 +2069,108 @@ export default function TemplatesPage() {
       return false;
     };
 
-    // Find all valid slots for a template
+    // ── Instructor availability checking ──
+
+    /** Check if an instructor is available on a given grid day at a given time range */
+    const isInstructorAvailable = (instructor: InstructorData, gridDayIdx: number, startHour: number, endHour: number): boolean => {
+      if (!instructor.availability_json) return true; // No availability = always available
+      const dayName = DAY_INDEX_TO_NAME[gridDayIdx];
+      if (!dayName) return false;
+      const blocks = instructor.availability_json[dayName];
+      if (!blocks || blocks.length === 0) return false;
+
+      const startStr = hourToTimeString(startHour);
+      const endStr = hourToTimeString(endHour);
+
+      // At least one block must fully contain the session
+      return blocks.some(block => block.start <= startStr && block.end >= endStr);
+    };
+
+    /** Find qualified instructors for a template's required skills */
+    const getQualifiedInstructors = (template: Template): InstructorData[] => {
+      const required = template.subjects ?? [];
+      if (required.length === 0) return allInstructors; // No skill requirement = anyone
+
+      return allInstructors.filter(inst => {
+        const skills = inst.skills ?? [];
+        return required.every(req =>
+          skills.some(s => s.toLowerCase() === req.toLowerCase())
+        );
+      });
+    };
+
+    /** Check if a venue is available on a given day/time (from venue availability_json) */
+    const isVenueAvailable = (venueId: string, gridDayIdx: number, startHour: number, endHour: number): boolean => {
+      const venue = allVenueData.find(v => v.id === venueId);
+      if (!venue?.availability_json) return true; // No restrictions
+      const dayName = DAY_INDEX_TO_NAME[gridDayIdx];
+      if (!dayName) return false;
+      const blocks = venue.availability_json[dayName];
+      if (!blocks || blocks.length === 0) return false;
+
+      const startStr = hourToTimeString(startHour);
+      const endStr = hourToTimeString(endHour);
+      return blocks.some(block => block.start <= startStr && block.end >= endStr);
+    };
+
+    /** Count how many qualified instructors are available at a given slot */
+    const countAvailableInstructors = (
+      qualifiedInstructors: InstructorData[],
+      gridDayIdx: number,
+      weekIdx: number,
+      startHour: number,
+      endHour: number
+    ): number => {
+      return qualifiedInstructors.filter(inst => {
+        if (!isInstructorAvailable(inst, gridDayIdx, startHour, endHour)) return false;
+        // Also check they're not already booked in our placements
+        if (hasInstructorConflict(inst.id, gridDayIdx, weekIdx, startHour, endHour)) return false;
+        return true;
+      }).length;
+    };
+
+    // ── Find valid slots with instructor-awareness ──
     const findAllValidSlots = (
       template: Template,
       dayIdx: number,
       weekIdx: number,
       range: { start: number; end: number }
-    ): Array<{ venueId: string; start: number }> => {
+    ): Array<{ venueId: string; start: number; score: number }> => {
       const dur = getDuration(template);
-      const validSlots: Array<{ venueId: string; start: number }> = [];
+      const validSlots: Array<{ venueId: string; start: number; score: number }> = [];
       const candidateVenues = template.venueId ? [template.venueId] : venues.map(v => v.id);
+      const qualifiedInstructors = getQualifiedInstructors(template);
 
       for (const venueId of candidateVenues) {
-        for (let t = range.start; t + dur <= range.end + 0.01; t += 0.25) {
+        for (let t = range.start; t + dur <= range.end; t += 0.25) {
           if (overlapsLunchBlock(t, dur)) continue;
           if (hasVenueConflict(venueId, dayIdx, weekIdx, t, t + dur)) continue;
-          if (hasInstructorConflict(template.instructorId, dayIdx, weekIdx, t, t + dur)) continue;
-          validSlots.push({ venueId, start: t });
+          if (!isVenueAvailable(venueId, dayIdx, t, t + dur)) continue;
+
+          // Check template's pre-assigned instructor conflict
+          if (template.instructorId) {
+            if (hasInstructorConflict(template.instructorId, dayIdx, weekIdx, t, t + dur)) continue;
+          }
+
+          // Score: how many qualified instructors can teach at this time?
+          const availCount = countAvailableInstructors(qualifiedInstructors, dayIdx, weekIdx, t, t + dur);
+
+          // If no qualified instructor can teach here, this slot is invalid
+          // (unless there are no skill requirements at all)
+          if (qualifiedInstructors.length > 0 && availCount === 0) continue;
+
+          // Score: prefer slots with MORE available instructors (more flexibility)
+          // Secondary: prefer earlier times (slight bonus)
+          const score = (availCount * 100) - t;
+          validSlots.push({ venueId, start: t, score });
         }
       }
 
       return validSlots;
     };
 
-    console.log('[AutoFill] Constraint-based scheduler');
-    console.log('Templates:', templates.length, 'Weeks:', totalWeeks);
+    console.log('[AutoFill] Instructor-aware constraint scheduler');
+    console.log('Templates:', templates.length, 'Instructors:', allInstructors.length, 'Weeks:', totalWeeks);
 
     const AUTO_FILL_DAY_TO_GRID: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4 };
 
@@ -2064,10 +2191,16 @@ export default function TemplatesPage() {
 
         console.log(`  Day templates: ${dayTemplates.length}`);
 
-        // Sort by constraint: fixed-time first, then by number of valid venues (most constrained first)
-        const sorted = dayTemplates.sort((a, b) => {
+        // Sort by constraint level (most constrained first):
+        // 1. Fixed-time templates first
+        // 2. Then by fewest qualified instructors (hardest to schedule)
+        // 3. Then by fewest venue options
+        const sorted = [...dayTemplates].sort((a, b) => {
           if (a.timeSlot && !b.timeSlot) return -1;
           if (!a.timeSlot && b.timeSlot) return 1;
+          const aInstructors = getQualifiedInstructors(a).length;
+          const bInstructors = getQualifiedInstructors(b).length;
+          if (aInstructors !== bInstructors) return aInstructors - bInstructors;
           const aVenues = a.venueId ? 1 : venues.length;
           const bVenues = b.venueId ? 1 : venues.length;
           return aVenues - bVenues;
@@ -2075,8 +2208,8 @@ export default function TemplatesPage() {
 
         // Place each template
         for (const t of sorted) {
-          // For fixed-time templates, only check at the exact time
           if (t.timeSlot) {
+            // Fixed-time templates: only check at the exact time
             const fixedStart = timeStringToHour(t.timeSlot.start);
             const dur = getDuration(t);
             const candidateVenues = t.venueId ? [t.venueId] : venues.map(v => v.id);
@@ -2084,6 +2217,7 @@ export default function TemplatesPage() {
             for (const venueId of candidateVenues) {
               if (!overlapsLunchBlock(fixedStart, dur) &&
                   !hasVenueConflict(venueId, dayIndex, weekIdx, fixedStart, fixedStart + dur) &&
+                  isVenueAvailable(venueId, dayIndex, fixedStart, fixedStart + dur) &&
                   !hasInstructorConflict(t.instructorId, dayIndex, weekIdx, fixedStart, fixedStart + dur)) {
                 newPlacements.push({
                   id: `placed-${Date.now()}-${Math.random()}`,
@@ -2095,16 +2229,16 @@ export default function TemplatesPage() {
                   venueId,
                 });
                 totalPlaced++;
-                console.log(`  ✓ ${t.name} at ${fixedStart} (${venues.find(v => v.id === venueId)?.name})`);
+                console.log(`  ✓ ${t.gradeGroups?.join(',') || t.name} at ${fixedStart} (${venues.find(v => v.id === venueId)?.name})`);
                 break;
               }
             }
           } else {
-            // Flexible templates: find ALL valid slots, pick the earliest
+            // Flexible templates: find all valid slots, pick best by score
             const validSlots = findAllValidSlots(t, dayIndex, weekIdx, range);
             if (validSlots.length > 0) {
-              // Pick earliest slot
-              validSlots.sort((a, b) => a.start - b.start);
+              // Pick slot with highest score (most instructor coverage, then earliest)
+              validSlots.sort((a, b) => b.score - a.score);
               const slot = validSlots[0];
               const dur = getDuration(t);
               newPlacements.push({
@@ -2117,16 +2251,20 @@ export default function TemplatesPage() {
                 venueId: slot.venueId,
               });
               totalPlaced++;
-              console.log(`  ✓ ${t.name} at ${slot.start} (${venues.find(v => v.id === slot.venueId)?.name})`);
+              const avail = countAvailableInstructors(
+                getQualifiedInstructors(t), dayIndex, weekIdx, slot.start, slot.start + dur
+              );
+              console.log(`  ✓ ${t.gradeGroups?.join(',') || t.name} at ${slot.start} (${venues.find(v => v.id === slot.venueId)?.name}) [${avail} instructors available]`);
             } else {
-              console.warn(`  ✗ ${t.name} - no valid slots`);
+              const qualified = getQualifiedInstructors(t);
+              console.warn(`  ✗ ${t.gradeGroups?.join(',') || t.name} - no valid slots (${qualified.length} qualified instructors, ${t.subjects?.join(',') || 'no skills'})`);
             }
           }
         }
       }
     }
 
-    console.log(`[AutoFill] Complete: placed ${totalPlaced}/${templates.length} templates`);
+    console.log(`[AutoFill] Complete: placed ${totalPlaced}/${templates.length * totalWeeks} template-slots`);
 
     if (newPlacements.length === 0) {
       setToast({ message: 'No valid slots found', type: 'error', id: Date.now() });
@@ -2772,6 +2910,31 @@ export default function TemplatesPage() {
         {/* Left: Weekly Grid */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-8 mt-6 mb-3">
+            {/* Template summary bar */}
+            {(() => {
+              const totalCount = templates.length;
+              const dayCounts = [1, 2, 3, 4, 5].map((dow) =>
+                templates.filter((t) => t.days.includes(dow)).length
+              );
+              const placedIds = new Set(placedTemplates.map((p) => p.templateId));
+              const placedCount = templates.filter((t) => placedIds.has(t.id)).length;
+              const unplacedCount = totalCount - placedCount;
+              return totalCount > 0 ? (
+                <div className="mb-2 flex items-center gap-2 rounded-md bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs text-slate-500">
+                  <span className="font-medium text-slate-600">{totalCount} weekly templates:</span>
+                  <span>
+                    {DAYS_SHORT.map((d, i) => (
+                      <span key={d}>{i > 0 ? ' · ' : ''}{d} {dayCounts[i]}</span>
+                    ))}
+                  </span>
+                  <span className="text-slate-300">|</span>
+                  <span>{placedCount} placed · {unplacedCount} unplaced</span>
+                  <Tooltip text="Placed templates have been dragged onto the schedule grid with a specific time and venue. Unplaced templates are in the library but not yet scheduled.">
+                    <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  </Tooltip>
+                </div>
+              ) : null;
+            })()}
             <div className="flex items-center gap-2">
               <h2 className="text-base font-semibold text-slate-900">Your Schedule</h2>
               <p className="text-sm text-slate-500">— Drag events from the library to build your schedule</p>

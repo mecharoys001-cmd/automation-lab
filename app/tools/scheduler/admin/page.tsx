@@ -1254,7 +1254,7 @@ function CalendarDashboard() {
           onClick={handleGenerateSchedule}
           disabled={isGenerating}
         >
-          {isGenerating ? 'Previewing...' : 'Auto-Generate Draft'}
+          {isGenerating ? 'Previewing...' : 'Auto-Generate Calendar'}
         </Button>
 
         {/* Publish Schedule + Readiness */}
