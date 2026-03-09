@@ -800,7 +800,24 @@ export async function runScheduler(
     .map(([reason, count]) => `${count} ${reason}`)
     .join(', ');
 
+  // Build weekly template count breakdown by day
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const templateDayCounts = new Map<number, number>(); // day_of_week -> count
+  let placedCount = 0;
+  for (const tmpl of validTemplates) {
+    const placement = placementMap.get(tmpl.id);
+    if (placement) placedCount++;
+    const effectiveDay = placement ? placement.day_index + 1 : tmpl.day_of_week;
+    templateDayCounts.set(effectiveDay, (templateDayCounts.get(effectiveDay) ?? 0) + 1);
+  }
+  const unplacedCount = validTemplates.length - placedCount;
+  const dayBreakdown = [1, 2, 3, 4, 5]
+    .map((d) => `${dayNames[d - 1]}: ${templateDayCounts.get(d) ?? 0}`)
+    .join(', ');
+  const templateSummary = `Schedule Builder: ${dayBreakdown} = ${validTemplates.length} total weekly templates (${placedCount} placed, ${unplacedCount} unplaced).`;
+
   const summary = [
+    templateSummary,
     `Generated ${totalCreated} draft session${totalCreated !== 1 ? 's' : ''} for "${program.name}".`,
     totalUnassigned > 0
       ? `${totalUnassigned} session${totalUnassigned !== 1 ? 's' : ''} left unassigned — needs manual instructor assignment.`
