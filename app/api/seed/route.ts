@@ -18,8 +18,8 @@ import { datasets } from './datasets';
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const datasetType = (searchParams.get('dataset') || 'full') as 'small' | 'full';
-  const dataset = datasets[datasetType] || datasets.full;
+  const datasetType = (searchParams.get('dataset') || 'medium') as 'small' | 'medium' | 'full';
+  const dataset = datasets[datasetType] || datasets.medium;
   try {
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

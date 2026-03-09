@@ -2,8 +2,11 @@
  * Mock data presets for testing
  * 
  * - small: Minimal dataset (2 instructors, 1 venue, 5 templates) for focused testing
- * - full: Complete dataset (10 instructors, 4 venues, 36 templates) for load testing
+ * - medium: Standard dataset (10 instructors, 4 venues, 36 templates) for integration testing
+ * - full: Massive dataset (50 instructors, 16 venues, 200+ templates) for stress/load testing
  */
+
+import { fullDataset } from './generate-large-dataset';
 
 export interface DatasetPreset {
   name: string;
@@ -32,7 +35,7 @@ export interface DatasetPreset {
   }>;
 }
 
-export const datasets: Record<'small' | 'full', DatasetPreset> = {
+export const datasets: Record<'small' | 'medium' | 'full', DatasetPreset> = {
   // ═══════════════════════════════════════════════════════════
   // SMALL DATASET — For intimate testing (5 templates, 2 instructors, 1 venue)
   // ═══════════════════════════════════════════════════════════
@@ -86,10 +89,10 @@ export const datasets: Record<'small' | 'full', DatasetPreset> = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  // FULL DATASET — Complete mock data for load testing
+  // MEDIUM DATASET — Standard mock data for integration testing
   // ═══════════════════════════════════════════════════════════
-  full: {
-    name: 'Full Test Dataset',
+  medium: {
+    name: 'Medium Test Dataset',
     venues: [
       { name: 'Stage', space_type: 'performance', is_virtual: false },
       { name: 'Classroom', space_type: 'classroom', is_virtual: false },
@@ -160,4 +163,9 @@ export const datasets: Record<'small' | 'full', DatasetPreset> = {
       { day_of_week: 5, grade_groups: ['1'], start_time: null, end_time: null, duration_minutes: 45, venue: null, skills: ['Choral'], instructor_index: null, sort_order: 36 },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════
+  // FULL DATASET — Massive stress test data (50 instructors, 200+ templates, 30+ subjects)
+  // ═══════════════════════════════════════════════════════════
+  full: fullDataset,
 };

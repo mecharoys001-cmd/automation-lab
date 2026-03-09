@@ -307,8 +307,11 @@ export default function SettingsPage() {
   // Seed handler
   // =========================================================================
 
-  async function handleSeed(dataset: 'small' | 'full' = 'full') {
-    const datasetName = dataset === 'small' ? 'SMALL (2 instructors, 5 templates)' : 'FULL (10 instructors, 36 templates)';
+  async function handleSeed(dataset: 'small' | 'medium' | 'full' = 'medium') {
+    const datasetName = 
+      dataset === 'small' ? 'SMALL (2 instructors, 5 templates)' :
+      dataset === 'medium' ? 'MEDIUM (10 instructors, 36 templates)' :
+      'FULL (50 instructors, 200+ templates)';
     if (!confirm(`This will clear ALL existing data and reload with ${datasetName} mock data. Continue?`)) return;
     setSeeding(true);
     setSeedCounts(null);
@@ -791,7 +794,7 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Tooltip text="Load small dataset (2 instructors, 1 venue, 5 templates) for focused testing">
             <button
               onClick={() => handleSeed('small')}
@@ -821,13 +824,13 @@ export default function SettingsPage() {
                 </svg>
               )}
               <Database className="w-4 h-4" />
-              {seeding ? 'Loading...' : 'Load Small Dataset'}
+              {seeding ? 'Loading...' : 'Small'}
             </button>
           </Tooltip>
 
-          <Tooltip text="Load full dataset (10 instructors, 4 venues, 36 templates) for load testing">
+          <Tooltip text="Load medium dataset (10 instructors, 4 venues, 36 templates) for integration testing">
             <button
-              onClick={() => handleSeed('full')}
+              onClick={() => handleSeed('medium')}
               disabled={seeding}
               className={`${btnPrimary} ${seeding ? '' : 'bg-orange-500 hover:bg-orange-600'}`}
             >
@@ -854,7 +857,40 @@ export default function SettingsPage() {
                 </svg>
               )}
               <Database className="w-4 h-4" />
-              {seeding ? 'Loading...' : 'Load Full Dataset'}
+              {seeding ? 'Loading...' : 'Medium'}
+            </button>
+          </Tooltip>
+
+          <Tooltip text="Load MASSIVE dataset (50 instructors, 16 venues, 200+ templates, 30+ subjects) for stress/load testing">
+            <button
+              onClick={() => handleSeed('full')}
+              disabled={seeding}
+              className={`${btnPrimary} ${seeding ? '' : 'bg-red-600 hover:bg-red-700'}`}
+            >
+              {seeding && (
+                <svg
+                  className="animate-spin h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              )}
+              <Database className="w-4 h-4" />
+              {seeding ? 'Loading...' : 'Full (Stress Test)'}
             </button>
           </Tooltip>
         </div>
