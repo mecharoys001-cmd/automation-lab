@@ -147,6 +147,10 @@ export default function SettingsPage() {
   const [clearMode, setClearMode] = useState<'sessions' | 'all'>('all');
   const [clearing, setClearing] = useState(false);
   const [clearProgress, setClearProgress] = useState<string | null>(null);
+  const [clearStep, setClearStep] = useState<1 | 2 | 3>(1);
+  const [clearConfirmText, setClearConfirmText] = useState('');
+  const [clearCounts, setClearCounts] = useState<Record<string, number> | null>(null);
+  const [loadingCounts, setLoadingCounts] = useState(false);
 
   // =========================================================================
   // Fetch helpers
@@ -337,6 +341,20 @@ export default function SettingsPage() {
     setClearMode(mode);
     setClearModalOpen(true);
     setClearProgress(null);
+    setClearConfirmText('');
+    if (mode === 'all') {
+      setClearStep(1);
+      // Fetch entity counts for the checklist
+      setLoadingCounts(true);
+      setClearCounts(null);
+      fetch(`/api/data/counts?program_id=${selectedProgramId}`)
+        .then((res) => res.json())
+        .then((data) => setClearCounts(data.counts ?? {}))
+        .catch(() => setClearCounts(null))
+        .finally(() => setLoadingCounts(false));
+    } else {
+      setClearStep(3); // sessions-only skips to final step
+    }
   }
 
   async function handleClearData() {
@@ -1035,57 +1053,154 @@ export default function SettingsPage() {
                 </h3>
               </div>
               {!clearing && (
-                <button onClick={() => setClearModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+                <Tooltip text="Close dialog">
+                  <button onClick={() => setClearModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </Tooltip>
               )}
             </div>
 
             {/* Body */}
             <div className="px-5 py-4">
-              {clearMode === 'all' ? (
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  This will delete <strong>ALL sessions, templates, instructors, and venues</strong> for this program. This action cannot be undone.
-                </p>
+              {clearMode === 'sessions' ? (
+                <>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    This will delete <strong>all sessions</strong> for this program. Templates, instructors, and venues will be kept. This action cannot be undone.
+                  </p>
+                  {clearProgress && (
+                    <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-500">
+                      <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                      {clearProgress}
+                    </div>
+                  )}
+                </>
+              ) : clearStep === 1 ? (
+                /* Step 1: Type DELETE ALL DATA */
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    This will permanently delete <strong>all sessions, templates, instructors, venues, and tags</strong> for this program.
+                  </p>
+                  <Tooltip text="Type DELETE ALL DATA exactly to continue">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Type <span className="font-mono font-bold text-red-500">DELETE ALL DATA</span> to continue
+                      </label>
+                      <input
+                        type="text"
+                        value={clearConfirmText}
+                        onChange={(e) => setClearConfirmText(e.target.value)}
+                        placeholder="DELETE ALL DATA"
+                        className={inputClass}
+                        autoFocus
+                      />
+                    </div>
+                  </Tooltip>
+                </div>
+              ) : clearStep === 2 ? (
+                /* Step 2: Show checklist of what will be deleted */
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    The following data will be permanently deleted:
+                  </p>
+                  {loadingCounts ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading counts...
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {[
+                        { key: 'sessions', label: 'Sessions' },
+                        { key: 'templates', label: 'Templates' },
+                        { key: 'instructors', label: 'Instructors' },
+                        { key: 'venues', label: 'Venues' },
+                        { key: 'tags', label: 'Tags' },
+                      ].map(({ key, label }) => {
+                        const count = clearCounts?.[key] ?? 0;
+                        return (
+                          <Tooltip key={key} text={`${count} ${label.toLowerCase()} will be deleted`}>
+                            <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50/50 px-3 py-2">
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              <span className="text-sm text-slate-700 flex-1">{label}</span>
+                              <span className="text-sm font-semibold text-red-600">{count}</span>
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               ) : (
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  This will delete <strong>all sessions</strong> for this program. Templates, instructors, and venues will be kept. This action cannot be undone.
-                </p>
-              )}
-
-              {clearProgress && (
-                <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-500">
-                  <Loader2 className="w-4 h-4 animate-spin text-red-500" />
-                  {clearProgress}
+                /* Step 3: Final confirmation */
+                <div className="space-y-3">
+                  <p className="text-sm text-red-600 font-medium leading-relaxed">
+                    This is your final confirmation. Click below to permanently delete all program data.
+                  </p>
+                  {clearProgress && (
+                    <div className="mt-2 flex items-center gap-2 text-[13px] text-slate-500">
+                      <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                      {clearProgress}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-2 px-5 pb-5">
-              <button
-                onClick={() => setClearModalOpen(false)}
-                disabled={clearing}
-                className={`${btnSecondary} disabled:opacity-50`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleClearData}
-                disabled={clearing}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
-              >
-                {clearing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                {clearing
-                  ? 'Clearing...'
-                  : clearMode === 'all'
-                    ? 'Yes, Clear Everything'
-                    : 'Yes, Clear Sessions'}
-              </button>
+              <Tooltip text="Cancel and close">
+                <button
+                  onClick={() => setClearModalOpen(false)}
+                  disabled={clearing}
+                  className={`${btnSecondary} disabled:opacity-50`}
+                >
+                  Cancel
+                </button>
+              </Tooltip>
+
+              {clearMode === 'sessions' ? (
+                <Tooltip text="Delete all sessions for this program">
+                  <button
+                    onClick={handleClearData}
+                    disabled={clearing}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                  >
+                    {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {clearing ? 'Clearing...' : 'Yes, Clear Sessions'}
+                  </button>
+                </Tooltip>
+              ) : clearStep === 1 ? (
+                <Tooltip text={clearConfirmText === 'DELETE ALL DATA' ? 'Proceed to review what will be deleted' : 'Type DELETE ALL DATA to enable this button'}>
+                  <button
+                    onClick={() => setClearStep(2)}
+                    disabled={clearConfirmText !== 'DELETE ALL DATA'}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                  >
+                    Continue
+                  </button>
+                </Tooltip>
+              ) : clearStep === 2 ? (
+                <Tooltip text="Proceed to final confirmation">
+                  <button
+                    onClick={() => setClearStep(3)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors"
+                  >
+                    Continue
+                  </button>
+                </Tooltip>
+              ) : (
+                <Tooltip text="Permanently delete all program data">
+                  <button
+                    onClick={handleClearData}
+                    disabled={clearing}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                  >
+                    {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {clearing ? 'Clearing...' : 'Yes, Delete Everything'}
+                  </button>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>
