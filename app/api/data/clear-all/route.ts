@@ -1,14 +1,15 @@
 /**
  * DELETE /api/data/clear-all?program_id=XXX
  *
- * Deletes program-scoped data: calendar entries, sessions, templates, venues, and tags.
+ * Nuclear option: deletes ALL data across the system.
+ * Program-scoped tables filter by program_id; global tables (venues, tags) delete everything.
  * Instructors are intentionally preserved — they are global resources shared across programs.
  * Deletion order respects FK constraints:
  * 1. school_calendar (references instructors)
  * 2. sessions + session_tags
  * 3. templates
- * 4. venues
- * 5. tags
+ * 4. venues (global — no program_id)
+ * 5. tags (global — no program_id)
  *
  * Response: { success: true, counts: { calendar, sessions, templates, venues, tags } }
  */
@@ -72,11 +73,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. Delete venues
+    // 4. Delete venues (global — no program_id column)
     const { data: venueData, error: venueErr } = await sb
       .from('venues')
       .delete()
-      .eq('program_id', programId)
+      .neq('id', '00000000-0000-0000-0000-000000000000')
       .select('id');
 
     if (venueErr) {

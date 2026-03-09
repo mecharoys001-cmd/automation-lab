@@ -34,6 +34,12 @@ export default function ImportPage() {
       { name: 'Showcase', emoji: '🌟', description: 'Student showcase performances' },
       { name: 'Choral Sessions', emoji: '🎤', description: 'Vocal and choir training' },
       { name: 'Percussion Sessions', emoji: '🥁', description: 'Drumming and percussion sessions' },
+      // Space Types
+      { name: 'Auditorium', emoji: '🎭', description: 'Large performance or assembly space', category: 'Space Types' },
+      { name: 'Classroom', emoji: '🏫', description: 'Standard classroom space', category: 'Space Types' },
+      { name: 'Virtual', emoji: '💻', description: 'Online or virtual meeting space', category: 'Space Types' },
+      { name: 'Outdoor', emoji: '🌳', description: 'Outdoor or open-air space', category: 'Space Types' },
+      { name: 'Multipurpose', emoji: '🔄', description: 'Flexible multi-use space', category: 'Space Types' },
     ],
     event_templates: [
       { name: 'Grade K Music', description: 'Kindergarten music session', duration_minutes: 30, color: '#3B82F6' },
