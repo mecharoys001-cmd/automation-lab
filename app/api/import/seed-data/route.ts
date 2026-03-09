@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
             name: tag.name,
             emoji: tag.emoji,
             description: tag.description,
+            category: tag.category,
           });
 
         if (error) {

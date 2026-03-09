@@ -276,6 +276,23 @@ function VenueModal({
   const [amenitiesInput, setAmenitiesInput] = useState('');
   const [newBlackoutDate, setNewBlackoutDate] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
+  const [loadingSpaceTypes, setLoadingSpaceTypes] = useState(true);
+
+  // Fetch space types from tags
+  useEffect(() => {
+    setLoadingSpaceTypes(true);
+    fetch('/api/tags')
+      .then((res) => res.json())
+      .then((data) => {
+        const types = (data.tags ?? [])
+          .filter((t: { category: string }) => t.category === 'Space Types')
+          .map((t: { name: string }) => t.name);
+        setSpaceTypes(types);
+      })
+      .catch(() => setSpaceTypes([]))
+      .finally(() => setLoadingSpaceTypes(false));
+  }, []);
 
   useEffect(() => {
     if (venue) {
@@ -318,7 +335,14 @@ function VenueModal({
   }
 
   function setField<K extends keyof VenueFormData>(key: K, value: VenueFormData[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // Auto-set is_virtual based on space_type
+      if (key === 'space_type') {
+        next.is_virtual = value === 'Virtual';
+      }
+      return next;
+    });
   }
 
   function addBlackoutDate() {
@@ -374,15 +398,30 @@ function VenueModal({
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Space Type *</label>
-                <Tooltip text="Enter space type (e.g., Classroom, Auditorium)" className="w-full">
-                  <input
-                    type="text"
-                    required
-                    value={form.space_type}
-                    onChange={(e) => setField('space_type', e.target.value)}
-                    placeholder="e.g., Classroom, Auditorium"
-                    className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                <Tooltip text="Select space type from your Space Types tags" className="w-full">
+                  {loadingSpaceTypes ? (
+                    <div className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground">
+                      Loading space types...
+                    </div>
+                  ) : spaceTypes.length === 0 ? (
+                    <div className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground">
+                      No space types available. Create tags with category "Space Types" in Settings → Tags.
+                    </div>
+                  ) : (
+                    <select
+                      required
+                      value={form.space_type}
+                      onChange={(e) => setField('space_type', e.target.value)}
+                      className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">Select type...</option>
+                      {spaceTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </Tooltip>
               </div>
             </div>
@@ -412,18 +451,18 @@ function VenueModal({
               </Tooltip>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <Tooltip text="Toggle virtual venue mode">
-                <input
-                  type="checkbox"
-                  id="is_virtual"
-                  checked={form.is_virtual}
-                  onChange={(e) => setField('is_virtual', e.target.checked)}
-                  className="rounded border-border"
-                />
-              </Tooltip>
-              <label htmlFor="is_virtual" className="text-sm text-foreground">Virtual venue</label>
-            </div>
+          </div>
+
+          {/* Operating Hours */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Operating Hours</h3>
+            <p className="text-xs text-muted-foreground">
+              Set when this venue is available for booking. Leave blank if always available during program hours.
+            </p>
+            <EditableAvailabilityGrid
+              availability={form.availability_json}
+              onChange={(avail) => setField('availability_json', avail)}
+            />
           </div>
 
           {/* Capacity & Booking */}
@@ -862,12 +901,6 @@ export default function VenuesPage() {
                     {venue.space_type}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium shrink-0">
-                  <span
-                    className={`h-2 w-2 rounded-full ${venue.is_virtual ? 'bg-blue-400' : 'bg-green-400'}`}
-                  />
-                  {venue.is_virtual ? 'Virtual' : 'In-Person'}
-                </span>
               </div>
 
               {/* Address */}

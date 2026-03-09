@@ -1,11 +1,16 @@
 /**
  * DELETE /api/data/clear-all?program_id=XXX
  *
- * Deletes ALL sessions, event templates, instructors, venues, and tags.
- * Deletion order respects FK constraints (sessions → session_tags first,
- * then sessions, templates, instructors, venues, tags).
+ * Deletes ALL data for a program: calendar entries, sessions, templates, instructors, venues, and tags.
+ * Deletion order respects FK constraints:
+ * 1. school_calendar (references instructors)
+ * 2. sessions + session_tags
+ * 3. templates
+ * 4. instructors
+ * 5. venues
+ * 6. tags
  *
- * Response: { success: true, counts: { sessions, templates, instructors, venues, tags } }
+ * Response: { success: true, counts: { calendar, sessions, templates, instructors, venues, tags } }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -28,7 +33,21 @@ export async function DELETE(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    // 1. Delete sessions (uses batched RPC to handle large datasets)
+    // 1. Delete school_calendar entries first (they reference instructors)
+    const { data: calData, error: calErr } = await sb
+      .from('school_calendar')
+      .delete()
+      .eq('program_id', programId)
+      .select('id');
+
+    if (calErr) {
+      return NextResponse.json(
+        { error: `Failed to delete calendar entries: ${calErr.message}` },
+        { status: 500 },
+      );
+    }
+
+    // 2. Delete sessions (uses batched RPC to handle large datasets)
     const { data: sessionsDeleted, error: sessErr } = await sb
       .rpc('delete_all_sessions_batched', { p_program_id: programId, p_batch_size: 5000 });
 
@@ -39,7 +58,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 2. Delete event templates
+    // 3. Delete event templates
     const { data: tmplData, error: tmplErr } = await sb
       .from('session_templates')
       .delete()
@@ -53,7 +72,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 3. Delete instructors (global — not program-scoped)
+    // 4. Delete instructors (global — not program-scoped)
     const { data: instrData, error: instrErr } = await sb
       .from('instructors')
       .delete()
@@ -67,7 +86,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. Delete venues
+    // 5. Delete venues
     const { data: venueData, error: venueErr } = await sb
       .from('venues')
       .delete()
@@ -81,7 +100,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 5. Delete tags (global — not program-scoped)
+    // 6. Delete tags (global — not program-scoped)
     const { data: tagData, error: tagErr } = await sb
       .from('tags')
       .delete()
@@ -96,6 +115,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const counts = {
+      calendar: calData?.length ?? 0,
       sessions: sessionsDeleted ?? 0,
       templates: tmplData?.length ?? 0,
       instructors: instrData?.length ?? 0,
