@@ -1674,6 +1674,40 @@ export default function PeoplePage() {
       {/* ── Content Area ─────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
 
+        {/* ── Share Intake Form Section ────────────────────── */}
+        <section className="bg-gradient-to-r from-blue-50 to-violet-50 rounded-lg border border-blue-200 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-white border border-blue-200 flex-shrink-0">
+              <Mail className="w-6 h-6 text-blue-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-semibold text-slate-900 mb-1">
+                Share Instructor Availability Form
+              </h3>
+              <p className="text-[13px] text-slate-600 mb-4">
+                Send this link to instructors via email to collect their availability and contact information. The form saves directly to the system.
+              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <ClickToCopy
+                  text="https://tools.artsnwct.org/tools/scheduler/intake"
+                  label="intake form link"
+                />
+                <a
+                  href="/tools/scheduler/intake"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  Preview Form
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Instructors Section ─────────────────────────── */}
         <section className="space-y-4">
           <div className="flex items-center gap-2">
