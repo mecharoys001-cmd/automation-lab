@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Check, X, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Check, X, Loader2, Plus } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
 interface Tag {
@@ -39,29 +39,66 @@ export function TagSelector({
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const res = await fetch('/api/tags');
-        if (!res.ok) throw new Error('Failed to load tags');
-        const json = await res.json();
-        let tags = json.tags ?? [];
-        
-        // Filter by category if specified
-        if (category) {
-          tags = tags.filter((t: Tag) => t.category === category);
-        }
-        
-        setAllTags(tags);
-      } catch (err) {
-        console.error('TagSelector: Failed to fetch tags:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Inline "Add New Tag" state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagEmoji, setNewTagEmoji] = useState('');
+  const [savingTag, setSavingTag] = useState(false);
 
-    fetchTags();
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tags');
+      if (!res.ok) throw new Error('Failed to load tags');
+      const json = await res.json();
+      let tags = json.tags ?? [];
+
+      // Filter by category if specified
+      if (category) {
+        tags = tags.filter((t: Tag) => t.category === category);
+      }
+
+      setAllTags(tags);
+    } catch (err) {
+      console.error('TagSelector: Failed to fetch tags:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [category]);
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim() || savingTag) return;
+    setSavingTag(true);
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newTagName.trim(),
+          emoji: newTagEmoji.trim() || null,
+          category: category || 'General',
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to create tag');
+      const created = await res.json();
+      const tagName = created.tag?.name ?? newTagName.trim();
+      await fetchTags();
+      // Auto-select the new tag
+      if (!value.includes(tagName)) {
+        onChange([...value, tagName]);
+      }
+      setNewTagName('');
+      setNewTagEmoji('');
+      setShowAddForm(false);
+    } catch (err) {
+      console.error('TagSelector: Failed to create tag:', err);
+    } finally {
+      setSavingTag(false);
+    }
+  };
 
   const toggleTag = (tagName: string) => {
     if (disabled) return;
@@ -136,39 +173,116 @@ export function TagSelector({
           
           {/* Dropdown Menu */}
           <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
-            {allTags.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-slate-400 text-center">
-                No tags available{category && ` in "${category === 'Skills' ? 'Subjects' : category}" category`}
+            {allTags.length === 0 && !showAddForm ? (
+              <div className="px-3 py-3 text-center">
+                <p className="text-sm text-slate-400 mb-2">
+                  No tags available{category && ` in "${category === 'Skills' ? 'Subjects' : category}" category`}
+                </p>
+                <Tooltip text="Create a new tag in this category">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add New Tag
+                  </button>
+                </Tooltip>
               </div>
             ) : (
-              allTags.map(tag => {
-                const isSelected = value.includes(tag.name);
-                return (
-                  <Tooltip key={tag.id} text={tag.description || tag.name} position="right">
-                    <button
-                      type="button"
-                      onClick={() => toggleTag(tag.name)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
-                        isSelected
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+              <>
+                {allTags.map(tag => {
+                  const isSelected = value.includes(tag.name);
+                  return (
+                    <Tooltip key={tag.id} text={tag.description || tag.name} position="right">
+                      <button
+                        type="button"
+                        onClick={() => toggleTag(tag.name)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
                           isSelected
-                            ? 'bg-blue-500 border-blue-500'
-                            : 'border-slate-300'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-slate-700 hover:bg-slate-50'
                         }`}
                       >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        {tag.emoji && <span className="text-base">{tag.emoji}</span>}
+                        <span className="truncate">{tag.name}</span>
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+
+                {/* Divider + Add New Tag */}
+                <div className="border-t border-slate-100">
+                  {showAddForm ? (
+                    <div className="px-3 py-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <Tooltip text="Emoji for the new tag (optional)">
+                          <input
+                            type="text"
+                            placeholder="🎵"
+                            value={newTagEmoji}
+                            onChange={(e) => setNewTagEmoji(e.target.value)}
+                            maxLength={2}
+                            className="w-10 h-8 text-center rounded border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                          />
+                        </Tooltip>
+                        <Tooltip text="Name for the new tag">
+                          <input
+                            type="text"
+                            placeholder="Tag name..."
+                            value={newTagName}
+                            onChange={(e) => setNewTagName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
+                            className="flex-1 h-8 rounded border border-slate-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                          />
+                        </Tooltip>
                       </div>
-                      {tag.emoji && <span className="text-base">{tag.emoji}</span>}
-                      <span className="truncate">{tag.name}</span>
-                    </button>
-                  </Tooltip>
-                );
-              })
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <Tooltip text="Cancel creating tag">
+                          <button
+                            type="button"
+                            onClick={() => { setShowAddForm(false); setNewTagName(''); setNewTagEmoji(''); }}
+                            className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Save new tag">
+                          <button
+                            type="button"
+                            onClick={handleAddTag}
+                            disabled={!newTagName.trim() || savingTag}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+                          >
+                            {savingTag ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            Save
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  ) : (
+                    <Tooltip text="Create a new tag in this category">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(true)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add New Tag
+                      </button>
+                    </Tooltip>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </>
