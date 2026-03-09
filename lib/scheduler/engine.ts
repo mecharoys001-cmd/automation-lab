@@ -393,29 +393,40 @@ function runSingleAttempt(
           }
         }
 
+        // Track whether venue was auto-assigned (not from template or program default)
+        const venueAutoAssigned = !effectiveTmpl.venue_id && !program.default_venue_id && !!venueId;
+
         // --- Check venue availability ---
         if (venueId) {
           const venue = venues.find((v) => v.id === venueId);
           if (venue) {
             if (isVenueBlackoutDate(venue, targetDate)) {
-              skippedDates.push({
-                date: targetDate,
-                template_id: tmpl.id,
-                reason: 'venue_blackout',
-                detail: `Venue "${venue.name}" is blacked out on ${targetDate}`,
-              });
-              continue;
+              if (venueAutoAssigned) {
+                venueId = null;
+              } else {
+                skippedDates.push({
+                  date: targetDate,
+                  template_id: tmpl.id,
+                  reason: 'venue_blackout',
+                  detail: `Venue "${venue.name}" is blacked out on ${targetDate}`,
+                });
+                continue;
+              }
             }
 
             const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(venue.availability_json, dayOfWeek, sessionWindow)) {
-              skippedDates.push({
-                date: targetDate,
-                template_id: tmpl.id,
-                reason: 'venue_unavailable',
-                detail: `Venue "${venue.name} - ${venue.space_type}" not available at ${startTime}-${endTime}`,
-              });
-              continue;
+              if (venueAutoAssigned) {
+                venueId = null;
+              } else {
+                skippedDates.push({
+                  date: targetDate,
+                  template_id: tmpl.id,
+                  reason: 'venue_unavailable',
+                  detail: `Venue "${venue.name} - ${venue.space_type}" not available at ${startTime}-${endTime}`,
+                });
+                continue;
+              }
             }
 
             if (!program.allows_mixing) {
@@ -429,13 +440,17 @@ function runSingleAttempt(
                 bufferSettings
               );
               if (atCapacity) {
-                skippedDates.push({
-                  date: targetDate,
-                  template_id: tmpl.id,
-                  reason: 'venue_at_capacity',
-                  detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${startTime}-${endTime}`,
-                });
-                continue;
+                if (venueAutoAssigned) {
+                  venueId = null;
+                } else {
+                  skippedDates.push({
+                    date: targetDate,
+                    template_id: tmpl.id,
+                    reason: 'venue_at_capacity',
+                    detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${startTime}-${endTime}`,
+                  });
+                  continue;
+                }
               }
             }
           }
