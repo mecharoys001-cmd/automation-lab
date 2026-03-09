@@ -2,16 +2,15 @@
  * DELETE /api/data/clear-all?program_id=XXX
  *
  * Nuclear option: deletes ALL data across the system.
- * Program-scoped tables filter by program_id; global tables (venues, tags) delete everything.
- * Instructors are intentionally preserved — they are global resources shared across programs.
  * Deletion order respects FK constraints:
  * 1. school_calendar (references instructors)
  * 2. sessions + session_tags
  * 3. templates
- * 4. venues (global — no program_id)
- * 5. tags (global — no program_id)
+ * 4. instructors (safe after calendar + sessions deleted)
+ * 5. venues (global)
+ * 6. tags (global)
  *
- * Response: { success: true, counts: { calendar, sessions, templates, venues, tags } }
+ * Response: { success: true, counts: { calendar, sessions, templates, instructors, venues, tags } }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -73,7 +72,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. Delete venues (global — no program_id column)
+    // 4. Delete instructors (global — sessions/calendar already deleted above)
+    const { data: instrData, error: instrErr } = await sb
+      .from('instructors')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+      .select('id');
+
+    if (instrErr) {
+      return NextResponse.json(
+        { error: `Failed to delete instructors: ${instrErr.message}` },
+        { status: 500 },
+      );
+    }
+
+    // 5. Delete venues (global — no program_id column)
     const { data: venueData, error: venueErr } = await sb
       .from('venues')
       .delete()
@@ -105,6 +118,7 @@ export async function DELETE(request: NextRequest) {
       calendar: calData?.length ?? 0,
       sessions: sessionsDeleted ?? 0,
       templates: tmplData?.length ?? 0,
+      instructors: instrData?.length ?? 0,
       venues: venueData?.length ?? 0,
       tags: tagData?.length ?? 0,
     };
