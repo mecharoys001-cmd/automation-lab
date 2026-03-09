@@ -69,7 +69,7 @@ const VENUES: Record<string, Venue> = {
     min_booking_duration_minutes: 30, max_booking_duration_minutes: 120,
     buffer_minutes: 10, advance_booking_days: 30, cancellation_window_hours: 24,
     address: '100 School Ave', amenities: ['piano', 'whiteboard'], cost_per_hour: null,
-    max_concurrent_bookings: 1, blackout_dates: null, description: null, created_at: '2025-09-01T00:00:00Z',
+    max_concurrent_bookings: 1, blackout_dates: null, description: null, is_wheelchair_accessible: true, created_at: '2025-09-01T00:00:00Z',
   },
   auditorium: {
     id: 'v-auditorium', name: 'Auditorium', space_type: 'auditorium',
@@ -77,7 +77,7 @@ const VENUES: Record<string, Venue> = {
     min_booking_duration_minutes: 60, max_booking_duration_minutes: 180,
     buffer_minutes: 15, advance_booking_days: 60, cancellation_window_hours: 48,
     address: '100 School Ave', amenities: ['stage', 'sound-system'], cost_per_hour: null,
-    max_concurrent_bookings: 1, blackout_dates: null, description: null, created_at: '2025-09-01T00:00:00Z',
+    max_concurrent_bookings: 1, blackout_dates: null, description: null, is_wheelchair_accessible: true, created_at: '2025-09-01T00:00:00Z',
   },
   practiceRoom: {
     id: 'v-practice-room', name: 'Practice Room B', space_type: 'practice_room',
@@ -85,7 +85,7 @@ const VENUES: Record<string, Venue> = {
     min_booking_duration_minutes: 15, max_booking_duration_minutes: 60,
     buffer_minutes: 5, advance_booking_days: 14, cancellation_window_hours: 12,
     address: '100 School Ave', amenities: ['piano'], cost_per_hour: null,
-    max_concurrent_bookings: 1, blackout_dates: null, description: null, created_at: '2025-09-01T00:00:00Z',
+    max_concurrent_bookings: 1, blackout_dates: null, description: null, is_wheelchair_accessible: false, created_at: '2025-09-01T00:00:00Z',
   },
 };
 

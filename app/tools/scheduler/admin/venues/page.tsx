@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, Check, AlertTriangle, Upload } from 'lucide-react';
-import type { Venue, VenueInsert, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
+import type { Venue, VenueInsert, AvailabilityJson, DayOfWeek, TimeBlock, Program } from '@/types/database';
+import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Pill } from '../../components/ui/Pill';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
@@ -255,6 +256,7 @@ const EMPTY_FORM: VenueFormData = {
   max_concurrent_bookings: 1,
   blackout_dates: [],
   description: null,
+  is_wheelchair_accessible: false,
 };
 
 function VenueModal({
@@ -264,6 +266,7 @@ function VenueModal({
   onSave,
   onDelete,
   onClose,
+  program,
 }: {
   venue: Venue | null; // null = creating new
   saving: boolean;
@@ -271,6 +274,7 @@ function VenueModal({
   onSave: (data: VenueFormData) => void;
   onDelete: (() => void) | null;
   onClose: () => void;
+  program: Program | null;
 }) {
   const [form, setForm] = useState<VenueFormData>(EMPTY_FORM);
   const [amenitiesInput, setAmenitiesInput] = useState('');
@@ -314,6 +318,7 @@ function VenueModal({
         max_concurrent_bookings: venue.max_concurrent_bookings,
         blackout_dates: venue.blackout_dates ?? [],
         description: venue.description,
+        is_wheelchair_accessible: venue.is_wheelchair_accessible ?? false,
       });
       setAmenitiesInput((venue.amenities ?? []).join(', '));
     } else {
@@ -459,6 +464,16 @@ function VenueModal({
             <p className="text-xs text-muted-foreground">
               Set when this venue is available for booking. Leave blank if always available during program hours.
             </p>
+            {program && (
+              <Tooltip text="This availability extends outside your program dates">
+                <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>
+                    Program runs {program.start_date} to {program.end_date}
+                  </span>
+                </div>
+              </Tooltip>
+            )}
             <EditableAvailabilityGrid
               availability={form.availability_json}
               onChange={(avail) => setField('availability_json', avail)}
@@ -479,6 +494,19 @@ function VenueModal({
                     onChange={(e) => setField('max_capacity', e.target.value ? Number(e.target.value) : null)}
                     className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
+                </Tooltip>
+              </div>
+              <div className="flex items-center gap-2 col-span-2 sm:col-span-3">
+                <Tooltip text="Indicate if this venue is wheelchair accessible">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.is_wheelchair_accessible}
+                      onChange={(e) => setField('is_wheelchair_accessible', e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-ring"
+                    />
+                    <span className="text-sm text-foreground">Wheelchair Accessible</span>
+                  </label>
                 </Tooltip>
               </div>
               <div>
@@ -749,6 +777,8 @@ function VenueModal({
 
 export default function VenuesPage() {
   const router = useRouter();
+  const { programs, selectedProgramId } = useProgram();
+  const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -967,6 +997,7 @@ export default function VenuesPage() {
           onSave={handleSave}
           onDelete={editingVenue ? handleDelete : null}
           onClose={closeModal}
+          program={selectedProgram}
         />
       )}
 

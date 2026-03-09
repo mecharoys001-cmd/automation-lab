@@ -97,6 +97,7 @@ export interface Venue {
   max_concurrent_bookings: number;
   blackout_dates: string[] | null;
   description: string | null;
+  is_wheelchair_accessible: boolean;
   created_at: string;
 }
 
