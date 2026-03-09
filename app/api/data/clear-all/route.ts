@@ -1,16 +1,16 @@
 /**
  * DELETE /api/data/clear-all?program_id=XXX
  *
- * Deletes ALL data for a program: calendar entries, sessions, templates, instructors, venues, and tags.
+ * Deletes program-scoped data: calendar entries, sessions, templates, venues, and tags.
+ * Instructors are intentionally preserved — they are global resources shared across programs.
  * Deletion order respects FK constraints:
  * 1. school_calendar (references instructors)
  * 2. sessions + session_tags
  * 3. templates
- * 4. instructors
- * 5. venues
- * 6. tags
+ * 4. venues
+ * 5. tags
  *
- * Response: { success: true, counts: { calendar, sessions, templates, instructors, venues, tags } }
+ * Response: { success: true, counts: { calendar, sessions, templates, venues, tags } }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -72,21 +72,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. Delete instructors (global — not program-scoped)
-    const { data: instrData, error: instrErr } = await sb
-      .from('instructors')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('id');
-
-    if (instrErr) {
-      return NextResponse.json(
-        { error: `Failed to delete instructors: ${instrErr.message}` },
-        { status: 500 },
-      );
-    }
-
-    // 5. Delete venues
+    // 4. Delete venues
     const { data: venueData, error: venueErr } = await sb
       .from('venues')
       .delete()
@@ -100,7 +86,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 6. Delete tags (global — not program-scoped)
+    // 5. Delete tags (global — not program-scoped)
     const { data: tagData, error: tagErr } = await sb
       .from('tags')
       .delete()
@@ -118,7 +104,6 @@ export async function DELETE(request: NextRequest) {
       calendar: calData?.length ?? 0,
       sessions: sessionsDeleted ?? 0,
       templates: tmplData?.length ?? 0,
-      instructors: instrData?.length ?? 0,
       venues: venueData?.length ?? 0,
       tags: tagData?.length ?? 0,
     };

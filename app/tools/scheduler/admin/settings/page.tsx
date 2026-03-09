@@ -1016,10 +1016,10 @@ export default function SettingsPage() {
             <div className="flex-1 mr-4">
               <p className="text-sm font-medium text-slate-900">Clear All Data</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all sessions, templates, instructors, and venues for this program. Use this to fully reset after testing with mock data.
+                Removes all sessions, templates, venues, and tags for this program. Instructors are preserved. Use this to fully reset after testing with mock data.
               </p>
             </div>
-            <Tooltip text="Delete ALL sessions, templates, instructors &amp; venues — complete reset">
+            <Tooltip text="Delete ALL sessions, templates, venues &amp; tags — instructors are preserved">
               <button
                 onClick={() => openClearModal('all')}
                 disabled={!selectedProgramId || clearing}
@@ -1079,7 +1079,7 @@ export default function SettingsPage() {
                 /* Step 1: Type DELETE ALL DATA */
                 <div className="space-y-3">
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    This will permanently delete <strong>all sessions, templates, instructors, venues, and tags</strong> for this program.
+                    This will permanently delete <strong>all sessions, templates, venues, and tags</strong> for this program. Instructors are preserved.
                   </p>
                   <Tooltip text="Type DELETE ALL DATA exactly to continue">
                     <div>
@@ -1113,7 +1113,6 @@ export default function SettingsPage() {
                       {[
                         { key: 'sessions', label: 'Sessions' },
                         { key: 'templates', label: 'Templates' },
-                        { key: 'instructors', label: 'Instructors' },
                         { key: 'venues', label: 'Venues' },
                         { key: 'tags', label: 'Tags' },
                       ].map(({ key, label }) => {
