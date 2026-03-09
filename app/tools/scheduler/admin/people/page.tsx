@@ -17,6 +17,7 @@ import { ClickToCopy } from '../../components/ui/ClickToCopy';
 import { TagSelector } from '../../components/ui/TagSelector';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 import { SKILL_STYLES } from '../../lib/subjectColors';
+import { useProgram } from '../ProgramContext';
 
 /* ── Constants ──────────────────────────────────────────────── */
 
@@ -936,6 +937,8 @@ function InstructorEditModal({
   onDelete: (() => void) | null;
   onClose: () => void;
 }) {
+  const { programs, selectedProgramId } = useProgram();
+  const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
   const isNew = !instructor;
   const [form, setForm] = useState<InstructorFormData>(() =>
     instructor
@@ -1083,6 +1086,16 @@ function InstructorEditModal({
           {/* Availability */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-2">Availability</label>
+            {selectedProgram && (
+              <Tooltip text="This availability extends outside your program dates">
+                <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>
+                    Program runs {selectedProgram.start_date} to {selectedProgram.end_date}
+                  </span>
+                </div>
+              </Tooltip>
+            )}
             <AvailabilityEditor
               value={form.availability_json}
               onChange={(v) => setField('availability_json', v)}
@@ -1366,6 +1379,8 @@ function VenueCreateModal({
 
 export default function PeoplePage() {
   const router = useRouter();
+  const { programs, selectedProgramId } = useProgram();
+  const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
   const [allInstructors, setAllInstructors] = useState<Instructor[]>([]);
   const [loadingAll, setLoadingAll] = useState(true);
   const [search, setSearch] = useState('');
@@ -1628,47 +1643,6 @@ export default function PeoplePage() {
         <h1 className="text-[22px] font-bold text-slate-900 whitespace-nowrap">
           People &amp; Places
         </h1>
-        <div className="flex-1" />
-
-        {/* Search Bar (260px) */}
-        <Tooltip text="Search by name, email, or subject">
-          <div className="flex items-center w-[260px] border border-slate-200 rounded-lg px-3 py-2 gap-2">
-            <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search instructors..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
-            />
-          </div>
-        </Tooltip>
-
-        {/* Status Filter */}
-        <Tooltip text="Filter by instructor status">
-          <div className="relative flex items-center border border-slate-200 rounded-lg">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-              className="appearance-none bg-transparent px-3 py-2 pr-8 text-[13px] font-medium text-slate-500 outline-none cursor-pointer"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <ChevronDown className="absolute right-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-          </div>
-        </Tooltip>
-
-        {/* Add Instructor */}
-        <Button
-          variant="primary"
-          icon={<Plus className="w-4 h-4" />}
-          tooltip="Add a new instructor to the roster"
-          onClick={() => setShowCreateModal(true)}
-        >
-          Add Instructor
-        </Button>
       </div>
 
       {/* ── Content Area ─────────────────────────────────── */}
@@ -1710,7 +1684,7 @@ export default function PeoplePage() {
 
         {/* ── Instructors Section ─────────────────────────── */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Users className="w-5 h-5 text-blue-500" />
             <h2 className="text-lg font-semibold text-slate-900">Instructors</h2>
             <Badge
@@ -1720,6 +1694,46 @@ export default function PeoplePage() {
             >
               ({filtered.length})
             </Badge>
+            <div className="flex-1" />
+
+            {/* Search Bar */}
+            <Tooltip text="Search by name, email, or subject">
+              <div className="flex items-center w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
+                <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search instructors..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                />
+              </div>
+            </Tooltip>
+
+            {/* Status Filter */}
+            <Tooltip text="Filter by instructor status">
+              <div className="relative flex items-center border border-slate-200 rounded-lg">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
+                  className="appearance-none bg-transparent px-3 py-1.5 pr-8 text-[13px] font-medium text-slate-500 outline-none cursor-pointer"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <ChevronDown className="absolute right-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              </div>
+            </Tooltip>
+
+            <Button
+              variant="primary"
+              icon={<Plus className="w-4 h-4" />}
+              tooltip="Add a new instructor to the roster"
+              onClick={() => setShowCreateModal(true)}
+            >
+              Add Instructor
+            </Button>
           </div>
 
           {loadingAll ? (
