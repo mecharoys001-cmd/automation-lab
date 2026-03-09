@@ -33,11 +33,11 @@ export async function DELETE(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    // 1. Delete school_calendar entries first (they reference instructors)
+    // 1. Delete ALL school_calendar entries first (they reference instructors)
     const { data: calData, error: calErr } = await sb
       .from('school_calendar')
       .delete()
-      .eq('program_id', programId)
+      .neq('id', '00000000-0000-0000-0000-000000000000')
       .select('id');
 
     if (calErr) {
@@ -58,11 +58,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 3. Delete event templates
+    // 3. Delete ALL event templates
     const { data: tmplData, error: tmplErr } = await sb
       .from('session_templates')
       .delete()
-      .eq('program_id', programId)
+      .neq('id', '00000000-0000-0000-0000-000000000000')
       .select('id');
 
     if (tmplErr) {
