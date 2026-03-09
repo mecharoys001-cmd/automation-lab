@@ -1203,21 +1203,21 @@ function InstructorEditModal({
 
 /* ── Venue Create Modal ────────────────────────────────────── */
 
-const SPACE_TYPES = ['Stage', 'Classroom', 'Auditorium', 'Outdoor'] as const;
-
 interface VenueFormData {
   name: string;
   space_type: string;
   max_capacity: string;
   is_virtual: boolean;
+  is_wheelchair_accessible: boolean;
   notes: string;
 }
 
 const EMPTY_VENUE_FORM: VenueFormData = {
   name: '',
-  space_type: 'Classroom',
+  space_type: '',
   max_capacity: '',
   is_virtual: false,
+  is_wheelchair_accessible: false,
   notes: '',
 };
 
@@ -1231,9 +1231,30 @@ function VenueCreateModal({
   onClose: () => void;
 }) {
   const [form, setForm] = useState<VenueFormData>({ ...EMPTY_VENUE_FORM });
+  const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
+
+  // Fetch space types from tags API
+  useEffect(() => {
+    fetch('/api/tags')
+      .then((res) => res.json())
+      .then((data) => {
+        const types = (data.tags ?? [])
+          .filter((t: { category: string }) => t.category === 'Space Types')
+          .map((t: { name: string }) => t.name);
+        setSpaceTypes(types);
+      })
+      .catch(() => setSpaceTypes([]));
+  }, []);
 
   function setField<K extends keyof VenueFormData>(key: K, value: VenueFormData[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // Auto-set is_virtual based on space_type
+      if (key === 'space_type') {
+        next.is_virtual = value === 'Virtual';
+      }
+      return next;
+    });
   }
 
   return (
@@ -1273,23 +1294,27 @@ function VenueCreateModal({
             </Tooltip>
           </div>
 
-          {/* Space Type */}
+          {/* Space Type (from tags) */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
-            <Tooltip text="The type of space this venue provides" className="w-full">
+            <Tooltip text="Select a space type (manage types in Settings → Tags under 'Space Types' category)" className="w-full">
               <div className="relative">
                 <select
                   value={form.space_type}
                   onChange={(e) => setField('space_type', e.target.value)}
                   className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer"
                 >
-                  {SPACE_TYPES.map((t) => (
+                  <option value="">Select type...</option>
+                  {spaceTypes.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               </div>
             </Tooltip>
+            {spaceTypes.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">No space types found. Create tags with category &quot;Space Types&quot; in Settings → Tags.</p>
+            )}
           </div>
 
           {/* Max Capacity */}
@@ -1307,18 +1332,17 @@ function VenueCreateModal({
             </Tooltip>
           </div>
 
-          {/* Is Virtual */}
+          {/* Wheelchair Accessible */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Type</label>
-            <Tooltip text={form.is_virtual ? 'Virtual venue (online / remote)' : 'In-person physical venue'}>
+            <Tooltip text="Indicate if this venue is wheelchair accessible">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={form.is_virtual}
-                  onChange={(e) => setField('is_virtual', e.target.checked)}
+                  checked={form.is_wheelchair_accessible}
+                  onChange={(e) => setField('is_wheelchair_accessible', e.target.checked)}
                   className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
                 />
-                <span className="text-sm text-slate-700">Virtual venue</span>
+                <span className="text-sm text-slate-700">Wheelchair Accessible</span>
               </label>
             </Tooltip>
           </div>

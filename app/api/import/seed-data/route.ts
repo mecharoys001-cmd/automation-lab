@@ -67,6 +67,13 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (existing) {
+          // Update category if tag exists but has different/missing category
+          if (tag.category) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from('tags') as any)
+              .update({ category: tag.category })
+              .eq('id', existing.id);
+          }
           tagsSkipped++;
           continue;
         }
