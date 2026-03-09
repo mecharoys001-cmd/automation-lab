@@ -1,22 +1,17 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AvailabilityJson, DayOfWeek } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
 
-// ── Constants ──────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────
 
-const SKILLS = [
-  'Strings',
-  'Percussion',
-  'Choral',
-  'Woodwinds',
-  'Brass',
-  'Piano',
-  'General Music',
-  'Dance',
-  'Theater',
-] as const;
+interface SubjectTag {
+  id: string;
+  name: string;
+  emoji?: string | null;
+  category: string;
+}
 
 const DAYS: { key: DayOfWeek; label: string; short: string }[] = [
   { key: 'monday', label: 'Monday', short: 'Mon' },
@@ -116,6 +111,41 @@ export default function IntakePage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [submitError, setSubmitError] = useState('');
+
+  // Dynamic subjects from API
+  const [availableSubjects, setAvailableSubjects] = useState<SubjectTag[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+
+  // Program existence check — form disabled until a program with time blocks exists
+  const [hasProgram, setHasProgram] = useState(false);
+  const [programLoading, setProgramLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch subjects (tags with category "Skills")
+    fetch('/api/tags')
+      .then((res) => res.json())
+      .then((data) => {
+        const tags: SubjectTag[] = (data.tags ?? []).filter(
+          (t: SubjectTag) => t.category === 'Skills'
+        );
+        setAvailableSubjects(tags);
+      })
+      .catch(() => setAvailableSubjects([]))
+      .finally(() => setSubjectsLoading(false));
+
+    // Check if at least one program exists (with start/end dates set)
+    fetch('/api/programs')
+      .then((res) => res.json())
+      .then((data) => {
+        const programs = data.programs ?? [];
+        const valid = programs.some(
+          (p: { start_date?: string; end_date?: string }) => p.start_date && p.end_date
+        );
+        setHasProgram(valid);
+      })
+      .catch(() => setHasProgram(false))
+      .finally(() => setProgramLoading(false));
+  }, []);
 
   // Drag-to-paint state for availability grid
   const isDragging = useRef(false);
@@ -331,6 +361,18 @@ export default function IntakePage() {
           </p>
         </div>
 
+        {/* Program check banner */}
+        {!programLoading && !hasProgram && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 mb-6 text-center">
+            <p className="text-sm text-amber-300 font-medium">
+              This form is not yet available. The scheduling program has not been configured.
+            </p>
+            <p className="text-xs text-amber-400/70 mt-1">
+              Please contact your administrator to set up program time blocks first.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} noValidate>
           {/* ── Contact Information ─────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
@@ -423,52 +465,74 @@ export default function IntakePage() {
               Select all areas you are qualified to teach. <span className="text-red-400">*</span>
             </p>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {SKILLS.map((skill) => {
-                const checked = selectedSkills.has(skill);
-                return (
-                  <Tooltip key={skill} text={`Toggle ${skill} teaching subject`}>
-                    <label
-                      className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
-                        checked
-                          ? 'border-primary/50 bg-primary/10 text-foreground'
-                          : 'border-border bg-background text-muted-foreground hover:bg-accent/50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleSkill(skill)}
-                        className="sr-only"
-                      />
-                      <div
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                          checked ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+            {subjectsLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading subjects...
+              </div>
+            ) : availableSubjects.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No subjects have been created yet. An administrator needs to add subject tags first.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {availableSubjects.map((subject) => {
+                  const checked = selectedSkills.has(subject.name);
+                  return (
+                    <Tooltip key={subject.id} text={`Toggle ${subject.name} teaching subject`}>
+                      <label
+                        className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                          checked
+                            ? 'border-primary/50 bg-primary/10 text-foreground'
+                            : 'border-border bg-background text-muted-foreground hover:bg-accent/50'
                         }`}
                       >
-                        {checked && (
-                          <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                        )}
-                      </div>
-                      {skill}
-                    </label>
-                  </Tooltip>
-                );
-              })}
-            </div>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSkill(subject.name)}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                            checked ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                          }`}
+                        >
+                          {checked && (
+                            <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                          )}
+                        </div>
+                        {subject.emoji && <span>{subject.emoji}</span>}
+                        {subject.name}
+                      </label>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            )}
             {errors.skills && <p className="mt-2 text-xs text-red-400">{errors.skills}</p>}
           </div>
 
           {/* ── Weekly Availability Grid ────────────────── */}
-          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
+          <div className={`rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6 ${!hasProgram && !programLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex items-start justify-between mb-1 gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Weekly Availability</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Click or drag to select your available time blocks. <span className="text-red-400">*</span>
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/20 shrink-0">
+                  <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">Weekly Availability</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Click or drag to select your available time blocks. <span className="text-red-400">*</span>
+                  </p>
+                </div>
               </div>
               {selectedSlots.size > 0 && (
                 <Tooltip text="Clear all selected time blocks">
@@ -569,7 +633,7 @@ export default function IntakePage() {
             <Tooltip text="Submit your intake form">
               <button
                 type="submit"
-                disabled={submitState === 'loading'}
+                disabled={submitState === 'loading' || !hasProgram}
                 className="rounded-lg bg-primary px-8 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitState === 'loading' ? (
