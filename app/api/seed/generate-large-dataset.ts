@@ -120,13 +120,26 @@ function generateTemplates(count: number) {
   return templates;
 }
 
+import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES, type TagPreset } from './default-tags';
+
+const subjectTags: TagPreset[] = SUBJECTS.slice(0, 15).map((subject, i) => ({
+  name: `${subject} Sessions`,
+  color: ['#6366F1', '#8B5CF6', '#EF4444', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#14B8A6', '#F97316', '#A855F7', '#06B6D4', '#84CC16', '#EAB308', '#F43F5E', '#22D3EE'][i % 15],
+}));
+
+// Merge defaults with subject tags, deduplicating by name
+const allTags = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES, ...subjectTags];
+const seen = new Set<string>();
+const dedupedTags = allTags.filter(t => {
+  if (seen.has(t.name)) return false;
+  seen.add(t.name);
+  return true;
+});
+
 export const fullDataset = {
   name: 'Full Stress Test Dataset',
   venues: VENUES_LARGE,
-  tags: SUBJECTS.slice(0, 15).map((subject, i) => ({
-    name: `${subject} Sessions`,
-    color: ['#6366F1', '#8B5CF6', '#EF4444', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#14B8A6', '#F97316', '#A855F7', '#06B6D4', '#84CC16', '#EAB308', '#F43F5E', '#22D3EE'][i % 15],
-  })),
+  tags: dedupedTags,
   instructors: generateInstructors(50),
   templates: generateTemplates(200),
 };

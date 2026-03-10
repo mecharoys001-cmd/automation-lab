@@ -23,7 +23,7 @@ export interface AvailabilitySlot {
   end: string;
 }
 
-export type SessionStatus = 'active' | 'pending' | 'cancelled';
+export type SessionStatus = 'active' | 'pending' | 'cancelled' | 'draft' | 'published' | 'scheduled' | 'canceled' | 'completed';
 
 export interface AssignedSession {
   id: string;
@@ -54,10 +54,15 @@ export interface InstructorDetailModalProps {
 
 /* ── Session status mapping ─────────────────────────────────── */
 
-const sessionStatusConfig: Record<SessionStatus, { color: 'green' | 'amber' | 'red'; label: string }> = {
+const sessionStatusConfig: Record<string, { color: 'green' | 'amber' | 'red' | 'slate'; label: string }> = {
   active:    { color: 'green', label: 'Active' },
-  pending:   { color: 'amber', label: 'Pending' },
+  published: { color: 'green', label: 'Active' },
+  scheduled: { color: 'green', label: 'Active' },
+  draft:     { color: 'amber', label: 'Draft' },
+  pending:   { color: 'amber', label: 'Draft' },
+  canceled:  { color: 'red',   label: 'Cancelled' },
   cancelled: { color: 'red',   label: 'Cancelled' },
+  completed: { color: 'slate', label: 'Completed' },
 };
 
 /* ── Availability helpers ───────────────────────────────────── */
@@ -209,7 +214,7 @@ export function InstructorDetailModal({
           </h3>
           {data.sessions.length > 0 ? (
             data.sessions.map((session) => {
-              const sc = sessionStatusConfig[session.status];
+              const sc = sessionStatusConfig[session.status] ?? { color: 'slate' as const, label: session.status };
               return (
                 <div
                   key={session.id}

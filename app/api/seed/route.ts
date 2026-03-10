@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { datasets } from './datasets';
+import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from './default-tags';
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     await sb.from('program_rules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await sb.from('programs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await sb.from('instructors').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await sb.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await sb.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000').neq('is_default', true);
     await sb.from('venues').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     // ── Venues ───────────────────────────────────────────────
@@ -56,10 +57,45 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Tags ─────────────────────────────────────────────────
-    const { data: tagsData } = await sb.from('tags').insert(dataset.tags).select();
+    // Upsert default tags (these survive clear-all via is_default flag)
+    const defaultTagNames = new Set([
+      ...DEFAULT_TAGS.map(t => t.name),
+      ...DEFAULT_SPACE_TYPES.map(t => t.name),
+    ]);
 
+    const defaultTagRows = dataset.tags
+      .filter(t => defaultTagNames.has(t.name))
+      .map(t => ({
+        name: t.name,
+        color: t.color,
+        is_default: true,
+        ...(t.category && { category: t.category }),
+        ...(t.description && { description: t.description }),
+      }));
+
+    const nonDefaultTagRows = dataset.tags
+      .filter(t => !defaultTagNames.has(t.name))
+      .map(t => ({
+        name: t.name,
+        color: t.color,
+        is_default: false,
+        ...(t.category && { category: t.category }),
+        ...(t.description && { description: t.description }),
+      }));
+
+    // Upsert defaults (skip duplicates that survived clear-all)
+    const { data: defaultTagsData } = await sb.from('tags')
+      .upsert(defaultTagRows, { onConflict: 'name,category', ignoreDuplicates: false })
+      .select();
+
+    // Insert non-default tags fresh
+    const { data: extraTagsData } = nonDefaultTagRows.length > 0
+      ? await sb.from('tags').insert(nonDefaultTagRows).select()
+      : { data: [] };
+
+    const tagsData = [...(defaultTagsData ?? []), ...(extraTagsData ?? [])];
     const tagMap: Record<string, string> = {};
-    for (const t of tagsData ?? []) tagMap[t.name] = t.id;
+    for (const t of tagsData) tagMap[t.name] = t.id;
     const tagIds = Object.values(tagMap);
 
     // ── School Calendar — blackout dates ─────────────────────

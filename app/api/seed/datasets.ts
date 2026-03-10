@@ -7,11 +7,15 @@
  */
 
 import { fullDataset } from './generate-large-dataset';
+import { mergeWithDefaults, type TagPreset } from './default-tags';
+
+export type { TagPreset } from './default-tags';
+export { DEFAULT_TAGS, DEFAULT_SPACE_TYPES, mergeWithDefaults } from './default-tags';
 
 export interface DatasetPreset {
   name: string;
   venues: Array<{ name: string; space_type: string; is_virtual: boolean }>;
-  tags: Array<{ name: string; color: string }>;
+  tags: TagPreset[];
   instructors: Array<{
     first_name: string;
     last_name: string;
@@ -44,10 +48,10 @@ export const datasets: Record<'small' | 'medium' | 'full', DatasetPreset> = {
     venues: [
       { name: 'Classroom', space_type: 'classroom', is_virtual: false },
     ],
-    tags: [
+    tags: mergeWithDefaults([
       { name: 'Lead TAs Away', color: '#6366F1' },
       { name: 'Percussion Sessions', color: '#10B981' },
-    ],
+    ]),
     instructors: [
       {
         first_name: 'Maria',
@@ -99,14 +103,14 @@ export const datasets: Record<'small' | 'medium' | 'full', DatasetPreset> = {
       { name: 'Google Meet', space_type: 'virtual', is_virtual: true },
       { name: 'Cafegymatorium', space_type: 'multipurpose', is_virtual: false },
     ],
-    tags: [
+    tags: mergeWithDefaults([
       { name: 'Lead TAs Away', color: '#6366F1' },
       { name: 'TA Check-ins', color: '#8B5CF6' },
       { name: 'Field Trip / Guest Artist', color: '#EF4444' },
       { name: 'Showcase', color: '#EC4899' },
       { name: 'Choral Sessions', color: '#F59E0B' },
       { name: 'Percussion Sessions', color: '#10B981' },
-    ],
+    ]),
     instructors: [
       { first_name: 'Maria', last_name: 'Santos', email: 'maria.santos@example.com', phone: '(212) 555-0101', skills: ['Strings', 'Choral'], availability_json: { monday: [{ start: '09:00', end: '15:00' }], wednesday: [{ start: '09:00', end: '15:00' }], thursday: [{ start: '10:00', end: '14:00' }] }, is_active: true, notes: 'Lead strings instructor. 5 years with Symphonix.' },
       { first_name: 'James', last_name: 'Wilson', email: 'james.wilson@example.com', phone: '(212) 555-0102', skills: ['Percussion'], availability_json: { monday: [{ start: '08:00', end: '16:00' }], tuesday: [{ start: '08:00', end: '16:00' }], wednesday: [{ start: '08:00', end: '16:00' }], thursday: [{ start: '08:00', end: '16:00' }] }, is_active: true, notes: 'Drum circle expert.' },

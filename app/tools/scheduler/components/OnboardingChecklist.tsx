@@ -98,8 +98,8 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
         },
         {
           id: 'templates',
-          title: 'Create class templates',
-          description: 'Define recurring classes (grade levels, subjects, times)',
+          title: 'Build your schedule',
+          description: 'Create event templates and place them on the weekly grid',
           icon: FileText,
           link: '/tools/scheduler/admin/templates',
           completed: hasTemplates,

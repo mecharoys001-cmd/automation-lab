@@ -100,11 +100,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 5. Delete tags (global — not program-scoped)
+    // 6. Delete non-default tags (default tags persist as organizational structure)
     const { data: tagData, error: tagErr } = await sb
       .from('tags')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
+      .neq('is_default', true)
       .select('id');
 
     if (tagErr) {

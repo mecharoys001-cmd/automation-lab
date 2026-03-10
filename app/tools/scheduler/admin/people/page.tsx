@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, X, Mail, Phone,
   Accessibility, Clock, Package, Home, StickyNote, Edit2,
-  Check, AlertTriangle, Loader2, Trash2, Save,
+  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -387,7 +387,7 @@ function VenueDetailModal({
     return amenities.filter((a) => EQUIPMENT_OPTIONS.some((e) => e.key === a));
   });
   const [accessible, setAccessible] = useState(
-    (venue.amenities ?? []).includes('wheelchair_accessible')
+    venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible')
   );
   const [bufferMinutes, setBufferMinutes] = useState<string>(
     venue.buffer_minutes != null ? String(venue.buffer_minutes) : ''
@@ -407,6 +407,7 @@ function VenueDetailModal({
       max_capacity: capacity ? Number(capacity) : null,
       space_type: roomType,
       amenities: amenities.length > 0 ? amenities : null,
+      is_wheelchair_accessible: accessible,
       buffer_minutes: bufferMinutes ? Number(bufferMinutes) : null,
       notes: notes.trim() || null,
     });
@@ -418,7 +419,7 @@ function VenueDetailModal({
     setRoomType(venue.space_type || '');
     const amenities = venue.amenities ?? [];
     setEquipment(amenities.filter((a) => EQUIPMENT_OPTIONS.some((e) => e.key === a)));
-    setAccessible(amenities.includes('wheelchair_accessible'));
+    setAccessible(venue.is_wheelchair_accessible ?? amenities.includes('wheelchair_accessible'));
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setNotes(venue.notes ?? '');
     setEditing(false);
@@ -428,7 +429,7 @@ function VenueDetailModal({
   const equipmentLabels = (venue.amenities ?? [])
     .filter((a) => a !== 'wheelchair_accessible')
     .map((a) => EQUIPMENT_OPTIONS.find((e) => e.key === a)?.label ?? a);
-  const isAccessible = (venue.amenities ?? []).includes('wheelchair_accessible');
+  const isAccessible = venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible');
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
@@ -840,8 +841,8 @@ function InstructorDetailModal({
                 {s.start_time?.slice(0, 5)}
               </span>
               <Badge variant="status"
-                color={s.status === 'scheduled' ? 'green' : s.status === 'draft' ? 'amber' : 'slate'}>
-                {s.status === 'scheduled' ? 'Active' : s.status === 'draft' ? 'Pending' : s.status}
+                color={s.status === 'scheduled' || s.status === 'published' ? 'green' : s.status === 'draft' ? 'amber' : s.status === 'canceled' || s.status === 'cancelled' ? 'red' : 'slate'}>
+                {s.status === 'scheduled' ? 'Active' : s.status === 'published' ? 'Active' : s.status === 'draft' ? 'Draft' : s.status === 'canceled' ? 'Cancelled' : s.status}
               </Badge>
             </div>
           ))}
@@ -1059,7 +1060,7 @@ function InstructorEditModal({
           {/* Subjects */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-2">Subjects</label>
-            <Tooltip text="Select the instrument families this instructor can teach">
+            <Tooltip text="Select the subjects this instructor can teach">
               <TagSelector
                 value={form.skills}
                 onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
@@ -1232,9 +1233,14 @@ function VenueCreateModal({
 }) {
   const [form, setForm] = useState<VenueFormData>({ ...EMPTY_VENUE_FORM });
   const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
+  const [loadingSpaceTypes, setLoadingSpaceTypes] = useState(true);
+  const [showAddSpaceType, setShowAddSpaceType] = useState(false);
+  const [newSpaceTypeName, setNewSpaceTypeName] = useState('');
+  const [addingSpaceType, setAddingSpaceType] = useState(false);
 
-  // Fetch space types from tags API
-  useEffect(() => {
+  // Fetch space types from tags
+  const fetchSpaceTypes = useCallback(() => {
+    setLoadingSpaceTypes(true);
     fetch('/api/tags')
       .then((res) => res.json())
       .then((data) => {
@@ -1243,8 +1249,38 @@ function VenueCreateModal({
           .map((t: { name: string }) => t.name);
         setSpaceTypes(types);
       })
-      .catch(() => setSpaceTypes([]));
+      .catch(() => setSpaceTypes([]))
+      .finally(() => setLoadingSpaceTypes(false));
   }, []);
+
+  useEffect(() => {
+    fetchSpaceTypes();
+  }, [fetchSpaceTypes]);
+
+  async function handleAddSpaceType() {
+    const trimmed = newSpaceTypeName.trim();
+    if (!trimmed) return;
+    setAddingSpaceType(true);
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed, category: 'Space Types' }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error || 'Failed to create space type');
+      }
+      await fetchSpaceTypes();
+      setField('space_type', trimmed);
+      setNewSpaceTypeName('');
+      setShowAddSpaceType(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create space type');
+    } finally {
+      setAddingSpaceType(false);
+    }
+  }
 
   function setField<K extends keyof VenueFormData>(key: K, value: VenueFormData[K]) {
     setForm((prev) => {
@@ -1296,8 +1332,59 @@ function VenueCreateModal({
 
           {/* Space Type (from tags) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
-            <Tooltip text="Select a space type (manage types in Settings → Tags under 'Space Types' category)" className="w-full">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="text-xs font-semibold text-slate-500">Space Type</label>
+              <Tooltip text="Add a new space type">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSpaceType((v) => !v)}
+                  className="inline-flex items-center justify-center w-4 h-4 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </Tooltip>
+              <Tooltip text="Refresh space types list">
+                <button
+                  type="button"
+                  onClick={fetchSpaceTypes}
+                  disabled={loadingSpaceTypes}
+                  className="inline-flex items-center justify-center w-4 h-4 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingSpaceTypes ? 'animate-spin' : ''}`} />
+                </button>
+              </Tooltip>
+            </div>
+            {showAddSpaceType && (
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <input
+                  type="text"
+                  value={newSpaceTypeName}
+                  onChange={(e) => setNewSpaceTypeName(e.target.value)}
+                  placeholder="New space type name"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSpaceType(); } }}
+                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+                <Tooltip text="Create space type tag">
+                  <button
+                    type="button"
+                    onClick={handleAddSpaceType}
+                    disabled={addingSpaceType || !newSpaceTypeName.trim()}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {addingSpaceType ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
+                  </button>
+                </Tooltip>
+              </div>
+            )}
+            {loadingSpaceTypes ? (
+              <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400">
+                Loading space types...
+              </div>
+            ) : spaceTypes.length === 0 && !showAddSpaceType ? (
+              <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400">
+                No space types available. Click + to create one.
+              </div>
+            ) : (
               <div className="relative">
                 <select
                   value={form.space_type}
@@ -1311,9 +1398,6 @@ function VenueCreateModal({
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               </div>
-            </Tooltip>
-            {spaceTypes.length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">No space types found. Create tags with category &quot;Space Types&quot; in Settings → Tags.</p>
             )}
           </div>
 
