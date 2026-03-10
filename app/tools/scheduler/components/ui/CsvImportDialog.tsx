@@ -166,7 +166,7 @@ export function CsvImportDialog({
   const displayCols = columns.map((c) => c.csvHeader.toLowerCase());
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="fixed inset-0 bg-black/60" onClick={handleClose} />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col m-4">
         {/* Header */}

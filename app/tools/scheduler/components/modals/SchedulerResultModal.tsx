@@ -585,12 +585,12 @@ export function SchedulerResultModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-50 w-[540px] max-h-[85vh] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden flex flex-col">
+      <div className="relative z-[70] w-[540px] max-h-[85vh] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden flex flex-col">
         {/* Close button */}
         <button
           onClick={onClose}

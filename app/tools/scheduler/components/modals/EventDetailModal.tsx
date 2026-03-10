@@ -76,12 +76,12 @@ export function EventDetailModal({
   const status = statusConfig[data.status];
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-50 w-[600px] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-[0_8px_32px_#00000033]">
+      <div className="relative z-[70] w-[600px] max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-2xl shadow-[0_8px_32px_#00000033]">
         {/* ── Header ───────────────────────────────────────── */}
         <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-200">
           <Tooltip text="Session type">

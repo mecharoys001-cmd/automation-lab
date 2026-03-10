@@ -88,12 +88,12 @@ export function InstructorDetailModal({
   const byDay = groupByDay(data.availability);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-50 w-[700px] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl">
+      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-2xl shadow-xl">
         {/* ── Header ───────────────────────────────────────── */}
         <div className="flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">{data.name}</h2>

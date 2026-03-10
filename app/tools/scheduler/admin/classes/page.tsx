@@ -599,7 +599,7 @@ export default function ClassesPage() {
         const classItem = classes.find((c) => c.id === deleteConfirmId);
         if (!classItem) return null;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
             <Tooltip text="Click outside to cancel">
               <div
                 className="absolute inset-0 bg-black/60"

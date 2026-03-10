@@ -581,7 +581,7 @@ export default function RolesPage() {
       {/* Add User Modal                                                     */}
       {/* ================================================================= */}
       {showAddModal && (
-        <div className="fixed inset-0 z-40 bg-black/40" onClick={closeAddModal}>
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={closeAddModal}>
           <div
             className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -663,7 +663,7 @@ export default function RolesPage() {
       {/* Remove Confirmation Modal                                          */}
       {/* ================================================================= */}
       {removeUser && (
-        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => !removing && setRemoveUser(null)}>
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => !removing && setRemoveUser(null)}>
           <div
             className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}

@@ -312,12 +312,12 @@ function ClearEventsModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal panel */}
-      <div className="relative z-50 w-[440px] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden">
+      <div className="relative z-[70] w-[440px] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-6 pt-6 pb-2">
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-50">

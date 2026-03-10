@@ -626,14 +626,14 @@ function EditTemplateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       {/* Backdrop */}
       <Tooltip text="Click to close">
         <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       </Tooltip>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[640px] max-h-[90vh] overflow-y-auto mx-4">
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[640px] max-h-[calc(100vh-2rem)] overflow-y-auto mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">
@@ -849,12 +849,12 @@ function AutoFillModal({
   const timeSelectClasses = "w-full h-9 bg-white rounded-lg border border-slate-200 px-2.5 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_0.75rem_center] bg-no-repeat";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <Tooltip text="Click to close">
         <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       </Tooltip>
 
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto mx-4">
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
@@ -3368,7 +3368,7 @@ export default function TemplatesPage() {
 
       {/* Publish confirmation dialog */}
       {showPublishConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
           <Tooltip text="Click to close">
             <div className="absolute inset-0 bg-black/40" onClick={() => setShowPublishConfirm(false)} />
           </Tooltip>
@@ -3402,7 +3402,7 @@ export default function TemplatesPage() {
 
       {/* Clear schedule confirmation dialog */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
           <Tooltip text="Click to close">
             <div className="absolute inset-0 bg-black/40" onClick={() => setShowClearConfirm(false)} />
           </Tooltip>

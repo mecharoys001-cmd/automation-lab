@@ -512,12 +512,12 @@ export default function ExceptionsPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" onClick={closeModal} />
 
           {/* Modal card — design spec: rounded-16, shadow */}
-          <div className="relative z-50 w-full max-w-lg bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+          <div className="relative z-[70] w-full max-w-lg bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
             {/* Modal Header */}
             <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-200">
               <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">

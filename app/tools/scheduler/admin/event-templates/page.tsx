@@ -649,7 +649,7 @@ export default function EventTemplatesPage() {
 
       {/* ── Create / Edit Form Modal ──────────────────────────── */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
           <div className="absolute inset-0 bg-black/60" onClick={closeForm} />
           <div
             style={{
@@ -927,7 +927,7 @@ export default function EventTemplatesPage() {
         if (!t) return null;
         const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '';
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
             <div className="absolute inset-0 bg-black/60" onClick={() => setDeleteConfirmId(null)} />
             <div style={{
               position: 'relative',
