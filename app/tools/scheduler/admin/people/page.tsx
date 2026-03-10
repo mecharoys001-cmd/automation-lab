@@ -373,8 +373,8 @@ function VenueDetailModal({
   saving: boolean;
   deleting: boolean;
   onClose: () => void;
-  onSave: (updates: Record<string, unknown>) => void;
-  onDelete: () => void;
+  onSave: (updates: Record<string, unknown>) => Promise<void> | void;
+  onDelete: () => Promise<void> | void;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -386,7 +386,7 @@ function VenueDetailModal({
       .then((r) => r.json())
       .then((d) => {
         const types = (d.tags ?? [])
-          .filter((t: { category: string }) => t.category === 'Space Types')
+          .filter((t: { category: string }) => ['Space Types', 'Spaces Type', 'space types', 'Space Type'].includes(t.category))
           .map((t: { name: string }) => t.name);
         setSpaceTypes(types);
       })
@@ -1334,7 +1334,7 @@ function VenueCreateModal({
       .then((res) => res.json())
       .then((data) => {
         const types = (data.tags ?? [])
-          .filter((t: { category: string }) => t.category === 'Space Types')
+          .filter((t: { category: string }) => ['Space Types', 'Spaces Type', 'space types', 'Space Type'].includes(t.category))
           .map((t: { name: string }) => t.name);
         setSpaceTypes(types);
       })
