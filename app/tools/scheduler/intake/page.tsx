@@ -585,24 +585,24 @@ export default function IntakePage() {
                       <div className="flex items-center justify-end pr-2 text-[10px] sm:text-xs text-muted-foreground bg-card h-7 sm:h-8 border-b border-border">
                         {formatTime(slot)}
                       </div>
-                      {/* Day cells */}
+                      {/* Day cells — no Tooltip wrapper to preserve CSS Grid layout */}
                       {DAYS.map((day) => {
                         const key = `${day.key}-${slot}`;
                         const isSelected = selectedSlots.has(key);
                         return (
-                          <Tooltip key={key} text={`Toggle ${day.label} ${formatTime(slot)}`}>
-                            <div
-                              data-slot-key={key}
-                              onMouseDown={handleCellMouseDown(key)}
-                              onMouseEnter={handleCellMouseEnter(key)}
-                              onTouchStart={handleTouchStart(key)}
-                              className={`h-7 sm:h-8 border-b border-l border-border cursor-pointer select-none transition-colors ${
-                                isSelected
-                                  ? 'bg-green-500/60 hover:bg-green-500/50'
-                                  : 'bg-background hover:bg-accent/40'
-                              }`}
-                            />
-                          </Tooltip>
+                          <div
+                            key={key}
+                            data-slot-key={key}
+                            onMouseDown={handleCellMouseDown(key)}
+                            onMouseEnter={handleCellMouseEnter(key)}
+                            onTouchStart={handleTouchStart(key)}
+                            title={`Toggle ${day.label} ${formatTime(slot)}`}
+                            className={`h-7 sm:h-8 border-b border-l border-border cursor-pointer select-none transition-colors ${
+                              isSelected
+                                ? 'bg-green-500/60 hover:bg-green-500/50'
+                                : 'bg-background hover:bg-accent/40'
+                            }`}
+                          />
                         );
                       })}
                     </div>
