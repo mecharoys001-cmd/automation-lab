@@ -428,6 +428,9 @@ function VenueDetailModal({
     venue.buffer_minutes != null ? String(venue.buffer_minutes) : ''
   );
   const [notes, setNotes] = useState(venue.notes ?? '');
+  const [editAvailability, setEditAvailability] = useState<AvailabilityJson | null>(
+    venue.availability_json ?? null
+  );
 
   const handleSave = () => {
     const amenities: string[] = [];
@@ -440,6 +443,7 @@ function VenueDetailModal({
       amenities: amenities.length > 0 ? amenities : null,
       is_wheelchair_accessible: accessible,
       buffer_minutes: bufferMinutes ? Number(bufferMinutes) : null,
+      availability_json: editAvailability,
       notes: notes.trim() || null,
     });
   };
@@ -452,6 +456,7 @@ function VenueDetailModal({
     setRoomType(venue.space_type || '');
     setAccessible(venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible'));
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
+    setEditAvailability(venue.availability_json ?? null);
     setNotes(venue.notes ?? '');
     setEditing(false);
   };
@@ -601,7 +606,10 @@ function VenueDetailModal({
             {/* Availability Times */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability Times</label>
-              <AvailabilityGrid availability={venue.availability_json} />
+              <AvailabilityEditor
+                value={editAvailability}
+                onChange={setEditAvailability}
+              />
             </div>
 
             {/* Space Type */}
@@ -1259,6 +1267,8 @@ interface VenueFormData {
   max_capacity: string;
   is_virtual: boolean;
   is_wheelchair_accessible: boolean;
+  buffer_minutes: string;
+  availability_json: AvailabilityJson | null;
   notes: string;
 }
 
@@ -1268,6 +1278,8 @@ const EMPTY_VENUE_FORM: VenueFormData = {
   max_capacity: '',
   is_virtual: false,
   is_wheelchair_accessible: false,
+  buffer_minutes: '',
+  availability_json: null,
   notes: '',
 };
 
@@ -1470,6 +1482,33 @@ function VenueCreateModal({
                 <span className="text-sm text-slate-700">Wheelchair Accessible</span>
               </label>
             </Tooltip>
+          </div>
+
+          {/* Setup / Teardown Buffer */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup/Teardown Buffer</label>
+            <Tooltip text="Minutes needed before and after events for setup and teardown" className="w-full">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.buffer_minutes}
+                  onChange={(e) => setField('buffer_minutes', e.target.value)}
+                  placeholder="0"
+                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+                <span className="text-sm text-slate-500">minutes</span>
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Availability */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability</label>
+            <AvailabilityEditor
+              value={form.availability_json}
+              onChange={(v) => setField('availability_json', v)}
+            />
           </div>
 
           {/* Notes */}
@@ -1763,6 +1802,9 @@ export default function PeoplePage() {
         space_type: data.space_type,
         max_capacity: data.max_capacity ? Number(data.max_capacity) : null,
         is_virtual: data.is_virtual,
+        is_wheelchair_accessible: data.is_wheelchair_accessible,
+        buffer_minutes: data.buffer_minutes ? Number(data.buffer_minutes) : null,
+        availability_json: data.availability_json,
         notes: data.notes.trim() || null,
       };
       const res = await fetch('/api/venues', {
