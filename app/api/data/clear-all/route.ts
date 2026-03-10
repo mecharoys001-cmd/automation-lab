@@ -105,7 +105,7 @@ export async function DELETE(request: NextRequest) {
       .from('tags')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .neq('is_default', true)
+      // Just delete all tags - defaults will be recreated on next program creation
       .select('id');
 
     if (tagErr) {
