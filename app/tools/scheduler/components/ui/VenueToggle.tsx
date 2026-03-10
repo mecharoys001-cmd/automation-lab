@@ -37,7 +37,7 @@ export function VenueToggle({
   }
 
   return (
-    <div className={`flex items-center gap-3 py-3 ${className}`}>
+    <div className={`flex items-center gap-2 py-3 flex-wrap ${className}`}>
       {venues.map((venue, i) => {
         const isActive = selectedVenues.includes(venue.id);
         const color = VENUE_COLORS[i % VENUE_COLORS.length];
@@ -46,7 +46,8 @@ export function VenueToggle({
           <button
             key={venue.id}
             onClick={() => handleToggle(venue.id)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-medium transition-all cursor-pointer ${
+            title={venue.name}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer max-w-[160px] ${
               isActive
                 ? 'text-white shadow-sm'
                 : 'bg-transparent border border-gray-300 text-gray-400'
@@ -54,10 +55,10 @@ export function VenueToggle({
             style={isActive ? { backgroundColor: color.bg } : undefined}
           >
             <span
-              className="inline-block w-2 h-2 rounded-full"
+              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
               style={{ backgroundColor: isActive ? '#FFFFFF' : color.dot }}
             />
-            {venue.name}
+            <span className="truncate">{venue.name}</span>
           </button>
         );
       })}
