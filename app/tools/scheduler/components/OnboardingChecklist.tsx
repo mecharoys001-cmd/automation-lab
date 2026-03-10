@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, ChevronRight, Zap, Users, MapPin, FileText, Calendar } from 'lucide-react';
+import { X, CheckCircle2, Circle, ChevronRight, Zap, Users, MapPin, FileText, Calendar, Minimize2, ListChecks } from 'lucide-react';
 import { Tooltip } from './ui/Tooltip';
 
 interface OnboardingStep {
@@ -18,6 +18,12 @@ interface OnboardingChecklistProps {
 }
 
 export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
+  const [minimized, setMinimized] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('onboarding_minimized') === 'true';
+    }
+    return false;
+  });
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -101,6 +107,26 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     }
   }
 
+  const handleMinimize = () => {
+    setMinimized(true);
+    localStorage.setItem('onboarding_minimized', 'true');
+  };
+
+  const handleRestore = () => {
+    setMinimized(false);
+    localStorage.removeItem('onboarding_minimized');
+  };
+
+  // Listen for reopen event to also restore if minimized
+  useEffect(() => {
+    const handleReopen = () => {
+      setMinimized(false);
+      localStorage.removeItem('onboarding_minimized');
+    };
+    window.addEventListener('reopen-onboarding', handleReopen);
+    return () => window.removeEventListener('reopen-onboarding', handleReopen);
+  }, []);
+
   const completedCount = steps.filter((s) => s.completed).length;
   const totalCount = steps.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -116,6 +142,23 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     );
   }
 
+  // Minimized view — small floating pill
+  if (minimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Tooltip text="Expand Getting Started checklist">
+          <button
+            onClick={handleRestore}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-full px-4 py-2.5 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          >
+            <ListChecks className="w-4 h-4" />
+            <span className="text-sm font-medium">{completedCount}/{totalCount}</span>
+          </button>
+        </Tooltip>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-[380px] overflow-hidden">
       {/* Header */}
@@ -127,14 +170,24 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
               {isComplete ? 'All set up! 🎉' : 'Complete these steps to set up your scheduler'}
             </p>
           </div>
-          <Tooltip text="Close checklist (reopen in Settings)">
-            <button
-              onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </Tooltip>
+          <div className="flex items-center gap-1">
+            <Tooltip text="Minimize checklist">
+              <button
+                onClick={handleMinimize}
+                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+              >
+                <Minimize2 className="w-4 h-4" />
+              </button>
+            </Tooltip>
+            <Tooltip text="Close checklist (reopen in Settings)">
+              <button
+                onClick={onClose}
+                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Progress Bar */}

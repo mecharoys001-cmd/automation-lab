@@ -41,6 +41,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // ── RBAC for analytics admin ───────────────────────────────────────────
+  if (user && path.startsWith('/tools/analytics/admin')) {
+    const { createServiceClient } = await import('@/lib/supabase-service')
+    const svc = createServiceClient()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: admin } = await (svc.from('admins') as any)
+      .select('role_level')
+      .eq('google_email', user.email)
+      .maybeSingle()
+
+    if (!admin) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/tools'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // ── RBAC for scheduler admin/portal routes ─────────────────────────────
   // Only run the org membership check for scheduler sub-paths that need it.
   // The /tools/scheduler landing page itself does its own server-side check.

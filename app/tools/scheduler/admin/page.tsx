@@ -172,22 +172,6 @@ const KNOWN_EVENT_TYPES = ['strings', 'brass', 'piano', 'percussion', 'choral', 
 const ALL_MOCK_EVENTS = MOCK_SESSIONS.map(sessionToCalendarEvent);
 
 // Upcoming events for the "Needs Assignment" sidebar
-interface UpcomingEvent {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: EventType;
-}
-
-const UPCOMING_UNASSIGNED: UpcomingEvent[] = [
-  { id: 'u1', title: 'Piano Lab Session',    date: 'Mon, Feb 24', time: '2:00 PM', type: 'piano' },
-  { id: 'u2', title: 'Percussion Basics',    date: 'Tue, Feb 25', time: '3:00 PM', type: 'percussion' },
-  { id: 'u3', title: 'Strings Sectional',    date: 'Wed, Feb 26', time: '9:30 AM', type: 'strings' },
-  { id: 'u4', title: 'Brass Warm-Up',        date: 'Thu, Feb 27', time: '8:00 AM', type: 'brass' },
-  { id: 'u5', title: 'Choral Sight-Reading', date: 'Fri, Feb 28', time: '1:30 PM', type: 'choral' },
-];
-
 /** Best-effort mapping from a template's required subjects to an EventType. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deriveEventType(template: any): EventType {
@@ -301,32 +285,6 @@ function eventMatchesFilters(event: CalendarEvent, filters: ActiveFilters): bool
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-
-function NeedsAssignmentCard({ event }: { event: UpcomingEvent }) {
-  const colors = EVENT_COLORS[event.type];
-
-  return (
-    <Tooltip text={`Unassigned: ${event.title} on ${event.date}`}>
-      <div
-        className="rounded-lg p-3 cursor-pointer hover:opacity-90 transition-opacity"
-        style={{
-          backgroundColor: colors.bg,
-          borderLeft: `3px solid ${colors.accent}`,
-        }}
-      >
-        <p className="text-[12px] font-semibold text-slate-900 truncate">{event.title}</p>
-        <div className="flex items-center gap-1.5 mt-1">
-          <Clock className="w-3 h-3 text-slate-400" />
-          <span className="text-[11px] text-slate-500">{event.date}</span>
-        </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <UserIcon className="w-3 h-3 text-slate-400" />
-          <span className="text-[11px] text-slate-400 italic">No instructor assigned</span>
-        </div>
-      </div>
-    </Tooltip>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Clear Events Confirmation Modal
@@ -1298,26 +1256,6 @@ function CalendarDashboard() {
               onEventDrop={handleEventDrop}
               onEventResize={handleEventResize}
             />
-
-            {/* Right Sidebar: Needs Assignment */}
-            <div className="w-[260px] bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-hidden">
-              <div className="px-4 pt-4 pb-3 border-b border-slate-200">
-                <div className="flex items-center justify-between">
-                  <Tooltip text="Events that need an instructor assigned">
-                    <h3 className="text-sm font-semibold text-slate-900">Needs Assignment</h3>
-                  </Tooltip>
-                  <Badge variant="count" color="red" tooltip="Number of unassigned events">
-                    {UPCOMING_UNASSIGNED.length}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {UPCOMING_UNASSIGNED.map((event) => (
-                  <NeedsAssignmentCard key={event.id} event={event} />
-                ))}
-              </div>
-            </div>
           </>
         )}
 

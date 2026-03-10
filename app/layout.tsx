@@ -4,6 +4,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import ScrollRevealProvider from "@/components/ScrollRevealProvider";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ScrollRevealProvider />
+        <AnalyticsTracker />
         <Navigation />
         <main style={{ paddingTop: "var(--nav-height)" }}>{children}</main>
         <Footer />
