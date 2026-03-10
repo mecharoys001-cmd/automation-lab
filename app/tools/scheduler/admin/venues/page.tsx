@@ -364,9 +364,9 @@ function VenueModal({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-xl mx-4">
+      <div className="relative z-[70] w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-xl mx-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">

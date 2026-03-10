@@ -431,9 +431,9 @@ function VenueDetailModal({
   const isAccessible = (venue.amenities ?? []).includes('wheelchair_accessible');
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
 
         {/* ── Header ─────────────────────────────────── */}
         <div className="flex items-center h-14 px-6 gap-2.5">
@@ -742,9 +742,9 @@ function InstructorDetailModal({
 }) {
   const router = useRouter();
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Header */}
         <div className="flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">
@@ -975,9 +975,9 @@ function InstructorEditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Header */}
         <div className="flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">
@@ -1258,9 +1258,9 @@ function VenueCreateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Header */}
         <div className="flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">Add Venue</h2>
