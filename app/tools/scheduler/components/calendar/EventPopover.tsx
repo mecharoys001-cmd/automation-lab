@@ -760,7 +760,7 @@ export function EventPopover({
 
             {/* Instructor */}
             <div className="flex items-center gap-2">
-              <Tooltip text="Instructor">
+              <Tooltip text="Staff member">
                 <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </Tooltip>
               <span className="text-[12px] font-medium text-slate-700">
@@ -990,7 +990,7 @@ export function EventPopover({
         {showSubstitutes && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-slate-700">Select Substitute Instructor</p>
+              <p className="text-[12px] font-semibold text-slate-700">Select Substitute Staff</p>
               <Tooltip text="Back to options">
                 <button
                   onClick={handleBackToReplaceOptions}

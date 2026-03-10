@@ -369,7 +369,7 @@ export default function ExceptionsPage() {
             </div>
           </Tooltip>
 
-          <Tooltip text="Instructor-specific exceptions and special events">
+          <Tooltip text="Staff-specific exceptions and special events">
             <div className="bg-white rounded-lg p-5 flex items-center gap-4 border border-slate-200 shadow-sm">
               <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                 <Zap className="w-[22px] h-[22px] text-blue-500" />

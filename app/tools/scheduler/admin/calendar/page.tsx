@@ -31,7 +31,7 @@ import {
 const STATUS_LABELS: Record<CalendarStatusType, string> = {
   no_school: 'No School',
   early_dismissal: 'Early Dismissal',
-  instructor_exception: 'Instructor Exception',
+  instructor_exception: 'Staff Exception',
 };
 
 const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; cell: string }> = {
@@ -889,7 +889,7 @@ export default function CalendarPage() {
               >
                 <option value="no_school">No School</option>
                 <option value="early_dismissal">Early Dismissal</option>
-                <option value="instructor_exception">Instructor Exception</option>
+                <option value="instructor_exception">Staff Exception</option>
               </select>
             </Tooltip>
           </div>
@@ -1130,7 +1130,7 @@ export default function CalendarPage() {
                 <Tooltip text={STATUS_TOOLTIPS.instructor_exception}>
                   <span className="flex items-center gap-1.5 cursor-help">
                     <span className="h-3 w-3 rounded-sm bg-blue-100 border border-blue-200" />
-                    Instructor Exception
+                    Staff Exception
                   </span>
                 </Tooltip>
                 <Tooltip text="Today's date is highlighted with a blue circle">
@@ -1204,7 +1204,7 @@ export default function CalendarPage() {
                   <option value="all">All Types</option>
                   <option value="no_school">No School</option>
                   <option value="early_dismissal">Early Dismissal</option>
-                  <option value="instructor_exception">Instructor Exception</option>
+                  <option value="instructor_exception">Staff Exception</option>
                 </select>
               </div>
             </Tooltip>
@@ -1231,7 +1231,7 @@ export default function CalendarPage() {
                       <Tooltip text="Description of the calendar event">
                         <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Description</th>
                       </Tooltip>
-                      <Tooltip text="Event type: No School, Early Dismissal, or Instructor Exception">
+                      <Tooltip text="Event type: No School, Early Dismissal, or Staff Exception">
                         <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Type</th>
                       </Tooltip>
                       <Tooltip text="Time of early dismissal (if applicable)">
@@ -1239,7 +1239,7 @@ export default function CalendarPage() {
                           Dismissal Time
                         </th>
                       </Tooltip>
-                      <Tooltip text="Instructor affected by this exception">
+                      <Tooltip text="Staff member affected by this exception">
                         <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell cursor-help">
                           Instructor
                         </th>
