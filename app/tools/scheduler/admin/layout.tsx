@@ -81,19 +81,27 @@ function SidebarProgramSelector() {
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('onboarding_dismissed') !== 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
-    // Check if onboarding has been dismissed
-    const dismissed = localStorage.getItem('onboarding_dismissed');
-    if (!dismissed) {
-      setShowOnboarding(true);
-    }
-
     // Listen for custom event to re-open onboarding from Settings
-    const handleReopenOnboarding = () => setShowOnboarding(true);
+    const handleReopenOnboarding = () => {
+      localStorage.removeItem('onboarding_dismissed');
+      setShowOnboarding(true);
+    };
     window.addEventListener('reopen-onboarding', handleReopenOnboarding);
     return () => window.removeEventListener('reopen-onboarding', handleReopenOnboarding);
+  }, []);
+
+  // Sync state from localStorage on every navigation (handles remounts)
+  useEffect(() => {
+    const dismissed = localStorage.getItem('onboarding_dismissed');
+    setShowOnboarding(dismissed !== 'true');
   }, []);
 
   const handleLogout = useCallback(async () => {

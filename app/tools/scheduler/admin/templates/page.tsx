@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info, Lock } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info, Lock, Calendar } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -1620,6 +1620,7 @@ export default function TemplatesPage() {
   const [showAutoFillModal, setShowAutoFillModal] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [hasSessions, setHasSessions] = useState(true); // assume true to hide CTA until checked
 
   // ── Day schedule time range ──
   const [dayStartHour, setDayStartHour] = useState(DEFAULT_DAY_START);
@@ -1802,7 +1803,15 @@ export default function TemplatesPage() {
     fetchPlacements();
     fetchBufferSettings();
     fetchVenues();
-  }, [fetchTemplates, fetchPlacements, fetchBufferSettings, fetchVenues]);
+
+    // Check if any sessions exist (for "Go to Calendar" CTA)
+    if (selectedProgramId) {
+      fetch(`/api/sessions?program_id=${selectedProgramId}&limit=1`)
+        .then((r) => r.json())
+        .then((d) => setHasSessions((d.sessions ?? []).length > 0))
+        .catch(() => {});
+    }
+  }, [fetchTemplates, fetchPlacements, fetchBufferSettings, fetchVenues, selectedProgramId]);
 
   // Re-run conflict detection when templates change (e.g. venue/instructor edits) or after initial load
   useEffect(() => {
@@ -2910,6 +2919,36 @@ export default function TemplatesPage() {
             selectedVenues={selectedVenues}
             onChange={setSelectedVenues}
           />
+        </div>
+      )}
+
+      {/* Next Step CTA — show when templates are placed but no sessions generated yet */}
+      {placedTemplates.length > 0 && !hasSessions && (
+        <div className="bg-blue-50 px-8 py-3 border-b border-blue-200 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-blue-900">
+                  Ready to generate your schedule?
+                </p>
+                <p className="text-xs text-blue-600">
+                  Your weekly templates are set up. Head to the Calendar to generate sessions from this pattern.
+                </p>
+              </div>
+            </div>
+            <Tooltip text="Go to the Calendar page to generate sessions from your templates">
+              <a
+                href="/tools/scheduler/admin"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Go to Calendar
+              </a>
+            </Tooltip>
+          </div>
         </div>
       )}
 
