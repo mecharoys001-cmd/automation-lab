@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useProgram } from '../ProgramContext';
 import {
   Calendar, Download, ChevronDown, ChevronRight,
-  Clock, Tag,
+  Clock, Tag, FileText,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -697,6 +697,22 @@ export default function ReportsPage() {
             Export CSV
           </Button>
         </Tooltip>
+      </div>
+
+      {/* ─── Quick Links ──────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-blue-50 to-violet-50 px-8 py-4 border-b border-slate-200">
+        <div className="flex items-center gap-3">
+          <Tooltip text="View session counts by class template with filtering and sorting">
+            <a
+              href="/tools/scheduler/admin/reports/sessions-by-template"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-[13px] font-medium text-blue-700"
+            >
+              <FileText className="w-4 h-4" />
+              Sessions by Template
+              <ChevronRight className="w-3.5 h-3.5" />
+            </a>
+          </Tooltip>
+        </div>
       </div>
 
       {/* ─── Tab Navigation ───────────────────────────────── */}
