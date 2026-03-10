@@ -93,7 +93,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           title: 'Set up venues',
           description: 'Define classrooms, stages, and teaching spaces',
           icon: MapPin,
-          link: '/tools/scheduler/admin/venues',
+          link: '/tools/scheduler/admin/people',
           completed: hasVenues,
         },
         {
