@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, ChevronRight, Zap, Users, MapPin, FileText, Calendar, Minimize2, ListChecks } from 'lucide-react';
+import { X, CheckCircle2, Circle, ChevronRight, Zap, Users, MapPin, FileText, Calendar, Minimize2, ListChecks, Tags } from 'lucide-react';
 import { Tooltip } from './ui/Tooltip';
 
 interface OnboardingStep {
@@ -48,6 +48,11 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       const venuesData = await venuesRes.json();
       const hasVenues = venuesData.venues?.length > 0;
 
+      // Check tags (subjects)
+      const tagsRes = await fetch('/api/tags');
+      const tagsData = await tagsRes.json();
+      const hasSubjects = (tagsData.tags ?? []).some((t: { category?: string }) => t.category === 'Skills');
+
       // Check templates
       const templatesRes = await fetch('/api/templates');
       const templatesData = await templatesRes.json();
@@ -68,9 +73,17 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           completed: hasPrograms,
         },
         {
+          id: 'subjects',
+          title: 'Set up subjects',
+          description: 'Create subject tags (e.g. Piano, Dance) — these appear on the intake form',
+          icon: Tags,
+          link: '/tools/scheduler/admin/tags',
+          completed: hasSubjects,
+        },
+        {
           id: 'instructors',
           title: 'Add instructors',
-          description: 'Add staff or load sample data to get started',
+          description: 'Add staff or send the intake form for self-registration',
           icon: Users,
           link: '/tools/scheduler/admin/people',
           completed: hasInstructors,

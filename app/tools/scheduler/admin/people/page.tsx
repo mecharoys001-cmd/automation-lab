@@ -877,7 +877,7 @@ function InstructorDetailModal({
                 {togglingOnCall ? 'Updating\u2026' : instructor.on_call ? 'On-Call \u2713' : 'Set On-Call'}
               </button>
             </Tooltip>
-            <Tooltip text={instructor.is_active ? 'Deactivate this instructor' : 'Activate this instructor'}>
+            <Tooltip text={instructor.is_active ? 'Make this instructor inactive' : 'Activate this instructor'}>
               <button
                 onClick={onToggleStatus}
                 disabled={togglingStatus}
@@ -887,7 +887,7 @@ function InstructorDetailModal({
                     : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
                 }`}
               >
-                {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Deactivate' : 'Activate'}
+                {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Make Inactive' : 'Activate'}
               </button>
             </Tooltip>
             <Button variant="secondary" tooltip="Edit instructor profile" onClick={onEdit}>Edit</Button>
@@ -1503,7 +1503,7 @@ export default function PeoplePage() {
       const { instructor: updated } = (await res.json()) as { instructor: Instructor };
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-      setToast({ message: `Instructor ${updated.is_active ? 'activated' : 'deactivated'}`, type: 'success', id: Date.now() });
+      setToast({ message: `Instructor ${updated.is_active ? 'activated' : 'made inactive'}`, type: 'success', id: Date.now() });
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : 'Failed to update status', type: 'error', id: Date.now() });
     } finally {
