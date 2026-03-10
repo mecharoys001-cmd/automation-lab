@@ -53,6 +53,28 @@ export const DEFAULT_SPACE_TYPES: TagPreset[] = [
   { name: 'Auditorium', color: '#EF4444', category: 'Space Types', description: 'Large assembly or performance hall' },
   { name: 'Virtual', color: '#06B6D4', category: 'Space Types', description: 'Online or remote venue' },
   { name: 'Multipurpose', color: '#84CC16', category: 'Space Types', description: 'Flexible multi-use space' },
+
+  // General venue types
+  { name: 'Conference Room', color: '#64748B', category: 'Space Types', description: 'Meeting or conference space' },
+  { name: 'Library', color: '#78716C', category: 'Space Types', description: 'Library or quiet study area' },
+  { name: 'Cafeteria / Commons', color: '#D97706', category: 'Space Types', description: 'Cafeteria or common gathering area' },
+  { name: 'Gymnasium', color: '#DC2626', category: 'Space Types', description: 'Gym or large open floor space' },
+  { name: 'Theater', color: '#BE185D', category: 'Space Types', description: 'Theater with stage and seating' },
+
+  // Music-specific rooms
+  { name: 'Music Room', color: '#7C3AED', category: 'Space Types', description: 'General music instruction room' },
+  { name: 'Band Room', color: '#2563EB', category: 'Space Types', description: 'Dedicated band rehearsal and instruction room' },
+  { name: 'Choir Room', color: '#DB2777', category: 'Space Types', description: 'Dedicated choral rehearsal room' },
+  { name: 'Orchestra Room', color: '#9333EA', category: 'Space Types', description: 'Dedicated orchestra rehearsal room' },
+  { name: 'Recording Studio', color: '#4F46E5', category: 'Space Types', description: 'Audio recording and production studio' },
+
+  // Support spaces
+  { name: 'Outdoor Space', color: '#16A34A', category: 'Space Types', description: 'Outdoor area for events or rehearsals' },
+  { name: 'Stage', color: '#E11D48', category: 'Space Types', description: 'Performance stage area' },
+  { name: 'Green Room', color: '#059669', category: 'Space Types', description: 'Backstage waiting and preparation area' },
+  { name: 'Lobby', color: '#0891B2', category: 'Space Types', description: 'Entrance or lobby area' },
+  { name: 'Storage Room', color: '#A16207', category: 'Space Types', description: 'Instrument and equipment storage' },
+  { name: 'Office', color: '#475569', category: 'Space Types', description: 'Administrative or instructor office' },
 ];
 
 /** Merges default tags with preset-specific tags, deduplicating by name (defaults take priority) */

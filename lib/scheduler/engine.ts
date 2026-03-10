@@ -102,8 +102,9 @@ function calculateTemplateUrgency(
   if (qualifiedCount === 0) return Infinity; // Most urgent - impossible to assign
 
   // Count sessions to generate (dates for this day_of_week in range)
+  if (template.day_of_week == null) return 0; // No set day - skip urgency
   const dates = datesForDayOfWeek(programStartDate, programEndDate, template.day_of_week);
-  const validDates = dates.filter(d => !blackoutDays.has(template.day_of_week));
+  const validDates = dates.filter(d => !blackoutDays.has(template.day_of_week!));
   const sessionsNeeded = validDates.length;
 
   if (sessionsNeeded === 0) return 0; // No sessions needed - lowest urgency
@@ -248,6 +249,7 @@ function runSingleAttempt(
   for (const tmpl of validTemplates) {
     const placement = placementMap.get(tmpl.id);
     const effectiveDay = placement ? placement.day_index + 1 : tmpl.day_of_week;
+    if (effectiveDay == null) continue; // Skip templates with no set day
     const group = templatesByDay.get(effectiveDay) ?? [];
     group.push(tmpl);
     templatesByDay.set(effectiveDay, group);
@@ -811,7 +813,9 @@ export async function runScheduler(
     const placement = placementMap.get(tmpl.id);
     if (placement) placedCount++;
     const effectiveDay = placement ? placement.day_index + 1 : tmpl.day_of_week;
-    templateDayCounts.set(effectiveDay, (templateDayCounts.get(effectiveDay) ?? 0) + 1);
+    if (effectiveDay != null) {
+      templateDayCounts.set(effectiveDay, (templateDayCounts.get(effectiveDay) ?? 0) + 1);
+    }
   }
   const unplacedCount = validTemplates.length - placedCount;
   const dayBreakdown = [1, 2, 3, 4, 5]

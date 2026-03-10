@@ -94,12 +94,13 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const supabase = createServiceClient();
+    const force = request.nextUrl.searchParams.get('force') === 'true';
 
     // Check if tag is in use via session_tags
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,11 +112,29 @@ export async function DELETE(
       return NextResponse.json({ error: countError.message }, { status: 500 });
     }
 
-    if ((count ?? 0) > 0) {
+    const usageCount = count ?? 0;
+
+    if (usageCount > 0 && !force) {
       return NextResponse.json(
-        { error: `Cannot delete tag: it is used by ${count} session(s). Remove it from all sessions first.` },
+        {
+          error: `Tag is used by ${usageCount} session(s). Use force delete to remove it from all sessions.`,
+          usageCount,
+        },
         { status: 409 }
       );
+    }
+
+    // If force deleting, remove from session_tags first (DB cascade would handle it,
+    // but being explicit ensures clarity)
+    if (usageCount > 0 && force) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: unlinkError } = await (supabase.from('session_tags') as any)
+        .delete()
+        .eq('tag_id', id);
+
+      if (unlinkError) {
+        return NextResponse.json({ error: `Failed to unlink sessions: ${unlinkError.message}` }, { status: 500 });
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,7 +146,7 @@ export async function DELETE(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, removedFromSessions: usageCount });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

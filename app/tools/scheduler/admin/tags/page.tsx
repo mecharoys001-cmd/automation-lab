@@ -121,6 +121,7 @@ export default function TagsPage() {
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; sessionCount: number } | null>(null);
 
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -305,21 +306,33 @@ export default function TagsPage() {
     }
   };
 
-  // Delete tag
+  // Delete tag - shows confirmation dialog if tag is in use
   const deleteTag = async (id: string, name: string) => {
+    const count = sessionCounts[id] || 0;
+    if (count > 0) {
+      // Show confirmation dialog instead of blocking
+      setDeleteConfirm({ id, name, sessionCount: count });
+      return;
+    }
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    await executeDelete(id, name, false);
+  };
 
+  const executeDelete = async (id: string, name: string, force: boolean) => {
     setDeleteLoading(true);
     setDeletingId(id);
+    setDeleteConfirm(null);
     try {
-      const res = await fetch(`/api/tags/${id}`, { method: 'DELETE' });
+      const url = force ? `/api/tags/${id}?force=true` : `/api/tags/${id}`;
+      const res = await fetch(url, { method: 'DELETE' });
       if (!res.ok) {
         const json = await res.json();
         throw new Error(json.error || `HTTP ${res.status}`);
       }
 
       await fetchTags();
-      showToast(`Tag "${name}" deleted successfully`, 'success');
+      const suffix = force ? ' and removed from all sessions' : '';
+      showToast(`Tag "${name}" deleted${suffix}`, 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to delete tag', 'error');
     } finally {
@@ -475,6 +488,38 @@ export default function TagsPage() {
     <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
       {/* Toast */}
       {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Delete &ldquo;{deleteConfirm.name}&rdquo;?</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-5">
+              This tag is currently used by{' '}
+              <span className="font-semibold text-slate-900">
+                {deleteConfirm.sessionCount} session{deleteConfirm.sessionCount === 1 ? '' : 's'}
+              </span>
+              . Deleting it will remove the tag from all those sessions. This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
+                Cancel
+              </Button>
+              <button
+                onClick={() => executeDelete(deleteConfirm.id, deleteConfirm.name, true)}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete & Remove from Sessions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0">
@@ -740,10 +785,10 @@ export default function TagsPage() {
                                     <Pencil className="w-4 h-4" />
                                   </button>
                                 </Tooltip>
-                                <Tooltip text={sessionCount > 0 ? `Cannot delete: used in ${sessionCount} sessions` : 'Delete tag'}>
+                                <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} session${sessionCount === 1 ? '' : 's'} — click to delete` : 'Delete tag'}>
                                   <button
                                     onClick={() => deleteTag(tag.id, tag.name)}
-                                    disabled={isDeleting || sessionCount > 0}
+                                    disabled={isDeleting}
                                     className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {isDeleting ? (

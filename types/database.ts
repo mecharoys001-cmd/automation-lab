@@ -131,7 +131,7 @@ export interface SessionTemplate {
   template_type: TemplateType;
   rotation_mode: RotationMode;
   instructor_id: string | null;
-  day_of_week: number; // 0=Sunday ... 6=Saturday
+  day_of_week: number | null; // 0=Sunday ... 6=Saturday, null = flexible
   grade_groups: string[];
   start_time: string;
   end_time: string;

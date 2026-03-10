@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { skillsMatch } from '@/lib/scheduler/utils';
 
 export async function PATCH(
   request: NextRequest,
@@ -10,6 +11,38 @@ export async function PATCH(
     const { id } = await params;
     const supabase = createServiceClient();
     const body = await request.json();
+
+    // Validate instructor has required skills for the session's template subject
+    if (body.instructor_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: session } = await (supabase.from('sessions') as any)
+        .select('template_id')
+        .eq('id', id)
+        .single();
+
+      if (session?.template_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: template } = await (supabase.from('session_templates') as any)
+          .select('required_skills')
+          .eq('id', session.template_id)
+          .single();
+
+        if (template?.required_skills?.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: instructor } = await (supabase.from('instructors') as any)
+            .select('skills')
+            .eq('id', body.instructor_id)
+            .single();
+
+          if (instructor && !skillsMatch(instructor.skills, template.required_skills)) {
+            return NextResponse.json(
+              { error: `Instructor does not teach the required subject(s): ${template.required_skills.join(', ')}. Assign an instructor with matching skills.` },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('sessions') as any)

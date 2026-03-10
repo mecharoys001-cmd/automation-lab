@@ -21,6 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { skillsMatch } from '@/lib/scheduler/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -174,6 +175,30 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(
             { error: `Venue has reached its maximum of ${maxConcurrent} concurrent booking(s) for this time slot` },
             { status: 409 }
+          );
+        }
+      }
+    }
+
+    // Validate instructor has required skills for the session's template subject
+    if (body.instructor_id && body.template_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: template } = await (supabase.from('session_templates') as any)
+        .select('required_skills')
+        .eq('id', body.template_id)
+        .single();
+
+      if (template?.required_skills?.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: instructor } = await (supabase.from('instructors') as any)
+          .select('skills')
+          .eq('id', body.instructor_id)
+          .single();
+
+        if (instructor && !skillsMatch(instructor.skills, template.required_skills)) {
+          return NextResponse.json(
+            { error: `Instructor does not teach the required subject(s): ${template.required_skills.join(', ')}. Assign an instructor with matching skills.` },
+            { status: 400 }
           );
         }
       }

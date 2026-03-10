@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { skillsMatch } from '@/lib/scheduler/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,6 +93,22 @@ export async function POST(request: NextRequest) {
     // Default template_type and rotation_mode for backward compatibility
     if (!body.template_type) body.template_type = 'fully_defined';
     if (!body.rotation_mode) body.rotation_mode = 'consistent';
+
+    // Validate instructor has required skills for this template's subject
+    if (body.instructor_id && body.required_skills?.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: instructor } = await (supabase.from('instructors') as any)
+        .select('skills')
+        .eq('id', body.instructor_id)
+        .single();
+
+      if (instructor && !skillsMatch(instructor.skills, body.required_skills)) {
+        return NextResponse.json(
+          { error: `Instructor does not teach the required subject(s): ${body.required_skills.join(', ')}. Assign an instructor with matching skills or update the instructor's skills.` },
+          { status: 400 }
+        );
+      }
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('session_templates') as any)

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, X, Mail, Phone,
-  Accessibility, Clock, Package, Home, StickyNote, Edit2,
+  Accessibility, Clock, Home, StickyNote, Edit2,
   Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
@@ -35,14 +35,6 @@ const AVATAR_COLORS = [
   'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
   'bg-amber-500', 'bg-pink-500', 'bg-cyan-500',
 ];
-
-const EQUIPMENT_OPTIONS = [
-  { key: 'piano', label: 'Piano' },
-  { key: 'sound_system', label: 'Sound System' },
-  { key: 'music_stands', label: 'Music Stands' },
-  { key: 'whiteboard', label: 'Whiteboard' },
-];
-
 
 /* Availability grid helpers (for modal) */
 const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
@@ -400,10 +392,6 @@ function VenueDetailModal({
     venue.max_capacity != null ? String(venue.max_capacity) : ''
   );
   const [roomType, setRoomType] = useState(venue.space_type || '');
-  const [equipment, setEquipment] = useState<string[]>(() => {
-    const amenities = venue.amenities ?? [];
-    return amenities.filter((a) => EQUIPMENT_OPTIONS.some((e) => e.key === a));
-  });
   const [accessible, setAccessible] = useState(
     venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible')
   );
@@ -412,14 +400,8 @@ function VenueDetailModal({
   );
   const [notes, setNotes] = useState(venue.notes ?? '');
 
-  const toggleEquipment = (key: string) => {
-    setEquipment((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
-  };
-
   const handleSave = () => {
-    const amenities = [...equipment];
+    const amenities: string[] = [];
     if (accessible) amenities.push('wheelchair_accessible');
     onSave({
       name: editName.trim(),
@@ -439,18 +421,13 @@ function VenueDetailModal({
     setEditAddress(venue.address || '');
     setCapacity(venue.max_capacity != null ? String(venue.max_capacity) : '');
     setRoomType(venue.space_type || '');
-    const amenities = venue.amenities ?? [];
-    setEquipment(amenities.filter((a) => EQUIPMENT_OPTIONS.some((e) => e.key === a)));
-    setAccessible(venue.is_wheelchair_accessible ?? amenities.includes('wheelchair_accessible'));
+    setAccessible(venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible'));
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setNotes(venue.notes ?? '');
     setEditing(false);
   };
 
   /* ── Derived display values ─── */
-  const equipmentLabels = (venue.amenities ?? [])
-    .filter((a) => a !== 'wheelchair_accessible')
-    .map((a) => EQUIPMENT_OPTIONS.find((e) => e.key === a)?.label ?? a);
   const isAccessible = venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible');
 
   return (
@@ -523,27 +500,6 @@ function VenueDetailModal({
                   </span>
                 </div>
               </Tooltip>
-            </div>
-
-            {/* Equipment */}
-            <div className="px-6 py-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Equipment</span>
-              </div>
-              {equipmentLabels.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {equipmentLabels.map((label) => (
-                    <Tooltip key={label} text={label}>
-                      <span className="inline-flex items-center bg-blue-100 text-blue-700 rounded-full px-3 py-1 text-xs font-medium">
-                        {label}
-                      </span>
-                    </Tooltip>
-                  ))}
-                </div>
-              ) : (
-                <span className="text-sm text-slate-400">No equipment listed</span>
-              )}
             </div>
 
             {/* Accessibility */}
@@ -624,26 +580,6 @@ function VenueDetailModal({
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability Times</label>
               <AvailabilityGrid availability={venue.availability_json} />
-            </div>
-
-            {/* Equipment */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-2">Equipment</label>
-              <div className="flex flex-wrap gap-x-5 gap-y-2.5">
-                {EQUIPMENT_OPTIONS.map((eq) => (
-                  <Tooltip key={eq.key} text={`Toggle ${eq.label.toLowerCase()} availability`}>
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={equipment.includes(eq.key)}
-                        onChange={() => toggleEquipment(eq.key)}
-                        className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
-                      />
-                      <span className="text-sm text-slate-700">{eq.label}</span>
-                    </label>
-                  </Tooltip>
-                ))}
-              </div>
             </div>
 
             {/* Space Type */}
