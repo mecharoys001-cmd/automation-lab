@@ -367,14 +367,17 @@ function AvailabilityEditor({
 /* ── Venue Detail / Edit Modal ─────────────────────────────── */
 
 function VenueDetailModal({
-  venue, saving, onClose, onSave,
+  venue, saving, deleting, onClose, onSave, onDelete,
 }: {
   venue: Venue;
   saving: boolean;
+  deleting: boolean;
   onClose: () => void;
   onSave: (updates: Record<string, unknown>) => void;
+  onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   /* ── Space types from tags API ─── */
   const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
@@ -391,6 +394,8 @@ function VenueDetailModal({
   }, []);
 
   /* ── Edit-mode state ─── */
+  const [editName, setEditName] = useState(venue.name || '');
+  const [editAddress, setEditAddress] = useState(venue.address || '');
   const [capacity, setCapacity] = useState<string>(
     venue.max_capacity != null ? String(venue.max_capacity) : ''
   );
@@ -417,6 +422,8 @@ function VenueDetailModal({
     const amenities = [...equipment];
     if (accessible) amenities.push('wheelchair_accessible');
     onSave({
+      name: editName.trim(),
+      address: editAddress.trim() || null,
       max_capacity: capacity ? Number(capacity) : null,
       space_type: roomType,
       amenities: amenities.length > 0 ? amenities : null,
@@ -428,6 +435,8 @@ function VenueDetailModal({
 
   const handleCancelEdit = () => {
     // Reset state back to venue values
+    setEditName(venue.name || '');
+    setEditAddress(venue.address || '');
     setCapacity(venue.max_capacity != null ? String(venue.max_capacity) : '');
     setRoomType(venue.space_type || '');
     const amenities = venue.amenities ?? [];
@@ -451,7 +460,18 @@ function VenueDetailModal({
 
         {/* ── Header ─────────────────────────────────── */}
         <div className="flex items-center h-14 px-6 gap-2.5">
-          <h2 className="text-[22px] font-bold text-slate-900">{venue.name}</h2>
+          {editing ? (
+            <Tooltip text="Venue name">
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="text-[22px] font-bold text-slate-900 bg-transparent border-b-2 border-blue-400 outline-none w-full max-w-[400px]"
+                placeholder="Venue name"
+              />
+            </Tooltip>
+          ) : (
+            <h2 className="text-[22px] font-bold text-slate-900">{venue.name}</h2>
+          )}
           <Badge
             variant="status"
             color={venue.is_virtual ? 'violet' : 'blue'}
@@ -477,6 +497,14 @@ function VenueDetailModal({
           /* ── READ-ONLY VIEW ─── */
           <div className="divide-y divide-slate-200">
 
+            {/* Address */}
+            {venue.address && (
+              <div className="flex items-center px-6 py-3 gap-2">
+                <MapPin className="w-4 h-4 text-slate-400" />
+                <span className="text-[13px] text-slate-700">{venue.address}</span>
+              </div>
+            )}
+
             {/* Capacity & Space Type */}
             <div className="flex items-center px-6 py-3 gap-6">
               <Tooltip text="Maximum capacity">
@@ -487,7 +515,7 @@ function VenueDetailModal({
                   </span>
                 </div>
               </Tooltip>
-              <Tooltip text="Room type">
+              <Tooltip text="Space type">
                 <div className="flex items-center gap-1.5">
                   <Home className="w-4 h-4 text-slate-400" />
                   <span className="text-[13px] text-slate-700">
@@ -564,6 +592,19 @@ function VenueDetailModal({
         ) : (
           /* ── EDIT VIEW ─── */
           <div className="px-6 py-4 space-y-5">
+            {/* Address */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Address</label>
+              <Tooltip text="Venue address or location">
+                <input
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  placeholder="e.g. 123 Main St, Building A"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+              </Tooltip>
+            </div>
+
             {/* Capacity */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
@@ -695,6 +736,37 @@ function VenueDetailModal({
           <div className="flex items-center gap-3">
             {editing ? (
               <>
+                {confirmDelete ? (
+                  <div className="flex items-center gap-2 mr-auto">
+                    <span className="text-xs text-red-600 font-medium">Delete this venue?</span>
+                    <Tooltip text="Confirm deletion">
+                      <button
+                        onClick={onDelete}
+                        disabled={deleting}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      >
+                        {deleting ? 'Deleting…' : 'Yes, Delete'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Cancel deletion">
+                      <button
+                        onClick={() => setConfirmDelete(false)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </Tooltip>
+                  </div>
+                ) : (
+                  <Tooltip text="Delete this venue permanently">
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      className="px-4 py-2 rounded-lg text-[13px] font-medium border border-red-200 text-red-500 hover:bg-red-50 transition-colors mr-auto"
+                    >
+                      Delete
+                    </button>
+                  </Tooltip>
+                )}
                 <Tooltip text="Discard changes">
                   <button
                     onClick={handleCancelEdit}
@@ -706,7 +778,7 @@ function VenueDetailModal({
                 <Tooltip text="Save venue details">
                   <button
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || !editName.trim()}
                     className="px-4 py-2 rounded-lg text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
                   >
                     {saving ? 'Saving\u2026' : 'Save Changes'}
@@ -1646,6 +1718,23 @@ export default function PeoplePage() {
     }
   }, [selectedVenue]);
 
+  const [deletingVenue, setDeletingVenue] = useState(false);
+  const handleDeleteVenue = useCallback(async () => {
+    if (!selectedVenue) return;
+    setDeletingVenue(true);
+    try {
+      const res = await fetch(`/api/venues/${selectedVenue.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete venue');
+      setVenues((prev) => prev.filter((v) => v.id !== selectedVenue.id));
+      setSelectedVenue(null);
+      setToast({ message: 'Venue deleted', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Failed to delete venue', type: 'error', id: Date.now() });
+    } finally {
+      setDeletingVenue(false);
+    }
+  }, [selectedVenue]);
+
   const handleSaveInstructor = useCallback(async (data: InstructorFormData) => {
     setSavingInstructor(true);
     const isNew = !editingInstructor;
@@ -2162,8 +2251,10 @@ export default function PeoplePage() {
         <VenueDetailModal
           venue={selectedVenue}
           saving={savingVenue}
+          deleting={deletingVenue}
           onClose={() => setSelectedVenue(null)}
           onSave={handleSaveVenue}
+          onDelete={handleDeleteVenue}
         />
       )}
 
