@@ -5,6 +5,8 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Pill } from '../ui/Pill';
 import { Tooltip } from '../ui/Tooltip';
+import { ClickToCopy } from '../ui/ClickToCopy';
+import { getStatusConfig } from '../../lib/statusConfig';
 
 /* ── Types ──────────────────────────────────────────────────── */
 
@@ -23,19 +25,19 @@ export interface AvailabilitySlot {
   end: string;
 }
 
-export type SessionStatus = 'active' | 'pending' | 'cancelled' | 'draft' | 'published' | 'scheduled' | 'canceled' | 'completed';
-
 export interface AssignedSession {
   id: string;
   name: string;
   day: string;
   time: string;
-  status: SessionStatus;
+  status: string;
 }
 
 export interface InstructorDetailData {
+  id?: string;
   name: string;
   isActive: boolean;
+  onCall?: boolean;
   email?: string;
   phone?: string;
   skills: InstructorSkill[];
@@ -50,20 +52,12 @@ export interface InstructorDetailModalProps {
   data: InstructorDetailData;
   onEdit?: () => void;
   onViewCalendar?: () => void;
+  onToggleStatus?: () => void;
+  onToggleOnCall?: () => void;
+  togglingStatus?: boolean;
+  togglingOnCall?: boolean;
+  onSubjectClick?: (subject: string) => void;
 }
-
-/* ── Session status mapping ─────────────────────────────────── */
-
-const sessionStatusConfig: Record<string, { color: 'green' | 'amber' | 'red' | 'slate'; label: string }> = {
-  active:    { color: 'green', label: 'Active' },
-  published: { color: 'green', label: 'Active' },
-  scheduled: { color: 'green', label: 'Active' },
-  draft:     { color: 'amber', label: 'Draft' },
-  pending:   { color: 'amber', label: 'Draft' },
-  canceled:  { color: 'red',   label: 'Cancelled' },
-  cancelled: { color: 'red',   label: 'Cancelled' },
-  completed: { color: 'slate', label: 'Completed' },
-};
 
 /* ── Availability helpers ───────────────────────────────────── */
 
@@ -87,6 +81,11 @@ export function InstructorDetailModal({
   data,
   onEdit,
   onViewCalendar,
+  onToggleStatus,
+  onToggleOnCall,
+  togglingStatus = false,
+  togglingOnCall = false,
+  onSubjectClick,
 }: InstructorDetailModalProps) {
   if (!open) return null;
 
@@ -109,6 +108,11 @@ export function InstructorDetailModal({
               }`}
             />
           </Tooltip>
+          {data.onCall && (
+            <Badge variant="status" color="green" tooltip="Available for last-minute substitutions">
+              On-Call
+            </Badge>
+          )}
           <div className="flex-1" />
           <Tooltip text="Close details">
             <button
@@ -122,33 +126,25 @@ export function InstructorDetailModal({
 
         <div className="h-px bg-slate-200" />
 
-        {/* ── Contact Info ─────────────────────────────────── */}
+        {/* ── Contact Info (click-to-copy) ─────────────────── */}
         <div className="flex items-center px-6 py-3 gap-6">
           {data.email && (
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-slate-400" />
-              <Tooltip text="Send email">
-                <a
-                  href={`mailto:${data.email}`}
-                  className="text-[13px] text-blue-500 hover:text-blue-600 transition-colors"
-                >
-                  {data.email}
-                </a>
-              </Tooltip>
-            </div>
+            <ClickToCopy
+              text={data.email}
+              label="email"
+              icon={Mail}
+              textClassName="text-[13px] text-blue-500"
+              buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+            />
           )}
           {data.phone && (
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-slate-400" />
-              <Tooltip text="Call phone number">
-                <a
-                  href={`tel:${data.phone}`}
-                  className="text-[13px] text-slate-500 hover:text-slate-600 transition-colors"
-                >
-                  {data.phone}
-                </a>
-              </Tooltip>
-            </div>
+            <ClickToCopy
+              text={data.phone}
+              label="phone"
+              icon={Phone}
+              textClassName="text-[13px] text-slate-500"
+              buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+            />
           )}
         </div>
 
@@ -164,7 +160,8 @@ export function InstructorDetailModal({
                 variant="skill"
                 bgColor={skill.bgColor ?? 'bg-blue-100'}
                 textColor={skill.textColor ?? 'text-blue-500'}
-                tooltip={`Subject: ${skill.name}`}
+                tooltip={onSubjectClick ? `Click to view calendar filtered by ${skill.name}` : `Subject: ${skill.name}`}
+                onClick={onSubjectClick ? () => onSubjectClick(skill.name) : undefined}
               >
                 {skill.emoji ? `${skill.emoji} ` : ''}{skill.name}
               </Pill>
@@ -214,7 +211,7 @@ export function InstructorDetailModal({
           </h3>
           {data.sessions.length > 0 ? (
             data.sessions.map((session) => {
-              const sc = sessionStatusConfig[session.status] ?? { color: 'slate' as const, label: session.status };
+              const sc = getStatusConfig(session.status);
               return (
                 <div
                   key={session.id}
@@ -246,18 +243,52 @@ export function InstructorDetailModal({
 
         {/* ── Footer ───────────────────────────────────────── */}
         <div className="flex items-center justify-between h-14 px-6">
-          <Tooltip text="Jump to calendar filtered to this instructor">
-            <button
-              onClick={onViewCalendar}
-              className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors"
-            >
-              View on Calendar
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-          <Button variant="secondary" tooltip="Edit instructor profile" onClick={onEdit}>
-            Edit
-          </Button>
+          {onViewCalendar && (
+            <Tooltip text="Jump to calendar filtered to this instructor">
+              <button
+                onClick={onViewCalendar}
+                className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors"
+              >
+                View on Calendar
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+          )}
+          <div className="flex items-center gap-3 ml-auto">
+            {onToggleOnCall && (
+              <Tooltip text={data.onCall ? 'Remove from on-call list' : 'Mark as available for substitutions'}>
+                <button
+                  onClick={onToggleOnCall}
+                  disabled={togglingOnCall}
+                  className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                    data.onCall
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {togglingOnCall ? 'Updating\u2026' : data.onCall ? 'On-Call \u2713' : 'Set On-Call'}
+                </button>
+              </Tooltip>
+            )}
+            {onToggleStatus && (
+              <Tooltip text={data.isActive ? 'Make this instructor inactive' : 'Activate this instructor'}>
+                <button
+                  onClick={onToggleStatus}
+                  disabled={togglingStatus}
+                  className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                    data.isActive
+                      ? 'border-red-300 text-red-500 hover:bg-red-50'
+                      : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+                  }`}
+                >
+                  {togglingStatus ? 'Updating\u2026' : data.isActive ? 'Make Inactive' : 'Activate'}
+                </button>
+              </Tooltip>
+            )}
+            {onEdit && (
+              <Button variant="secondary" tooltip="Edit instructor profile" onClick={onEdit}>Edit</Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

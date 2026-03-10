@@ -1363,6 +1363,7 @@ function VenueCreateModal({
                   placeholder="New space type name"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSpaceType(); } }}
                   className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                  autoFocus
                 />
                 <Tooltip text="Create space type tag">
                   <button
@@ -1376,29 +1377,20 @@ function VenueCreateModal({
                 </Tooltip>
               </div>
             )}
-            {loadingSpaceTypes ? (
-              <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400">
-                Loading space types...
-              </div>
-            ) : spaceTypes.length === 0 && !showAddSpaceType ? (
-              <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400">
-                No space types available. Click + to create one.
-              </div>
-            ) : (
-              <div className="relative">
-                <select
-                  value={form.space_type}
-                  onChange={(e) => setField('space_type', e.target.value)}
-                  className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer"
-                >
-                  <option value="">Select type...</option>
-                  {spaceTypes.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-              </div>
-            )}
+            <div className="relative">
+              <select
+                value={form.space_type}
+                onChange={(e) => setField('space_type', e.target.value)}
+                disabled={loadingSpaceTypes}
+                className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <option value="">{loadingSpaceTypes ? 'Loading...' : spaceTypes.length === 0 ? 'None yet — use + to add' : 'Select type...'}</option>
+                {spaceTypes.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            </div>
           </div>
 
           {/* Max Capacity */}
