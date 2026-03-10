@@ -348,7 +348,7 @@ export function TemplateList({
                   value={filters.instructor}
                   onChange={(v) => setFilters((prev) => ({ ...prev, instructor: v }))}
                   options={filterOptions.instructors}
-                  allLabel="All Instructors"
+                  allLabel="All Staff"
                 />
               </FilterSection>
             )}

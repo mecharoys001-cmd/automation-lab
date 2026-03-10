@@ -101,7 +101,7 @@ export function InstructorDetailModal({
         {/* ── Header ───────────────────────────────────────── */}
         <div className="flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">{data.name}</h2>
-          <Tooltip text={data.isActive ? 'Active instructor' : 'Inactive instructor'}>
+          <Tooltip text={data.isActive ? 'Active staff member' : 'Inactive staff member'}>
             <span
               className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                 data.isActive ? 'bg-emerald-500' : 'bg-red-500'
@@ -271,7 +271,7 @@ export function InstructorDetailModal({
               </Tooltip>
             )}
             {onToggleStatus && (
-              <Tooltip text={data.isActive ? 'Make this instructor inactive' : 'Activate this instructor'}>
+              <Tooltip text={data.isActive ? 'Make this staff member inactive' : 'Activate this staff member'}>
                 <button
                   onClick={onToggleStatus}
                   disabled={togglingStatus}
@@ -286,7 +286,7 @@ export function InstructorDetailModal({
               </Tooltip>
             )}
             {onEdit && (
-              <Button variant="secondary" tooltip="Edit instructor profile" onClick={onEdit}>Edit</Button>
+              <Button variant="secondary" tooltip="Edit staff member profile" onClick={onEdit}>Edit</Button>
             )}
           </div>
         </div>

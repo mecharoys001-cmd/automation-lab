@@ -82,7 +82,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
         },
         {
           id: 'instructors',
-          title: 'Add instructors',
+          title: 'Add staff',
           description: 'Add staff or send the intake form for self-registration',
           icon: Users,
           link: '/tools/scheduler/admin/people',

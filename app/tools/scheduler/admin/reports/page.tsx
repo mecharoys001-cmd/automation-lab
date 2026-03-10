@@ -208,7 +208,7 @@ function computeWeeksBetween(start: string, end: string): number {
   return Math.max(1, Math.round(ms / (7 * 24 * 60 * 60 * 1000)));
 }
 
-/* ── Instructor Hours Tab ──────────────────────────────────── */
+/* ── Staff Hours Tab ──────────────────────────────────── */
 
 function InstructorHoursTab({
   instructors,
@@ -666,7 +666,7 @@ export default function ReportsPage() {
     : 'Nov 2025 \u2014 Jun 2026';
 
   const TABS: { key: ReportTab; label: string; icon: typeof Clock; tooltip: string }[] = [
-    { key: 'instructor-hours', label: 'Instructor Hours', icon: Clock, tooltip: 'View hours and monthly breakdown per instructor' },
+    { key: 'instructor-hours', label: 'Staff Hours', icon: Clock, tooltip: 'View hours and monthly breakdown per staff member' },
     { key: 'hours-by-tag', label: 'Hours by Tag', icon: Tag, tooltip: 'View time distribution across instrument types and tags' },
   ];
 

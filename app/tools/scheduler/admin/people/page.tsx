@@ -768,7 +768,7 @@ function InstructorDetailModal({
           <h2 className="text-[22px] font-bold text-slate-900">
             {instructor.first_name} {instructor.last_name}
           </h2>
-          <Tooltip text={instructor.is_active ? 'Active instructor' : 'Inactive instructor'}>
+          <Tooltip text={instructor.is_active ? 'Active staff member' : 'Inactive staff member'}>
             <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${instructor.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
           </Tooltip>
           {instructor.on_call && (
@@ -895,7 +895,7 @@ function InstructorDetailModal({
                 {togglingOnCall ? 'Updating\u2026' : instructor.on_call ? 'On-Call \u2713' : 'Set On-Call'}
               </button>
             </Tooltip>
-            <Tooltip text={instructor.is_active ? 'Make this instructor inactive' : 'Activate this instructor'}>
+            <Tooltip text={instructor.is_active ? 'Make this staff member inactive' : 'Activate this staff member'}>
               <button
                 onClick={onToggleStatus}
                 disabled={togglingStatus}
@@ -908,7 +908,7 @@ function InstructorDetailModal({
                 {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Make Inactive' : 'Activate'}
               </button>
             </Tooltip>
-            <Button variant="secondary" tooltip="Edit instructor profile" onClick={onEdit}>Edit</Button>
+            <Button variant="secondary" tooltip="Edit staff member profile" onClick={onEdit}>Edit</Button>
           </div>
         </div>
       </div>
@@ -999,7 +999,7 @@ function InstructorEditModal({
         {/* Header */}
         <div className="flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">
-            {isNew ? 'Add Instructor' : 'Edit Instructor'}
+            {isNew ? 'Add Staff Member' : 'Edit Staff Member'}
           </h2>
           <div className="flex-1" />
           <Tooltip text="Close without saving">
@@ -1019,7 +1019,7 @@ function InstructorEditModal({
           {/* First Name */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">First Name</label>
-            <Tooltip text="Instructor's first name" className="w-full">
+            <Tooltip text="Staff member's first name" className="w-full">
               <input
                 type="text"
                 required
@@ -1034,7 +1034,7 @@ function InstructorEditModal({
           {/* Last Name */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Last Name</label>
-            <Tooltip text="Instructor's last name" className="w-full">
+            <Tooltip text="Staff member's last name" className="w-full">
               <input
                 type="text"
                 required
@@ -1049,7 +1049,7 @@ function InstructorEditModal({
           {/* Email */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Email</label>
-            <Tooltip text="Contact email for this instructor" className="w-full">
+            <Tooltip text="Contact email for this staff member" className="w-full">
               <input
                 type="email"
                 value={form.email}
@@ -1077,12 +1077,12 @@ function InstructorEditModal({
           {/* Subjects */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-2">Subjects</label>
-            <Tooltip text="Select the subjects this instructor can teach">
+            <Tooltip text="Select the subjects this staff member teaches">
               <TagSelector
                 value={form.skills}
                 onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
                 category="Skills"
-                placeholder="Select instructor subjects..."
+                placeholder="Select staff subjects..."
               />
             </Tooltip>
           </div>
@@ -1090,11 +1090,11 @@ function InstructorEditModal({
           {/* Notes */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
-            <Tooltip text="Internal notes about this instructor (not visible to students)" className="w-full">
+            <Tooltip text="Internal notes about this staff member" className="w-full">
               <textarea
                 value={form.notes}
                 onChange={(e) => setField('notes', e.target.value)}
-                placeholder="Add notes about this instructor…"
+                placeholder="Add notes about this staff member…"
                 rows={3}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
               />
@@ -1123,7 +1123,7 @@ function InstructorEditModal({
           {/* Active Toggle */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
-            <Tooltip text={form.is_active ? 'Instructor is active and can be scheduled' : 'Instructor is inactive and will not appear in scheduling'}>
+            <Tooltip text={form.is_active ? 'Staff member is active and can be scheduled' : 'Staff member is inactive and will not appear in scheduling'}>
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -1172,7 +1172,7 @@ function InstructorEditModal({
                   </Tooltip>
                 </div>
               ) : (
-                <Tooltip text="Delete this instructor permanently">
+                <Tooltip text="Delete this staff member permanently">
                   <button
                     onClick={() => setConfirmDelete(true)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
@@ -1193,7 +1193,7 @@ function InstructorEditModal({
                 Cancel
               </button>
             </Tooltip>
-            <Tooltip text="Save instructor details">
+            <Tooltip text="Save staff member details">
               <button
                 onClick={() => onSave(form)}
                 disabled={saving || !form.first_name.trim() || !form.last_name.trim()}
@@ -1207,7 +1207,7 @@ function InstructorEditModal({
                 ) : (
                   <>
                     <Save className="w-3.5 h-3.5" />
-                    {isNew ? 'Add Instructor' : 'Save Changes'}
+                    {isNew ? 'Add Staff' : 'Save Changes'}
                   </>
                 )}
               </button>
@@ -1758,7 +1758,7 @@ export default function PeoplePage() {
       {/* ── Top Bar ──────────────────────────────────────── */}
       <div className="flex items-center bg-white px-8 py-4 border-b border-slate-200 gap-4 flex-shrink-0">
         <h1 className="text-[22px] font-bold text-slate-900 whitespace-nowrap">
-          People &amp; Places
+          Staff &amp; Venues
         </h1>
       </div>
 
@@ -1803,7 +1803,7 @@ export default function PeoplePage() {
         <section className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <Users className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-slate-900">Instructors</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Staff</h2>
             <Badge
               variant="count"
               color="blue"
@@ -1819,7 +1819,7 @@ export default function PeoplePage() {
                 <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search instructors..."
+                  placeholder="Search staff..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
@@ -1828,7 +1828,7 @@ export default function PeoplePage() {
             </Tooltip>
 
             {/* Status Filter */}
-            <Tooltip text="Filter by instructor status">
+            <Tooltip text="Filter by staff status">
               <div className="relative flex items-center border border-slate-200 rounded-lg">
                 <select
                   value={filterStatus}
@@ -1849,7 +1849,7 @@ export default function PeoplePage() {
               tooltip="Add a new instructor to the roster"
               onClick={() => setShowCreateModal(true)}
             >
-              Add Instructor
+              Add Staff
             </Button>
           </div>
 
@@ -1908,7 +1908,7 @@ export default function PeoplePage() {
                           variant="status"
                           color={inst.is_active ? 'green' : 'red'}
                           dot
-                          tooltip={inst.is_active ? 'Active instructor' : 'Instructor is on leave'}
+                          tooltip={inst.is_active ? 'Active staff member' : 'Instructor is on leave'}
                         >
                           {inst.is_active ? 'Active' : 'On Leave'}
                         </Badge>

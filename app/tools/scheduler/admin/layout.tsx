@@ -28,7 +28,7 @@ const adminNavItems = [
   { href: '/admin/templates', label: 'Schedule Builder', icon: FileText, tooltip: 'Build weekly schedule templates and configure day times' },
   { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Create and manage event templates for scheduling' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Create and manage session tags and categories' },
-  { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Manage instructors, their availability, and venue spaces' },
+  { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Manage staff, their availability, and venue spaces' },
   { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'View and manage school calendar and special dates' },
   { href: '/admin/exceptions', label: 'Exceptions', icon: AlertTriangle, tooltip: 'Review and resolve scheduling conflicts' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'View usage reports and export data' },

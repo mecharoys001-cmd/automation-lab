@@ -355,7 +355,7 @@ export default function IntakePage() {
       <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Instructor Intake Form</h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">Staff Intake Form</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Please provide your contact information, subjects, and weekly availability.
           </p>

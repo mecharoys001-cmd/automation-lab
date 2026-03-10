@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Calendar,
@@ -12,6 +12,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { skillsMatch } from '@/lib/scheduler/utils';
 import type { CalendarEvent } from './types';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,7 @@ interface InstructorOption {
   id: string;
   first_name: string;
   last_name: string;
+  skills: string[] | null;
 }
 
 interface TagOption {
@@ -201,6 +203,13 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showTagDropdown]);
 
+  // Filter instructors by subject match (event.subjects comes from template.required_skills)
+  const subjectFilteredInstructors = useMemo(() => {
+    const subjects = event.subjects;
+    if (!subjects || subjects.length === 0) return instructors;
+    return instructors.filter((inst) => skillsMatch(inst.skills, subjects));
+  }, [instructors, event.subjects]);
+
   const toggleTag = useCallback((tagName: string) => {
     setEditTags((prev) =>
       prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
@@ -273,8 +282,8 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
     onClose();
   };
 
-  // Count qualified instructors (those not currently assigned)
-  const qualifiedCount = Math.max(0, instructors.length - 1);
+  // Count qualified instructors (those not currently assigned, filtered by subject)
+  const qualifiedCount = Math.max(0, subjectFilteredInstructors.length - 1);
 
   if (!open) return null;
 
@@ -445,10 +454,10 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
 
           {/* ---- Section 4: Instructor ---- */}
           <div className="py-4">
-            <Tooltip text="The instructor assigned to lead this session">
+            <Tooltip text="The staff member assigned to lead this session">
               <label className={labelCls}>Instructor</label>
             </Tooltip>
-            <Tooltip text="Choose the session instructor">
+            <Tooltip text="Choose the session staff member">
               <div className="relative">
                 <select
                   value={editInstructor}
@@ -460,10 +469,10 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                   <option value="">
                     {loadingInstructors ? 'Loading instructors...' : '— Select instructor —'}
                   </option>
-                  {event.instructor && !instructors.some((i) => `${i.first_name} ${i.last_name}` === event.instructor) && (
+                  {event.instructor && !subjectFilteredInstructors.some((i) => `${i.first_name} ${i.last_name}` === event.instructor) && (
                     <option value={event.instructor}>{event.instructor}</option>
                   )}
-                  {instructors.map((i) => {
+                  {subjectFilteredInstructors.map((i) => {
                     const fullName = `${i.first_name} ${i.last_name}`;
                     return (
                       <option key={i.id} value={fullName}>
@@ -475,7 +484,21 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                 <ChevronDown className="w-4 h-4 text-[#64748B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </Tooltip>
-            {qualifiedCount > 0 && (
+            {event.subjects && event.subjects.length > 0 && subjectFilteredInstructors.length === 0 && !loadingInstructors && (
+              <Tooltip text="No staff members have the required skills. Add staff with these subjects on the Staff & Venues page.">
+                <p className="text-[11px] text-red-500 mt-1.5">
+                  No staff teach {event.subjects.join(', ')}. Add staff with this subject on the Staff & Venues page.
+                </p>
+              </Tooltip>
+            )}
+            {event.subjects && event.subjects.length > 0 && subjectFilteredInstructors.length > 0 && (
+              <Tooltip text="Only instructors whose skills match the session's required subjects are shown">
+                <p className="text-[11px] text-[#94A3B8] mt-1.5">
+                  Filtered by subject: {event.subjects.join(', ')} — {qualifiedCount} other qualified instructor{qualifiedCount !== 1 ? 's' : ''}
+                </p>
+              </Tooltip>
+            )}
+            {(!event.subjects || event.subjects.length === 0) && qualifiedCount > 0 && (
               <Tooltip text="Other instructors who are qualified and available for this session type">
                 <p className="text-[11px] text-[#94A3B8] mt-1.5">
                   {qualifiedCount} other qualified instructor{qualifiedCount !== 1 ? 's' : ''} available
@@ -483,7 +506,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
               </Tooltip>
             )}
 
-            {/* Add New Instructor Button/Form */}
+            {/* Add New Staff Member Button/Form */}
             {!showAddInstructor ? (
               <Tooltip text="Add a new instructor to the system">
                 <button
@@ -491,7 +514,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                   className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Add New Instructor
+                  Add New Staff Member
                 </button>
               </Tooltip>
             ) : (
