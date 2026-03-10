@@ -51,10 +51,10 @@ const defaultNavItems: NavItem[] = [
     tooltip: 'View and manage the session calendar',
   },
   {
-    label: 'People & Places',
+    label: 'Staff & Venues',
     href: '/people',
     icon: Users,
-    tooltip: 'Manage instructors and venues',
+    tooltip: 'Manage staff and venues',
   },
   {
     label: 'Schedule Builder',

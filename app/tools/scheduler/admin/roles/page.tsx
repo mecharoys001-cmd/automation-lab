@@ -69,7 +69,7 @@ const ROLE_META: Record<AppRole, { label: string; description: string; color: st
     icon: Shield,
   },
   instructor: {
-    label: 'Instructor',
+    label: 'Staff',
     description: 'View own schedule and availability only',
     color: 'bg-emerald-100 text-emerald-600',
     icon: GraduationCap,
@@ -516,7 +516,7 @@ export default function RolesPage() {
                               <option value="master_admin">Master Admin</option>
                               <option value="admin">Admin</option>
                               <option value="editor">Editor</option>
-                              <option value="instructor">Instructor</option>
+                              <option value="instructor">Staff</option>
                             </select>
                             <Tooltip text="Save role change">
                               <button
@@ -631,7 +631,7 @@ export default function RolesPage() {
                     <option value="master_admin">Master Admin — Full system access</option>
                     <option value="admin">Admin — Manage schedules</option>
                     <option value="editor">Editor — Edit schedules</option>
-                    <option value="instructor">Instructor — View own schedule only</option>
+                    <option value="instructor">Staff — View own schedule only</option>
                   </select>
                 </Tooltip>
               </div>

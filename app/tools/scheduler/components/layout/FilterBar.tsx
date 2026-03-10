@@ -49,9 +49,9 @@ interface FilterBarProps {
 const defaultFilters: FilterConfig[] = [
   {
     key: 'instructor',
-    label: 'Instructor',
+    label: 'Staff',
     icon: User,
-    tooltip: 'Filter by instructor',
+    tooltip: 'Filter by staff member',
     options: [],
   },
   {

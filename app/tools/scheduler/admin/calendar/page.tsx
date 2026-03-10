@@ -998,7 +998,7 @@ export default function CalendarPage() {
               variant="primary"
               size="md"
               icon={<Plus className="w-4 h-4" />}
-              tooltip="Add a blackout date, early dismissal, or instructor exception"
+              tooltip="Add a blackout date, early dismissal, or staff exception"
               onClick={() => {
                 setShowAddForm(!showAddForm);
                 setAddForm({ ...EMPTY_FORM });

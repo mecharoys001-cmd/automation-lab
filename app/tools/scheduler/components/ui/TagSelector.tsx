@@ -17,7 +17,7 @@ interface TagSelectorProps {
   value: string[];
   /** Callback when selection changes */
   onChange: (tags: string[]) => void;
-  /** Filter tags by category (e.g., "Skills", "Subject") */
+  /** Filter tags by category (e.g., "Subjects", "Space Types") */
   category?: string;
   /** Placeholder text */
   placeholder?: string;
@@ -189,7 +189,7 @@ export function TagSelector({
             {allTags.length === 0 && !showAddForm ? (
               <div className="px-3 py-3 text-center">
                 <p className="text-sm text-slate-400 mb-2">
-                  No tags available{category && ` in "${category === 'Skills' ? 'Subjects' : category}" category`}
+                  No tags available{category && ` in "${category}" category`}
                 </p>
                 <Tooltip text="Create a new tag in this category">
                   <button

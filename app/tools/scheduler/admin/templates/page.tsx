@@ -459,7 +459,7 @@ function RotationToggle({
     <div>
       <label className="block text-[13px] font-medium text-slate-900 mb-1.5">{label}</label>
       <div className="flex items-center gap-3 h-10">
-        <Tooltip text={enabled ? 'Disable instructor rotation' : 'Enable instructor rotation'}>
+        <Tooltip text={enabled ? 'Disable staff rotation' : 'Enable staff rotation'}>
           <button
             type="button"
             onClick={() => onChange(!enabled)}
@@ -699,14 +699,14 @@ function EditTemplateModal({
               onChange={(v) => update('timeSlot', v)}
             />
             <FormSelect
-              label="Instructor"
+              label="Staff"
               value={local.instructor ?? ''}
               onChange={(v) => update('instructor', v)}
               options={instructorOptions}
-              tooltip="Assign an instructor to this template"
+              tooltip="Assign a staff member to this template"
             />
             <RotationToggle
-              label="Instructor Rotation"
+              label="Staff Rotation"
               enabled={local.instructorRotation}
               onChange={(v) => update('instructorRotation', v)}
             />
@@ -1674,11 +1674,11 @@ export default function TemplatesPage() {
 
           // Instructor conflict: same instructor (check across all venues)
           if (t1.instructorId && t2.instructorId && t1.instructorId === t2.instructorId) {
-            const instrName = t1.instructor || 'Unknown instructor';
+            const instrName = t1.instructor || 'Unknown staff';
             found.push({
               id: `instructor-${p1.id}-${p2.id}`,
               type: 'instructor',
-              message: `Instructor conflict: ${instrName} on ${dayName} — ${t1.name} & ${t2.name} overlap`,
+              message: `Staff conflict: ${instrName} on ${dayName} — ${t1.name} & ${t2.name} overlap`,
               placedIds: [p1.id, p2.id],
             });
           }
@@ -1698,9 +1698,9 @@ export default function TemplatesPage() {
   const [bufferEnabled, setBufferEnabled] = useState(false);
   const [bufferMinutes, setBufferMinutes] = useState(15);
 
-  // Fetch subjects (Skills tags) and instructors for dropdowns
+  // Fetch subjects (Subjects tags) and instructors for dropdowns
   useEffect(() => {
-    fetch('/api/tags?category=Skills')
+    fetch('/api/tags?category=Subjects')
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data.tags)) {
@@ -3224,7 +3224,7 @@ export default function TemplatesPage() {
                             <p className="text-[9px] text-red-500 font-medium">Venue conflict</p>
                           )}
                           {dropConflict === 'instructor' && (
-                            <p className="text-[9px] text-red-500 font-medium">Instructor conflict</p>
+                            <p className="text-[9px] text-red-500 font-medium">Staff conflict</p>
                           )}
                           {dropConflict === 'lunch' && (
                             <p className="text-[9px] text-amber-600 font-medium">Overlaps lunch</p>

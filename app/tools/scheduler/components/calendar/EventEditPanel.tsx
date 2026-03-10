@@ -452,10 +452,10 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
 
           <div className="h-px bg-[#F1F5F9]" />
 
-          {/* ---- Section 4: Instructor ---- */}
+          {/* ---- Section 4: Staff ---- */}
           <div className="py-4">
             <Tooltip text="The staff member assigned to lead this session">
-              <label className={labelCls}>Instructor</label>
+              <label className={labelCls}>Staff</label>
             </Tooltip>
             <Tooltip text="Choose the session staff member">
               <div className="relative">
@@ -464,10 +464,10 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                   onChange={(e) => setEditInstructor(e.target.value)}
                   disabled={loadingInstructors}
                   className={selectCls}
-                  aria-label="Instructor"
+                  aria-label="Staff"
                 >
                   <option value="">
-                    {loadingInstructors ? 'Loading instructors...' : '— Select instructor —'}
+                    {loadingInstructors ? 'Loading staff...' : '— Select staff member —'}
                   </option>
                   {event.instructor && !subjectFilteredInstructors.some((i) => `${i.first_name} ${i.last_name}` === event.instructor) && (
                     <option value={event.instructor}>{event.instructor}</option>
@@ -492,9 +492,9 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
               </Tooltip>
             )}
             {event.subjects && event.subjects.length > 0 && subjectFilteredInstructors.length > 0 && (
-              <Tooltip text="Only instructors whose skills match the session's required subjects are shown">
+              <Tooltip text="Only staff whose subjects match the session's required subjects are shown">
                 <p className="text-[11px] text-[#94A3B8] mt-1.5">
-                  Filtered by subject: {event.subjects.join(', ')} — {qualifiedCount} other qualified instructor{qualifiedCount !== 1 ? 's' : ''}
+                  Filtered by subject: {event.subjects.join(', ')} — {qualifiedCount} other qualified staff member{qualifiedCount !== 1 ? 's' : ''}
                 </p>
               </Tooltip>
             )}

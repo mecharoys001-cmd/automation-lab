@@ -1047,7 +1047,7 @@ function CalendarDashboard() {
           <ReadinessWidget programId={selectedProgramId} />
           <Button
             variant="primary"
-            tooltip="Publish the current schedule to instructors"
+            tooltip="Publish the current schedule to staff"
             onClick={handlePublishSchedule}
             disabled={isPublishing}
           >

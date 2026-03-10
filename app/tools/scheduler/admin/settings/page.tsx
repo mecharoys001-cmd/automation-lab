@@ -26,7 +26,6 @@ interface ProgramFormData {
   name: string;
   start_date: string;
   end_date: string;
-  allows_mixing: boolean;
 }
 
 interface AdminFormData {
@@ -49,7 +48,6 @@ const emptyProgramForm: ProgramFormData = {
   name: '',
   start_date: '',
   end_date: '',
-  allows_mixing: false,
 };
 
 const emptyAdminForm: AdminFormData = {
@@ -190,7 +188,6 @@ export default function SettingsPage() {
       name: p.name,
       start_date: p.start_date,
       end_date: p.end_date,
-      allows_mixing: p.allows_mixing,
     });
     setProgramError(null);
     setShowProgramForm(true);
@@ -215,14 +212,14 @@ export default function SettingsPage() {
         const res = await fetch(`/api/programs/${editingProgramId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(programForm),
+          body: JSON.stringify({ ...programForm, allows_mixing: true }),
         });
         if (!res.ok) throw new Error('Failed to update program');
       } else {
         const res = await fetch('/api/programs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(programForm),
+          body: JSON.stringify({ ...programForm, allows_mixing: true }),
         });
         if (!res.ok) throw new Error('Failed to create program');
       }
@@ -480,19 +477,6 @@ export default function SettingsPage() {
                   />
                 </Tooltip>
               </div>
-              <div className="flex items-end gap-2">
-                <Tooltip text="Allow students from different groups to share sessions">
-                  <label className="flex items-center gap-2.5 text-sm text-slate-900 cursor-pointer select-none h-10 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={programForm.allows_mixing}
-                      onChange={(e) => setProgramForm((f) => ({ ...f, allows_mixing: e.target.checked }))}
-                      className="rounded border-slate-300 text-blue-500 focus:ring-blue-500/40"
-                    />
-                    Allows Mixing
-                  </label>
-                </Tooltip>
-              </div>
               <div>
                 <label className={labelClass}>Start Date</label>
                 <Tooltip text="First day sessions can be scheduled" position="bottom">
@@ -552,7 +536,6 @@ export default function SettingsPage() {
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className={thClass}>Name</th>
                   <th className={thClass}>Date Range</th>
-                  <th className={thClass}>Mixing</th>
                   <th className={`${thClass} text-right`}>Actions</th>
                 </tr>
               </thead>
@@ -577,20 +560,9 @@ export default function SettingsPage() {
                     <td className={`${tdClass} text-slate-500`}>
                       {formatDate(p.start_date)} — {formatDate(p.end_date)}
                     </td>
-                    <td className={tdClass}>
-                      {p.allows_mixing ? (
-                        <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700">
-                          Yes
-                        </span>
-                      ) : (
-                        <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-500">
-                          No
-                        </span>
-                      )}
-                    </td>
                     <td className={`${tdClass} text-right`}>
                       <div className="inline-flex items-center gap-2">
-                        <Tooltip text="Edit program name, dates, or mixing">
+                        <Tooltip text="Edit program name and dates">
                           <button
                             onClick={() => startEditProgram(p)}
                             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"

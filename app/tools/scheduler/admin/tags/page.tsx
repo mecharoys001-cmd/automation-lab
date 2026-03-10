@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { EmojiPicker } from '../../components/ui/EmojiPicker';
@@ -123,6 +123,9 @@ export default function TagsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; sessionCount: number } | null>(null);
 
+  // Install defaults
+  const [installDefaultsLoading, setInstallDefaultsLoading] = useState(false);
+
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null);
   let toastCounter = useRef(0);
@@ -130,6 +133,23 @@ export default function TagsPage() {
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type, id: ++toastCounter.current });
   }, []);
+
+  const spaceTypeCount = tags.filter(t => t.category === 'Space Types').length;
+
+  const installDefaults = async () => {
+    setInstallDefaultsLoading(true);
+    try {
+      const res = await fetch('/api/seed/ensure-defaults', { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      await fetchTags();
+      showToast(json.added > 0 ? `Installed ${json.added} default Space Type tag(s)` : 'All defaults already installed', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to install defaults', 'error');
+    } finally {
+      setInstallDefaultsLoading(false);
+    }
+  };
 
   const fetchTags = useCallback(async () => {
     setLoading(true);
@@ -523,11 +543,23 @@ export default function TagsPage() {
 
       {/* Header */}
       <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tags</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Organize sessions with categorical tags for filtering and reporting
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Tags</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Organize sessions with categorical tags for filtering and reporting
+            </p>
+          </div>
+          {spaceTypeCount < 7 && (
+            <Button
+              variant="secondary"
+              onClick={installDefaults}
+              disabled={installDefaultsLoading}
+              icon={installDefaultsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            >
+              {installDefaultsLoading ? 'Installing...' : 'Install Space Type Defaults'}
+            </Button>
+          )}
         </div>
       </div>
 

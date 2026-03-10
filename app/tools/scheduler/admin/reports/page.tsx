@@ -185,9 +185,9 @@ const AVATAR_COLORS = [
 /* ── Status badge config ───────────────────────────────────── */
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; tooltip: string }> = {
-  Active:      { bg: 'bg-emerald-100', text: 'text-emerald-700', tooltip: 'Instructor is actively teaching on a regular schedule' },
-  'Part-time': { bg: 'bg-amber-100',   text: 'text-amber-700',   tooltip: 'Instructor works a reduced or part-time schedule' },
-  Substitute:  { bg: 'bg-blue-100',    text: 'text-blue-700',    tooltip: 'Instructor fills in as a substitute on an as-needed basis' },
+  Active:      { bg: 'bg-emerald-100', text: 'text-emerald-700', tooltip: 'Staff member is actively teaching on a regular schedule' },
+  'Part-time': { bg: 'bg-amber-100',   text: 'text-amber-700',   tooltip: 'Staff member works a reduced or part-time schedule' },
+  Substitute:  { bg: 'bg-blue-100',    text: 'text-blue-700',    tooltip: 'Staff member fills in as a substitute on an as-needed basis' },
 };
 
 /* ── Helpers ────────────────────────────────────────────────── */

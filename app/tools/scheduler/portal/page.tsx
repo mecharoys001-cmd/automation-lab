@@ -172,7 +172,7 @@ export default function InstructorPortalPage() {
             <h1 className="text-2xl font-bold sm:text-3xl">
               {instructor
                 ? `${instructor.first_name} ${instructor.last_name}`
-                : 'Instructor Portal'}
+                : 'Staff Portal'}
             </h1>
             <div className="flex items-center gap-2">
               <Tooltip text="Return to scheduler home">

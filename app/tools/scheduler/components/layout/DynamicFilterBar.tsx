@@ -39,7 +39,7 @@ export type ActiveFilters = Record<string, string[]>;
 interface DynamicFilterBarProps {
   /** Static filters (instructor, venue, status, etc.) */
   staticFilters?: FilterConfig[];
-  /** Which tag categories to show as filters (e.g., ['Skills', 'Subject', 'Event Type']). 'Skills' displays as 'Subjects'. */
+  /** Which tag categories to show as filters (e.g., ['Subjects', 'Event Type']). */
   tagCategories?: string[];
   /** Active filter state */
   activeFilters: ActiveFilters;
@@ -62,7 +62,7 @@ interface TagData {
 // ---------------------------------------------------------------------------
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  Skills: GraduationCap,
+  Subjects: GraduationCap,
   Subject: Tag,
   'Event Type': Tag,
   Administrative: Tag,
@@ -237,7 +237,7 @@ export function DynamicFilterBar({
 
   // Build dynamic tag filters
   // Map DB category names to user-facing display labels
-  const CATEGORY_DISPLAY_NAMES: Record<string, string> = { Skills: 'Subjects' };
+  const CATEGORY_DISPLAY_NAMES: Record<string, string> = {};
 
   const tagFilters: FilterConfig[] = tagCategories.map(category => {
     const categoryTags = tags.filter(t => t.category === category);

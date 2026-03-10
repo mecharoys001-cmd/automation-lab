@@ -42,7 +42,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Calendar',         href: adminPath(),              icon: Calendar,       tooltip: 'View and manage session calendar' },
   { label: 'Schedule Builder', href: adminPath('templates'),   icon: LayoutTemplate, tooltip: 'Build weekly event templates and schedule' },
   { label: 'Tags',             href: adminPath('tags'),        icon: Tags,           tooltip: 'Create and manage session tags' },
-  { label: 'People & Places',  href: adminPath('people'),      icon: Users,          tooltip: 'Manage instructors, venues, and availability' },
+  { label: 'Staff & Venues',   href: adminPath('people'),      icon: Users,          tooltip: 'Manage staff, venues, and availability' },
   { label: 'School Calendar',  href: adminPath('calendar'),    icon: Clock,          tooltip: 'Manage school events and special dates' },
   { label: 'Exceptions',       href: adminPath('exceptions'),  icon: AlertTriangle,  tooltip: 'Review and resolve session conflicts' },
   { label: 'Reports',          href: adminPath('reports'),     icon: BarChart2,      tooltip: 'View session reports and export data' },
@@ -53,6 +53,6 @@ export const adminNavItems: NavItem[] = [
 // ── Reports sub-tabs ────────────────────────────────────────────────────────
 
 export const reportTabs = [
-  { key: 'instructor-hours', label: 'Instructor Hours', href: adminPath('reports/instructor-hours'), tooltip: 'View hours breakdown by instructor' },
+  { key: 'instructor-hours', label: 'Staff Hours', href: adminPath('reports/instructor-hours'), tooltip: 'View hours breakdown by staff' },
   { key: 'hours-by-tag',     label: 'Hours by Tag',     href: adminPath('reports/hours-by-tag'),     tooltip: 'View hours breakdown by tag category' },
 ] as const;

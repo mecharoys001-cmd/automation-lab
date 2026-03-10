@@ -33,8 +33,8 @@ const DAYS_OF_WEEK = [
 
 const TEMPLATE_TYPES: { value: TemplateType; label: string; desc: string }[] = [
   { value: 'fully_defined', label: 'Fully Defined', desc: 'All fields specified' },
-  { value: 'tagged_slot', label: 'Tagged Slot', desc: 'Instructor assigned by tag' },
-  { value: 'auto_assign', label: 'Auto Assign', desc: 'System picks instructor' },
+  { value: 'tagged_slot', label: 'Tagged Slot', desc: 'Staff assigned by tag' },
+  { value: 'auto_assign', label: 'Auto Assign', desc: 'System picks staff' },
   { value: 'time_block', label: 'Time Block', desc: 'Reserved time only' },
 ];
 
@@ -56,7 +56,7 @@ const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'start_time', label: 'Start Time', required: true },
   { csvHeader: 'end_time', label: 'End Time', required: true },
   { csvHeader: 'venue', label: 'Venue' },
-  { csvHeader: 'instructor', label: 'Instructor' },
+  { csvHeader: 'instructor', label: 'Staff' },
   { csvHeader: 'subjects', label: 'Subjects' },
   { csvHeader: 'grades', label: 'Grades' },
 ];
@@ -705,9 +705,9 @@ export default function EventTemplatesPage() {
               </button>
             </div>
 
-            {/* Instructor */}
+            {/* Staff */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <label style={rowLabelStyle}>Instructor</label>
+              <label style={rowLabelStyle}>Staff</label>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <select
                   value={form.instructor_id}
@@ -736,13 +736,13 @@ export default function EventTemplatesPage() {
                     ))}
                 </select>
                 {!form.no_set_instructor && filteredInstructors.length === 0 && form.required_skills.length > 0 && (
-                  <span style={{ fontSize: 11, color: '#EF4444', marginTop: 2 }} title="No instructors have the required subject skills. Add instructors with these skills on the People page.">
+                  <span style={{ fontSize: 11, color: '#EF4444', marginTop: 2 }} title="No staff have the required subjects. Add staff with these subjects on the Staff & Venues page.">
                     <AlertTriangle className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                    No instructors teach {form.required_skills.join(', ')}. Add instructors with this subject in People page.
+                    No staff teach {form.required_skills.join(', ')}. Add staff with this subject on the Staff & Venues page.
                   </span>
                 )}
                 {!form.no_set_instructor && form.required_skills.length > 0 && filteredInstructors.length > 0 && (
-                  <span style={{ fontSize: 11, color: '#64748B', marginTop: 2 }} title="Only instructors whose skills match the template's required subjects are shown">
+                  <span style={{ fontSize: 11, color: '#64748B', marginTop: 2 }} title="Only staff whose subjects match the template's required subjects are shown">
                     <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
                     Filtered by subject: {form.required_skills.join(', ')}
                   </span>
@@ -815,7 +815,7 @@ export default function EventTemplatesPage() {
                 {!form.no_set_day && filteredDays.some((d) => !d.available) && (
                   <span style={{ fontSize: 11, color: '#F59E0B', marginTop: 2 }}>
                     <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                    Filtered by instructor availability
+                    Filtered by staff availability
                   </span>
                 )}
               </div>
@@ -851,7 +851,7 @@ export default function EventTemplatesPage() {
               />
             </div>
 
-            {/* Instructor Time Availability */}
+            {/* Staff Time Availability */}
             {!form.no_set_day && selectedInstructorTimeBlocks && selectedInstructorTimeBlocks.length > 0 && (
               <div style={{
                 padding: 12,
@@ -860,7 +860,7 @@ export default function EventTemplatesPage() {
                 border: '1px solid #BFDBFE',
               }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#1E40AF', marginBottom: 8 }}>
-                  Instructor available on {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label}:
+                  Staff available on {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label}:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {selectedInstructorTimeBlocks.map((block, idx) => (
@@ -918,8 +918,8 @@ export default function EventTemplatesPage() {
               <TagSelector
                 value={form.required_skills}
                 onChange={(skills) => setForm(prev => ({ ...prev, required_skills: skills }))}
-                category="Skills"
-                placeholder="Select instructor subjects required for this event template..."
+                category="Subjects"
+                placeholder="Select staff subjects required for this event template..."
               />
             </FormField>
 

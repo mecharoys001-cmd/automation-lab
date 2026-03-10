@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, X, Mail, Phone,
-  Accessibility, Clock, Home, StickyNote, Edit2,
+  Accessibility, Clock, Home, StickyNote, Edit2, Copy,
   Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
@@ -356,6 +356,35 @@ function AvailabilityEditor({
   );
 }
 
+/* ── Share Availability Banner ─────────────────────────────── */
+
+function ShareAvailabilityBanner() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    const url = `${window.location.origin}/tools/scheduler/intake`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-3.5 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+      <span>📋 Share the availability form with your staff</span>
+      <Tooltip text={copied ? 'Copied!' : 'Copy availability form link'}>
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? 'Copied!' : 'Copy Link'}
+        </button>
+      </Tooltip>
+    </div>
+  );
+}
+
 /* ── Venue Detail / Edit Modal ─────────────────────────────── */
 
 function VenueDetailModal({
@@ -449,13 +478,6 @@ function VenueDetailModal({
           ) : (
             <h2 className="text-[22px] font-bold text-slate-900">{venue.name}</h2>
           )}
-          <Badge
-            variant="status"
-            color={venue.is_virtual ? 'violet' : 'blue'}
-            tooltip={venue.is_virtual ? 'Virtual venue' : 'In-person venue'}
-          >
-            {venue.is_virtual ? 'Virtual' : 'In-Person'}
-          </Badge>
           <div className="flex-1" />
           <Tooltip text="Close venue details">
             <button
@@ -1089,7 +1111,7 @@ function InstructorEditModal({
               <TagSelector
                 value={form.skills}
                 onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
-                category="Skills"
+                category="Subjects"
                 placeholder="Select staff subjects..."
               />
             </Tooltip>
@@ -1128,7 +1150,8 @@ function InstructorEditModal({
             />
           </div>
 
-          {/* Active Toggle */}
+          {/* Active Toggle — only shown when editing, not creating */}
+          {!isNew && (
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
             <Tooltip text={form.is_active ? 'Staff member is active and can be scheduled' : 'Staff member is inactive and will not appear in scheduling'}>
@@ -1145,6 +1168,7 @@ function InstructorEditModal({
               </label>
             </Tooltip>
           </div>
+          )}
         </form>
 
         <div className="h-px bg-slate-200" />
@@ -1798,10 +1822,10 @@ export default function PeoplePage() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-base font-semibold text-slate-900 mb-1">
-                Share Instructor Availability Form
+                Share Staff Availability Form
               </h3>
               <p className="text-[13px] text-slate-600 mb-4">
-                Send this link to instructors via email to collect their availability and contact information. The form saves directly to the system.
+                Send this link to staff via email to collect their availability and contact information. The form saves directly to the system.
               </p>
               <div className="flex items-center gap-3 flex-wrap">
                 <ClickToCopy
@@ -1832,7 +1856,7 @@ export default function PeoplePage() {
             <Badge
               variant="count"
               color="blue"
-              tooltip={`${filtered.length} instructor${filtered.length !== 1 ? 's' : ''}`}
+              tooltip={`${filtered.length} staff member${filtered.length !== 1 ? 's' : ''}`}
             >
               ({filtered.length})
             </Badge>
@@ -1871,12 +1895,15 @@ export default function PeoplePage() {
             <Button
               variant="primary"
               icon={<Plus className="w-4 h-4" />}
-              tooltip="Add a new instructor to the roster"
+              tooltip="Add a new staff member to the roster"
               onClick={() => setShowCreateModal(true)}
             >
               Add Staff
             </Button>
           </div>
+
+          {/* Share Availability Form Banner */}
+          <ShareAvailabilityBanner />
 
           {loadingAll ? (
             <CardGridSkeleton />
@@ -1933,7 +1960,7 @@ export default function PeoplePage() {
                           variant="status"
                           color={inst.is_active ? 'green' : 'red'}
                           dot
-                          tooltip={inst.is_active ? 'Active staff member' : 'Instructor is on leave'}
+                          tooltip={inst.is_active ? 'Active staff member' : 'Staff member is on leave'}
                         >
                           {inst.is_active ? 'Active' : 'On Leave'}
                         </Badge>
@@ -2100,13 +2127,6 @@ export default function PeoplePage() {
                       </p>
                       <p className="text-sm text-slate-400">{venue.space_type}</p>
                     </div>
-                    <Badge
-                      variant="status"
-                      color={venue.is_virtual ? 'violet' : 'blue'}
-                      tooltip={venue.is_virtual ? 'Virtual venue' : 'In-person venue'}
-                    >
-                      {venue.is_virtual ? 'Virtual' : 'In-Person'}
-                    </Badge>
                   </div>
 
                   {/* Capacity */}

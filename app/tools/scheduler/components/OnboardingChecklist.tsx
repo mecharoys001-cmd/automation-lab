@@ -51,7 +51,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       // Check tags (subjects)
       const tagsRes = await fetch('/api/tags');
       const tagsData = await tagsRes.json();
-      const hasSubjects = (tagsData.tags ?? []).some((t: { category?: string }) => t.category === 'Skills');
+      const hasSubjects = (tagsData.tags ?? []).some((t: { category?: string }) => ['Skills', 'Subjects'].includes(t.category ?? ''));
 
       // Check templates
       const templatesRes = await fetch('/api/templates');

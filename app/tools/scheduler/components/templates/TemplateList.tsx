@@ -222,7 +222,7 @@ export function TemplateList({
             <input
               type="text"
               placeholder={searchPlaceholder ?? (mode === 'table'
-                ? 'Search by day, instructor, venue, grade...'
+                ? 'Search by day, staff, venue, grade...'
                 : 'Search events\u2026')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -343,7 +343,7 @@ export function TemplateList({
 
             {/* Instructor - single select dropdown */}
             {filterOptions.instructors.length > 0 && (
-              <FilterSection label="Instructor">
+              <FilterSection label="Staff">
                 <FilterSelect
                   value={filters.instructor}
                   onChange={(v) => setFilters((prev) => ({ ...prev, instructor: v }))}
@@ -526,7 +526,7 @@ function TableView({
     { key: 'subject', label: 'Subject' },
     { key: 'day', label: 'Day' },
     { key: 'time', label: 'Time' },
-    { key: 'instructor', label: 'Instructor' },
+    { key: 'instructor', label: 'Staff' },
     { key: 'venue', label: 'Venue' },
     { key: 'cycle', label: 'Cycle' },
     { key: 'status', label: 'Status' },

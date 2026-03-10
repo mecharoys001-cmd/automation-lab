@@ -925,9 +925,9 @@ export function EventPopover({
                 onClick={handleShowSubstitutes}
                 icon={<UserX className="w-3.5 h-3.5" />}
                 className="w-full justify-start"
-                tooltip="Find a substitute instructor"
+                tooltip="Find a substitute staff member"
               >
-                Replace Instructor Only
+                Replace Staff Only
               </Button>
               <Button
                 variant="secondary"

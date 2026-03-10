@@ -53,7 +53,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
         className="grid items-center px-5 h-11 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider"
         style={{ gridTemplateColumns: '1fr 120px 100px 100px 40px' }}
       >
-        <span>Instructor</span>
+        <span>Staff</span>
         <span className="text-right">Total Hours</span>
         <span className="text-right">Avg/Week</span>
         <span className="text-center">Status</span>
@@ -63,7 +63,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
       {/* Rows */}
       {instructors.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-slate-400">
-          No instructor data available for this date range.
+          No staff data available for this date range.
         </div>
       ) : (
         <div>

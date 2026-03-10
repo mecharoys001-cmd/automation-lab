@@ -23,7 +23,7 @@ export default async function SymphonixSchedulerPage() {
                 href="/tools/scheduler/intake"
                 className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
-                Instructor Intake
+                Staff Intake
               </Link>
             </Tooltip>
           </div>
@@ -41,7 +41,7 @@ export default async function SymphonixSchedulerPage() {
   }
 
   // Admins → show both admin + portal links
-  // Instructors → show portal link only
+  // Staff → show portal link only
   const isAdmin = membership.role === 'admin';
 
   return (
@@ -71,7 +71,7 @@ export default async function SymphonixSchedulerPage() {
                   : 'bg-primary text-primary-foreground'
               }`}
             >
-              Instructor Portal
+              Staff Portal
             </Link>
           </Tooltip>
           <Tooltip text="Submit your availability">
@@ -79,13 +79,13 @@ export default async function SymphonixSchedulerPage() {
               href="/tools/scheduler/intake"
               className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
-              Instructor Intake
+              Staff Intake
             </Link>
           </Tooltip>
         </div>
         <p className="text-xs text-muted-foreground">
           Signed in as {user.email}
-          {isAdmin ? ' (Admin)' : ' (Instructor)'}
+          {isAdmin ? ' (Admin)' : ' (Staff)'}
         </p>
       </div>
     </div>

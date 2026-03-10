@@ -121,12 +121,12 @@ export default function IntakePage() {
   const [programLoading, setProgramLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch subjects (tags with category "Skills")
+    // Fetch subjects (tags with category "Subjects", fallback to "Skills" for legacy data)
     fetch('/api/tags')
       .then((res) => res.json())
       .then((data) => {
         const tags: SubjectTag[] = (data.tags ?? []).filter(
-          (t: SubjectTag) => t.category === 'Skills'
+          (t: SubjectTag) => ['Skills', 'Subjects'].includes(t.category)
         );
         setAvailableSubjects(tags);
       })
