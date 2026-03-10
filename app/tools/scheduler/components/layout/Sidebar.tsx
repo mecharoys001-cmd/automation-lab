@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Music,
+  CalendarDays,
   Calendar,
   Users,
   LayoutTemplate,
@@ -111,7 +111,7 @@ export function Sidebar({
         {/* Header */}
         {header ?? (
           <div className="flex items-center gap-2.5 pb-6">
-            <Music className="w-7 h-7 text-blue-500 flex-shrink-0" />
+            <CalendarDays className="w-7 h-7 text-blue-500 flex-shrink-0" />
             <span className="text-xl font-bold text-white">Symphonix</span>
           </div>
         )}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Music } from 'lucide-react';
 import { SUBJECT_COLORS, getSubjectColor } from '../../lib/subjectColors';
 import type { SubjectColor } from '../../lib/subjectColors';
 

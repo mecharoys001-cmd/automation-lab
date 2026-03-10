@@ -52,25 +52,14 @@ const defaultFilters: FilterConfig[] = [
     label: 'Instructor',
     icon: User,
     tooltip: 'Filter by instructor',
-    options: [
-      { value: 'Ms. Chen', label: 'Ms. Chen' },
-      { value: 'Mr. Park', label: 'Mr. Park' },
-      { value: 'Ms. Rivera', label: 'Ms. Rivera' },
-      { value: 'Mr. Johnson', label: 'Mr. Johnson' },
-      { value: 'Ms. Davis', label: 'Ms. Davis' },
-    ],
+    options: [],
   },
   {
     key: 'venue',
     label: 'Venue',
     icon: MapPin,
     tooltip: 'Filter by venue',
-    options: [
-      { value: 'Room A', label: 'Room A' },
-      { value: 'Room B', label: 'Room B' },
-      { value: 'Auditorium', label: 'Auditorium' },
-      { value: 'Music Hall', label: 'Music Hall' },
-    ],
+    options: [],
   },
   {
     key: 'status',

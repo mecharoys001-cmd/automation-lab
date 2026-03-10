@@ -81,18 +81,6 @@ const TEMPLATE_COLORS = [
 
 const GRADE_OPTIONS = ['K', 'K-1', 'K-2', '1', '1-2', '2', '2-3', '3', '3-4', '4', '4-5', '5', '5-6', '6', 'All'];
 
-const SUBJECT_OPTIONS = [
-  'Strings', 'Piano', 'Brass', 'Percussion', 'Woodwinds', 'Choir',
-  'General Music', 'Music Theory', 'Composition', 'Ensemble',
-];
-
-const INSTRUCTOR_OPTIONS = [
-  'Ms. Chen', 'Mr. Park', 'Ms. Rivera', 'Mr. Johnson', 'Ms. Davis', 'Mr. Lee',
-];
-
-const VENUE_OPTIONS = [
-  'Room A1', 'Room B2', 'Auditorium', 'Piano Lab', 'Music Hall', 'Choir Room', 'Virtual Studio',
-];
 
 const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
@@ -607,6 +595,8 @@ function EditTemplateModal({
   onClose,
   isSaving,
   venues,
+  subjectOptions = [],
+  instructorOptions = [],
 }: {
   template: Template;
   isNew: boolean;
@@ -614,6 +604,8 @@ function EditTemplateModal({
   onClose: () => void;
   isSaving?: boolean;
   venues?: { id: string; name: string }[];
+  subjectOptions?: string[];
+  instructorOptions?: string[];
 }) {
   const [local, setLocal] = useState<Template>({ ...template });
 
@@ -698,8 +690,8 @@ function EditTemplateModal({
               label="Subject"
               value={local.subjects?.[0] ?? ''}
               onChange={(v) => update('subjects', v ? [v] : [])}
-              options={SUBJECT_OPTIONS}
-              tooltip="Choose the music subject for this template"
+              options={subjectOptions}
+              tooltip="Choose the subject for this template"
             />
             <TimeSlotInput
               label="Time Slot"
@@ -710,7 +702,7 @@ function EditTemplateModal({
               label="Instructor"
               value={local.instructor ?? ''}
               onChange={(v) => update('instructor', v)}
-              options={INSTRUCTOR_OPTIONS}
+              options={instructorOptions}
               tooltip="Assign an instructor to this template"
             />
             <RotationToggle
@@ -772,11 +764,13 @@ function AutoFillModal({
   onClose,
   isFilling,
   templates,
+  subjectOptions = [],
 }: {
   onFill: (settings: AutoFillSettings) => void;
   onClose: () => void;
   isFilling: boolean;
   templates: Template[];
+  subjectOptions?: string[];
 }) {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('15:00');
@@ -1108,7 +1102,7 @@ function AutoFillModal({
               Prioritize Tags <span className="text-slate-400 font-normal">(optional)</span>
             </label>
             <div className="flex gap-1.5 flex-wrap">
-              {SUBJECT_OPTIONS.map((tag) => {
+              {subjectOptions.map((tag) => {
                 const active = priorityTags.includes(tag);
                 return (
                   <Tooltip key={tag} text={active ? `Remove priority for ${tag}` : `Prioritize ${tag}`}>
@@ -1696,9 +1690,37 @@ export default function TemplatesPage() {
     [],
   );
 
+  // ── Subject & Instructor options (fetched from API) ──
+  const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
+  const [instructorOptions, setInstructorOptions] = useState<string[]>([]);
+
   // ── Buffer time ──
   const [bufferEnabled, setBufferEnabled] = useState(false);
   const [bufferMinutes, setBufferMinutes] = useState(15);
+
+  // Fetch subjects (Skills tags) and instructors for dropdowns
+  useEffect(() => {
+    fetch('/api/tags?category=Skills')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.tags)) {
+          setSubjectOptions(data.tags.map((t: { name: string }) => t.name));
+        }
+      })
+      .catch(() => {});
+    fetch('/api/instructors?is_active=true')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.instructors)) {
+          setInstructorOptions(
+            data.instructors.map((i: { first_name: string; last_name: string }) =>
+              `${i.first_name} ${i.last_name}`.trim()
+            )
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Fetch templates from API ──
 
@@ -3350,6 +3372,8 @@ export default function TemplatesPage() {
           }}
           isSaving={isSavingTemplate}
           venues={venues}
+          subjectOptions={subjectOptions}
+          instructorOptions={instructorOptions}
         />
       )}
 
@@ -3363,6 +3387,7 @@ export default function TemplatesPage() {
           }}
           isFilling={isAutoFilling}
           templates={venueFilteredTemplates}
+          subjectOptions={subjectOptions}
         />
       )}
 

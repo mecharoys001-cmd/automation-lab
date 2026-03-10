@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'rea
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import {
-  Music,
+  Calendar as CalendarIcon,
   ChevronDown,
   Clock,
   User as UserIcon,
@@ -53,123 +53,13 @@ function to24h(time12: string): string {
   return `${String(h).padStart(2, '0')}:${m}`;
 }
 
-// ---------------------------------------------------------------------------
-// Mock session data — full SessionWithRelations objects through the real
-// sessionToCalendarEvent pipeline (same shape the API returns).
-// ---------------------------------------------------------------------------
-
-import type { SessionWithRelations, Venue, SessionTemplate } from '../../../../types/database';
-
-const MOCK_PROGRAM_ID = 'mock-program-001';
-
-const VENUES: Record<string, Venue> = {
-  musicRoom: {
-    id: 'v-music-room', name: 'Music Room A', space_type: 'classroom',
-    max_capacity: 30, availability_json: null, is_virtual: false, notes: null,
-    min_booking_duration_minutes: 30, max_booking_duration_minutes: 120,
-    buffer_minutes: 10, advance_booking_days: 30, cancellation_window_hours: 24,
-    address: '100 School Ave', amenities: ['piano', 'whiteboard'], cost_per_hour: null,
-    max_concurrent_bookings: 1, blackout_dates: null, description: null, is_wheelchair_accessible: true, created_at: '2025-09-01T00:00:00Z',
-  },
-  auditorium: {
-    id: 'v-auditorium', name: 'Auditorium', space_type: 'auditorium',
-    max_capacity: 200, availability_json: null, is_virtual: false, notes: null,
-    min_booking_duration_minutes: 60, max_booking_duration_minutes: 180,
-    buffer_minutes: 15, advance_booking_days: 60, cancellation_window_hours: 48,
-    address: '100 School Ave', amenities: ['stage', 'sound-system'], cost_per_hour: null,
-    max_concurrent_bookings: 1, blackout_dates: null, description: null, is_wheelchair_accessible: true, created_at: '2025-09-01T00:00:00Z',
-  },
-  practiceRoom: {
-    id: 'v-practice-room', name: 'Practice Room B', space_type: 'practice_room',
-    max_capacity: 10, availability_json: null, is_virtual: false, notes: null,
-    min_booking_duration_minutes: 15, max_booking_duration_minutes: 60,
-    buffer_minutes: 5, advance_booking_days: 14, cancellation_window_hours: 12,
-    address: '100 School Ave', amenities: ['piano'], cost_per_hour: null,
-    max_concurrent_bookings: 1, blackout_dates: null, description: null, is_wheelchair_accessible: false, created_at: '2025-09-01T00:00:00Z',
-  },
-};
-
-function tpl(id: string, skills: string[], grades: string[], day: number, start: string, end: string, dur: number): SessionTemplate {
-  return {
-    id, program_id: MOCK_PROGRAM_ID, template_type: 'fully_defined',
-    rotation_mode: 'consistent', instructor_id: null, day_of_week: day,
-    grade_groups: grades, start_time: start, end_time: end, duration_minutes: dur,
-    venue_id: null, required_skills: skills, sort_order: null, is_active: true,
-    week_cycle_length: null, week_in_cycle: null,
-    created_at: '2025-09-01T00:00:00Z',
-  };
-}
-
-const now = '2026-02-28T00:00:00Z';
-
-function sess(
-  id: string, date: string, start: string, end: string, dur: number,
-  grades: string[], status: 'draft' | 'published' | 'canceled' | 'completed',
-  venue: Venue, template: SessionTemplate,
-): SessionWithRelations {
-  return {
-    id, program_id: MOCK_PROGRAM_ID, template_id: template.id,
-    instructor_id: null, venue_id: venue.id, grade_groups: grades,
-    date, start_time: start, end_time: end, duration_minutes: dur,
-    status, is_makeup: false, replaces_session_id: null, needs_resolution: false,
-    notes: null, scheduling_notes: null,
-    created_at: now, updated_at: now,
-    venue, instructor: null, tags: [], template, program: null,
-  };
-}
-
-// -- Week of Feb 24 – Mar 2 (current week) --
-const MOCK_SESSIONS: SessionWithRelations[] = [
-  sess('1',  '2026-02-24', '09:00', '10:00', 60, ['1', '2'],    'published', VENUES.musicRoom,    tpl('t1',  ['violin'],     ['1','2'],   1, '09:00','10:00', 60)),
-  sess('2',  '2026-02-24', '10:30', '11:30', 60, ['5', '6'],    'published', VENUES.auditorium,   tpl('t2',  ['strings'],    ['5','6'],   1, '10:30','11:30', 60)),
-  sess('3',  '2026-02-25', '09:00', '10:00', 60, ['3', '4'],    'published', VENUES.musicRoom,    tpl('t3',  ['trumpet','brass'], ['3','4'], 2, '09:00','10:00', 60)),
-  sess('4',  '2026-02-25', '11:00', '12:00', 60, ['K', '1'],    'draft',     VENUES.practiceRoom, tpl('t4',  ['piano'],      ['K','1'],   2, '11:00','12:00', 60)),
-  sess('5',  '2026-02-26', '09:00', '10:00', 60, ['3', '4'],    'published', VENUES.musicRoom,    tpl('t5',  ['percussion'], ['3','4'],   3, '09:00','10:00', 60)),
-  sess('6',  '2026-02-26', '13:00', '14:00', 60, ['5', '6'],    'published', VENUES.auditorium,   tpl('t6',  ['choral'],     ['5','6'],   3, '13:00','14:00', 60)),
-  sess('7',  '2026-02-27', '09:00', '10:00', 60, ['2', '3'],    'published', VENUES.musicRoom,    tpl('t7',  ['cello','strings'], ['2','3'], 4, '09:00','10:00', 60)),
-  sess('8',  '2026-02-27', '10:00', '11:00', 60, ['5', '6'],    'published', VENUES.musicRoom,    tpl('t8',  ['brass'],      ['5','6'],   4, '10:00','11:00', 60)),
-  sess('9',  '2026-02-27', '14:00', '15:00', 60, ['4', '5'],    'draft',     VENUES.practiceRoom, tpl('t9',  ['piano'],      ['4','5'],   4, '14:00','15:00', 60)),
-  sess('10', '2026-02-28', '09:00', '10:00', 60, ['1', '2'],    'published', VENUES.musicRoom,    tpl('t10', ['percussion','drums'], ['1','2'], 5, '09:00','10:00', 60)),
-  sess('11', '2026-02-28', '11:00', '12:00', 60, ['3', '4'],    'published', VENUES.auditorium,   tpl('t11', ['choral','vocal'],    ['3','4'], 5, '11:00','12:00', 60)),
-  sess('12', '2026-02-28', '13:00', '14:00', 60, ['4', '5', '6'], 'published', VENUES.auditorium, tpl('t12', ['strings'],    ['4','5','6'], 5, '13:00','14:00', 60)),
-  sess('13', '2026-03-01', '10:00', '11:00', 60, ['K', '1'],    'draft',     VENUES.musicRoom,    tpl('t13', ['brass'],      ['K','1'],   6, '10:00','11:00', 60)),
-  sess('14', '2026-03-02', '10:00', '11:00', 60, ['1','2','3','4','5','6'], 'published', VENUES.auditorium, tpl('t14', ['choral'], ['1','2','3','4','5','6'], 0, '10:00','11:00', 60)),
-
-  // -- Earlier Feb (month view) --
-  sess('m1', '2026-02-02', '09:00', '10:00', 60, ['1', '2'],    'published', VENUES.musicRoom,    tpl('tm1', ['violin','strings'],  ['1','2'], 1, '09:00','10:00', 60)),
-  sess('m2', '2026-02-04', '10:00', '11:00', 60, ['3', '4'],    'published', VENUES.auditorium,   tpl('tm2', ['choral'],     ['3','4'],   3, '10:00','11:00', 60)),
-  sess('m3', '2026-02-09', '11:00', '12:00', 60, ['K', '1'],    'draft',     VENUES.practiceRoom, tpl('tm3', ['piano'],      ['K','1'],   1, '11:00','12:00', 60)),
-  sess('m4', '2026-02-11', '09:00', '10:00', 60, ['5', '6'],    'published', VENUES.musicRoom,    tpl('tm4', ['brass'],      ['5','6'],   3, '09:00','10:00', 60)),
-  sess('m5', '2026-02-16', '13:00', '14:00', 60, ['1', '2'],    'published', VENUES.musicRoom,    tpl('tm5', ['percussion'], ['1','2'],   1, '13:00','14:00', 60)),
-  sess('m6', '2026-02-18', '10:00', '11:00', 60, ['4', '5', '6'], 'published', VENUES.auditorium, tpl('tm6', ['strings'],    ['4','5','6'], 3, '10:00','11:00', 60)),
-  sess('m7', '2026-02-20', '14:00', '15:00', 60, ['5', '6'],    'published', VENUES.auditorium,   tpl('tm7', ['choral','vocal'], ['5','6'], 5, '14:00','15:00', 60)),
-
-  // -- Year view (past: Nov-Dec 2025, Jan 2026; future: Mar-Jun 2026) --
-  sess('y1',  '2025-11-03', '09:00', '10:00', 60, ['1','2','3','4','5','6'], 'completed', VENUES.auditorium, tpl('ty1',  ['strings','violin'], ['1','2','3','4','5','6'], 1, '09:00','10:00', 60)),
-  sess('y2',  '2025-11-10', '10:00', '11:00', 60, ['3', '4', '5', '6'],     'completed', VENUES.musicRoom,  tpl('ty2',  ['brass','trumpet'],  ['3','4','5','6'],         1, '10:00','11:00', 60)),
-  sess('y3',  '2025-11-17', '13:00', '14:00', 60, ['1','2','3','4','5','6'], 'completed', VENUES.auditorium, tpl('ty3',  ['choral'],    ['1','2','3','4','5','6'], 1, '13:00','14:00', 60)),
-  sess('y4',  '2025-12-01', '09:00', '10:00', 60, ['4', '5', '6'],          'completed', VENUES.auditorium, tpl('ty4',  ['strings'],   ['4','5','6'],             1, '09:00','10:00', 60)),
-  sess('y5',  '2025-12-10', '13:00', '14:00', 60, ['1','2','3','4','5','6'], 'completed', VENUES.auditorium, tpl('ty5',  ['choral'],    ['1','2','3','4','5','6'], 3, '13:00','14:00', 60)),
-  sess('y6',  '2025-12-18', '14:00', '15:00', 60, ['3', '4', '5'],          'completed', VENUES.musicRoom,  tpl('ty6',  ['percussion'],['3','4','5'],             4, '14:00','15:00', 60)),
-  sess('y7',  '2026-01-12', '09:00', '10:00', 60, ['1', '2', '3'],          'published', VENUES.musicRoom,  tpl('ty7',  ['percussion'],['1','2','3'],             1, '09:00','10:00', 60)),
-  sess('y8',  '2026-01-20', '14:00', '15:00', 60, ['3', '4', '5'],          'published', VENUES.practiceRoom, tpl('ty8', ['piano'],    ['3','4','5'],             2, '14:00','15:00', 60)),
-  sess('y9',  '2026-03-09', '10:00', '11:00', 60, ['2', '3', '4'],          'draft',     VENUES.musicRoom,  tpl('ty9',  ['strings'],   ['2','3','4'],             1, '10:00','11:00', 60)),
-  sess('y10', '2026-03-18', '11:00', '12:00', 60, ['5', '6'],               'draft',     VENUES.musicRoom,  tpl('ty10', ['brass'],     ['5','6'],                 3, '11:00','12:00', 60)),
-  sess('y11', '2026-04-06', '09:00', '10:00', 60, ['1','2','3','4','5','6'], 'draft',     VENUES.auditorium, tpl('ty11', ['choral'],    ['1','2','3','4','5','6'], 1, '09:00','10:00', 60)),
-  sess('y12', '2026-04-22', '10:00', '11:00', 60, ['4', '5', '6'],          'draft',     VENUES.practiceRoom, tpl('ty12',['piano'],    ['4','5','6'],             3, '10:00','11:00', 60)),
-  sess('y13', '2026-05-15', '10:00', '11:00', 60, ['1','2','3','4','5','6'], 'draft',     VENUES.auditorium, tpl('ty13', ['strings'],   ['1','2','3','4','5','6'], 5, '10:00','11:00', 60)),
-  sess('y14', '2026-05-22', '13:00', '14:00', 60, ['3', '4', '5', '6'],     'draft',     VENUES.musicRoom,  tpl('ty14', ['percussion'],['3','4','5','6'],         5, '13:00','14:00', 60)),
-  sess('y15', '2026-06-01', '09:00', '10:00', 60, ['4', '5', '6'],          'draft',     VENUES.practiceRoom, tpl('ty15',['piano'],    ['4','5','6'],             1, '09:00','10:00', 60)),
-  sess('y16', '2026-06-12', '14:00', '15:00', 60, ['5', '6'],               'draft',     VENUES.auditorium, tpl('ty16', ['brass'],     ['5','6'],                 5, '14:00','15:00', 60)),
-];
+import type { SessionWithRelations } from '../../../../types/database';
 
 // ---------------------------------------------------------------------------
 // Helpers — map generated sessions to CalendarEvent
 // ---------------------------------------------------------------------------
 
 const KNOWN_EVENT_TYPES = ['strings', 'brass', 'piano', 'percussion', 'choral', 'guitar', 'woodwind'] as const;
-
-const ALL_MOCK_EVENTS = MOCK_SESSIONS.map(sessionToCalendarEvent);
 
 // Upcoming events for the "Needs Assignment" sidebar
 /** Best-effort mapping from a template's required subjects to an EventType. */
@@ -211,7 +101,7 @@ function buildSessionTitle(session: any): string {
   if (instructorName) {
     return `${instructorName} Session${gradeSuffix}`;
   }
-  return `Music Session${gradeSuffix}`;
+  return `Session${gradeSuffix}`;
 }
 
 /** Map a raw generated session (with joins) to a CalendarEvent. */
@@ -515,51 +405,8 @@ function CalendarDashboard() {
 
   const searchParams = useSearchParams();
 
-  // Demo mode: URL param takes precedence, then localStorage.
-  // Always initialise as false to match SSR and avoid hydration mismatches.
-  const DEMO_STORAGE_KEY = 'symphonix-demo-mode';
-  const [useMockData, setUseMockData] = useState(false);
-
-  // Hydrate demo-mode state from URL param or localStorage after mount
-  useEffect(() => {
-    const urlDemo = searchParams.get('demo');
-    if (urlDemo === 'true') {
-      setUseMockData(true);
-      localStorage.setItem(DEMO_STORAGE_KEY, 'true');
-    } else if (urlDemo === 'false') {
-      setUseMockData(false);
-      localStorage.removeItem(DEMO_STORAGE_KEY);
-    } else {
-      // No URL param → restore from localStorage
-      const stored = localStorage.getItem(DEMO_STORAGE_KEY);
-      if (stored === 'true') {
-        setUseMockData(true);
-      }
-    }
-  }, [searchParams]);
-
-  const toggleDemoMode = useCallback(() => {
-    setUseMockData((prev) => {
-      const next = !prev;
-      if (next) {
-        localStorage.setItem(DEMO_STORAGE_KEY, 'true');
-      } else {
-        localStorage.removeItem(DEMO_STORAGE_KEY);
-      }
-      return next;
-    });
-  }, []);
-
   const { programs, selectedProgramId } = useProgram();
   const selectedProgram = programs.find((p) => p.id === selectedProgramId);
-
-  // Seed mock data in demo mode
-  useEffect(() => {
-    if (useMockData) {
-      setEvents(ALL_MOCK_EVENTS);
-      setDbVenues(Object.values(VENUES).map((v) => ({ id: v.id, name: v.name })));
-    }
-  }, [useMockData]);
 
   // Initialize filters from URL search params (e.g. ?tag=Percussion from People page)
   useEffect(() => {
@@ -842,7 +689,6 @@ function CalendarDashboard() {
   // Uses direct deps instead of memoized getFetchDateRange to prevent
   // callback-identity churn from triggering redundant fetches.
   const fetchSessions = useCallback(async (signal?: AbortSignal) => {
-    if (useMockData) return;
     if (!selectedProgramId) return;
 
     const fetchId = `fetch-${Date.now()}`;
@@ -906,7 +752,7 @@ function CalendarDashboard() {
       showToast('Failed to load sessions — check console for details', 'error');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProgramId, useMockData, currentView, selectedDate]);
+  }, [selectedProgramId, currentView, selectedDate]);
 
   // Fetch sessions from DB on page load and when program/view/date changes.
   // AbortController cancels stale in-flight requests so the last fetch wins.
@@ -922,10 +768,6 @@ function CalendarDashboard() {
 
   // Auto-generate draft schedule — first shows preview, then confirms
   const handleGenerateSchedule = useCallback(async () => {
-    if (useMockData) {
-      showToast('Switch to Live Mode to generate a real schedule.', 'info');
-      return;
-    }
     if (!selectedProgramId) {
       showToast('Select a program first.', 'error');
       return;
@@ -963,7 +805,7 @@ function CalendarDashboard() {
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedProgramId, selectedDate, useMockData]);
+  }, [selectedProgramId, selectedDate]);
 
   // Confirm generation after preview
   const handleConfirmGenerate = useCallback(async () => {
@@ -1095,7 +937,7 @@ function CalendarDashboard() {
         {/* Program Selector */}
         <Tooltip text="Switch active program">
           <button className="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-            <Music className="w-4 h-4 text-blue-500" />
+            <CalendarIcon className="w-4 h-4 text-blue-500" />
             <span className="text-sm font-semibold text-slate-900">
               {selectedProgram?.name ?? 'Fall 2026 Program'}
             </span>
@@ -1113,21 +955,6 @@ function CalendarDashboard() {
 
         {/* Spacer */}
         <div className="flex-1" />
-
-        {/* Demo Mode toggle */}
-        <Tooltip text={useMockData ? 'Click to exit demo mode' : 'Click to enter demo mode (mock data)'}>
-          <button
-            onClick={toggleDemoMode}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md cursor-pointer transition-colors ${
-              useMockData
-                ? 'text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100'
-                : 'text-slate-500 bg-slate-50 border border-slate-200 hover:bg-slate-100'
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${useMockData ? 'bg-amber-500' : 'bg-slate-400'}`} />
-            {useMockData ? 'Demo Mode' : 'Live Mode'}
-          </button>
-        </Tooltip>
 
         {/* Recently modified indicator (fades after 5s) */}
         {modifiedCount > 0 && (

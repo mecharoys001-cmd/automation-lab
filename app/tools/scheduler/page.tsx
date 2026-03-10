@@ -15,7 +15,7 @@ export default async function SymphonixSchedulerPage() {
         <div className="text-center space-y-6">
           <h1 className="text-4xl font-bold tracking-tight">Symphonix Scheduler</h1>
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Automated scheduling platform for educational music programs.
+            Automated scheduling platform for educational programs.
           </p>
           <div className="flex gap-4 justify-center">
             <Tooltip text="Submit your availability">
@@ -49,7 +49,7 @@ export default async function SymphonixSchedulerPage() {
       <div className="text-center space-y-6">
         <h1 className="text-4xl font-bold tracking-tight">Symphonix Scheduler</h1>
         <p className="text-muted-foreground text-lg max-w-md mx-auto">
-          Automated scheduling platform for educational music programs.
+          Automated scheduling platform for educational programs.
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
           {isAdmin && (

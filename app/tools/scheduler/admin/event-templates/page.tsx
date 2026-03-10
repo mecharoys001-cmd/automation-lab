@@ -48,10 +48,6 @@ const GRADE_OPTIONS = [
   '6th', '7th', '8th', '9th', '10th', '11th', '12th',
 ];
 
-const SKILL_OPTIONS = [
-  'Percussion', 'Strings', 'Brass', 'Choral', 'Piano', 'Guitar', 'Woodwind',
-];
-
 /* ── CSV Import config ─────────────────────────────────────── */
 
 const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [

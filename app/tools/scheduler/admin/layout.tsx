@@ -8,7 +8,7 @@ import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import {
-  Music,
+  CalendarDays,
   LayoutDashboard,
   FileText,
   GraduationCap,
@@ -44,7 +44,7 @@ function SidebarProgramSelector() {
   return (
     <div className="pb-6">
       <div className="flex items-center gap-2.5 mb-3">
-        <Music className="w-6 h-6 text-blue-400 flex-shrink-0" />
+        <CalendarDays className="w-6 h-6 text-blue-400 flex-shrink-0" />
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Symphonix
         </span>

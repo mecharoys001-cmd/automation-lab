@@ -3,7 +3,7 @@
  *
  * Dynamically generates visually distinct colors for ANY number of subjects
  * using golden-angle hue spacing in the OKLCH perceptual color space.
- * Known subjects get hand-tuned emoji icons; everything else gets 🎵.
+ * Known subjects get hand-tuned emoji icons; everything else gets a default.
  *
  * Every component that renders a subject/skill/tag should use:
  *   - getSubjectColor(name)  → full SubjectColor object

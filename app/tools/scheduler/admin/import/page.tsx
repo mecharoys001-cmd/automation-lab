@@ -42,15 +42,15 @@ export default function ImportPage() {
       { name: 'Multipurpose', emoji: '🔄', description: 'Flexible multi-use space', category: 'Space Types' },
     ],
     event_templates: [
-      { name: 'Grade K Music', description: 'Kindergarten music session', duration_minutes: 30, color: '#3B82F6' },
-      { name: 'Grade 1 Music', description: 'Grade 1 music session', duration_minutes: 30, color: '#10B981' },
-      { name: 'Grade 2 Music', description: 'Grade 2 music session', duration_minutes: 30, color: '#8B5CF6' },
-      { name: 'Grade 3 Music', description: 'Grade 3 music session', duration_minutes: 40, color: '#EC4899' },
-      { name: 'Grade 4 Music', description: 'Grade 4 music session', duration_minutes: 40, color: '#F59E0B' },
-      { name: 'Grade 5 Music', description: 'Grade 5 music session', duration_minutes: 45, color: '#EF4444' },
-      { name: 'Grade 6 Music', description: 'Grade 6 music session', duration_minutes: 45, color: '#14B8A6' },
-      { name: 'Grade 7 Music', description: 'Grade 7 music session', duration_minutes: 45, color: '#6366F1' },
-      { name: 'Grade 8 Music', description: 'Grade 8 music session', duration_minutes: 45, color: '#F97316' },
+      { name: 'Grade K', description: 'Kindergarten session', duration_minutes: 30, color: '#3B82F6' },
+      { name: 'Grade 1', description: 'Grade 1 session', duration_minutes: 30, color: '#10B981' },
+      { name: 'Grade 2', description: 'Grade 2 session', duration_minutes: 30, color: '#8B5CF6' },
+      { name: 'Grade 3', description: 'Grade 3 session', duration_minutes: 40, color: '#EC4899' },
+      { name: 'Grade 4', description: 'Grade 4 session', duration_minutes: 40, color: '#F59E0B' },
+      { name: 'Grade 5', description: 'Grade 5 session', duration_minutes: 45, color: '#EF4444' },
+      { name: 'Grade 6', description: 'Grade 6 session', duration_minutes: 45, color: '#14B8A6' },
+      { name: 'Grade 7', description: 'Grade 7 session', duration_minutes: 45, color: '#6366F1' },
+      { name: 'Grade 8', description: 'Grade 8 session', duration_minutes: 45, color: '#F97316' },
     ],
   };
 
@@ -115,7 +115,7 @@ export default function ImportPage() {
             <ul style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6, paddingLeft: 20 }}>
               <li><strong>8 Venues:</strong> Stage, Classroom, Google Meet, Grade 5 & 7 classrooms, Cafegymatorium, etc.</li>
               <li><strong>6 Tags:</strong> Lead TA's Away, TA Check-ins, Field Trip / Guest Artist, Showcase, Choral Sessions, Percussion Sessions</li>
-              <li><strong>9 Event Templates:</strong> Music sessions for grades K-8 with appropriate durations</li>
+              <li><strong>9 Event Templates:</strong> Sessions for grades K-8 with appropriate durations</li>
             </ul>
             <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>
               ⚠️ This will create new venues, tags, and event templates. Existing items with the same names will be skipped.

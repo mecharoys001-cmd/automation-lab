@@ -21,7 +21,7 @@ interface EmojiPickerProps {
 
 export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProps) {
   const [open, setOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<keyof typeof EMOJI_CATEGORIES>('music');
+  const [selectedCategory, setSelectedCategory] = useState<keyof typeof EMOJI_CATEGORIES>('symbols');
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside

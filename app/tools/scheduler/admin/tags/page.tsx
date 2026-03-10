@@ -58,7 +58,7 @@ const TAG_EMOJI_MAP: { patterns: string[]; emoji: string }[] = [
 ];
 
 const TAG_DESCRIPTIONS: Record<string, string> = {
-  percussion: 'Drum sets, timpani, and mallet instruments',
+  percussion: 'Drum sets, timpani, and mallet percussion',
   choral: 'Voice training and choir rehearsals',
   strings: 'Violin, viola, cello, and bass',
   brass: 'Trumpet, trombone, and horn sections',

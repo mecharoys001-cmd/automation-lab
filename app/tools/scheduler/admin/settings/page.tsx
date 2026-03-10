@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import {
-  Music,
+  CalendarDays,
   Users,
   Calendar,
   Clock,
@@ -444,7 +444,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
-              <Music className="w-[18px] h-[18px] text-blue-500" />
+              <CalendarDays className="w-[18px] h-[18px] text-blue-500" />
             </div>
             <div>
               <h2 className={sectionTitleClass}>Programs</h2>

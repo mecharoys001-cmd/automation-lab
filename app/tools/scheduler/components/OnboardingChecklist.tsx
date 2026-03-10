@@ -67,7 +67,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
         {
           id: 'program',
           title: 'Create your first program',
-          description: 'Set up a school year or session with start and end dates',
+          description: 'Set up a program with start and end dates',
           icon: Calendar,
           link: '/tools/scheduler/admin/settings',
           completed: hasPrograms,

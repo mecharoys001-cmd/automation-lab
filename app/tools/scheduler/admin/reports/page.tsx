@@ -434,7 +434,7 @@ function HoursByTagTab({
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              <Tooltip text="Music instruction category with associated emoji">
+              <Tooltip text="Subject category with associated emoji">
                 <span className="cursor-help">Tag</span>
               </Tooltip>
             </th>
@@ -667,7 +667,7 @@ export default function ReportsPage() {
 
   const TABS: { key: ReportTab; label: string; icon: typeof Clock; tooltip: string }[] = [
     { key: 'instructor-hours', label: 'Staff Hours', icon: Clock, tooltip: 'View hours and monthly breakdown per staff member' },
-    { key: 'hours-by-tag', label: 'Hours by Tag', icon: Tag, tooltip: 'View time distribution across instrument types and tags' },
+    { key: 'hours-by-tag', label: 'Hours by Tag', icon: Tag, tooltip: 'View time distribution across subjects and tags' },
   ];
 
   return (
