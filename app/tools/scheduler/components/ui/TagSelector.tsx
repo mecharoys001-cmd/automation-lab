@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Check, X, Loader2, Plus } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
@@ -38,6 +38,8 @@ export function TagSelector({
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
 
   // Inline "Add New Tag" state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -151,8 +153,16 @@ export function TagSelector({
 
       {/* Dropdown Trigger */}
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => !disabled && setShowDropdown(!showDropdown)}
+        onClick={() => {
+          if (disabled) return;
+          if (!showDropdown && triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+          }
+          setShowDropdown(!showDropdown);
+        }}
         disabled={disabled}
         className="w-full flex items-center justify-between text-left text-sm text-slate-500 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -172,7 +182,10 @@ export function TagSelector({
           />
           
           {/* Dropdown Menu */}
-          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+          <div
+            className="fixed z-[80] max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg"
+            style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+          >
             {allTags.length === 0 && !showAddForm ? (
               <div className="px-3 py-3 text-center">
                 <p className="text-sm text-slate-400 mb-2">
