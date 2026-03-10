@@ -64,9 +64,10 @@ export async function POST(request: NextRequest) {
       insertData.category = body.category.trim();
     }
 
+    // Upsert: if a tag with this name exists, update its category/emoji/description
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let { data, error } = await (supabase.from('tags') as any)
-      .insert(insertData)
+      .upsert(insertData, { onConflict: 'name', ignoreDuplicates: false })
       .select()
       .single();
 
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       const { description: _d, emoji: _e, category: _c, ...insertBasic } = insertData;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const retry = await (supabase.from('tags') as any)
-        .insert(insertBasic)
+        .upsert(insertBasic, { onConflict: 'name', ignoreDuplicates: false })
         .select()
         .single();
       data = retry.data;
@@ -85,9 +86,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (error) {
-      if (error.code === '23505') {
-        return NextResponse.json({ error: 'A tag with this name already exists' }, { status: 409 });
-      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

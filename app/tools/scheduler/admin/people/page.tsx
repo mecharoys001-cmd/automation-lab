@@ -43,7 +43,6 @@ const EQUIPMENT_OPTIONS = [
   { key: 'whiteboard', label: 'Whiteboard' },
 ];
 
-const ROOM_TYPES = ['Stage', 'Classroom', 'Auditorium', 'Outdoor'];
 
 /* Availability grid helpers (for modal) */
 const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
@@ -377,6 +376,20 @@ function VenueDetailModal({
 }) {
   const [editing, setEditing] = useState(false);
 
+  /* ── Space types from tags API ─── */
+  const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
+  useEffect(() => {
+    fetch('/api/tags')
+      .then((r) => r.json())
+      .then((d) => {
+        const types = (d.tags ?? [])
+          .filter((t: { category: string }) => t.category === 'Space Types')
+          .map((t: { name: string }) => t.name);
+        setSpaceTypes(types);
+      })
+      .catch(() => {});
+  }, []);
+
   /* ── Edit-mode state ─── */
   const [capacity, setCapacity] = useState<string>(
     venue.max_capacity != null ? String(venue.max_capacity) : ''
@@ -464,7 +477,7 @@ function VenueDetailModal({
           /* ── READ-ONLY VIEW ─── */
           <div className="divide-y divide-slate-200">
 
-            {/* Capacity & Room Type */}
+            {/* Capacity & Space Type */}
             <div className="flex items-center px-6 py-3 gap-6">
               <Tooltip text="Maximum capacity">
                 <div className="flex items-center gap-1.5">
@@ -478,7 +491,7 @@ function VenueDetailModal({
                 <div className="flex items-center gap-1.5">
                   <Home className="w-4 h-4 text-slate-400" />
                   <span className="text-[13px] text-slate-700">
-                    Room: <span className="font-medium">{venue.space_type || 'Not set'}</span>
+                    Space Type: <span className="font-medium">{venue.space_type || 'Not set'}</span>
                   </span>
                 </div>
               </Tooltip>
@@ -592,20 +605,24 @@ function VenueDetailModal({
               </div>
             </div>
 
-            {/* Room Type */}
+            {/* Space Type */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Room Type</label>
-              <Tooltip text="Select the type of space for this venue">
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
+              <Tooltip text="Select the space type for this venue">
                 <div className="relative">
                   <select
                     value={roomType}
                     onChange={(e) => setRoomType(e.target.value)}
                     className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors"
                   >
-                    <option value="">Select room type…</option>
-                    {ROOM_TYPES.map((t) => (
+                    <option value="">Select space type…</option>
+                    {spaceTypes.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
+                    {/* Show current value if not in fetched list */}
+                    {roomType && !spaceTypes.includes(roomType) && (
+                      <option key={roomType} value={roomType}>{roomType}</option>
+                    )}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                 </div>
