@@ -109,6 +109,46 @@ function validateVenueCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   return errors;
 }
 
+/* ── Instructor CSV Import config ─────────────────────────── */
+
+const INSTRUCTOR_CSV_COLUMNS: CsvColumnDef[] = [
+  { csvHeader: 'first_name', label: 'First Name', required: true },
+  { csvHeader: 'last_name', label: 'Last Name', required: true },
+  { csvHeader: 'email', label: 'Email' },
+  { csvHeader: 'phone', label: 'Phone' },
+  { csvHeader: 'skills', label: 'Skills' },
+  { csvHeader: 'availability_json', label: 'Availability JSON' },
+  { csvHeader: 'is_active', label: 'Is Active' },
+  { csvHeader: 'on_call', label: 'On Call' },
+  { csvHeader: 'notes', label: 'Notes' },
+];
+
+const INSTRUCTOR_CSV_EXAMPLE = `first_name,last_name,email,phone,skills,availability_json,is_active,on_call,notes
+Maria,Gonzalez,maria.gonzalez@example.com,555-0101,Piano;Voice;Music Theory,"{""monday"":[{""start"":""09:00"",""end"":""15:00""}],""wednesday"":[{""start"":""09:00"",""end"":""15:00""}]}",true,false,Bilingual instructor
+James,Chen,james.chen@example.com,555-0102,Guitar;Bass;Ukulele,"{""tuesday"":[{""start"":""10:00"",""end"":""18:00""}],""thursday"":[{""start"":""10:00"",""end"":""18:00""}],""friday"":[{""start"":""12:00"",""end"":""17:00""}]}",true,true,Available for weekend workshops
+Aisha,Williams,aisha.williams@example.com,555-0103,Violin;Viola;Orchestra,"{""monday"":[{""start"":""08:00"",""end"":""14:00""}],""tuesday"":[{""start"":""08:00"",""end"":""14:00""}],""wednesday"":[{""start"":""08:00"",""end"":""14:00""}]}",true,false,`;
+
+const isValidEmail = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
+function validateInstructorCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!row.first_name?.trim()) {
+    errors.push({ row: rowIndex, column: 'first_name', message: 'First name is required' });
+  }
+  if (!row.last_name?.trim()) {
+    errors.push({ row: rowIndex, column: 'last_name', message: 'Last name is required' });
+  }
+  if (row.email?.trim() && !isValidEmail(row.email)) {
+    errors.push({ row: rowIndex, column: 'email', message: 'Invalid email format' });
+  }
+  if (row.availability_json?.trim()) {
+    try { JSON.parse(row.availability_json); } catch {
+      errors.push({ row: rowIndex, column: 'availability_json', message: 'Invalid JSON' });
+    }
+  }
+  return errors;
+}
+
 /* ── Helpers ────────────────────────────────────────────────── */
 
 function getInitials(first: string, last: string): string {
@@ -1688,6 +1728,7 @@ export default function PeoplePage() {
   const [savingVenue, setSavingVenue] = useState(false);
   const [showCreateVenueModal, setShowCreateVenueModal] = useState(false);
   const [venueImportOpen, setVenueImportOpen] = useState(false);
+  const [instructorImportOpen, setInstructorImportOpen] = useState(false);
   const [creatingVenue, setCreatingVenue] = useState(false);
 
   /* ── Fetching ──────────────────────────────────────────── */
@@ -2032,6 +2073,14 @@ export default function PeoplePage() {
               </div>
             </Tooltip>
 
+            <Button
+              variant="ghost"
+              icon={<Upload className="w-4 h-4" />}
+              tooltip="Import staff from CSV"
+              onClick={() => setInstructorImportOpen(true)}
+            >
+              Import CSV
+            </Button>
             <Button
               variant="primary"
               icon={<Plus className="w-4 h-4" />}
@@ -2419,6 +2468,44 @@ export default function PeoplePage() {
           return result;
         }}
         exampleCsv={VENUE_CSV_EXAMPLE}
+      />
+
+      {/* ── Instructor CSV Import Dialog ──────────────────── */}
+      <CsvImportDialog
+        open={instructorImportOpen}
+        onClose={() => setInstructorImportOpen(false)}
+        title="Import Staff from CSV"
+        columns={INSTRUCTOR_CSV_COLUMNS}
+        validateRow={validateInstructorCsvRow}
+        onImport={async (csvRows: CsvRow[]) => {
+          const mapped = csvRows.map((r) => ({
+            first_name: r.first_name || '',
+            last_name: r.last_name || '',
+            email: r.email || '',
+            phone: r.phone || '',
+            skills: r.skills || '',
+            availability_json: r.availability_json || '',
+            is_active: r.is_active || '',
+            on_call: r.on_call || '',
+            notes: r.notes || '',
+          }));
+          const res = await fetch('/api/instructors/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: mapped }),
+          });
+          if (!res.ok) {
+            const { error } = await res.json();
+            throw new Error(error || 'Import failed');
+          }
+          const result = await res.json();
+          if (result.imported > 0) {
+            fetchInstructors();
+            setToast({ message: `${result.imported} staff member(s) imported`, type: 'success', id: Date.now() });
+          }
+          return result;
+        }}
+        exampleCsv={INSTRUCTOR_CSV_EXAMPLE}
       />
 
       {/* ── Toast notifications ───────────────────────────── */}

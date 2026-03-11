@@ -97,9 +97,9 @@ export function InstructorDetailModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-2xl shadow-xl">
+      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
         {/* ── Header ───────────────────────────────────────── */}
-        <div className="flex items-center h-14 px-6 gap-2.5">
+        <div className="flex items-center h-14 px-6 gap-2.5 shrink-0">
           <h2 className="text-[22px] font-bold text-slate-900">{data.name}</h2>
           <Tooltip text={data.isActive ? 'Active staff member' : 'Inactive staff member'}>
             <span
@@ -124,7 +124,10 @@ export function InstructorDetailModal({
           </Tooltip>
         </div>
 
-        <div className="h-px bg-slate-200" />
+        <div className="h-px bg-slate-200 shrink-0" />
+
+        {/* ── Scrollable body ──────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto min-h-0">
 
         {/* ── Contact Info (click-to-copy) ─────────────────── */}
         <div className="flex items-center px-6 py-3 gap-6">
@@ -239,10 +242,12 @@ export function InstructorDetailModal({
           )}
         </div>
 
-        <div className="h-px bg-slate-200" />
+        </div>
+
+        <div className="h-px bg-slate-200 shrink-0" />
 
         {/* ── Footer ───────────────────────────────────────── */}
-        <div className="flex items-center justify-between h-14 px-6">
+        <div className="flex items-center justify-between h-14 px-6 shrink-0">
           {onViewCalendar && (
             <Tooltip text="Jump to calendar filtered to this staff member">
               <button

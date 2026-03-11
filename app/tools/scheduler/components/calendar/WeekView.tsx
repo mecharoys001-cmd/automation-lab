@@ -349,13 +349,19 @@ function TemplateSidebar({
               const instructorName = template.instructor
                 ? `${template.instructor.first_name} ${template.instructor.last_name}`.trim()
                 : null;
+              const subjectColor = subject ? getSubjectColor(subject) : null;
               return (
                 <div
                   key={template.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, template)}
                   onClick={() => onTemplateClick(template)}
-                  className="flex items-start gap-2 px-2.5 py-2 rounded-lg border border-slate-100 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 cursor-grab active:cursor-grabbing transition-colors group"
+                  className="flex items-start gap-2 px-2.5 py-2 rounded-lg border cursor-grab active:cursor-grabbing transition-colors group hover:shadow-sm"
+                  style={{
+                    backgroundColor: subjectColor ? `${subjectColor.accent}15` : undefined,
+                    borderColor: subjectColor ? `${subjectColor.accent}40` : undefined,
+                    borderLeft: subjectColor ? `3px solid ${subjectColor.accent}` : undefined,
+                  }}
                 >
                   <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0 group-hover:text-blue-400" />
                   <div className="min-w-0 flex-1">

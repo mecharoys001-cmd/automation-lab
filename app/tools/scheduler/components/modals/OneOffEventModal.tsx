@@ -253,9 +253,9 @@ export function OneOffEventModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-[70] w-[520px] max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-2xl shadow-[0_8px_32px_#00000033]">
+      <div className="relative z-[70] w-[520px] max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50">
               <Plus className="w-5 h-5 text-blue-500" />
@@ -276,10 +276,10 @@ export function OneOffEventModal({
         </div>
 
         {/* Divider */}
-        <div className="mx-6 my-3 border-t border-slate-100" />
+        <div className="mx-6 my-3 border-t border-slate-100 shrink-0" />
 
         {/* Form body */}
-        <div className="px-6 pb-4 space-y-4">
+        <div className="px-6 pb-4 space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Event Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -543,10 +543,10 @@ export function OneOffEventModal({
         </div>
 
         {/* Divider */}
-        <div className="mx-6 my-1 border-t border-slate-100" />
+        <div className="mx-6 my-1 border-t border-slate-100 shrink-0" />
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-3">
+        <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-3 shrink-0">
           <Tooltip text="Cancel and close">
             <button
               onClick={onClose}

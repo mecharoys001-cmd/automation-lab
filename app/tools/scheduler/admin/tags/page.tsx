@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { EmojiPicker } from '../../components/ui/EmojiPicker';
+import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
+import type { CsvRow } from '@/lib/csvDedup';
 
 // ── Toast Notification ───────────────────────────────────────
 
@@ -69,6 +71,37 @@ const TAG_DESCRIPTIONS: Record<string, string> = {
   showcase: 'Performance and recital events',
 };
 
+/* ── Tag CSV Import config ─────────────────────────────────── */
+
+const TAG_CSV_COLUMNS: CsvColumnDef[] = [
+  { csvHeader: 'name', label: 'Name', required: true },
+  { csvHeader: 'color', label: 'Color (hex)' },
+  { csvHeader: 'description', label: 'Description' },
+  { csvHeader: 'category', label: 'Category' },
+  { csvHeader: 'emoji', label: 'Emoji' },
+];
+
+const TAG_CSV_EXAMPLE = `name,color,description,category,emoji
+Piano,#3B82F6,Piano lessons and keyboard practice,Subjects,🎹
+Strings,#10B981,Violin viola cello and bass,Subjects,🎻
+Showcase,#F59E0B,Performance and recital events,Event Types,🌟
+Grade 3-5,#8B5CF6,Upper elementary students,Grade Levels,📚
+Field Trip,#EC4899,Off-site musical excursions,Event Types,🎭
+Percussion,#EF4444,Drum sets timpani and mallet percussion,Subjects,🥁`;
+
+const isValidHexColor = (v: string): boolean => /^#[0-9A-Fa-f]{6}$/.test(v.trim());
+
+function validateTagCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!row.name?.trim()) {
+    errors.push({ row: rowIndex, column: 'name', message: 'Name is required' });
+  }
+  if (row.color?.trim() && !isValidHexColor(row.color)) {
+    errors.push({ row: rowIndex, column: 'color', message: 'Must be hex format #RRGGBB' });
+  }
+  return errors;
+}
+
 function getEmojiForTag(name: string): string {
   const lower = name.toLowerCase();
   for (const entry of TAG_EMOJI_MAP) {
@@ -122,6 +155,9 @@ export default function TagsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; sessionCount: number } | null>(null);
+
+  // CSV Import
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   // Install defaults
   const [installDefaultsLoading, setInstallDefaultsLoading] = useState(false);
@@ -550,16 +586,25 @@ export default function TagsPage() {
               Organize sessions with categorical tags for filtering and reporting
             </p>
           </div>
-          {spaceTypeCount < 7 && (
+          <div className="flex items-center gap-2">
             <Button
               variant="secondary"
-              onClick={installDefaults}
-              disabled={installDefaultsLoading}
-              icon={installDefaultsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              onClick={() => setCsvImportOpen(true)}
+              icon={<Upload className="w-4 h-4" />}
             >
-              {installDefaultsLoading ? 'Installing...' : 'Install Space Type Defaults'}
+              Import CSV
             </Button>
-          )}
+            {spaceTypeCount < 7 && (
+              <Button
+                variant="secondary"
+                onClick={installDefaults}
+                disabled={installDefaultsLoading}
+                icon={installDefaultsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              >
+                {installDefaultsLoading ? 'Installing...' : 'Install Space Type Defaults'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -851,6 +896,40 @@ export default function TagsPage() {
           )}
         </div>
       </div>
+
+      {/* ── Tag CSV Import Dialog ───────────────────────────── */}
+      <CsvImportDialog
+        open={csvImportOpen}
+        onClose={() => setCsvImportOpen(false)}
+        title="Import Tags from CSV"
+        columns={TAG_CSV_COLUMNS}
+        validateRow={validateTagCsvRow}
+        onImport={async (csvRows: CsvRow[]) => {
+          const mapped = csvRows.map((r) => ({
+            name: r.name || '',
+            color: r.color || '',
+            description: r.description || '',
+            category: r.category || '',
+            emoji: r.emoji || '',
+          }));
+          const res = await fetch('/api/tags/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: mapped }),
+          });
+          if (!res.ok) {
+            const { error } = await res.json();
+            throw new Error(error || 'Import failed');
+          }
+          const result = await res.json();
+          if (result.imported > 0) {
+            fetchTags();
+            showToast(`${result.imported} tag(s) imported`, 'success');
+          }
+          return result;
+        }}
+        exampleCsv={TAG_CSV_EXAMPLE}
+      />
     </div>
   );
 }
