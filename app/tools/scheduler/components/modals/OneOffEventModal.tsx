@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Loader2, Plus } from 'lucide-react';
+import { X, Loader2, Plus, CalendarPlus } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
 // ---------------------------------------------------------------------------
@@ -257,12 +257,24 @@ export function OneOffEventModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50">
-              <Plus className="w-5 h-5 text-blue-500" />
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${initialTemplate ? 'bg-emerald-50' : 'bg-blue-50'}`}>
+              {initialTemplate ? (
+                <CalendarPlus className="w-5 h-5 text-emerald-500" />
+              ) : (
+                <Plus className="w-5 h-5 text-blue-500" />
+              )}
             </div>
             <div>
-              <h3 className="text-[15px] font-semibold text-slate-900">Create One-Off Event</h3>
-              <p className="text-[12px] text-slate-500">Assemblies, guest performances, make-up classes</p>
+              <h3 className="text-[15px] font-semibold text-slate-900">
+                {initialTemplate ? 'Schedule Event' : 'Create One-Off Event'}
+              </h3>
+              {initialTemplate ? (
+                <p className="text-[12px] text-slate-500">
+                  {initialTemplate.name || initialTemplate.required_skills?.[0] || 'Event'} — {initialTemplate.duration_minutes ?? 45}m
+                </p>
+              ) : (
+                <p className="text-[12px] text-slate-500">Assemblies, guest performances, make-up classes</p>
+              )}
             </div>
           </div>
           <Tooltip text="Close">
