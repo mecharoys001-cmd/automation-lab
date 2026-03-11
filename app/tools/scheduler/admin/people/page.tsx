@@ -420,6 +420,7 @@ function VenueDetailModal({
     venue.max_capacity != null ? String(venue.max_capacity) : ''
   );
   const [roomType, setRoomType] = useState(venue.space_type || '');
+  const [venueSubjects, setVenueSubjects] = useState<string[]>(venue.subjects || []);
   const [accessible, setAccessible] = useState(
     venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible')
   );
@@ -444,6 +445,7 @@ function VenueDetailModal({
       buffer_minutes: bufferMinutes ? Number(bufferMinutes) : null,
       availability_json: editAvailability,
       notes: notes.trim() || null,
+      subjects: venueSubjects.length > 0 ? venueSubjects : null,
     });
   };
 
@@ -452,6 +454,7 @@ function VenueDetailModal({
     setEditName(venue.name || '');
     setCapacity(venue.max_capacity != null ? String(venue.max_capacity) : '');
     setRoomType(venue.space_type || '');
+    setVenueSubjects(venue.subjects || []);
     setAccessible(venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible'));
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setEditAvailability(venue.availability_json ?? null);
@@ -518,6 +521,18 @@ function VenueDetailModal({
                 </div>
               </Tooltip>
             </div>
+
+            {/* Subjects */}
+            {venue.subjects && venue.subjects.length > 0 && (
+              <div className="flex items-center flex-wrap px-6 py-3 gap-1.5">
+                <span className="text-[13px] text-slate-500 mr-1">Subjects:</span>
+                {venue.subjects.map((s) => (
+                  <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Accessibility */}
             <div className="flex items-center px-6 py-3 gap-1.5">
@@ -611,6 +626,22 @@ function VenueDetailModal({
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                 </div>
               </Tooltip>
+            </div>
+
+            {/* Subjects (Optional) */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
+                <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
+                  <AlertTriangle className="w-3 h-3 text-slate-400" />
+                </Tooltip>
+              </div>
+              <TagSelector
+                category="Subjects"
+                value={venueSubjects}
+                onChange={setVenueSubjects}
+                placeholder="All subjects (no restriction)"
+              />
             </div>
 
             {/* Accessibility */}
@@ -1247,6 +1278,7 @@ interface VenueFormData {
   buffer_minutes: string;
   availability_json: AvailabilityJson | null;
   notes: string;
+  subjects: string[];
 }
 
 const EMPTY_VENUE_FORM: VenueFormData = {
@@ -1258,6 +1290,7 @@ const EMPTY_VENUE_FORM: VenueFormData = {
   buffer_minutes: '',
   availability_json: null,
   notes: '',
+  subjects: [],
 };
 
 function VenueCreateModal({
@@ -1429,6 +1462,22 @@ function VenueCreateModal({
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
+          </div>
+
+          {/* Subjects (Optional) */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
+              <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
+                <AlertTriangle className="w-3 h-3 text-slate-400" />
+              </Tooltip>
+            </div>
+            <TagSelector
+              category="Subjects"
+              value={form.subjects}
+              onChange={(val) => setField('subjects', val as unknown as VenueFormData['subjects'])}
+              placeholder="All subjects (no restriction)"
+            />
           </div>
 
           {/* Max Capacity */}
@@ -1789,6 +1838,7 @@ export default function PeoplePage() {
         buffer_minutes: data.buffer_minutes ? Number(data.buffer_minutes) : null,
         availability_json: data.availability_json,
         notes: data.notes.trim() || null,
+        subjects: data.subjects.length > 0 ? data.subjects : null,
       };
       const res = await fetch('/api/venues', {
         method: 'POST',
@@ -2153,6 +2203,17 @@ export default function PeoplePage() {
                       <p className="text-sm text-slate-400">{venue.space_type}</p>
                     </div>
                   </div>
+
+                  {/* Subjects */}
+                  {venue.subjects && venue.subjects.length > 0 && (
+                    <div className="flex items-center flex-wrap gap-1">
+                      {venue.subjects.map((s) => (
+                        <span key={s} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Capacity */}
                   <Tooltip text={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>

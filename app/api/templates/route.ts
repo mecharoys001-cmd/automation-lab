@@ -94,6 +94,37 @@ export async function POST(request: NextRequest) {
     if (!body.template_type) body.template_type = 'fully_defined';
     if (!body.rotation_mode) body.rotation_mode = 'consistent';
 
+    // Validate scheduling mode fields
+    const mode = body.scheduling_mode ?? 'ongoing';
+    if (mode === 'date_range') {
+      if (!body.starts_on || !body.ends_on) {
+        return NextResponse.json(
+          { error: 'Date Range mode requires both a start and end date' },
+          { status: 400 }
+        );
+      }
+      if (body.starts_on > body.ends_on) {
+        return NextResponse.json(
+          { error: 'Start date must be before end date' },
+          { status: 400 }
+        );
+      }
+    } else if (mode === 'duration') {
+      if (!body.starts_on || !body.duration_weeks || body.duration_weeks < 1) {
+        return NextResponse.json(
+          { error: 'Duration mode requires a start date and number of weeks' },
+          { status: 400 }
+        );
+      }
+    } else if (mode === 'session_count') {
+      if (!body.starts_on || !body.session_count || body.session_count < 1) {
+        return NextResponse.json(
+          { error: 'Session Count mode requires a start date and number of sessions' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Validate instructor has required skills for this template's subject
     if (body.instructor_id && body.required_skills?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1793,7 +1793,7 @@ export default function TemplatesPage() {
   // ── Subject & Instructor options (fetched from API) ──
   const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
   const [instructorData, setInstructorData] = useState<{ id: string; first_name: string; last_name: string; skills: string[] | null; availability_json: Record<string, { start: string; end: string }[]> | null; is_active: boolean }[]>([]);
-  const [venueAvailData, setVenueAvailData] = useState<{ id: string; name: string; availability_json: Record<string, { start: string; end: string }[]> | null; max_concurrent_bookings: number | null; buffer_minutes: number | null }[]>([]);
+  const [venueAvailData, setVenueAvailData] = useState<{ id: string; name: string; availability_json: Record<string, { start: string; end: string }[]> | null; max_concurrent_bookings: number | null; buffer_minutes: number | null; subjects?: string[] | null }[]>([]);
 
   // ── Drop zone highlighting ──
   const [validDropCells, setValidDropCells] = useState<Set<string> | null>(null);
@@ -1913,6 +1913,7 @@ export default function TemplatesPage() {
         availability_json: v.availability_json ?? null,
         max_concurrent_bookings: v.max_concurrent_bookings ?? null,
         buffer_minutes: v.buffer_minutes ?? null,
+        subjects: v.subjects ?? null,
       })));
     } catch {
       // Non-critical
@@ -2125,6 +2126,7 @@ export default function TemplatesPage() {
       availability_json: Record<string, { start: string; end: string }[]> | null;
       max_concurrent_bookings: number | null;
       buffer_minutes: number | null;
+      subjects?: string[] | null;
     }
     let allVenueData: VenueData[] = [];
     try {
@@ -2284,6 +2286,14 @@ export default function TemplatesPage() {
       const qualifiedInstructors = getQualifiedInstructors(template);
 
       for (const venueId of candidateVenues) {
+        // Subject restriction: skip venue if its subjects don't overlap with template's
+        const venueData = allVenueData.find(v => v.id === venueId);
+        const vSubjects = venueData?.subjects;
+        if (vSubjects && vSubjects.length > 0) {
+          const tSubjects = template.subjects ?? [];
+          if (tSubjects.length === 0 || !tSubjects.some(s => vSubjects.includes(s))) continue;
+        }
+
         for (let t = range.start; t + dur <= range.end; t += 0.25) {
           if (overlapsLunchBlock(t, dur)) continue;
           if (hasVenueConflict(venueId, dayIdx, weekIdx, t, t + dur)) continue;
@@ -2365,6 +2375,14 @@ export default function TemplatesPage() {
             const candidateVenues = t.venueId ? [t.venueId] : venues.map(v => v.id);
 
             for (const venueId of candidateVenues) {
+              // Subject restriction: skip venue if subjects don't overlap
+              const vd = allVenueData.find(v => v.id === venueId);
+              const vSubs = vd?.subjects;
+              if (vSubs && vSubs.length > 0) {
+                const tSubs = t.subjects ?? [];
+                if (tSubs.length === 0 || !tSubs.some(s => vSubs.includes(s))) continue;
+              }
+
               if (!overlapsLunchBlock(fixedStart, dur) &&
                   !hasVenueConflict(venueId, dayIndex, weekIdx, fixedStart, fixedStart + dur) &&
                   isVenueAvailable(venueId, dayIndex, fixedStart, fixedStart + dur) &&
@@ -2586,16 +2604,25 @@ export default function TemplatesPage() {
           // Check instructor
           if (!checkInstructorOk(dayIdx, startH, endH, weekIdx)) continue;
 
+          // Helper: check venue subject restriction
+          const venueSubjectOk = (vid: string): boolean => {
+            const vd = venueAvailData.find(v => v.id === vid);
+            const vSubs = vd?.subjects;
+            if (!vSubs || vSubs.length === 0) return true; // no restriction
+            const tSubs = template.subjects ?? [];
+            return tSubs.length > 0 && tSubs.some(s => vSubs.includes(s));
+          };
+
           // Check venues
           if (template.venueId) {
             // Template has assigned venue — only valid in that lane
-            if (checkVenueOk(template.venueId, dayIdx, startH, endH, weekIdx)) {
+            if (venueSubjectOk(template.venueId) && checkVenueOk(template.venueId, dayIdx, startH, endH, weekIdx)) {
               valid.add(`${dayIdx}-${weekIdx}-${template.venueId}-${startH}`);
             }
           } else {
             // No venue assigned — check each venue lane
             for (const vid of venuesToCheck) {
-              if (checkVenueOk(vid, dayIdx, startH, endH, weekIdx)) {
+              if (venueSubjectOk(vid) && checkVenueOk(vid, dayIdx, startH, endH, weekIdx)) {
                 valid.add(`${dayIdx}-${weekIdx}-${vid}-${startH}`);
               }
             }

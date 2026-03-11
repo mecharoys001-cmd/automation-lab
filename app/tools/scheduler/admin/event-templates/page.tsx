@@ -13,7 +13,7 @@ import { TemplateList } from '../../components/templates/TemplateList';
 import type { TemplateListItem } from '../../components/templates/TemplateList';
 import { useProgram } from '../ProgramContext';
 import type {
-  SessionTemplate, Instructor, Venue,
+  SessionTemplate, Instructor, Venue, SchedulingMode,
 } from '@/types/database';
 import { skillsMatch } from '@/lib/scheduler/utils';
 
@@ -112,6 +112,12 @@ interface TemplateForm {
   week_in_cycle: number | null;
   additional_tags: string[];
   is_active: boolean;
+  scheduling_mode: SchedulingMode;
+  starts_on: string;
+  ends_on: string;
+  duration_weeks: number | null;
+  session_count: number | null;
+  within_weeks: number | null;
 }
 
 const EMPTY_FORM: TemplateForm = {
@@ -126,6 +132,12 @@ const EMPTY_FORM: TemplateForm = {
   week_in_cycle: null,
   additional_tags: [],
   is_active: true,
+  scheduling_mode: 'ongoing',
+  starts_on: '',
+  ends_on: '',
+  duration_weeks: null,
+  session_count: null,
+  within_weeks: null,
 };
 
 const DURATION_PRESETS = [30, 45, 60, 90];
@@ -224,6 +236,12 @@ export default function EventTemplatesPage() {
       week_in_cycle: t.week_in_cycle,
       additional_tags: t.additional_tags ?? [],
       is_active: t.is_active,
+      scheduling_mode: t.scheduling_mode ?? 'ongoing',
+      starts_on: t.starts_on ?? '',
+      ends_on: t.ends_on ?? '',
+      duration_weeks: t.duration_weeks,
+      session_count: t.session_count,
+      within_weeks: t.within_weeks,
     });
     setEditingId(t.id);
     setShowForm(true);
@@ -287,6 +305,12 @@ export default function EventTemplatesPage() {
         is_active: form.is_active,
         week_cycle_length: form.week_cycle_length,
         week_in_cycle: form.week_in_cycle,
+        scheduling_mode: form.scheduling_mode,
+        starts_on: form.starts_on || null,
+        ends_on: form.ends_on || null,
+        duration_weeks: form.duration_weeks,
+        session_count: form.session_count,
+        within_weeks: form.within_weeks,
       };
 
       const url = editingId ? `/api/templates/${editingId}` : '/api/templates';
@@ -579,8 +603,163 @@ export default function EventTemplatesPage() {
               </div>
             </FormField>
 
-            {/* 6. Duration */}
-            <FormField label="Duration">
+            {/* 6. Scheduling Mode */}
+            <FormField label="Scheduling Mode" hint="When sessions are generated">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Ongoing */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="scheduling_mode"
+                    value="ongoing"
+                    checked={form.scheduling_mode === 'ongoing'}
+                    onChange={() => updateForm({ scheduling_mode: 'ongoing' })}
+                    style={{ marginTop: 3, accentColor: '#3B82F6' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Ongoing</span>
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Runs for the entire program year</div>
+                  </div>
+                </label>
+
+                {/* Date Range */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="scheduling_mode"
+                    value="date_range"
+                    checked={form.scheduling_mode === 'date_range'}
+                    onChange={() => updateForm({ scheduling_mode: 'date_range' })}
+                    style={{ marginTop: 3, accentColor: '#3B82F6' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Date Range</span>
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Runs between specific start and end dates</div>
+                    {form.scheduling_mode === 'date_range' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                        <div>
+                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>From</label>
+                          <input
+                            type="date"
+                            value={form.starts_on}
+                            onChange={(e) => updateForm({ starts_on: e.target.value })}
+                            style={inputStyle}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Until</label>
+                          <input
+                            type="date"
+                            value={form.ends_on}
+                            onChange={(e) => updateForm({ ends_on: e.target.value })}
+                            style={inputStyle}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </label>
+
+                {/* Duration */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="scheduling_mode"
+                    value="duration"
+                    checked={form.scheduling_mode === 'duration'}
+                    onChange={() => updateForm({ scheduling_mode: 'duration' })}
+                    style={{ marginTop: 3, accentColor: '#3B82F6' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Duration</span>
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Starts on a date and runs for a set number of weeks</div>
+                    {form.scheduling_mode === 'duration' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                        <div>
+                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Starts</label>
+                          <input
+                            type="date"
+                            value={form.starts_on}
+                            onChange={(e) => updateForm({ starts_on: e.target.value })}
+                            style={inputStyle}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Weeks</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={52}
+                            value={form.duration_weeks ?? ''}
+                            onChange={(e) => updateForm({ duration_weeks: e.target.value ? Number(e.target.value) : null })}
+                            placeholder="e.g. 12"
+                            style={inputStyle}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </label>
+
+                {/* Session Count */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="scheduling_mode"
+                    value="session_count"
+                    checked={form.scheduling_mode === 'session_count'}
+                    onChange={() => updateForm({ scheduling_mode: 'session_count' })}
+                    style={{ marginTop: 3, accentColor: '#3B82F6' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Session Count</span>
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Create a fixed number of sessions, optionally within a time window</div>
+                    {form.scheduling_mode === 'session_count' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                        <div>
+                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Starts</label>
+                          <input
+                            type="date"
+                            value={form.starts_on}
+                            onChange={(e) => updateForm({ starts_on: e.target.value })}
+                            style={inputStyle}
+                          />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <div>
+                            <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Number of Sessions</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={200}
+                              value={form.session_count ?? ''}
+                              onChange={(e) => updateForm({ session_count: e.target.value ? Number(e.target.value) : null })}
+                              placeholder="e.g. 10"
+                              style={inputStyle}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Within X Weeks (optional)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={52}
+                              value={form.within_weeks ?? ''}
+                              onChange={(e) => updateForm({ within_weeks: e.target.value ? Number(e.target.value) : null })}
+                              placeholder="No limit"
+                              style={inputStyle}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </FormField>
+
+            {/* 7. Session Duration */}
+            <FormField label="Session Duration">
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                 {DURATION_PRESETS.map((mins) => {
                   const selected = !form.duration_custom && form.duration_minutes === mins;

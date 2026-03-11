@@ -25,6 +25,7 @@ import type {
   SchedulerInput,
   SchedulerResult,
   SchedulerData,
+  ScheduleWarning,
   DraftSession,
   TemplateStats,
   SkippedDate,
@@ -152,6 +153,64 @@ function findBlockingSession(
 }
 
 // ============================================================
+// Scheduling mode helpers
+// ============================================================
+
+/**
+ * Computes the effective date range and optional session cap for a template
+ * based on its scheduling_mode. Returns the narrowed start/end dates and
+ * an optional maxSessions limit.
+ */
+function getTemplateDateRange(
+  template: SessionTemplate,
+  programStart: string,
+  programEnd: string,
+): { start: string; end: string; maxSessions?: number } {
+  const mode = template.scheduling_mode ?? 'ongoing';
+
+  switch (mode) {
+    case 'date_range': {
+      const start = template.starts_on && template.starts_on >= programStart
+        ? template.starts_on
+        : programStart;
+      const end = template.ends_on && template.ends_on <= programEnd
+        ? template.ends_on
+        : programEnd;
+      return { start, end };
+    }
+
+    case 'duration': {
+      const start = template.starts_on && template.starts_on >= programStart
+        ? template.starts_on
+        : programStart;
+      const startDate = parseDate(start);
+      startDate.setDate(startDate.getDate() + (template.duration_weeks ?? 0) * 7);
+      const computed = formatDate(startDate);
+      const end = computed <= programEnd ? computed : programEnd;
+      return { start, end };
+    }
+
+    case 'session_count': {
+      const start = template.starts_on && template.starts_on >= programStart
+        ? template.starts_on
+        : programStart;
+      let end = programEnd;
+      if (template.within_weeks) {
+        const startDate = parseDate(start);
+        startDate.setDate(startDate.getDate() + template.within_weeks * 7);
+        const computed = formatDate(startDate);
+        end = computed <= programEnd ? computed : programEnd;
+      }
+      return { start, end, maxSessions: template.session_count ?? undefined };
+    }
+
+    case 'ongoing':
+    default:
+      return { start: programStart, end: programEnd };
+  }
+}
+
+// ============================================================
 // Monte Carlo attempt types & helper
 // ============================================================
 
@@ -255,6 +314,15 @@ function runSingleAttempt(
     templatesByDay.set(effectiveDay, group);
   }
 
+  // Pre-compute per-template date ranges and session limits
+  const templateDateRanges = new Map<string, { start: string; end: string; maxSessions?: number }>();
+  const templateSessionsGenerated = new Map<string, number>();
+  for (const tmpl of validTemplates) {
+    const range = getTemplateDateRange(tmpl, rangeStartDate, rangeEndDate);
+    templateDateRanges.set(tmpl.id, range);
+    templateSessionsGenerated.set(tmpl.id, 0);
+  }
+
   for (const [dayOfWeek, dayTemplates] of templatesByDay) {
     const dates = datesForDayOfWeek(rangeStartDate, rangeEndDate, dayOfWeek);
 
@@ -341,6 +409,21 @@ function runSingleAttempt(
           });
         }
         const stats = templateStats.get(tmpl.id)!;
+
+        // --- Scheduling mode: date range filter ---
+        const tmplRange = templateDateRanges.get(tmpl.id);
+        if (tmplRange) {
+          if (targetDate < tmplRange.start || targetDate > tmplRange.end) {
+            continue; // Outside this template's effective date range
+          }
+          // Session count limit check
+          if (tmplRange.maxSessions != null) {
+            const generated = templateSessionsGenerated.get(tmpl.id) ?? 0;
+            if (generated >= tmplRange.maxSessions) {
+              continue; // Already hit session count limit
+            }
+          }
+        }
 
         // --- Multi-week cycle check ---
         if (
@@ -551,6 +634,9 @@ function runSingleAttempt(
 
         generatedSessions.push(draft);
         stats.sessions_generated++;
+
+        // Track for session_count mode limits
+        templateSessionsGenerated.set(tmpl.id, (templateSessionsGenerated.get(tmpl.id) ?? 0) + 1);
 
         if (schedulingNotes) {
           sessionsWithWarnings++;
@@ -842,6 +928,28 @@ export async function runScheduler(
     .filter(Boolean)
     .join(' ');
 
+  // ----------------------------------------------------------
+  // 6. Generate scheduling mode warnings
+  // ----------------------------------------------------------
+  const scheduleWarnings: ScheduleWarning[] = [];
+  for (const tmpl of validTemplates) {
+    const mode = tmpl.scheduling_mode ?? 'ongoing';
+    if (mode === 'session_count' && tmpl.session_count) {
+      const stats = templateStats.get(tmpl.id);
+      const created = stats?.sessions_generated ?? 0;
+      if (created < tmpl.session_count) {
+        const name = tmpl.name || (tmpl.required_skills ?? []).join(', ') || 'Untitled';
+        scheduleWarnings.push({
+          templateId: tmpl.id,
+          templateName: name,
+          type: 'session_count_not_met',
+          message: `Only ${created} of ${tmpl.session_count} requested sessions could be created${tmpl.within_weeks ? ` within the ${tmpl.within_weeks}-week window` : ''}. Consider extending the time window or removing blackout days.`,
+          details: { requested: tmpl.session_count, created },
+        });
+      }
+    }
+  }
+
   return {
     success: true,
     sessions_created: totalCreated,
@@ -854,6 +962,7 @@ export async function runScheduler(
     summary,
     byVenue,
     byWeek,
+    schedule_warnings: scheduleWarnings.length > 0 ? scheduleWarnings : undefined,
   };
 }
 

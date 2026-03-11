@@ -40,6 +40,14 @@ interface SkippedDate {
   detail?: string;
 }
 
+interface ScheduleWarning {
+  templateId: string;
+  templateName: string;
+  type: string;
+  message: string;
+  details: { requested: number; created: number };
+}
+
 interface SchedulerResult {
   success: boolean;
   sessions_created: number;
@@ -51,6 +59,7 @@ interface SchedulerResult {
   summary: string;
   error?: string;
   unassigned_reasons?: Record<string, number>;
+  schedule_warnings?: ScheduleWarning[];
 }
 
 interface Instructor {
@@ -768,6 +777,29 @@ export function SchedulerResultModal({
                       </span>
                     </div>
                   ))}
+              </div>
+            </div>
+          )}
+
+          {/* Schedule warnings (scheduling mode constraints) */}
+          {result.schedule_warnings && result.schedule_warnings.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-yellow-600" />
+                <span className="text-[12px] font-semibold text-yellow-800">
+                  Scheduling Warnings
+                </span>
+              </div>
+              <div className="space-y-2">
+                {result.schedule_warnings.map((w, i) => (
+                  <div key={i} className="text-[11px] text-yellow-900 bg-yellow-100/50 rounded px-2.5 py-2">
+                    <div className="font-medium">{w.templateName}</div>
+                    <div className="mt-0.5 leading-relaxed">{w.message}</div>
+                    <div className="mt-1 text-yellow-700 text-[10px]">
+                      Created {w.details.created} of {w.details.requested} requested
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

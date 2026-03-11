@@ -60,6 +60,8 @@ export interface SchedulerResult {
   byWeek?: Record<string, number>;
   /** Summary of why sessions were left unassigned (reason → count) */
   unassigned_reasons?: Record<string, number>;
+  /** Warnings about scheduling constraints not fully met */
+  schedule_warnings?: ScheduleWarning[];
 }
 
 /** Per-template statistics */
@@ -81,6 +83,18 @@ export interface SkippedDate {
   template_id: string;
   reason: SkipReason;
   detail?: string;
+}
+
+/** Warning about scheduling constraints that weren't fully satisfied */
+export interface ScheduleWarning {
+  templateId: string;
+  templateName: string;
+  type: 'session_count_not_met' | 'dates_pushed_back' | 'partial_schedule';
+  message: string;
+  details: {
+    requested: number;
+    created: number;
+  };
 }
 
 export type SkipReason =

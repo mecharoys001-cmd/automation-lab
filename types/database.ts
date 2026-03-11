@@ -28,6 +28,8 @@ export type TemplateType = 'fully_defined' | 'tagged_slot' | 'auto_assign' | 'ti
 
 export type RotationMode = 'consistent' | 'rotate';
 
+export type SchedulingMode = 'date_range' | 'duration' | 'session_count' | 'ongoing';
+
 // ============================================================
 // Availability JSON structure (shared by instructors & venues)
 // ============================================================
@@ -98,6 +100,7 @@ export interface Venue {
   blackout_dates: string[] | null;
   description: string | null;
   is_wheelchair_accessible: boolean;
+  subjects?: string[] | null;
   created_at: string;
 }
 
@@ -148,6 +151,18 @@ export interface SessionTemplate {
   week_cycle_length: number | null;
   /** 0-indexed week position within the cycle. e.g. 0 = Week 1, 1 = Week 2, etc. */
   week_in_cycle: number | null;
+  /** Scheduling mode: how this template generates sessions */
+  scheduling_mode: SchedulingMode;
+  /** Start date for date_range, duration, or session_count modes */
+  starts_on: string | null;
+  /** End date for date_range mode */
+  ends_on: string | null;
+  /** Number of weeks for duration mode */
+  duration_weeks: number | null;
+  /** Number of sessions for session_count mode */
+  session_count: number | null;
+  /** Max weeks window for session_count mode */
+  within_weeks: number | null;
   created_at: string;
 }
 
@@ -376,6 +391,7 @@ export interface Database {
       rule_type: RuleType;
       template_type: TemplateType;
       rotation_mode: RotationMode;
+      scheduling_mode: SchedulingMode;
     };
   };
 }
