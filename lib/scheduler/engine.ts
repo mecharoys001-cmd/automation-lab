@@ -176,30 +176,24 @@ function getTemplateDateRange(
 
   switch (mode) {
     case 'date_range': {
-      const start = template.starts_on && template.starts_on >= programStart
-        ? template.starts_on
-        : programStart;
-      const end = template.ends_on && template.ends_on <= programEnd
-        ? template.ends_on
-        : programEnd;
+      // Use template dates if specified, otherwise fall back to program dates
+      const start = template.starts_on ?? programStart;
+      const end = template.ends_on ?? programEnd;
       return { start, end };
     }
 
     case 'duration': {
-      const start = template.starts_on && template.starts_on >= programStart
-        ? template.starts_on
-        : programStart;
+      // Use template start if specified, otherwise fall back to program start
+      const start = template.starts_on ?? programStart;
       const startDate = parseDate(start);
       startDate.setDate(startDate.getDate() + (template.duration_weeks ?? 0) * 7);
-      const computed = formatDate(startDate);
-      const end = computed <= programEnd ? computed : programEnd;
+      const end = formatDate(startDate);
       return { start, end };
     }
 
     case 'session_count': {
-      const start = template.starts_on && template.starts_on >= programStart
-        ? template.starts_on
-        : programStart;
+      // Use template start if specified, otherwise fall back to program start
+      const start = template.starts_on ?? programStart;
       let end = programEnd;
       if (template.within_weeks) {
         const startDate = parseDate(start);
