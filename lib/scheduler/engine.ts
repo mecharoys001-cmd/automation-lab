@@ -304,14 +304,23 @@ function runSingleAttempt(
   const unassignedReasons = new Map<string, number>();
 
   // Group templates by effective day_of_week (placement overrides template)
+  // Templates with no day_of_week and no placement are scheduled on ALL weekdays (Mon-Fri)
   const templatesByDay = new Map<number, SessionTemplate[]>();
   for (const tmpl of validTemplates) {
     const placement = placementMap.get(tmpl.id);
     const effectiveDay = placement ? placement.day_index + 1 : tmpl.day_of_week;
-    if (effectiveDay == null) continue; // Skip templates with no set day
-    const group = templatesByDay.get(effectiveDay) ?? [];
-    group.push(tmpl);
-    templatesByDay.set(effectiveDay, group);
+    if (effectiveDay != null) {
+      const group = templatesByDay.get(effectiveDay) ?? [];
+      group.push(tmpl);
+      templatesByDay.set(effectiveDay, group);
+    } else {
+      // No day assigned — schedule on all weekdays (1=Mon through 5=Fri)
+      for (let d = 1; d <= 5; d++) {
+        const group = templatesByDay.get(d) ?? [];
+        group.push(tmpl);
+        templatesByDay.set(d, group);
+      }
+    }
   }
 
   // Pre-compute per-template date ranges and session limits
@@ -322,6 +331,9 @@ function runSingleAttempt(
     templateDateRanges.set(tmpl.id, range);
     templateSessionsGenerated.set(tmpl.id, 0);
   }
+
+  // Track next available time slot per day for auto-time-assignment
+  const dayNextSlot = new Map<string, number>(); // "YYYY-MM-DD-dayOfWeek" -> minutes since midnight
 
   for (const [dayOfWeek, dayTemplates] of templatesByDay) {
     const dates = datesForDayOfWeek(rangeStartDate, rangeEndDate, dayOfWeek);
@@ -381,13 +393,43 @@ function runSingleAttempt(
 
       for (const tmpl of [...placedTemplates, ...unplacedTemplates]) {
         const placement = placementMap.get(tmpl.id);
-        const startTime = placement ? hourToTime(placement.start_hour) : tmpl.start_time;
-        const endTime = placement
+        let startTime = placement ? hourToTime(placement.start_hour) : tmpl.start_time;
+        let endTime = placement
           ? hourToTime(placement.start_hour + placement.duration_hours)
           : tmpl.end_time;
         const durationMinutes = placement
           ? Math.round(placement.duration_hours * 60)
-          : tmpl.duration_minutes;
+          : (tmpl.duration_minutes ?? 45);
+
+        // Auto-assign time for flexible templates (no start_time, no placement)
+        if (!startTime && !placement) {
+          const dayKey = `${targetDate}-${dayOfWeek}`;
+          if (!dayNextSlot.has(dayKey)) {
+            // Default start: 8:00 AM (or program hours if available)
+            dayNextSlot.set(dayKey, 8 * 60);
+          }
+          const slotStart = dayNextSlot.get(dayKey)!;
+          const slotEnd = slotStart + durationMinutes;
+          // Don't schedule past 3:00 PM (900 minutes)
+          if (slotEnd <= 15 * 60) {
+            const sh = Math.floor(slotStart / 60);
+            const sm = slotStart % 60;
+            const eh = Math.floor(slotEnd / 60);
+            const em = slotEnd % 60;
+            startTime = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}:00`;
+            endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`;
+            dayNextSlot.set(dayKey, slotEnd);
+          } else {
+            // No room left in the day
+            skippedDates.push({
+              date: targetDate,
+              template_id: tmpl.id,
+              reason: 'no_time_slot',
+              detail: `No available time slot (day full after ${String(Math.floor(slotStart / 60)).padStart(2, '0')}:${String(slotStart % 60).padStart(2, '0')})`,
+            });
+            continue;
+          }
+        }
 
         const effectiveTmpl = placement
           ? {
@@ -397,7 +439,7 @@ function runSingleAttempt(
               duration_minutes: durationMinutes,
               venue_id: placement.venue_id ?? tmpl.venue_id
             }
-          : tmpl;
+          : { ...tmpl, start_time: startTime, end_time: endTime, duration_minutes: durationMinutes };
 
         if (!templateStats.has(tmpl.id)) {
           templateStats.set(tmpl.id, {

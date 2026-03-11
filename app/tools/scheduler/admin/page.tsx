@@ -1271,7 +1271,7 @@ function CalendarDashboard() {
           onClick={handleGenerateSchedule}
           disabled={isGenerating}
         >
-          {isGenerating ? 'Previewing...' : 'Generate Classes'}
+          {isGenerating ? 'Previewing...' : 'Generate Schedule'}
         </Button>
 
         {/* Publish Schedule + Readiness */}
