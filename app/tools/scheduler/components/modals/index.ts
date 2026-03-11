@@ -7,3 +7,6 @@ export type {
   DayOfWeek,
   AvailabilitySlot,
 } from './InstructorDetailModal';
+
+export { InstructorEditModal, EMPTY_INSTRUCTOR_FORM } from './InstructorEditModal';
+export type { InstructorEditModalProps, InstructorFormData } from './InstructorEditModal';

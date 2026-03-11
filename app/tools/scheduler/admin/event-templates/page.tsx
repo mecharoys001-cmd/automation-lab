@@ -537,20 +537,17 @@ export default function EventTemplatesPage() {
               position: 'relative',
               borderRadius: 16,
               backgroundColor: '#FFFFFF',
-              padding: 28,
               boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
               maxWidth: 600,
               width: '100%',
               margin: '0 16px',
               maxHeight: '90vh',
-              overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              gap: 20,
             }}
           >
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 28px 0 28px' }}>
               <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: 0 }}>
                 {editingId ? 'Edit Event Template' : 'New Event Template'}
               </h2>
@@ -561,6 +558,9 @@ export default function EventTemplatesPage() {
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
+
+            {/* Scrollable form body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* 1. Name */}
             <FormField label="Name">
@@ -947,8 +947,10 @@ export default function EventTemplatesPage() {
               </label>
             </div>
 
+            </div>{/* end scrollable form body */}
+
             {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 4 }}>
+            <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 12, padding: '16px 28px', borderTop: '1px solid #E2E8F0' }}>
               <Button variant="secondary" onClick={closeForm} tooltip="Discard changes">
                 Cancel
               </Button>

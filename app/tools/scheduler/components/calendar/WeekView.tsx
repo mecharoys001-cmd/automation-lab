@@ -288,7 +288,7 @@ function WeekEventBlock({
 }
 
 // ---------------------------------------------------------------------------
-// Template Library Sidebar
+// Event Library Sidebar
 // ---------------------------------------------------------------------------
 
 function TemplateSidebar({
@@ -296,11 +296,13 @@ function TemplateSidebar({
   collapsed,
   onToggle,
   onTemplateClick,
+  onDragStart: onDragStartProp,
 }: {
   templates: EventTemplate[];
   collapsed: boolean;
   onToggle: () => void;
   onTemplateClick: (template: EventTemplate) => void;
+  onDragStart?: (template: EventTemplate) => void;
 }) {
   const handleDragStart = (e: React.DragEvent, template: EventTemplate) => {
     e.dataTransfer.setData(
@@ -308,6 +310,7 @@ function TemplateSidebar({
       JSON.stringify(template),
     );
     e.dataTransfer.effectAllowed = 'copy';
+    onDragStartProp?.(template);
   };
 
   return (
@@ -319,10 +322,10 @@ function TemplateSidebar({
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-3 border-b border-slate-200`}>
         {!collapsed && (
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Template Library
+            Event Library
           </span>
         )}
-        <Tooltip text={collapsed ? 'Show template library' : 'Hide template library'}>
+        <Tooltip text={collapsed ? 'Show event library' : 'Hide event library'}>
           <button
             onClick={onToggle}
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
@@ -336,7 +339,7 @@ function TemplateSidebar({
         </Tooltip>
       </div>
 
-      {/* Template list */}
+      {/* Event list */}
       {!collapsed && (
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
           {templates.length === 0 ? (
@@ -453,6 +456,8 @@ export function WeekView({
   const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
   const [eventDetails, setEventDetails] = useState<Record<string, unknown> | null>(null);
   const [dragOverCol, setDragOverCol] = useState<number | null>(null);
+  const [dropPreview, setDropPreview] = useState<{ dayIdx: number; hour: number; venueId?: string; durationHours: number; templateName?: string; color?: string } | null>(null);
+  const draggingTemplateRef = useRef<EventTemplate | null>(null);
 
   // -------------------------------------------------------------------------
   // Fetch additional event details (placeholder API)
@@ -609,17 +614,29 @@ export function WeekView({
     }
   }, [onTemplateSelect, dayStartHour, weekDateKeys]);
 
+  // Clear drop preview when drag ends (e.g. cancelled with Esc)
+  useEffect(() => {
+    const handleDragEnd = () => {
+      setDropPreview(null);
+      setDragOverCol(null);
+      draggingTemplateRef.current = null;
+    };
+    window.addEventListener('dragend', handleDragEnd);
+    return () => window.removeEventListener('dragend', handleDragEnd);
+  }, []);
+
   const showSidebar = templates && templates.length > 0;
 
   return (
     <div className="flex-1 flex overflow-hidden" style={{ minWidth: 0 }}>
-      {/* Template Library Sidebar */}
+      {/* Event Library Sidebar */}
       {showSidebar && (
         <TemplateSidebar
           templates={templates}
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed((p) => !p)}
           onTemplateClick={(template) => onTemplateSelect?.(template)}
+          onDragStart={(t) => { draggingTemplateRef.current = t; }}
         />
       )}
 
@@ -774,17 +791,48 @@ export function WeekView({
                   (onEventDrop || onTemplateSelect)
                     ? (e) => {
                         e.preventDefault();
-                        e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/x-template-item') ? 'copy' : 'move';
+                        const isTemplate = e.dataTransfer.types.includes('application/x-template-item');
+                        e.dataTransfer.dropEffect = isTemplate ? 'copy' : 'move';
                         setDragOverCol(dayIdx);
+
+                        if (isTemplate) {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const dropY = e.clientY - rect.top;
+                          const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
+                          const snapped = snapTo15Min(rawHour);
+                          const tpl = draggingTemplateRef.current;
+                          const durationHours = tpl && tpl.duration_minutes > 0 ? tpl.duration_minutes / 60 : 1;
+                          const subject = tpl?.required_skills?.[0];
+                          const subjectColor = subject ? getSubjectColor(subject) : null;
+
+                          let venueId: string | undefined;
+                          if (multiLane && selectedVenues.length > 1) {
+                            const mouseX = e.clientX - rect.left;
+                            const laneWidth = rect.width / selectedVenues.length;
+                            const laneIdx = Math.min(Math.floor(mouseX / laneWidth), selectedVenues.length - 1);
+                            venueId = selectedVenues[laneIdx];
+                          }
+
+                          setDropPreview({
+                            dayIdx,
+                            hour: snapped,
+                            venueId,
+                            durationHours,
+                            templateName: tpl?.name || subject || undefined,
+                            color: subjectColor?.accent,
+                          });
+                        }
                       }
                     : undefined
                 }
-                onDragLeave={(onEventDrop || onTemplateSelect) ? () => setDragOverCol(null) : undefined}
+                onDragLeave={(onEventDrop || onTemplateSelect) ? () => { setDragOverCol(null); setDropPreview(null); } : undefined}
                 onDrop={
                   (onEventDrop || onTemplateSelect)
                     ? (e) => {
                         e.preventDefault();
                         setDragOverCol(null);
+                        setDropPreview(null);
+                        draggingTemplateRef.current = null;
 
                         // Try template drop first
                         if (handleTemplateDrop(e, dayIdx)) return;
@@ -873,6 +921,33 @@ export function WeekView({
                         </div>
                       );
                     })}
+                    {/* Drop preview ghost (multi-lane) */}
+                    {dropPreview && dropPreview.dayIdx === dayIdx && (() => {
+                      const laneIdx = dropPreview.venueId ? selectedVenues.indexOf(dropPreview.venueId) : -1;
+                      const laneCount = selectedVenues.length;
+                      return (
+                        <div
+                          className='absolute rounded-md border-2 border-dashed pointer-events-none z-[5] transition-all duration-75'
+                          style={{
+                            top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
+                            height: dropPreview.durationHours * HOUR_HEIGHT,
+                            left: laneIdx >= 0 ? `${(laneIdx / laneCount) * 100}%` : '4px',
+                            width: laneIdx >= 0 ? `${(1 / laneCount) * 100}%` : 'calc(100% - 8px)',
+                            borderColor: dropPreview.color || '#22C55E',
+                            backgroundColor: (dropPreview.color || '#22C55E') + '15',
+                          }}
+                        >
+                          <div className='px-1.5 py-1'>
+                            <p className='text-[11px] font-bold' style={{ color: dropPreview.color || '#22C55E' }}>
+                              {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(dropPreview.hour + dropPreview.durationHours)}
+                            </p>
+                            {dropPreview.templateName && (
+                              <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   /* Single column rendering (original behavior) */
@@ -890,6 +965,27 @@ export function WeekView({
                         enableDrag={!!onEventDrop}
                       />
                     ))}
+                    {/* Drop preview ghost (single column) */}
+                    {dropPreview && dropPreview.dayIdx === dayIdx && (
+                      <div
+                        className='absolute left-1 right-1 rounded-md border-2 border-dashed pointer-events-none z-[5] transition-all duration-75'
+                        style={{
+                          top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
+                          height: dropPreview.durationHours * HOUR_HEIGHT,
+                          borderColor: dropPreview.color || '#22C55E',
+                          backgroundColor: (dropPreview.color || '#22C55E') + '15',
+                        }}
+                      >
+                        <div className='px-1.5 py-1'>
+                          <p className='text-[11px] font-bold' style={{ color: dropPreview.color || '#22C55E' }}>
+                            {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(dropPreview.hour + dropPreview.durationHours)}
+                          </p>
+                          {dropPreview.templateName && (
+                            <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

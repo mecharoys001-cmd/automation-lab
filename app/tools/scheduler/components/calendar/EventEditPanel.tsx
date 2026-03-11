@@ -13,6 +13,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { InstructorEditModal } from '../modals/InstructorEditModal';
+import type { InstructorFormData } from '../modals/InstructorEditModal';
 import { skillsMatch } from '@/lib/scheduler/utils';
 import type { CalendarEvent } from './types';
 
@@ -113,11 +115,9 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
   const [loadingTags, setLoadingTags] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
 
-  // Add new instructor inline
-  const [showAddInstructor, setShowAddInstructor] = useState(false);
-  const [newInstructorFirst, setNewInstructorFirst] = useState('');
-  const [newInstructorLast, setNewInstructorLast] = useState('');
-  const [addingInstructor, setAddingInstructor] = useState(false);
+  // Add new instructor via modal
+  const [showInstructorModal, setShowInstructorModal] = useState(false);
+  const [savingNewInstructor, setSavingNewInstructor] = useState(false);
 
   // Animation
   const [visible, setVisible] = useState(false);
@@ -221,37 +221,39 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
     );
   }, []);
 
-  const handleAddInstructor = async () => {
-    if (!newInstructorFirst.trim() || !newInstructorLast.trim()) return;
-    setAddingInstructor(true);
+  const handleAddInstructor = async (data: InstructorFormData) => {
+    setSavingNewInstructor(true);
     try {
+      const body: Record<string, unknown> = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email.trim() || null,
+        phone: data.phone.trim() || null,
+        notes: data.notes.trim() || null,
+        is_active: data.is_active,
+        skills: data.skills.length > 0 ? data.skills : null,
+        availability_json: data.availability_json,
+      };
       const res = await fetch('/api/instructors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name: newInstructorFirst.trim(),
-          last_name: newInstructorLast.trim(),
-          is_active: true,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Failed to add instructor');
       const { instructor } = await res.json();
-      
+
       // Add to local instructors list
       setInstructors((prev) => [...prev, instructor]);
-      
+
       // Auto-select the new instructor
       setEditInstructor(`${instructor.first_name} ${instructor.last_name}`);
-      
-      // Reset form
-      setNewInstructorFirst('');
-      setNewInstructorLast('');
-      setShowAddInstructor(false);
+
+      setShowInstructorModal(false);
     } catch (err) {
       console.error('Failed to add instructor:', err);
       alert('Failed to add instructor. Please try again.');
     } finally {
-      setAddingInstructor(false);
+      setSavingNewInstructor(false);
     }
   };
 
@@ -314,7 +316,7 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
   const selectCls = `${inputCls} appearance-none cursor-pointer pr-9 disabled:opacity-50`;
   const labelCls = 'block text-xs font-medium text-[#64748B] mb-1.5';
 
-  return createPortal(
+  const panel = createPortal(
     <div
       className="fixed inset-0 z-[50000] flex justify-end"
       onClick={(e) => {
@@ -527,82 +529,16 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
               </Tooltip>
             )}
 
-            {/* Add New Staff Member Button/Form */}
-            {!showAddInstructor ? (
-              <Tooltip text="Add new staff to the system">
-                <button
-                  onClick={() => setShowAddInstructor(true)}
-                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add New Staff Member
-                </button>
-              </Tooltip>
-            ) : (
-              <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-medium text-slate-700">New Staff</span>
-                  <Tooltip text="Cancel adding staff">
-                    <button
-                      onClick={() => {
-                        setShowAddInstructor(false);
-                        setNewInstructorFirst('');
-                        setNewInstructorLast('');
-                      }}
-                      className="text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2">
-                  <Tooltip text="Enter staff first name">
-                    <input
-                      type="text"
-                      placeholder="First name"
-                      value={newInstructorFirst}
-                      onChange={(e) => setNewInstructorFirst(e.target.value)}
-                      className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-                      disabled={addingInstructor}
-                    />
-                  </Tooltip>
-                  <Tooltip text="Enter staff last name">
-                    <input
-                      type="text"
-                      placeholder="Last name"
-                      value={newInstructorLast}
-                      onChange={(e) => setNewInstructorLast(e.target.value)}
-                      className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-                      disabled={addingInstructor}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newInstructorFirst.trim() && newInstructorLast.trim()) {
-                          handleAddInstructor();
-                        }
-                      }}
-                    />
-                  </Tooltip>
-                  <Tooltip text="Create this staff member">
-                    <button
-                      onClick={handleAddInstructor}
-                      disabled={addingInstructor || !newInstructorFirst.trim() || !newInstructorLast.trim()}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-md transition-colors"
-                    >
-                      {addingInstructor ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Adding...
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          Add Instructor
-                        </>
-                      )}
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-            )}
+            {/* Add New Staff Member Button */}
+            <Tooltip text="Add new staff to the system">
+              <button
+                onClick={() => setShowInstructorModal(true)}
+                className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add New Staff Member
+              </button>
+            </Tooltip>
           </div>
 
           <div className="h-px bg-[#F1F5F9]" />
@@ -781,5 +717,21 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
       </div>
     </div>,
     document.body,
+  );
+
+  return (
+    <>
+      {panel}
+      {showInstructorModal && (
+        <InstructorEditModal
+          instructor={null}
+          saving={savingNewInstructor}
+          deleting={false}
+          onSave={handleAddInstructor}
+          onDelete={null}
+          onClose={() => setShowInstructorModal(false)}
+        />
+      )}
+    </>
   );
 }
