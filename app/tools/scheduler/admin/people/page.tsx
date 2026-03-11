@@ -386,7 +386,7 @@ function VenueDetailModal({
       <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
 
         {/* ── Header ─────────────────────────────────── */}
-        <div className="flex items-center h-14 px-6 gap-2.5">
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
           {editing ? (
             <Tooltip text="Venue name">
               <input
@@ -725,7 +725,7 @@ function InstructorDetailModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center h-14 px-6 gap-2.5">
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
           <h2 className="text-[22px] font-bold text-slate-900">
             {instructor.first_name} {instructor.last_name}
           </h2>
@@ -979,7 +979,7 @@ function VenueCreateModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center h-14 px-6 gap-2.5">
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
           <h2 className="text-[22px] font-bold text-slate-900">Add Venue</h2>
           <div className="flex-1" />
           <Tooltip text="Close without saving">
@@ -991,8 +991,6 @@ function VenueCreateModal({
             </button>
           </Tooltip>
         </div>
-
-        <div className="h-px bg-slate-200" />
 
         {/* Form */}
         <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">

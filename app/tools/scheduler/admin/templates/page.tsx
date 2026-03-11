@@ -673,7 +673,7 @@ function EditTemplateModal({
       {/* Modal */}
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto mx-4">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <div className="sticky top-0 z-10 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">
             {isNew ? 'New Event Template' : 'Edit Event Template'}
           </h2>
