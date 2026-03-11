@@ -252,6 +252,16 @@ function timeStringToHour(time: string): number {
   return h + m / 60;
 }
 
+function hourToTimeString(h: number): string {
+  const hours = Math.floor(h);
+  const mins = Math.round((h - hours) * 60);
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+const DAY_INDEX_TO_NAME: Record<number, string> = {
+  0: 'monday', 1: 'tuesday', 2: 'wednesday', 3: 'thursday', 4: 'friday',
+};
+
 /** Check if a given hour (or fractional hour) falls within the lunch break window. */
 function isLunchHour(hour: number, lunchEnabled: boolean, lunchStart: number, lunchEnd: number): boolean {
   if (!lunchEnabled) return false;
@@ -1776,7 +1786,11 @@ export default function TemplatesPage() {
 
   // ── Subject & Instructor options (fetched from API) ──
   const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
-  const [instructorData, setInstructorData] = useState<{ id: string; first_name: string; last_name: string; skills: string[] | null; is_active: boolean }[]>([]);
+  const [instructorData, setInstructorData] = useState<{ id: string; first_name: string; last_name: string; skills: string[] | null; availability_json: Record<string, { start: string; end: string }[]> | null; is_active: boolean }[]>([]);
+  const [venueAvailData, setVenueAvailData] = useState<{ id: string; name: string; availability_json: Record<string, { start: string; end: string }[]> | null; max_concurrent_bookings: number | null; buffer_minutes: number | null }[]>([]);
+
+  // ── Drop zone highlighting ──
+  const [validDropCells, setValidDropCells] = useState<Set<string> | null>(null);
 
   // ── Buffer time ──
   const [bufferEnabled, setBufferEnabled] = useState(false);
@@ -1886,6 +1900,14 @@ export default function TemplatesPage() {
       if (!res.ok) return;
       const { venues: dbVenues } = await res.json();
       setVenues((dbVenues ?? []).map((v: { id: string; name: string }) => ({ id: v.id, name: v.name })));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setVenueAvailData((dbVenues ?? []).map((v: any) => ({
+        id: v.id,
+        name: v.name,
+        availability_json: v.availability_json ?? null,
+        max_concurrent_bookings: v.max_concurrent_bookings ?? null,
+        buffer_minutes: v.buffer_minutes ?? null,
+      })));
     } catch {
       // Non-critical
     }
@@ -2433,9 +2455,152 @@ export default function TemplatesPage() {
   };
   // ── Drag & Drop ──
 
+  /** Precompute which grid cells are valid drop targets for a template */
+  const computeValidDropCells = useCallback((template: Template, excludePlacedId?: string) => {
+    const valid = new Set<string>();
+    const duration = template.timeSlot
+      ? timeStringToHour(template.timeSlot.end) - timeStringToHour(template.timeSlot.start)
+      : (template.durationMinutes ? template.durationMinutes / 60 : 0.75);
+    if (duration <= 0) return valid;
+
+    const venuesToCheck = selectedVenues.length > 0 ? selectedVenues : venues.map(v => v.id);
+
+    // Helper: check instructor availability for this template at a given slot
+    const checkInstructorOk = (dayIdx: number, startH: number, endH: number, weekIdx: number): boolean => {
+      if (template.instructorId) {
+        // Specific instructor assigned — check their availability
+        const inst = instructorData.find(i => i.id === template.instructorId);
+        if (inst) {
+          if (inst.availability_json) {
+            const dayName = DAY_INDEX_TO_NAME[dayIdx];
+            if (!dayName) return false;
+            const blocks = inst.availability_json[dayName];
+            if (!blocks || blocks.length === 0) return false;
+            const startStr = hourToTimeString(startH);
+            const endStr = hourToTimeString(endH);
+            if (!blocks.some(b => b.start <= startStr && b.end >= endStr)) return false;
+          }
+          // Check no conflict with existing placements
+          for (const p of placedTemplates) {
+            if (excludePlacedId && p.id === excludePlacedId) continue;
+            if (p.dayIndex !== dayIdx || (p.weekIndex ?? 0) !== weekIdx) continue;
+            const pt = templates.find(t => t.id === p.templateId);
+            if (!pt || pt.instructorId !== template.instructorId) continue;
+            const pEnd = p.startHour + p.durationHours;
+            if (startH < pEnd && p.startHour < endH) return false;
+          }
+        }
+        return true;
+      } else {
+        // No instructor assigned — check if ANY qualified instructor is available
+        const required = template.subjects ?? [];
+        const qualified = required.length === 0
+          ? instructorData
+          : instructorData.filter(inst => {
+              const skills = inst.skills ?? [];
+              return required.every(req => skills.some(s => s.toLowerCase() === req.toLowerCase()));
+            });
+        if (qualified.length === 0) return true; // No instructors in system, allow drop
+        return qualified.some(inst => {
+          if (inst.availability_json) {
+            const dayName = DAY_INDEX_TO_NAME[dayIdx];
+            if (!dayName) return false;
+            const blocks = inst.availability_json[dayName];
+            if (!blocks || blocks.length === 0) return false;
+            const startStr = hourToTimeString(startH);
+            const endStr = hourToTimeString(endH);
+            if (!blocks.some(b => b.start <= startStr && b.end >= endStr)) return false;
+          }
+          // Check no conflict
+          for (const p of placedTemplates) {
+            if (excludePlacedId && p.id === excludePlacedId) continue;
+            if (p.dayIndex !== dayIdx || (p.weekIndex ?? 0) !== weekIdx) continue;
+            const pt = templates.find(t => t.id === p.templateId);
+            if (!pt || pt.instructorId !== inst.id) continue;
+            const pEnd = p.startHour + p.durationHours;
+            if (startH < pEnd && p.startHour < endH) return false;
+          }
+          return true;
+        });
+      }
+    };
+
+    // Helper: check venue availability and conflicts
+    const checkVenueOk = (venueId: string, dayIdx: number, startH: number, endH: number, weekIdx: number): boolean => {
+      const vd = venueAvailData.find(v => v.id === venueId);
+      if (vd?.availability_json) {
+        const dayName = DAY_INDEX_TO_NAME[dayIdx];
+        if (!dayName) return false;
+        const blocks = vd.availability_json[dayName];
+        if (!blocks || blocks.length === 0) return false;
+        const startStr = hourToTimeString(startH);
+        const endStr = hourToTimeString(endH);
+        if (!blocks.some(b => b.start <= startStr && b.end >= endStr)) return false;
+      }
+      // Check venue conflict (concurrent bookings)
+      const maxConcurrent = vd?.max_concurrent_bookings ?? 1;
+      const buffer = (vd?.buffer_minutes ?? 0) / 60;
+      let overlaps = 0;
+      for (const p of placedTemplates) {
+        if (excludePlacedId && p.id === excludePlacedId) continue;
+        if (p.dayIndex !== dayIdx || (p.weekIndex ?? 0) !== weekIdx) continue;
+        const pVenueId = p.venueId ?? templates.find(t => t.id === p.templateId)?.venueId ?? null;
+        if (pVenueId !== venueId) continue;
+        const pStart = p.startHour - buffer;
+        const pEnd = p.startHour + p.durationHours + buffer;
+        if (startH < pEnd && endH > pStart) overlaps++;
+      }
+      if (overlaps >= maxConcurrent) return false;
+      return true;
+    };
+
+    for (let dayIdx = 0; dayIdx < DAYS.length; dayIdx++) {
+      for (let weekIdx = 0; weekIdx < totalWeeks; weekIdx++) {
+        // Determine time slots to check
+        const slots: number[] = [];
+        if (template.timeSlot) {
+          slots.push(timeStringToHour(template.timeSlot.start));
+        } else {
+          // Every quarter-hour from dayStart to dayEnd - duration
+          for (let h = dayStartHour; h <= dayEndHour - duration; h += 0.25) {
+            slots.push(h);
+          }
+        }
+
+        for (const startH of slots) {
+          const endH = startH + duration;
+          if (endH > dayEndHour || startH < dayStartHour) continue;
+
+          // Check lunch overlap
+          if (overlapsLunch(startH, duration, lunchEnabled, lunchStart, lunchEnd)) continue;
+
+          // Check instructor
+          if (!checkInstructorOk(dayIdx, startH, endH, weekIdx)) continue;
+
+          // Check venues
+          if (template.venueId) {
+            // Template has assigned venue — only valid in that lane
+            if (checkVenueOk(template.venueId, dayIdx, startH, endH, weekIdx)) {
+              valid.add(`${dayIdx}-${weekIdx}-${template.venueId}-${startH}`);
+            }
+          } else {
+            // No venue assigned — check each venue lane
+            for (const vid of venuesToCheck) {
+              if (checkVenueOk(vid, dayIdx, startH, endH, weekIdx)) {
+                valid.add(`${dayIdx}-${weekIdx}-${vid}-${startH}`);
+              }
+            }
+          }
+        }
+      }
+    }
+    return valid;
+  }, [instructorData, venueAvailData, placedTemplates, templates, selectedVenues, venues, totalWeeks, dayStartHour, dayEndHour, lunchEnabled, lunchStart, lunchEnd]);
+
   const handleDragStart = (template: Template) => {
     setDraggingTemplate(template);
     setDraggingPlacedId(null);
+    setValidDropCells(computeValidDropCells(template));
   };
 
   const handlePlacedDragStart = (placedId: string, templateId: string) => {
@@ -2443,6 +2608,7 @@ export default function TemplatesPage() {
     if (t) {
       setDraggingTemplate(t);
       setDraggingPlacedId(placedId);
+      setValidDropCells(computeValidDropCells(t, placedId));
     }
   };
 
@@ -2451,6 +2617,7 @@ export default function TemplatesPage() {
     setDraggingPlacedId(null);
     setDropPreview(null);
     setDropConflict('none');
+    setValidDropCells(null);
   };
 
   const handleDragOver = (dayIndex: number, weekIdx: number, e: React.DragEvent) => {
@@ -3306,6 +3473,23 @@ export default function TemplatesPage() {
                               backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
                             }}
                           >
+                            {/* Drop zone highlights */}
+                            {validDropCells && draggingTemplate && Array.from({ length: (dayEndHour - dayStartHour) * 4 }).map((_, qi) => {
+                              const slotHour = dayStartHour + qi * 0.25;
+                              const key = `${dayIndex}-${weekIdx}-${venueId}-${slotHour}`;
+                              const isValid = validDropCells.has(key);
+                              return (
+                                <div
+                                  key={`dz-${qi}`}
+                                  className="absolute left-0 right-0 pointer-events-none transition-colors"
+                                  style={{
+                                    top: `${qi * (HOUR_HEIGHT / 4)}px`,
+                                    height: `${HOUR_HEIGHT / 4}px`,
+                                    backgroundColor: isValid ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.06)',
+                                  }}
+                                />
+                              );
+                            })}
                             {lanePlacements.map((placed) => {
                               const template = templates.find((t) => t.id === placed.templateId);
                               if (!template) return null;
@@ -3337,6 +3521,27 @@ export default function TemplatesPage() {
                   ) : (
                     /* Single venue / all venues — original rendering */
                     <>
+                      {/* Drop zone highlights (single-lane) */}
+                      {validDropCells && draggingTemplate && (() => {
+                        const checkVenueId = selectedVenues.length === 1 ? selectedVenues[0] : draggingTemplate.venueId;
+                        if (!checkVenueId) return null;
+                        return Array.from({ length: (dayEndHour - dayStartHour) * 4 }).map((_, qi) => {
+                          const slotHour = dayStartHour + qi * 0.25;
+                          const key = `${dayIndex}-${weekIdx}-${checkVenueId}-${slotHour}`;
+                          const isValid = validDropCells.has(key);
+                          return (
+                            <div
+                              key={`dz-${qi}`}
+                              className="absolute left-0 right-0 pointer-events-none transition-colors"
+                              style={{
+                                top: `${qi * (HOUR_HEIGHT / 4)}px`,
+                                height: `${HOUR_HEIGHT / 4}px`,
+                                backgroundColor: isValid ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.06)',
+                              }}
+                            />
+                          );
+                        });
+                      })()}
                       {venueFilteredPlacements
                         .filter((p) => p.dayIndex === dayIndex && (p.weekIndex ?? 0) === weekIdx)
                         .map((placed) => {
