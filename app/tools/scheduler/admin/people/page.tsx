@@ -612,7 +612,7 @@ function VenueDetailModal({
         <div className="h-px bg-slate-200" />
 
         {/* ── Footer ─────────────────────────────────── */}
-        <div className="flex items-center justify-between h-14 px-6">
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
           <Tooltip text="Jump to calendar filtered to this venue">
             <Link
               href={`/tools/scheduler/admin?venue=${venue.id}`}
@@ -832,7 +832,7 @@ function InstructorDetailModal({
         <div className="h-px bg-slate-200" />
 
         {/* Footer */}
-        <div className="flex items-center justify-between h-14 px-6">
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
           <Tooltip text="Jump to calendar filtered to this staff member">
             <Link
               href={`/tools/scheduler/admin?instructor=${instructor.id}`}
@@ -1162,10 +1162,8 @@ function VenueCreateModal({
           </div>
         </form>
 
-        <div className="h-px bg-slate-200" />
-
-        {/* Footer */}
-        <div className="flex items-center justify-end h-14 px-6 gap-3">
+        {/* Footer — sticky at bottom */}
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 flex items-center justify-end h-14 px-6 gap-3 shrink-0">
           <Tooltip text="Discard changes">
             <button
               onClick={onClose}
