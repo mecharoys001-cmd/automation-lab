@@ -162,11 +162,17 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
 }
 
 function toDbPayload(t: Template, programId: string) {
-  const startTime = t.timeSlot?.start ?? '09:00';
-  const endTime = t.timeSlot?.end ?? '10:00';
-  const [sh, sm] = startTime.split(':').map(Number);
-  const [eh, em] = endTime.split(':').map(Number);
-  const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+  const startTime = t.timeSlot?.start ?? null;
+  const endTime = t.timeSlot?.end ?? null;
+  const durationMinutes = t.durationMinutes
+    ? t.durationMinutes
+    : (startTime && endTime)
+      ? (() => {
+          const [sh, sm] = startTime.split(':').map(Number);
+          const [eh, em] = endTime.split(':').map(Number);
+          return (eh * 60 + em) - (sh * 60 + sm);
+        })()
+      : 60;
 
   // Build grade_groups: use full array if available, fall back to single gradeLevel
   const gradeGroups = t.gradeGroups && t.gradeGroups.length > 0
@@ -283,7 +289,7 @@ function emptyTemplate(): Template {
     instructor: '',
     venue: '',
     days: [],
-    timeSlot: { start: '09:00', end: '10:00' },
+    timeSlot: undefined,
     instructorRotation: false,
     color: '',
     weekCycleLength: null,
