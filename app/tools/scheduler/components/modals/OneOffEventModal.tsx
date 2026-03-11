@@ -47,6 +47,18 @@ export interface OneOffEventFormData {
   start_time: string; // HH:MM (24h)
   duration_minutes: number;
   recurrence?: RecurrenceOptions;
+  /** When instructor rotation is enabled, list of instructor IDs to rotate through */
+  rotation_instructor_ids?: string[];
+}
+
+export interface InitialTemplate {
+  id: string;
+  name: string | null;
+  required_skills: string[] | null;
+  instructor_id: string | null;
+  venue_id: string | null;
+  grade_groups: string[];
+  duration_minutes: number;
 }
 
 interface OneOffEventModalProps {
@@ -58,6 +70,8 @@ interface OneOffEventModalProps {
   /** Pre-filled time in "9:00 AM" display format */
   initialTime?: string;
   programId: string | null;
+  /** Pre-fill form from a template (e.g. dragged from sidebar) */
+  initialTemplate?: InitialTemplate;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +110,7 @@ export function OneOffEventModal({
   initialDate,
   initialTime,
   programId,
+  initialTemplate,
 }: OneOffEventModalProps) {
   const [name, setName] = useState('');
   const [subjectTagId, setSubjectTagId] = useState('');
@@ -113,6 +128,10 @@ export function OneOffEventModal({
   const [sessionCount, setSessionCount] = useState(4);
   const [untilDate, setUntilDate] = useState('');
 
+  // Instructor rotation state
+  const [rotateInstructors, setRotateInstructors] = useState(false);
+  const [rotationInstructorIds, setRotationInstructorIds] = useState<string[]>([]);
+
   // Reference data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -121,21 +140,23 @@ export function OneOffEventModal({
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setName('');
+      setName(initialTemplate?.name ?? '');
       setSubjectTagId('');
-      setInstructorId('');
-      setVenueId('');
-      setGradeGroups([]);
+      setInstructorId(initialTemplate?.instructor_id ?? '');
+      setVenueId(initialTemplate?.venue_id ?? '');
+      setGradeGroups(initialTemplate?.grade_groups ?? []);
       setDate(initialDate ?? '');
       setStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
-      setDurationMinutes(45);
+      setDurationMinutes(initialTemplate?.duration_minutes ?? 45);
       setRecurrenceType('none');
       setIntervalWeeks(2);
       setSessionCount(4);
       setUntilDate('');
+      setRotateInstructors(false);
+      setRotationInstructorIds([]);
       setSaving(false);
     }
-  }, [open, initialDate, initialTime]);
+  }, [open, initialDate, initialTime, initialTemplate]);
 
   // Fetch reference data on mount
   useEffect(() => {
@@ -159,12 +180,23 @@ export function OneOffEventModal({
       if (tagRes.ok) {
         const body = await tagRes.json();
         // Filter to subject tags only (category = 'Subjects' or no category)
-        setTags(body.tags ?? []);
+        const allTags: Tag[] = body.tags ?? [];
+        setTags(allTags);
+
+        // If template has required_skills, try to match a subject tag
+        if (initialTemplate?.required_skills?.length) {
+          const skill = initialTemplate.required_skills[0].toLowerCase();
+          const matchingTag = allTags.find(
+            (t) => t.name.toLowerCase() === skill ||
+              t.name.toLowerCase().includes(skill),
+          );
+          if (matchingTag) setSubjectTagId(matchingTag.id);
+        }
       }
     };
 
     load();
-  }, [open]);
+  }, [open, initialTemplate]);
 
   const toggleGrade = useCallback((grade: string) => {
     setGradeGroups((prev) =>
@@ -190,13 +222,16 @@ export function OneOffEventModal({
       await onSubmit({
         name: name.trim(),
         subject_tag_id: subjectTagId || null,
-        instructor_id: instructorId || null,
+        instructor_id: rotateInstructors ? null : (instructorId || null),
         venue_id: venueId || null,
         grade_groups: gradeGroups,
         date,
         start_time: startTime,
         duration_minutes: durationMinutes,
         recurrence,
+        rotation_instructor_ids: rotateInstructors && rotationInstructorIds.length >= 2
+          ? rotationInstructorIds
+          : undefined,
       });
     } finally {
       setSaving(false);
@@ -444,6 +479,65 @@ export function OneOffEventModal({
               <p className="text-[11px] text-slate-400">
                 Blackout days will be skipped automatically. Sessions won&apos;t be created outside the program date range.
               </p>
+            )}
+
+            {/* Instructor Rotation */}
+            {recurrenceType !== 'none' && (
+              <div className="space-y-2 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rotateInstructors}
+                    onChange={(e) => {
+                      setRotateInstructors(e.target.checked);
+                      if (!e.target.checked) setRotationInstructorIds([]);
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+                  />
+                  <span className="text-xs font-medium text-slate-600">Rotate Instructors</span>
+                </label>
+
+                {rotateInstructors && (
+                  <div className="space-y-1.5 pl-6">
+                    <p className="text-[11px] text-slate-400">
+                      Select 2+ staff to rotate through recurring sessions (A, B, A, B, ...).
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {instructors.map((instr) => {
+                        const selected = rotationInstructorIds.includes(instr.id);
+                        return (
+                          <button
+                            key={instr.id}
+                            type="button"
+                            onClick={() =>
+                              setRotationInstructorIds((prev) =>
+                                selected
+                                  ? prev.filter((id) => id !== instr.id)
+                                  : [...prev, instr.id],
+                              )
+                            }
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                              selected
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {instr.first_name} {instr.last_name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {rotateInstructors && rotationInstructorIds.length >= 2 && (
+                      <p className="text-[11px] text-slate-500">
+                        Rotation order: {rotationInstructorIds.map((id) => {
+                          const i = instructors.find((x) => x.id === id);
+                          return i ? `${i.first_name} ${i.last_name[0]}.` : '?';
+                        }).join(' → ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

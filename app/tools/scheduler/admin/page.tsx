@@ -22,6 +22,7 @@ import { Tooltip } from '../components/ui/Tooltip';
 import { FilterBar } from '../components/layout/FilterBar';
 import type { ActiveFilters } from '../components/layout/FilterBar';
 import { WeekView } from '../components/calendar/WeekView';
+import type { EventTemplate } from '../components/calendar/WeekView';
 import { MonthView } from '../components/calendar/MonthView';
 import { DayView } from '../components/calendar/DayView';
 import { YearView } from '../components/calendar/YearView';
@@ -370,6 +371,7 @@ function CalendarDashboard() {
     early_dismissal_time?: string | null;
   }>>([]);
   const [dbVenues, setDbVenues] = useState<Array<{ id: string; name: string }>>([]);
+  const [eventTemplates, setEventTemplates] = useState<EventTemplate[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -383,6 +385,7 @@ function CalendarDashboard() {
   // One-off event creation modal
   const [showOneOffModal, setShowOneOffModal] = useState(false);
   const [oneOffSlot, setOneOffSlot] = useState<{ date: string; time: string } | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
   // Portal container for Month/Year views (escapes flex hierarchy)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   // Track recently modified event IDs (eventId -> timestamp) for badge display
@@ -757,6 +760,30 @@ function CalendarDashboard() {
       } else {
         console.warn('[Admin] Failed to fetch venues:', venueRes.status, venueRes.statusText);
       }
+
+      // Fetch active event templates for the sidebar
+      const tplParams = new URLSearchParams({ program_id: selectedProgramId });
+      const tplRes = await fetch(`/api/templates?${tplParams.toString()}`, { cache: 'no-store', signal });
+      if (tplRes.ok) {
+        const tplBody = await tplRes.json();
+        if (Array.isArray(tplBody.templates)) {
+          setEventTemplates(
+            tplBody.templates
+              .filter((t: { is_active?: boolean }) => t.is_active !== false)
+              .map((t: Record<string, unknown>) => ({
+                id: t.id,
+                name: t.name,
+                required_skills: t.required_skills,
+                instructor_id: t.instructor_id,
+                venue_id: t.venue_id,
+                grade_groups: t.grade_groups ?? [],
+                duration_minutes: t.duration_minutes ?? 45,
+                venue: t.venue,
+                instructor: null, // Template API doesn't join instructor
+              })),
+          );
+        }
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         console.log(`[${fetchId}] Aborted`);
@@ -948,6 +975,17 @@ function CalendarDashboard() {
     setShowOneOffModal(true);
   }, []);
 
+  // Template sidebar: open one-off modal pre-filled from template
+  const handleTemplateSelect = useCallback((template: EventTemplate, date?: string, time?: string) => {
+    setOneOffSlot({
+      date: date ?? '',
+      time: time ?? '',
+    });
+    // Store template data for the modal to pick up
+    setSelectedTemplate(template);
+    setShowOneOffModal(true);
+  }, []);
+
   // One-off event: create session via API
   const handleCreateOneOffEvent = useCallback(async (data: OneOffEventFormData) => {
     if (!selectedProgramId) {
@@ -981,6 +1019,11 @@ function CalendarDashboard() {
     // Pass recurrence options if specified
     if (data.recurrence) {
       sessionBody.recurrence = data.recurrence;
+    }
+
+    // Pass instructor rotation IDs if specified
+    if (data.rotation_instructor_ids && data.rotation_instructor_ids.length >= 2) {
+      sessionBody.rotation_instructor_ids = data.rotation_instructor_ids;
     }
 
     const res = await fetch('/api/sessions', {
@@ -1176,6 +1219,7 @@ function CalendarDashboard() {
             <WeekView
               events={filteredEvents}
               venues={dbVenues}
+              templates={eventTemplates}
               currentDate={selectedDate}
               onDateChange={setSelectedDate}
               onEventClick={handleEditEvent}
@@ -1184,6 +1228,7 @@ function CalendarDashboard() {
               onEventDrop={handleEventDrop}
               onEventResize={handleEventResize}
               onEmptySlotClick={handleEmptySlotClick}
+              onTemplateSelect={handleTemplateSelect}
             />
           </>
         )}
@@ -1288,11 +1333,12 @@ function CalendarDashboard() {
       {/* One-Off Event Creation Modal */}
       <OneOffEventModal
         open={showOneOffModal}
-        onClose={() => setShowOneOffModal(false)}
+        onClose={() => { setShowOneOffModal(false); setSelectedTemplate(null); }}
         onSubmit={handleCreateOneOffEvent}
         initialDate={oneOffSlot?.date}
         initialTime={oneOffSlot?.time}
         programId={selectedProgramId}
+        initialTemplate={selectedTemplate ?? undefined}
       />
     </div>
   );

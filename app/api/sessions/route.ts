@@ -214,8 +214,10 @@ export async function POST(request: NextRequest) {
       until_date?: string;
     } | undefined;
 
-    // Strip recurrence from the insert body — it's not a DB column
+    // Strip recurrence and rotation from the insert body — they're not DB columns
     delete body.recurrence;
+    const rotationInstructorIds = body.rotation_instructor_ids as string[] | undefined;
+    delete body.rotation_instructor_ids;
 
     if (recurrence && recurrence.type && recurrence.type !== 'none') {
       // Determine interval in days and stop condition
@@ -284,8 +286,14 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Build session rows for each date
-      const rows = dates.map((d) => ({ ...body, date: d }));
+      // Build session rows for each date, rotating instructors if specified
+      const rows = dates.map((d, idx) => {
+        const row = { ...body, date: d };
+        if (rotationInstructorIds && rotationInstructorIds.length >= 2) {
+          row.instructor_id = rotationInstructorIds[idx % rotationInstructorIds.length];
+        }
+        return row;
+      });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('sessions') as any)

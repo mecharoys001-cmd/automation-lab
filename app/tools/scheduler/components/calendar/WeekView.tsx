@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, GripVertical, Music } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { Button } from '../ui/Button';
 import type { CalendarEvent } from './types';
@@ -17,10 +17,24 @@ import type { VenueOption } from '../ui/VenueToggle';
 // Props
 // ---------------------------------------------------------------------------
 
+export interface EventTemplate {
+  id: string;
+  name: string | null;
+  required_skills: string[] | null;
+  instructor_id: string | null;
+  venue_id: string | null;
+  grade_groups: string[];
+  duration_minutes: number;
+  venue?: { id: string; name: string } | null;
+  instructor?: { id: string; first_name: string; last_name: string } | null;
+}
+
 export interface WeekViewProps {
   events: CalendarEvent[];
   /** All venues from database (shows empty venues too). Falls back to deriving from events. */
   venues?: Array<{ id: string; name: string }>;
+  /** Active event templates for the sidebar library */
+  templates?: EventTemplate[];
   currentDate?: Date;
   onDateChange?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
@@ -45,6 +59,8 @@ export interface WeekViewProps {
   onEventResize?: (eventId: string, newEndTime: string) => void;
   /** Called when an empty time slot is clicked (for creating one-off events) */
   onEmptySlotClick?: (date: string, time: string) => void;
+  /** Called when a template is dropped or clicked on the calendar */
+  onTemplateSelect?: (template: EventTemplate, date?: string, time?: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -272,12 +288,112 @@ function WeekEventBlock({
 }
 
 // ---------------------------------------------------------------------------
+// Template Library Sidebar
+// ---------------------------------------------------------------------------
+
+function TemplateSidebar({
+  templates,
+  collapsed,
+  onToggle,
+  onTemplateClick,
+}: {
+  templates: EventTemplate[];
+  collapsed: boolean;
+  onToggle: () => void;
+  onTemplateClick: (template: EventTemplate) => void;
+}) {
+  const handleDragStart = (e: React.DragEvent, template: EventTemplate) => {
+    e.dataTransfer.setData(
+      'application/x-template-item',
+      JSON.stringify(template),
+    );
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
+  return (
+    <div
+      className="shrink-0 bg-white border-r border-slate-200 flex flex-col transition-all duration-200"
+      style={{ width: collapsed ? 40 : 250 }}
+    >
+      {/* Header */}
+      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-3 border-b border-slate-200`}>
+        {!collapsed && (
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Template Library
+          </span>
+        )}
+        <Tooltip text={collapsed ? 'Show template library' : 'Hide template library'}>
+          <button
+            onClick={onToggle}
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-4 h-4 text-slate-400" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4 text-slate-400" />
+            )}
+          </button>
+        </Tooltip>
+      </div>
+
+      {/* Template list */}
+      {!collapsed && (
+        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+          {templates.length === 0 ? (
+            <p className="text-xs text-slate-400 text-center py-4">No active templates</p>
+          ) : (
+            templates.map((template) => {
+              const subject = template.required_skills?.[0];
+              const displayName = template.name || subject || 'Untitled';
+              const subtitle = subject && template.name ? subject : null;
+              const instructorName = template.instructor
+                ? `${template.instructor.first_name} ${template.instructor.last_name}`.trim()
+                : null;
+              return (
+                <div
+                  key={template.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, template)}
+                  onClick={() => onTemplateClick(template)}
+                  className="flex items-start gap-2 px-2.5 py-2 rounded-lg border border-slate-100 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 cursor-grab active:cursor-grabbing transition-colors group"
+                >
+                  <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0 group-hover:text-blue-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-medium text-slate-700 truncate leading-snug">
+                      {displayName}
+                    </p>
+                    {subtitle && (
+                      <p className="text-[11px] text-slate-400 truncate leading-snug">
+                        {subtitle}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {instructorName && (
+                        <span className="text-[10px] text-slate-400 truncate">{instructorName}</span>
+                      )}
+                      {template.duration_minutes > 0 && (
+                        <span className="text-[10px] text-slate-400">{template.duration_minutes}m</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // WeekView
 // ---------------------------------------------------------------------------
 
 export function WeekView({
   events,
   venues: venuesProp,
+  templates,
   currentDate,
   onDateChange,
   onEventClick,
@@ -292,11 +408,13 @@ export function WeekView({
   onEventDrop,
   onEventResize,
   onEmptySlotClick,
+  onTemplateSelect,
 }: WeekViewProps) {
   const [viewDate, setViewDate] = useState(() => currentDate ?? new Date());
   const [dayStartHour, setDayStartHour] = useState(initialStartHour);
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Sync viewDate when parent changes currentDate externally
   useEffect(() => {
@@ -468,7 +586,37 @@ export function WeekView({
     return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
   }, [weekDates, weekEndDate]);
 
+  // Handle template drop on a day column
+  const handleTemplateDrop = useCallback((e: React.DragEvent, dayIdx: number) => {
+    const raw = e.dataTransfer.getData('application/x-template-item');
+    if (!raw || !onTemplateSelect) return false;
+    try {
+      const template = JSON.parse(raw) as EventTemplate;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const dropY = e.clientY - rect.top;
+      const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
+      const snapped = snapTo15Min(rawHour);
+      onTemplateSelect(template, weekDateKeys[dayIdx], formatDecimalToTime(snapped));
+      return true;
+    } catch {
+      return false;
+    }
+  }, [onTemplateSelect, dayStartHour, weekDateKeys]);
+
+  const showSidebar = templates && templates.length > 0;
+
   return (
+    <div className="flex-1 flex overflow-hidden" style={{ minWidth: 0 }}>
+      {/* Template Library Sidebar */}
+      {showSidebar && (
+        <TemplateSidebar
+          templates={templates}
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((p) => !p)}
+          onTemplateClick={(template) => onTemplateSelect?.(template)}
+        />
+      )}
+
     <div className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
       {/* ------- Week Navigation Sub-bar ------- */}
       <div className="flex items-center gap-3 bg-white px-6 py-3 border-b border-slate-200 shrink-0">
@@ -617,22 +765,27 @@ export function WeekView({
                     : undefined
                 }
                 onDragOver={
-                  onEventDrop
+                  (onEventDrop || onTemplateSelect)
                     ? (e) => {
                         e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
+                        e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/x-template-item') ? 'copy' : 'move';
                         setDragOverCol(dayIdx);
                       }
                     : undefined
                 }
-                onDragLeave={onEventDrop ? () => setDragOverCol(null) : undefined}
+                onDragLeave={(onEventDrop || onTemplateSelect) ? () => setDragOverCol(null) : undefined}
                 onDrop={
-                  onEventDrop
+                  (onEventDrop || onTemplateSelect)
                     ? (e) => {
                         e.preventDefault();
                         setDragOverCol(null);
+
+                        // Try template drop first
+                        if (handleTemplateDrop(e, dayIdx)) return;
+
+                        // Then try event move
                         const raw = e.dataTransfer.getData('application/x-calendar-event');
-                        if (!raw) return;
+                        if (!raw || !onEventDrop) return;
                         try {
                           const { eventId, grabOffsetHours, duration } = JSON.parse(raw) as {
                             eventId: string;
@@ -755,6 +908,7 @@ export function WeekView({
           onOpenEditPanel={onOpenEditPanel}
         />
       )}
+    </div>
     </div>
   );
 }
