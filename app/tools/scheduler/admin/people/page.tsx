@@ -416,7 +416,6 @@ function VenueDetailModal({
 
   /* ── Edit-mode state ─── */
   const [editName, setEditName] = useState(venue.name || '');
-  const [editAddress, setEditAddress] = useState(venue.address || '');
   const [capacity, setCapacity] = useState<string>(
     venue.max_capacity != null ? String(venue.max_capacity) : ''
   );
@@ -437,7 +436,7 @@ function VenueDetailModal({
     if (accessible) amenities.push('wheelchair_accessible');
     onSave({
       name: editName.trim(),
-      address: editAddress.trim() || null,
+
       max_capacity: capacity ? Number(capacity) : null,
       space_type: roomType,
       amenities: amenities.length > 0 ? amenities : null,
@@ -451,7 +450,6 @@ function VenueDetailModal({
   const handleCancelEdit = () => {
     // Reset state back to venue values
     setEditName(venue.name || '');
-    setEditAddress(venue.address || '');
     setCapacity(venue.max_capacity != null ? String(venue.max_capacity) : '');
     setRoomType(venue.space_type || '');
     setAccessible(venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible'));
@@ -500,14 +498,6 @@ function VenueDetailModal({
         {!editing ? (
           /* ── READ-ONLY VIEW ─── */
           <div className="divide-y divide-slate-200">
-
-            {/* Address */}
-            {venue.address && (
-              <div className="flex items-center px-6 py-3 gap-2">
-                <MapPin className="w-4 h-4 text-slate-400" />
-                <span className="text-[13px] text-slate-700">{venue.address}</span>
-              </div>
-            )}
 
             {/* Capacity & Space Type */}
             <div className="flex items-center px-6 py-3 gap-6">
@@ -575,19 +565,6 @@ function VenueDetailModal({
         ) : (
           /* ── EDIT VIEW ─── */
           <div className="px-6 py-4 space-y-5">
-            {/* Address */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Address</label>
-              <Tooltip text="Venue address or location">
-                <input
-                  value={editAddress}
-                  onChange={(e) => setEditAddress(e.target.value)}
-                  placeholder="e.g. 123 Main St, Building A"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-                />
-              </Tooltip>
-            </div>
-
             {/* Capacity */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
@@ -1723,7 +1700,13 @@ export default function PeoplePage() {
     setDeletingVenue(true);
     try {
       const res = await fetch(`/api/venues/${selectedVenue.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete venue');
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.error && (data.error.includes('foreign key') || data.error.includes('constraint'))) {
+          throw new Error('Cannot delete: this venue is assigned to existing sessions. Remove it from sessions first.');
+        }
+        throw new Error(data.error || 'Failed to delete venue');
+      }
       setVenues((prev) => prev.filter((v) => v.id !== selectedVenue.id));
       setSelectedVenue(null);
       setToast({ message: 'Venue deleted', type: 'success', id: Date.now() });
