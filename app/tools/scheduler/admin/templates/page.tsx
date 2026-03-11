@@ -933,7 +933,6 @@ interface AutoFillSettings {
   startTime: string;
   endTime: string;
   selectedDays: number[]; // indices into AUTO_FILL_DAYS_LABELS (0=Su..6=Sa)
-  priorityTags: string[];
   schedulePattern: 'same' | 'rotating' | 'random';
   rotationOrder: string[]; // template IDs in rotation order
   usePerDayTimes: boolean;
@@ -945,18 +944,20 @@ function AutoFillModal({
   onClose,
   isFilling,
   templates,
-  subjectOptions = [],
+  initialStartHour,
+  initialEndHour,
 }: {
   onFill: (settings: AutoFillSettings) => void;
   onClose: () => void;
   isFilling: boolean;
   templates: Template[];
-  subjectOptions?: string[];
+  initialStartHour: number;
+  initialEndHour: number;
 }) {
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('15:00');
+  const toTimeStr = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+  const [startTime, setStartTime] = useState(() => toTimeStr(initialStartHour));
+  const [endTime, setEndTime] = useState(() => toTimeStr(initialEndHour));
   const [selectedDays, setSelectedDays] = useState<number[]>([...AUTO_FILL_WEEKDAY_INDICES]);
-  const [priorityTags, setPriorityTags] = useState<string[]>([]);
   const [schedulePattern, setSchedulePattern] = useState<'same' | 'rotating' | 'random'>('same');
   const [rotationOrder, setRotationOrder] = useState<string[]>(() => templates.map((t) => t.id));
   const [usePerDayTimes, setUsePerDayTimes] = useState(false);
@@ -972,12 +973,6 @@ function AutoFillModal({
   const toggleDay = (idx: number) => {
     setSelectedDays((prev) =>
       prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx].sort(),
-    );
-  };
-
-  const toggleTag = (tag: string) => {
-    setPriorityTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -1013,7 +1008,6 @@ function AutoFillModal({
       startTime,
       endTime,
       selectedDays,
-      priorityTags,
       schedulePattern,
       rotationOrder,
       usePerDayTimes,
@@ -1231,9 +1225,12 @@ function AutoFillModal({
                     onChange={() => setSchedulePattern('random')}
                     className="w-4 h-4 accent-violet-500"
                   />
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[13px] font-medium text-slate-900">Random</span>
-                    <Shuffle className="w-3.5 h-3.5 text-slate-400" />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-medium text-slate-900">Random</span>
+                      <Shuffle className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                    <p className="text-xs text-slate-500">Randomly shuffle template order each day</p>
                   </div>
                 </label>
               </Tooltip>
@@ -1277,32 +1274,6 @@ function AutoFillModal({
             )}
           </div>
 
-          {/* Priority Tags */}
-          <div>
-            <label className="block text-[13px] font-medium text-slate-900 mb-1.5">
-              Prioritize Tags <span className="text-slate-400 font-normal">(optional)</span>
-            </label>
-            <div className="flex gap-1.5 flex-wrap">
-              {subjectOptions.map((tag) => {
-                const active = priorityTags.includes(tag);
-                return (
-                  <Tooltip key={tag} text={active ? `Remove priority for ${tag}` : `Prioritize ${tag}`}>
-                    <button
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={`h-8 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                        active
-                          ? 'bg-violet-100 text-violet-700 border-violet-300'
-                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
@@ -1343,7 +1314,6 @@ function PlacedTemplateBlock({
   placed,
   template,
   onSelect,
-  onResize,
   onDelete,
   onDragStart,
   onDragEnd,
@@ -1357,7 +1327,6 @@ function PlacedTemplateBlock({
   placed: PlacedTemplate;
   template: Template;
   onSelect: () => void;
-  onResize: (newStart: number, newDuration: number) => void;
   onDelete: () => void;
   onDragStart: (placedId: string, templateId: string) => void;
   onDragEnd: () => void;
@@ -1368,55 +1337,7 @@ function PlacedTemplateBlock({
   hasConflict?: boolean;
   conflictMessages?: string[];
 }) {
-  const [resizing, setResizing] = useState<'top' | 'bottom' | null>(null);
   const blockRef = useRef<HTMLDivElement>(null);
-
-  const handleResizeStart = (edge: 'top' | 'bottom', e: React.MouseEvent) => {
-    e.stopPropagation();
-    setResizing(edge);
-  };
-
-  const handleResizeMove = useCallback(
-    (e: MouseEvent) => {
-      if (!resizing || !blockRef.current) return;
-
-      const gridRect = blockRef.current.closest('.schedule-grid')?.getBoundingClientRect();
-      if (!gridRect) return;
-
-      const relativeY = e.clientY - gridRect.top;
-      const hourAtMouse = dayStartHour + relativeY / HOUR_HEIGHT;
-      const snappedHour = snapToQuarterHour(Math.max(dayStartHour, Math.min(dayEndHour, hourAtMouse)));
-
-      if (resizing === 'top') {
-        const newStart = snappedHour;
-        const newDuration = (placed.startHour + placed.durationHours) - newStart;
-        if (newDuration >= 0.25) {
-          onResize(newStart, newDuration);
-        }
-      } else {
-        const newDuration = snappedHour - placed.startHour;
-        if (newDuration >= 0.25) {
-          onResize(placed.startHour, newDuration);
-        }
-      }
-    },
-    [resizing, placed, onResize, dayStartHour, dayEndHour],
-  );
-
-  const handleResizeEnd = useCallback(() => {
-    setResizing(null);
-  }, []);
-
-  useEffect(() => {
-    if (resizing) {
-      document.addEventListener('mousemove', handleResizeMove);
-      document.addEventListener('mouseup', handleResizeEnd);
-      return () => {
-        document.removeEventListener('mousemove', handleResizeMove);
-        document.removeEventListener('mouseup', handleResizeEnd);
-      };
-    }
-  }, [resizing, handleResizeMove, handleResizeEnd]);
 
   const top = (placed.startHour - dayStartHour) * HOUR_HEIGHT;
   const height = placed.durationHours * HOUR_HEIGHT;
@@ -1456,15 +1377,6 @@ function PlacedTemplateBlock({
       title={hasConflict && conflictMessages?.length ? conflictMessages.join('\n') : undefined}
       onClick={onSelect}
     >
-      {/* Top resize handle */}
-      <Tooltip text="Drag to adjust start time">
-        <div
-          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity"
-          onMouseDown={(e) => handleResizeStart('top', e)}
-          style={{ backgroundColor: template.color }}
-        />
-      </Tooltip>
-
       <Tooltip text={hasConflict && conflictMessages?.length ? conflictMessages.join(' | ') : template.timeSlot ? `Fixed time: ${formatHour(timeStringToHour(template.timeSlot.start))} – ${formatHour(timeStringToHour(template.timeSlot.end))} (drag to change day)` : `Drag to move · Click to edit`}>
         <div className="px-1.5 py-0.5 overflow-hidden" style={{ textDecoration: 'none' }}>
           <div className="flex items-start gap-0.5">
@@ -1505,15 +1417,6 @@ function PlacedTemplateBlock({
             <p className="text-[9px] text-slate-600 leading-tight truncate">{template.instructor}</p>
           )}
         </div>
-      </Tooltip>
-
-      {/* Bottom resize handle */}
-      <Tooltip text="Drag to adjust end time">
-        <div
-          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity"
-          onMouseDown={(e) => handleResizeStart('bottom', e)}
-          style={{ backgroundColor: template.color }}
-        />
       </Tooltip>
 
       {/* Delete button — always rendered, visible on hover or when selected */}
@@ -2750,38 +2653,6 @@ export default function TemplatesPage() {
 
   // ── Placed template operations ──
 
-  const handleResizePlaced = (placedId: string, newStart: number, newDuration: number) => {
-    // Block resizing into lunch
-    if (overlapsLunch(newStart, newDuration, lunchEnabled, lunchStart, lunchEnd)) return;
-
-    // Venue conflict detection
-    const placed = placedTemplates.find((p) => p.id === placedId);
-    if (placed) {
-      const tmpl = templates.find((t) => t.id === placed.templateId);
-      if (!tmpl) return; // Early return if template not found
-      // Conflict detection - always check, even for templates without assigned venues
-      const newEnd = newStart + newDuration;
-      const placedVenueId = placed.venueId ?? tmpl.venueId ?? null;
-      const conflict = placedTemplates.find((p) => {
-        if (p.id === placedId || p.dayIndex !== placed.dayIndex || p.weekIndex !== placed.weekIndex) return false;
-        const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
-        if (pVenueId !== placedVenueId) return false;
-        const pEnd = p.startHour + p.durationHours;
-        return newStart < pEnd && p.startHour < newEnd;
-      });
-      if (conflict) {
-        const venueName = tmpl.venue || venues.find((v) => v.id === tmpl.venueId)?.name || 'this slot';
-        setToast({ message: `Conflict: ${venueName} is already booked at this time`, type: 'error', id: Date.now() });
-        return;
-      }
-    }
-
-    setPlacedTemplates((prev) =>
-      prev.map((p) => (p.id === placedId ? { ...p, startHour: newStart, durationHours: newDuration } : p)),
-    );
-    setIsDirty(true);
-  };
-
   const handleDeletePlaced = (placedId: string) => {
     setPlacedTemplates((prev) => prev.filter((p) => p.id !== placedId));
     setSelectedPlacedId(null);
@@ -3447,9 +3318,6 @@ export default function TemplatesPage() {
                                     setSelectedPlacedId(placed.id === selectedPlacedId ? null : placed.id);
                                     handleEditTemplate(template);
                                   }}
-                                  onResize={(newStart, newDuration) =>
-                                    handleResizePlaced(placed.id, newStart, newDuration)
-                                  }
                                   onDelete={() => handleDeletePlaced(placed.id)}
                                   onDragStart={handlePlacedDragStart}
                                   onDragEnd={handleDragEnd}
@@ -3483,9 +3351,6 @@ export default function TemplatesPage() {
                                 setSelectedPlacedId(placed.id === selectedPlacedId ? null : placed.id);
                                 handleEditTemplate(template);
                               }}
-                              onResize={(newStart, newDuration) =>
-                                handleResizePlaced(placed.id, newStart, newDuration)
-                              }
                               onDelete={() => handleDeletePlaced(placed.id)}
                               onDragStart={handlePlacedDragStart}
                               onDragEnd={handleDragEnd}
@@ -3563,7 +3428,8 @@ export default function TemplatesPage() {
           }}
           isFilling={isAutoFilling}
           templates={venueFilteredTemplates}
-          subjectOptions={subjectOptions}
+          initialStartHour={dayStartHour}
+          initialEndHour={dayEndHour}
         />
       )}
 
