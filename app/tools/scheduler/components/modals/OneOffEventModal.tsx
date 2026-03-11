@@ -245,7 +245,7 @@ export function OneOffEventModal({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Instructor</label>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Staff</label>
               <select
                 value={instructorId}
                 onChange={(e) => setInstructorId(e.target.value)}

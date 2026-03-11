@@ -108,7 +108,7 @@ export default function InstructorPortalPage() {
 
       const { instructors } = await instrRes.json();
       if (!instructors || instructors.length === 0) {
-        setError('No instructor profile found for your account.');
+        setError('No staff profile found for your account.');
         setLoading(false);
         return;
       }
@@ -252,15 +252,15 @@ export default function InstructorPortalPage() {
                 </div>
                 <p className="text-sm font-medium">
                   {viewFilter === 'upcoming'
-                    ? 'No upcoming sessions'
+                    ? 'No upcoming classes'
                     : viewFilter === 'past'
-                      ? 'No past sessions'
-                      : 'No sessions found'}
+                      ? 'No past classes'
+                      : 'No classes found'}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {viewFilter === 'upcoming'
-                    ? "You don't have any published sessions scheduled yet."
-                    : 'No sessions match this filter.'}
+                    ? "You don't have any published classes scheduled yet."
+                    : 'No classes match this filter.'}
                 </p>
               </div>
             ) : (

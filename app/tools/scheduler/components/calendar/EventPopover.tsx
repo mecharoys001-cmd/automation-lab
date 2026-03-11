@@ -477,13 +477,13 @@ export function EventPopover({
         </Tooltip>
 
         {isEditing ? (
-          <Tooltip text="Edit session name">
+          <Tooltip text="Edit class name">
             <input
               type="text"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               className="flex-1 min-w-0 text-[13px] font-bold text-slate-900 bg-white/80 border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              aria-label="Session name"
+              aria-label="Class name"
             />
           </Tooltip>
         ) : (
@@ -494,11 +494,11 @@ export function EventPopover({
 
         {/* Edit – opens side panel instead of inline editing */}
         {pinned && !isEditing && !inCancelFlow && onOpenEditPanel && (
-          <Tooltip text="Edit session details">
+          <Tooltip text="Edit class details">
             <button
               onClick={() => { onOpenEditPanel(event); onClose(); }}
               className="p-1 rounded hover:bg-white/60 transition-colors cursor-pointer"
-              aria-label="Edit session"
+              aria-label="Edit class"
             >
               <Pencil className="w-3.5 h-3.5 text-slate-400" />
             </button>
@@ -559,7 +559,7 @@ export function EventPopover({
             {/* Date & Time */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
-                <Tooltip text="Session date and time">
+                <Tooltip text="Class date and time">
                   <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </Tooltip>
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
@@ -567,13 +567,13 @@ export function EventPopover({
                 </span>
               </div>
               <div className="flex gap-2">
-                <Tooltip text="Session date">
+                <Tooltip text="Class date">
                   <input
                     type="date"
                     value={editDate}
                     onChange={(e) => setEditDate(e.target.value)}
                     className="flex-1 text-[12px] text-slate-700 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
-                    aria-label="Session date"
+                    aria-label="Class date"
                   />
                 </Tooltip>
               </div>
@@ -603,7 +603,7 @@ export function EventPopover({
             {/* Venue dropdown */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
-                <Tooltip text="Session venue">
+                <Tooltip text="Class venue">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </Tooltip>
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
@@ -636,7 +636,7 @@ export function EventPopover({
             {/* Tags multi-select */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
-                <Tooltip text="Session tags">
+                <Tooltip text="Class tags">
                   <Tag className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </Tooltip>
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
@@ -725,7 +725,7 @@ export function EventPopover({
                 disabled={isSaving || !editTitle.trim()}
                 icon={isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 className="flex-1"
-                tooltip="Save session changes"
+                tooltip="Save class changes"
               >
                 {isSaving ? 'Saving...' : 'Save'}
               </Button>
@@ -745,7 +745,7 @@ export function EventPopover({
           <>
             {/* Time */}
             <div className="flex items-center gap-2">
-              <Tooltip text="Session time">
+              <Tooltip text="Class time">
                 <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </Tooltip>
               <div>
@@ -855,15 +855,15 @@ export function EventPopover({
 
             {isEditingNotes ? (
               <div className="space-y-2">
-                <Tooltip text="Type session notes here">
+                <Tooltip text="Type class notes here">
                   <textarea
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Add notes about this session..."
+                    placeholder="Add notes about this class..."
                     className="w-full px-3 py-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none bg-white"
                     rows={3}
                     autoFocus
-                    aria-label="Session notes"
+                    aria-label="Class notes"
                   />
                 </Tooltip>
                 <div className="flex gap-2">
@@ -897,9 +897,9 @@ export function EventPopover({
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
               <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-[12px] font-semibold text-amber-900">Are you sure you want to cancel this session?</p>
+                <p className="text-[12px] font-semibold text-amber-900">Are you sure you want to cancel this class?</p>
                 <p className="text-[11px] text-amber-700 mt-0.5">
-                  You can choose to replace the instructor or the entire event afterward.
+                  You can choose to replace the staff or the entire event afterward.
                 </p>
               </div>
             </div>
@@ -907,7 +907,7 @@ export function EventPopover({
               <Button variant="danger" size="sm" onClick={handleConfirmCancel} className="flex-1" tooltip="Confirm cancellation">
                 Yes, Cancel
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)} className="flex-1" tooltip="Keep the session">
+              <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)} className="flex-1" tooltip="Keep the class">
                 No, Keep It
               </Button>
             </div>
@@ -917,7 +917,7 @@ export function EventPopover({
         {/* Replace Options */}
         {showReplaceOptions && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <p className="text-[12px] font-semibold text-slate-700">Replace instructor or session?</p>
+            <p className="text-[12px] font-semibold text-slate-700">Replace staff or class?</p>
             <div className="space-y-1.5">
               <Button
                 variant="secondary"
@@ -935,9 +935,9 @@ export function EventPopover({
                 onClick={handleShowTemplates}
                 icon={<RefreshCw className="w-3.5 h-3.5" />}
                 className="w-full justify-start"
-                tooltip="Replace with a different session"
+                tooltip="Replace with a different class"
               >
-                Replace Entire Session
+                Replace Entire Class
               </Button>
               <Button
                 variant="danger"
@@ -955,16 +955,16 @@ export function EventPopover({
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-amber-500" />
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
-                  Similar sessions (different instructor)
+                  Similar classes (different staff)
                 </span>
               </div>
               {loadingSimilar ? (
                 <div className="flex items-center justify-center py-3 gap-2">
                   <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                  <span className="text-[11px] text-slate-400">Finding similar sessions...</span>
+                  <span className="text-[11px] text-slate-400">Finding similar classes...</span>
                 </div>
               ) : similarEvents.length === 0 ? (
-                <p className="text-[11px] text-slate-400 py-1">No similar sessions found.</p>
+                <p className="text-[11px] text-slate-400 py-1">No similar classes found.</p>
               ) : (
                 <div className="space-y-1">
                   {similarEvents.map((se) => (
@@ -1004,11 +1004,11 @@ export function EventPopover({
             {loadingSubstitutes ? (
               <div className="flex items-center justify-center py-4 gap-2">
                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                <span className="text-[12px] text-slate-500">Finding available instructors...</span>
+                <span className="text-[12px] text-slate-500">Finding available staff...</span>
               </div>
             ) : substitutes.length === 0 ? (
               <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-center">
-                <p className="text-[12px] text-slate-500">No substitute instructors available.</p>
+                <p className="text-[12px] text-slate-500">No substitute staff available.</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -1045,7 +1045,7 @@ export function EventPopover({
         {showTemplates && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-slate-700">Select Replacement Session</p>
+              <p className="text-[12px] font-semibold text-slate-700">Select Replacement Class</p>
               <Tooltip text="Back to options">
                 <button
                   onClick={handleBackToReplaceOptions}

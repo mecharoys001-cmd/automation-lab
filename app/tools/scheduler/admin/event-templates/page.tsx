@@ -438,7 +438,7 @@ export default function EventTemplatesPage() {
               <Upload className="w-4 h-4" />
               Import CSV
             </Button>
-            <Button variant="primary" onClick={openCreateForm} tooltip="Create a new session template">
+            <Button variant="primary" onClick={openCreateForm} tooltip="Create a new class template">
               <Plus className="w-4 h-4" />
               New Event Template
             </Button>
@@ -604,7 +604,7 @@ export default function EventTemplatesPage() {
             </FormField>
 
             {/* 6. Scheduling Mode */}
-            <FormField label="Scheduling Mode" hint="When sessions are generated">
+            <FormField label="Scheduling Mode" hint="When classes are generated">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {/* Ongoing */}
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
@@ -712,8 +712,8 @@ export default function EventTemplatesPage() {
                     style={{ marginTop: 3, accentColor: '#3B82F6' }}
                   />
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Session Count</span>
-                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Create a fixed number of sessions, optionally within a time window</div>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Class Count</span>
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Create a fixed number of classes, optionally within a time window</div>
                     {form.scheduling_mode === 'session_count' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                         <div>
@@ -727,7 +727,7 @@ export default function EventTemplatesPage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                           <div>
-                            <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Number of Sessions</label>
+                            <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Number of Classes</label>
                             <input
                               type="number"
                               min={1}
@@ -759,7 +759,7 @@ export default function EventTemplatesPage() {
             </FormField>
 
             {/* 7. Session Duration */}
-            <FormField label="Session Duration">
+            <FormField label="Class Duration">
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                 {DURATION_PRESETS.map((mins) => {
                   const selected = !form.duration_custom && form.duration_minutes === mins;

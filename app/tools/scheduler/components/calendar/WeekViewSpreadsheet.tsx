@@ -189,7 +189,7 @@ function EventBlock({
               <span>View Details</span>
             </button>
           </Tooltip>
-          <Tooltip text="Find replacement instructors" position="right">
+          <Tooltip text="Find replacement staff" position="right">
             <button
               onClick={() => {
                 setContextMenuOpen(false);

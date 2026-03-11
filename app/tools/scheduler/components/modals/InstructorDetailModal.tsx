@@ -244,7 +244,7 @@ export function InstructorDetailModal({
         {/* ── Footer ───────────────────────────────────────── */}
         <div className="flex items-center justify-between h-14 px-6">
           {onViewCalendar && (
-            <Tooltip text="Jump to calendar filtered to this instructor">
+            <Tooltip text="Jump to calendar filtered to this staff member">
               <button
                 onClick={onViewCalendar}
                 className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors"

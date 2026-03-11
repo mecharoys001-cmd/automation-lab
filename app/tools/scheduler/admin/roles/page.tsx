@@ -64,7 +64,7 @@ const ROLE_META: Record<AppRole, { label: string; description: string; color: st
   },
   editor: {
     label: 'Editor',
-    description: 'Edit schedules and sessions within existing programs',
+    description: 'Edit schedules and classes within existing programs',
     color: 'bg-amber-100 text-amber-600',
     icon: Shield,
   },

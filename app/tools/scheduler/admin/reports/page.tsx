@@ -234,8 +234,8 @@ function InstructorHoursTab({
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
-              <Tooltip text="Full name of the instructor">
-                <span className="cursor-help">Instructor Name</span>
+              <Tooltip text="Full name of the staff member">
+                <span className="cursor-help">Staff Name</span>
               </Tooltip>
             </th>
             <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
@@ -249,7 +249,7 @@ function InstructorHoursTab({
               </Tooltip>
             </th>
             <th className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
-              <Tooltip text="Current employment status of the instructor">
+              <Tooltip text="Current employment status of the staff member">
                 <span className="cursor-help">Status</span>
               </Tooltip>
             </th>
@@ -444,12 +444,12 @@ function HoursByTagTab({
               </Tooltip>
             </th>
             <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
-              <Tooltip text="Number of individual sessions tagged with this category">
-                <span className="cursor-help">Sessions</span>
+              <Tooltip text="Number of individual classes tagged with this category">
+                <span className="cursor-help">Classes</span>
               </Tooltip>
             </th>
             <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
-              <Tooltip text="Average length of each session in minutes">
+              <Tooltip text="Average length of each class in minutes">
                 <span className="cursor-help">Avg Duration</span>
               </Tooltip>
             </th>
@@ -474,7 +474,7 @@ function HoursByTagTab({
                 >
                   {/* Tag cell: emoji + name + proportional bar */}
                   <td className="px-5 py-3.5">
-                    <Tooltip text={`${tag.emoji} ${tag.name}: ${tag.totalHours} hours across ${tag.sessions} sessions`}>
+                    <Tooltip text={`${tag.emoji} ${tag.name}: ${tag.totalHours} hours across ${tag.sessions} classes`}>
                       <div className="flex flex-col gap-1.5">
                         <span className="text-sm font-medium text-slate-900">
                           {tag.emoji}&nbsp;&nbsp;{tag.name}
@@ -502,7 +502,7 @@ function HoursByTagTab({
 
                   {/* Sessions */}
                   <td className="px-5 py-3.5 text-right">
-                    <Tooltip text={`${tag.sessions} sessions tagged as ${tag.name}`}>
+                    <Tooltip text={`${tag.sessions} classes tagged as ${tag.name}`}>
                       <span className="text-sm text-slate-500 tabular-nums">
                         {tag.sessions}
                       </span>
@@ -511,7 +511,7 @@ function HoursByTagTab({
 
                   {/* Avg Duration */}
                   <td className="px-5 py-3.5 text-right">
-                    <Tooltip text={`Average session duration: ${tag.avgDuration} minutes`}>
+                    <Tooltip text={`Average class duration: ${tag.avgDuration} minutes`}>
                       <span className="text-sm text-slate-500 tabular-nums">
                         {tag.avgDuration} min
                       </span>
@@ -674,7 +674,7 @@ export default function ReportsPage() {
     <div className="flex flex-col h-full" style={{ backgroundColor: '#F8FAFC' }}>
       {/* ─── Top Bar ──────────────────────────────────────── */}
       <div className="flex items-center gap-3 bg-white px-8 h-16 border-b border-[#E2E8F0]">
-        <Tooltip text="Reports dashboard — view instructor hours and tag breakdowns">
+        <Tooltip text="Reports dashboard — view staff hours and tag breakdowns">
           <h1 className="text-2xl font-bold text-slate-900 cursor-default">Reports</h1>
         </Tooltip>
 
@@ -702,13 +702,13 @@ export default function ReportsPage() {
       {/* ─── Quick Links ──────────────────────────────────── */}
       <div className="bg-gradient-to-r from-blue-50 to-violet-50 px-8 py-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <Tooltip text="View session counts by class template with filtering and sorting">
+          <Tooltip text="View class counts by template with filtering and sorting">
             <a
               href="/tools/scheduler/admin/reports/sessions-by-template"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-[13px] font-medium text-blue-700"
             >
               <FileText className="w-4 h-4" />
-              Sessions by Template
+              Classes by Template
               <ChevronRight className="w-3.5 h-3.5" />
             </a>
           </Tooltip>

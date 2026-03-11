@@ -499,16 +499,16 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
               </Tooltip>
             )}
             {(!event.subjects || event.subjects.length === 0) && qualifiedCount > 0 && (
-              <Tooltip text="Other instructors who are qualified and available for this session type">
+              <Tooltip text="Other staff who are qualified and available for this class type">
                 <p className="text-[11px] text-[#94A3B8] mt-1.5">
-                  {qualifiedCount} other qualified instructor{qualifiedCount !== 1 ? 's' : ''} available
+                  {qualifiedCount} other qualified staff available
                 </p>
               </Tooltip>
             )}
 
             {/* Add New Staff Member Button/Form */}
             {!showAddInstructor ? (
-              <Tooltip text="Add a new instructor to the system">
+              <Tooltip text="Add new staff to the system">
                 <button
                   onClick={() => setShowAddInstructor(true)}
                   className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
@@ -520,8 +520,8 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
             ) : (
               <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-medium text-slate-700">New Instructor</span>
-                  <Tooltip text="Cancel adding instructor">
+                  <span className="text-[13px] font-medium text-slate-700">New Staff</span>
+                  <Tooltip text="Cancel adding staff">
                     <button
                       onClick={() => {
                         setShowAddInstructor(false);
@@ -535,7 +535,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                   </Tooltip>
                 </div>
                 <div className="space-y-2">
-                  <Tooltip text="Enter the instructor's first name">
+                  <Tooltip text="Enter staff first name">
                     <input
                       type="text"
                       placeholder="First name"
@@ -545,7 +545,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                       disabled={addingInstructor}
                     />
                   </Tooltip>
-                  <Tooltip text="Enter the instructor's last name">
+                  <Tooltip text="Enter staff last name">
                     <input
                       type="text"
                       placeholder="Last name"
@@ -560,7 +560,7 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
                       }}
                     />
                   </Tooltip>
-                  <Tooltip text="Create this instructor">
+                  <Tooltip text="Create this staff member">
                     <button
                       onClick={handleAddInstructor}
                       disabled={addingInstructor || !newInstructorFirst.trim() || !newInstructorLast.trim()}

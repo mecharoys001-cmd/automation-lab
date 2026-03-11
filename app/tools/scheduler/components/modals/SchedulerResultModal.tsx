@@ -105,8 +105,8 @@ const REASON_LABELS: Record<string, string> = {
   venue_conflict: 'Venue Conflict',
   venue_at_capacity: 'Venue at Capacity',
   venue_blackout: 'Venue Blackout',
-  no_instructor: 'No Instructor',
-  no_qualified_instructor: 'No Qualified Instructor',
+  no_instructor: 'No Staff',
+  no_qualified_instructor: 'No Qualified Staff',
   week_cycle_skip: 'Week Cycle Skip',
 };
 
@@ -288,7 +288,7 @@ function UnassignedPanel({
     if (match) {
       setAssignments((prev) => ({ ...prev, [session.id]: match.id }));
     } else {
-      showToast('No matching instructor found', 'info');
+      showToast('No matching staff found', 'info');
     }
   };
 
@@ -563,7 +563,7 @@ export function SchedulerResultModal({
       }
 
       if (assignmentList.length === 0) {
-        showToast('No instructors available for auto-assignment', 'info');
+        showToast('No staff available for auto-assignment', 'info');
         return;
       }
 

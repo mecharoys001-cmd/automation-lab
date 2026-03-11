@@ -1637,7 +1637,7 @@ function DayScheduleSettings({
 
         {/* Buffer Time */}
         <div className="pt-2 border-t border-slate-100">
-          <Tooltip text={bufferEnabled ? 'Disable buffer time between sessions' : 'Add padding time between all sessions for transitions'}>
+          <Tooltip text={bufferEnabled ? 'Disable buffer time between classes' : 'Add padding time between all classes for transitions'}>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -1655,7 +1655,7 @@ function DayScheduleSettings({
               <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Buffer Duration (minutes)
               </label>
-              <Tooltip text="Minimum padding time between sessions (venues may add extra setup/teardown time)">
+              <Tooltip text="Minimum padding time between classes (venues may add extra setup/teardown time)">
                 <input
                   type="number"
                   min="0"
@@ -3045,7 +3045,7 @@ export default function TemplatesPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-slate-900">Schedule Builder</h1>
-              <Tooltip text="Step 1: Create event templates (or edit existing ones) &#10;Step 2: Drag them onto the weekly grid to set recurring times &#10;Step 3: Click Publish Schedule to generate calendar sessions">
+              <Tooltip text="Step 1: Create event templates (or edit existing ones) &#10;Step 2: Drag them onto the weekly grid to set recurring times &#10;Step 3: Click Generate Classes to create classes on your calendar">
                 <Info className="w-4.5 h-4.5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" />
               </Tooltip>
             </div>
@@ -3119,7 +3119,7 @@ export default function TemplatesPage() {
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-white text-red-600 hover:bg-red-50 border border-red-300 hover:border-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-4 h-4" />
-              Clear Schedule
+              Clear Grid
             </button>
           </Tooltip>
           <Button
@@ -3131,12 +3131,12 @@ export default function TemplatesPage() {
           >
             {isSaving ? 'Saving…' : 'Save Schedule'}
           </Button>
-          <Tooltip text="Generate calendar sessions from template schedule">
+          <Tooltip text="Generate classes from your weekly template">
             <button
               onClick={() => {
                 if (conflicts.length > 0) {
                   setToast({
-                    message: `Cannot publish: ${conflicts.length} conflict${conflicts.length === 1 ? '' : 's'} must be resolved first`,
+                    message: `Cannot generate: ${conflicts.length} conflict${conflicts.length === 1 ? '' : 's'} must be resolved first`,
                     type: 'error',
                     id: Date.now(),
                   });
@@ -3148,7 +3148,7 @@ export default function TemplatesPage() {
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {isPublishing ? 'Publishing…' : 'Publish Schedule'}
+              {isPublishing ? 'Generating…' : 'Generate Classes'}
             </button>
           </Tooltip>
           <div className="flex-1" />
@@ -3223,7 +3223,7 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      {/* Next Step CTA — show when templates are placed but no sessions generated yet */}
+      {/* Next Step CTA — show when templates are placed but no classes generated yet */}
       {placedTemplates.length > 0 && !hasSessions && (
         <div className="bg-blue-50 px-8 py-3 border-b border-blue-200 shrink-0">
           <div className="flex items-center justify-between">
@@ -3236,11 +3236,11 @@ export default function TemplatesPage() {
                   Ready to generate your schedule?
                 </p>
                 <p className="text-xs text-blue-600">
-                  Your weekly templates are set up. Head to the Calendar to generate sessions from this pattern.
+                  Your weekly templates are set up. Head to the Calendar to generate classes from this pattern.
                 </p>
               </div>
             </div>
-            <Tooltip text="Go to the Calendar page to generate sessions from your templates">
+            <Tooltip text="Go to the Calendar page to generate classes from your templates">
               <a
                 href="/tools/scheduler/admin"
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
@@ -3284,8 +3284,8 @@ export default function TemplatesPage() {
               ) : null;
             })()}
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-slate-900">Your Schedule</h2>
-              <p className="text-sm text-slate-500">— Drag events from the library to build your schedule</p>
+              <h2 className="text-base font-semibold text-slate-900">Template Library</h2>
+              <p className="text-sm text-slate-500">— Drag templates to the grid to plan your week</p>
               <Tooltip text="Add another week to the schedule">
                 <button
                   onClick={() => {
@@ -3776,9 +3776,9 @@ export default function TemplatesPage() {
           </Tooltip>
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[440px] mx-4">
             <div className="px-6 py-5">
-              <h3 className="text-lg font-semibold text-slate-900">Publish Schedule</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Generate Classes</h3>
               <p className="mt-2 text-sm text-slate-600">
-                This will generate <span className="font-semibold">{placedTemplates.length} calendar session{placedTemplates.length === 1 ? '' : 's'}</span> from the current template placements. Sessions will be created as drafts for the upcoming week.
+                This will generate <span className="font-semibold">{placedTemplates.length} class{placedTemplates.length === 1 ? '' : 'es'}</span> from the current template placements. Classes will be created as drafts for the upcoming week.
               </p>
               <p className="mt-2 text-sm text-slate-500">
                 Are you sure you want to continue?
@@ -3788,13 +3788,13 @@ export default function TemplatesPage() {
               <Button variant="secondary" onClick={() => setShowPublishConfirm(false)} tooltip="Cancel and go back">
                 Cancel
               </Button>
-              <Tooltip text="Publish schedule and create sessions">
+              <Tooltip text="Generate classes from templates">
                 <button
                   onClick={handlePublishSchedule}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent"
                 >
                   <Send className="w-4 h-4" />
-                  Publish
+                  Generate
                 </button>
               </Tooltip>
             </div>
@@ -3810,7 +3810,7 @@ export default function TemplatesPage() {
           </Tooltip>
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[440px] mx-4">
             <div className="px-6 py-5">
-              <h3 className="text-lg font-semibold text-slate-900">Clear Schedule</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Clear Grid</h3>
               <p className="mt-2 text-sm text-slate-600">
                 Clear all template placements? This cannot be undone.
               </p>
@@ -3826,7 +3826,7 @@ export default function TemplatesPage() {
                     setSelectedPlacedId(null);
                     setIsDirty(true);
                     setShowClearConfirm(false);
-                    setToast({ message: 'Schedule cleared', type: 'success', id: Date.now() });
+                    setToast({ message: 'Grid cleared', type: 'success', id: Date.now() });
                   }}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer bg-red-500 text-white hover:bg-red-600 border border-transparent"
                 >

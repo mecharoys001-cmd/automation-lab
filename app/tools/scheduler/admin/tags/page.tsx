@@ -797,7 +797,7 @@ export default function TagsPage() {
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
                                   {sessionCount > 0 && (
-                                    <Tooltip text={`Used in ${sessionCount} session${sessionCount === 1 ? '' : 's'}`}>
+                                    <Tooltip text={`Used in ${sessionCount} class${sessionCount === 1 ? '' : 'es'}`}>
                                       <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
                                         {sessionCount}
                                       </span>
@@ -817,7 +817,7 @@ export default function TagsPage() {
                                     <Pencil className="w-4 h-4" />
                                   </button>
                                 </Tooltip>
-                                <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} session${sessionCount === 1 ? '' : 's'} — click to delete` : 'Delete tag'}>
+                                <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} class${sessionCount === 1 ? '' : 'es'} — click to delete` : 'Delete tag'}>
                                   <button
                                     onClick={() => deleteTag(tag.id, tag.name)}
                                     disabled={isDeleting}

@@ -310,9 +310,9 @@ export default function SettingsPage() {
 
   async function handleSeed(dataset: 'small' | 'medium' | 'full' = 'medium') {
     const datasetName = 
-      dataset === 'small' ? 'SMALL (2 instructors, 5 templates)' :
-      dataset === 'medium' ? 'MEDIUM (10 instructors, 36 templates)' :
-      'FULL (50 instructors, 200+ templates)';
+      dataset === 'small' ? 'SMALL (2 staff, 5 templates)' :
+      dataset === 'medium' ? 'MEDIUM (10 staff, 36 templates)' :
+      'FULL (50 staff, 200+ templates)';
     if (!confirm(`This will clear ALL existing data and reload with ${datasetName} mock data. Continue?`)) return;
     setSeeding(true);
     setSeedCounts(null);
@@ -479,7 +479,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className={labelClass}>Start Date</label>
-                <Tooltip text="First day sessions can be scheduled" position="bottom">
+                <Tooltip text="First day classes can be scheduled" position="bottom">
                   <input
                     type="date"
                     value={programForm.start_date}
@@ -490,7 +490,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className={labelClass}>End Date</label>
-                <Tooltip text="Last day sessions can be scheduled" position="bottom">
+                <Tooltip text="Last day classes can be scheduled" position="bottom">
                   <input
                     type="date"
                     value={programForm.end_date}
@@ -817,7 +817,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <Tooltip text="Load small dataset (2 instructors, 1 venue, 5 templates) for focused testing">
+          <Tooltip text="Load small dataset (2 staff, 1 venue, 5 templates) for focused testing">
             <button
               onClick={() => handleSeed('small')}
               disabled={seeding}
@@ -850,7 +850,7 @@ export default function SettingsPage() {
             </button>
           </Tooltip>
 
-          <Tooltip text="Load medium dataset (10 instructors, 4 venues, 36 templates) for integration testing">
+          <Tooltip text="Load medium dataset (10 staff, 4 venues, 36 templates) for integration testing">
             <button
               onClick={() => handleSeed('medium')}
               disabled={seeding}
@@ -883,7 +883,7 @@ export default function SettingsPage() {
             </button>
           </Tooltip>
 
-          <Tooltip text="Load MASSIVE dataset (50 instructors, 16 venues, 200+ templates, 30+ subjects) for stress/load testing">
+          <Tooltip text="Load MASSIVE dataset (50 staff, 16 venues, 200+ templates, 30+ subjects) for stress/load testing">
             <button
               onClick={() => handleSeed('full')}
               disabled={seeding}
@@ -966,19 +966,19 @@ export default function SettingsPage() {
           {/* Clear Sessions Only */}
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
             <div className="flex-1 mr-4">
-              <p className="text-sm font-medium text-slate-900">Clear Sessions Only</p>
+              <p className="text-sm font-medium text-slate-900">Clear Classes Only</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all generated sessions for this program. Templates, instructors, and venues are kept.
+                Removes all generated classes for this program. Templates, staff, and venues are kept.
               </p>
             </div>
-            <Tooltip text="Delete all sessions — keeps templates, instructors &amp; venues intact">
+            <Tooltip text="Delete all classes — keeps templates, staff &amp; venues intact">
               <button
                 onClick={() => openClearModal('sessions')}
                 disabled={!selectedProgramId || clearing}
                 className={`${btnDangerOutline} whitespace-nowrap`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear Sessions
+                Clear Classes
               </button>
             </Tooltip>
           </div>
@@ -988,10 +988,10 @@ export default function SettingsPage() {
             <div className="flex-1 mr-4">
               <p className="text-sm font-medium text-slate-900">Clear All Data</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all sessions, templates, venues, and tags for this program. Instructors are preserved. Use this to fully reset after testing with mock data.
+                Removes all classes, templates, venues, and tags for this program. Staff are preserved. Use this to fully reset after testing with mock data.
               </p>
             </div>
-            <Tooltip text="Delete ALL sessions, templates, venues &amp; tags — instructors are preserved">
+            <Tooltip text="Delete ALL classes, templates, venues &amp; tags — staff are preserved">
               <button
                 onClick={() => openClearModal('all')}
                 disabled={!selectedProgramId || clearing}
@@ -1083,7 +1083,7 @@ export default function SettingsPage() {
                   ) : (
                     <div className="space-y-1.5">
                       {[
-                        { key: 'sessions', label: 'Sessions' },
+                        { key: 'sessions', label: 'Classes' },
                         { key: 'templates', label: 'Templates' },
                         { key: 'venues', label: 'Venues' },
                         { key: 'tags', label: 'Tags' },
@@ -1131,7 +1131,7 @@ export default function SettingsPage() {
               </Tooltip>
 
               {clearMode === 'sessions' ? (
-                <Tooltip text="Delete all sessions for this program">
+                <Tooltip text="Delete all classes for this program">
                   <button
                     onClick={handleClearData}
                     disabled={clearing}

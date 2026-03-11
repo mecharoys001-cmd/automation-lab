@@ -283,7 +283,7 @@ function ClearEventsModal({
 
 const CSV_COLUMNS = [
   'Date', 'Day', 'Start Time', 'End Time', 'Event Name',
-  'Instructor', 'Venue', 'Grade Groups', 'Status', 'Tags',
+  'Staff', 'Venue', 'Grade Groups', 'Status', 'Tags',
 ] as const;
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1106,12 +1106,12 @@ function CalendarDashboard() {
         {/* Auto-Generate Draft */}
         <Button
           variant="secondary"
-          tooltip="Preview and generate a draft schedule using templates"
+          tooltip="Generate draft classes from your weekly template"
           icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-500 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-500" />}
           onClick={handleGenerateSchedule}
           disabled={isGenerating}
         >
-          {isGenerating ? 'Previewing...' : 'Auto-Generate Calendar'}
+          {isGenerating ? 'Previewing...' : 'Generate Classes'}
         </Button>
 
         {/* Publish Schedule + Readiness */}

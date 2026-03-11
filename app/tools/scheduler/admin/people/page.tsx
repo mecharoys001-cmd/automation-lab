@@ -894,11 +894,11 @@ function InstructorDetailModal({
         {/* Sessions */}
         <div className="px-6 py-3 space-y-2.5">
           <h3 className="text-sm font-semibold text-slate-900">
-            {loadingSessions ? 'Loading sessions\u2026' : `${sessionCount ?? 0} Active Sessions`}
+            {loadingSessions ? 'Loading classes\u2026' : `${sessionCount ?? 0} Active Classes`}
           </h3>
           {!loadingSessions && sessions.slice(0, 3).map((s) => (
             <div key={s.id} className="flex items-center bg-slate-100 rounded-lg h-9 px-3 gap-2">
-              <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Session'}</span>
+              <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Class'}</span>
               <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
                 {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
                 {s.start_time?.slice(0, 5)}
@@ -910,7 +910,7 @@ function InstructorDetailModal({
             </div>
           ))}
           {!loadingSessions && sessions.length === 0 && (
-            <p className="text-sm text-slate-400">No sessions assigned yet.</p>
+            <p className="text-sm text-slate-400">No classes assigned yet.</p>
           )}
         </div>
 
@@ -918,7 +918,7 @@ function InstructorDetailModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between h-14 px-6">
-          <Tooltip text="Jump to calendar filtered to this instructor">
+          <Tooltip text="Jump to calendar filtered to this staff member">
             <Link
               href={`/tools/scheduler/admin?instructor=${instructor.id}`}
               onClick={onClose}
@@ -1714,7 +1714,7 @@ export default function PeoplePage() {
       const { instructor: updated } = (await res.json()) as { instructor: Instructor };
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-      setToast({ message: updated.on_call ? 'Instructor set as on-call' : 'Instructor removed from on-call', type: 'success', id: Date.now() });
+      setToast({ message: updated.on_call ? 'Staff set as on-call' : 'Staff removed from on-call', type: 'success', id: Date.now() });
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : 'Failed to update on-call status', type: 'error', id: Date.now() });
     } finally {
@@ -1801,9 +1801,9 @@ export default function PeoplePage() {
       }
       setEditingInstructor(null);
       setShowCreateModal(false);
-      setToast({ message: isNew ? 'Instructor added successfully' : 'Instructor updated successfully', type: 'success', id: Date.now() });
+      setToast({ message: isNew ? 'Staff added successfully' : 'Staff updated successfully', type: 'success', id: Date.now() });
     } catch (err) {
-      setToast({ message: err instanceof Error ? err.message : 'Failed to save instructor', type: 'error', id: Date.now() });
+      setToast({ message: err instanceof Error ? err.message : 'Failed to save staff', type: 'error', id: Date.now() });
     } finally {
       setSavingInstructor(false);
     }
@@ -1814,13 +1814,13 @@ export default function PeoplePage() {
     setDeletingInstructor(true);
     try {
       const res = await fetch(`/api/instructors/${editingInstructor.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete instructor');
+      if (!res.ok) throw new Error('Failed to delete staff');
       setAllInstructors((prev) => prev.filter((i) => i.id !== editingInstructor.id));
       if (selectedInstructor?.id === editingInstructor.id) setSelectedInstructor(null);
       setEditingInstructor(null);
-      setToast({ message: 'Instructor deleted successfully', type: 'success', id: Date.now() });
+      setToast({ message: 'Staff deleted successfully', type: 'success', id: Date.now() });
     } catch (err) {
-      setToast({ message: err instanceof Error ? err.message : 'Failed to delete instructor', type: 'error', id: Date.now() });
+      setToast({ message: err instanceof Error ? err.message : 'Failed to delete staff', type: 'error', id: Date.now() });
     } finally {
       setDeletingInstructor(false);
     }
@@ -1985,8 +1985,8 @@ export default function PeoplePage() {
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
               {allInstructors.length === 0
-                ? 'No instructors found.'
-                : 'No instructors match your filters.'}
+                ? 'No staff found.'
+                : 'No staff match your filters.'}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

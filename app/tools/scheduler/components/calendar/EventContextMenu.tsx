@@ -115,27 +115,27 @@ export function EventContextMenu({
 
       {/* Actions */}
       <div className="py-1">
-        <Tooltip text="Cancel this session and notify instructor">
+        <Tooltip text="Cancel this class and notify staff">
           <button
             onClick={() => onAction('cancel', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
           >
             <XCircle className="w-4 h-4" />
-            Cancel Session
+            Cancel Class
           </button>
         </Tooltip>
 
-        <Tooltip text="Create a copy of this session">
+        <Tooltip text="Create a copy of this class">
           <button
             onClick={() => onAction('duplicate', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
           >
             <Copy className="w-4 h-4 text-slate-400" />
-            Duplicate Session
+            Duplicate Class
           </button>
         </Tooltip>
 
-        <Tooltip text="Permanently delete this session">
+        <Tooltip text="Permanently delete this class">
           <button
             onClick={() => onAction('delete', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
@@ -157,7 +157,7 @@ export function EventContextMenu({
 
         <div className="px-2 pb-2 space-y-1">
           {suggestions.map((s, idx) => (
-            <Tooltip key={idx} text={s.available ? `Assign ${s.instructor} to this session` : `${s.instructor} is unavailable at this time`}>
+            <Tooltip key={idx} text={s.available ? `Assign ${s.instructor} to this class` : `${s.instructor} is unavailable at this time`}>
               <button
                 onClick={() => onAction('suggest_replacements', event)}
                 disabled={!s.available}

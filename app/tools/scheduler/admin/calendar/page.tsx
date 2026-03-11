@@ -55,7 +55,7 @@ const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; ce
 const STATUS_TOOLTIPS: Record<CalendarStatusType, string> = {
   no_school: 'No events on this date',
   early_dismissal: 'Events end earlier than usual',
-  instructor_exception: 'Schedule exception for a specific instructor',
+  instructor_exception: 'Schedule exception for a specific staff member',
 };
 
 function formatDate(iso: string): string {
@@ -553,8 +553,8 @@ export default function CalendarPage() {
       const count = body.total_generated ?? 0;
       setToast({
         message: count > 0
-          ? `${count} draft session${count !== 1 ? 's' : ''} generated for ${year}`
-          : 'No new sessions generated — templates may already be scheduled.',
+          ? `${count} draft class${count !== 1 ? 'es' : ''} generated for ${year}`
+          : 'No new classes generated — templates may already be scheduled.',
         type: 'success',
         id: Date.now(),
       });
@@ -1176,8 +1176,8 @@ export default function CalendarPage() {
         {/* ── Search & Filter ──────────────────────────────── */}
         <section>
           <h2 className="text-base font-semibold text-slate-900 mb-4">
-            <Tooltip text="List of all calendar entries for this program">
-              <span className="cursor-help">Calendar Entries</span>
+            <Tooltip text="Manage holidays, closures, early dismissals, and special events">
+              <span className="cursor-help">Special Dates</span>
             </Tooltip>
           </h2>
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -1241,7 +1241,7 @@ export default function CalendarPage() {
                       </Tooltip>
                       <Tooltip text="Staff member affected by this exception">
                         <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell cursor-help">
-                          Instructor
+                          Staff
                         </th>
                       </Tooltip>
                       <Tooltip text="Edit or delete calendar entries">

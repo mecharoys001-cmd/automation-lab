@@ -197,9 +197,9 @@ export default function SessionsByTemplatePage() {
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-6 bg-white border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Sessions by Template</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Classes by Template</h1>
           <p className="text-[13px] text-slate-500 mt-1">
-            View session counts by class template with filtering and sorting
+            View class counts by template with filtering and sorting
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -275,7 +275,7 @@ export default function SessionsByTemplatePage() {
 
           {/* Status Filter */}
           <div className="relative">
-            <Tooltip text="Filter by session status">
+            <Tooltip text="Filter by class status">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -313,7 +313,7 @@ export default function SessionsByTemplatePage() {
           </div>
         ) : sortedData.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
-            {data.length === 0 ? 'No sessions found.' : 'No sessions match your filters.'}
+            {data.length === 0 ? 'No classes found.' : 'No classes match your filters.'}
           </div>
         ) : (
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">

@@ -107,7 +107,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
         {
           id: 'schedule',
           title: 'Generate your first schedule',
-          description: 'Auto-generate sessions from your templates',
+          description: 'Auto-generate classes from your templates',
           icon: Zap,
           link: '/tools/scheduler/admin/calendar',
           completed: hasSessions,
