@@ -404,28 +404,60 @@ function runSingleAttempt(
         // Auto-assign time for flexible templates (no start_time, no placement)
         if (!startTime && !placement) {
           const dayKey = `${targetDate}-${dayOfWeek}`;
-          if (!dayNextSlot.has(dayKey)) {
-            // Default start: 8:00 AM (or program hours if available)
-            dayNextSlot.set(dayKey, 8 * 60);
+          const dayNames = ['', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+          const dayName = dayNames[dayOfWeek] ?? '';
+
+          // Find qualified instructors for this template
+          const qualifiedInsts = instructors.filter(inst => {
+            if (!inst.is_active) return false;
+            const instSkills = (inst.skills ?? []).map((s: string) => s.toLowerCase());
+            const tmplSkills = (tmpl.required_skills ?? []).map((s: string) => s.toLowerCase());
+            if (tmplSkills.length === 0) return true; // No skill requirement
+            return tmplSkills.some(s => instSkills.includes(s));
+          });
+
+          // Find the earliest available slot where at least one instructor is free
+          let foundSlot = false;
+          if (!dayNextSlot.has(dayKey)) dayNextSlot.set(dayKey, 7 * 60); // Start scanning from 7 AM
+
+          for (let scanStart = dayNextSlot.get(dayKey)!; scanStart + durationMinutes <= 18 * 60; scanStart += 15) {
+            const scanEnd = scanStart + durationMinutes;
+            const scanStartStr = `${String(Math.floor(scanStart / 60)).padStart(2, '0')}:${String(scanStart % 60).padStart(2, '0')}`;
+            const scanEndStr = `${String(Math.floor(scanEnd / 60)).padStart(2, '0')}:${String(scanEnd % 60).padStart(2, '0')}`;
+
+            // Check if any qualified instructor is available at this time
+            const hasAvailableInstructor = qualifiedInsts.some(inst => {
+              const avail = inst.availability_json as Record<string, { start: string; end: string }[]> | null;
+              if (!avail) return true; // No availability set = always available
+              const blocks = avail[dayName];
+              if (!blocks || blocks.length === 0) return false;
+              return blocks.some(b => b.start <= scanStartStr && b.end >= scanEndStr);
+            });
+
+            if (hasAvailableInstructor || qualifiedInsts.length === 0) {
+              // Check no conflict with already-assigned sessions on this day
+              const hasConflict = generatedSessions.some(d =>
+                d.date === targetDate &&
+                d.start_time && d.end_time &&
+                scanStartStr < d.end_time.slice(0, 5) &&
+                scanEndStr > d.start_time.slice(0, 5)
+              );
+              if (!hasConflict) {
+                startTime = `${scanStartStr}:00`;
+                endTime = `${scanEndStr}:00`;
+                dayNextSlot.set(dayKey, scanEnd);
+                foundSlot = true;
+                break;
+              }
+            }
           }
-          const slotStart = dayNextSlot.get(dayKey)!;
-          const slotEnd = slotStart + durationMinutes;
-          // Don't schedule past 3:00 PM (900 minutes)
-          if (slotEnd <= 15 * 60) {
-            const sh = Math.floor(slotStart / 60);
-            const sm = slotStart % 60;
-            const eh = Math.floor(slotEnd / 60);
-            const em = slotEnd % 60;
-            startTime = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}:00`;
-            endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`;
-            dayNextSlot.set(dayKey, slotEnd);
-          } else {
-            // No room left in the day
+
+          if (!foundSlot) {
             skippedDates.push({
               date: targetDate,
               template_id: tmpl.id,
               reason: 'no_time_slot',
-              detail: `No available time slot (day full after ${String(Math.floor(slotStart / 60)).padStart(2, '0')}:${String(slotStart % 60).padStart(2, '0')})`,
+              detail: `No available time slot — no qualified instructor available on ${dayName}`,
             });
             continue;
           }
