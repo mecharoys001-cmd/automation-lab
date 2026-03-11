@@ -65,8 +65,14 @@ import {
 // Helpers
 // ============================================================
 
-/** Returns true if a template has valid, non-empty start and end times. */
+/** Returns true if a template has valid timing information (either start/end times OR duration). */
 function hasValidTimes(template: SessionTemplate): boolean {
+  // Duration-based templates (new scheduling modes)
+  if (template.duration_minutes && template.duration_minutes > 0) {
+    return true;
+  }
+  
+  // Fixed-time templates (legacy/traditional scheduling)
   if (!template.start_time || !template.end_time) return false;
   const start = timeToMinutes(template.start_time);
   const end = timeToMinutes(template.end_time);
@@ -774,8 +780,8 @@ export async function runScheduler(
       drafts_cleared: 0,
       template_stats: [],
       skipped_dates: [],
-      summary: 'All active templates have invalid start/end times.',
-      error: 'All active templates have invalid start/end times.',
+      summary: 'All active templates have invalid timing (missing both duration and start/end times).',
+      error: 'All active templates have invalid timing (missing both duration and start/end times).',
     };
   }
 
