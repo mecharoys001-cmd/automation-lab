@@ -36,6 +36,15 @@ const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'instructor', label: 'Staff' },
   { csvHeader: 'subjects', label: 'Subjects' },
   { csvHeader: 'grades', label: 'Grades' },
+  { csvHeader: 'scheduling_mode', label: 'Scheduling Mode' },
+  { csvHeader: 'starts_on', label: 'Starts On' },
+  { csvHeader: 'ends_on', label: 'Ends On' },
+  { csvHeader: 'duration_weeks', label: 'Duration Weeks' },
+  { csvHeader: 'session_count', label: 'Session Count' },
+  { csvHeader: 'within_weeks', label: 'Within Weeks' },
+  { csvHeader: 'week_cycle_length', label: 'Week Cycle Length' },
+  { csvHeader: 'week_in_cycle', label: 'Week in Cycle' },
+  { csvHeader: 'additional_tags', label: 'Additional Tags' },
 ];
 
 const VALID_DAYS = new Set([
@@ -43,6 +52,9 @@ const VALID_DAYS = new Set([
   'wednesday', 'wed', 'thursday', 'thu', 'friday', 'fri',
   'saturday', 'sat', '0', '1', '2', '3', '4', '5', '6',
 ]);
+
+const VALID_SCHEDULING_MODES = new Set(['date_range', 'duration', 'session_count', 'ongoing']);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function validateTemplateCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -68,13 +80,68 @@ function validateTemplateCsvRow(row: CsvRow, rowIndex: number): ValidationError[
       errors.push({ row: rowIndex, column: 'end_time', message: 'Must be after start time' });
     }
   }
+
+  // Scheduling mode validation
+  const mode = (row.scheduling_mode?.trim().toLowerCase()) || 'ongoing';
+  if (row.scheduling_mode?.trim() && !VALID_SCHEDULING_MODES.has(mode)) {
+    errors.push({ row: rowIndex, column: 'scheduling_mode', message: 'Must be ongoing, date_range, duration, or session_count' });
+  }
+  if (mode === 'date_range') {
+    if (!row.starts_on?.trim()) {
+      errors.push({ row: rowIndex, column: 'starts_on', message: 'Required for date_range mode' });
+    } else if (!DATE_RE.test(row.starts_on.trim())) {
+      errors.push({ row: rowIndex, column: 'starts_on', message: 'Use YYYY-MM-DD format' });
+    }
+    if (!row.ends_on?.trim()) {
+      errors.push({ row: rowIndex, column: 'ends_on', message: 'Required for date_range mode' });
+    } else if (!DATE_RE.test(row.ends_on.trim())) {
+      errors.push({ row: rowIndex, column: 'ends_on', message: 'Use YYYY-MM-DD format' });
+    }
+  }
+  if (mode === 'duration') {
+    if (!row.starts_on?.trim()) {
+      errors.push({ row: rowIndex, column: 'starts_on', message: 'Required for duration mode' });
+    } else if (!DATE_RE.test(row.starts_on.trim())) {
+      errors.push({ row: rowIndex, column: 'starts_on', message: 'Use YYYY-MM-DD format' });
+    }
+    if (!row.duration_weeks?.trim()) {
+      errors.push({ row: rowIndex, column: 'duration_weeks', message: 'Required for duration mode' });
+    } else if (isNaN(Number(row.duration_weeks)) || Number(row.duration_weeks) < 1) {
+      errors.push({ row: rowIndex, column: 'duration_weeks', message: 'Must be a positive integer' });
+    }
+  }
+  if (mode === 'session_count') {
+    if (!row.session_count?.trim()) {
+      errors.push({ row: rowIndex, column: 'session_count', message: 'Required for session_count mode' });
+    } else if (isNaN(Number(row.session_count)) || Number(row.session_count) < 1) {
+      errors.push({ row: rowIndex, column: 'session_count', message: 'Must be a positive integer' });
+    }
+  }
+  // Optional field format checks
+  if (row.starts_on?.trim() && !DATE_RE.test(row.starts_on.trim()) && mode !== 'date_range' && mode !== 'duration') {
+    errors.push({ row: rowIndex, column: 'starts_on', message: 'Use YYYY-MM-DD format' });
+  }
+  if (row.duration_weeks?.trim() && (isNaN(Number(row.duration_weeks)) || Number(row.duration_weeks) < 1)) {
+    errors.push({ row: rowIndex, column: 'duration_weeks', message: 'Must be a positive integer' });
+  }
+  if (row.within_weeks?.trim() && (isNaN(Number(row.within_weeks)) || Number(row.within_weeks) < 1)) {
+    errors.push({ row: rowIndex, column: 'within_weeks', message: 'Must be a positive integer' });
+  }
+  if (row.week_cycle_length?.trim() && (isNaN(Number(row.week_cycle_length)) || Number(row.week_cycle_length) < 1)) {
+    errors.push({ row: rowIndex, column: 'week_cycle_length', message: 'Must be a positive integer' });
+  }
+  if (row.week_in_cycle?.trim() && (isNaN(Number(row.week_in_cycle)) || Number(row.week_in_cycle) < 0)) {
+    errors.push({ row: rowIndex, column: 'week_in_cycle', message: 'Must be a non-negative integer' });
+  }
+
   return errors;
 }
 
-const TEMPLATE_CSV_EXAMPLE = `name,day,start_time,end_time,venue,instructor,subjects,grades
-Piano Lab,Monday,09:00,10:00,Classroom 101,John Smith,Piano,3rd;4th
-Strings,Tuesday,10:00,11:30,Stage,Jane Doe,Strings,5th;6th
-Choir,Wednesday,13:00,14:00,Cafe,,Choral,K;1st;2nd`;
+const TEMPLATE_CSV_EXAMPLE = `name,day,start_time,end_time,venue,instructor,subjects,grades,scheduling_mode,starts_on,ends_on,duration_weeks,session_count,within_weeks,week_cycle_length,week_in_cycle,additional_tags
+Piano Lab,Monday,09:00,10:00,Classroom 101,John Smith,Piano,3rd;4th,ongoing,,,,,,,,
+Strings,Tuesday,10:00,11:30,Stage,Jane Doe,Strings,5th;6th,date_range,2026-09-01,2026-12-15,,,,2,1,
+Choir,Wednesday,13:00,14:00,Cafe,,Choral,K;1st;2nd,duration,2026-09-01,,12,,,,, Performance;Holiday
+Guitar,Thursday,14:00,15:00,Classroom 101,,Guitar,7th;8th,session_count,2026-09-01,,,10,20,,,`;
 
 /* ── Toast ──────────────────────────────────────────────────── */
 
@@ -972,6 +1039,15 @@ export default function EventTemplatesPage() {
             instructor: r.instructor || '',
             subjects: r.subjects || '',
             grades: r.grades || '',
+            scheduling_mode: r.scheduling_mode || '',
+            starts_on: r.starts_on || '',
+            ends_on: r.ends_on || '',
+            duration_weeks: r.duration_weeks || '',
+            session_count: r.session_count || '',
+            within_weeks: r.within_weeks || '',
+            week_cycle_length: r.week_cycle_length || '',
+            week_in_cycle: r.week_in_cycle || '',
+            additional_tags: r.additional_tags || '',
           }));
           const res = await fetch('/api/templates/import', {
             method: 'POST',

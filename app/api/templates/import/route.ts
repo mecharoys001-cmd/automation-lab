@@ -21,6 +21,24 @@ interface TemplateRow {
   instructor?: string;
   subjects?: string;
   grades?: string;
+  scheduling_mode?: string;
+  starts_on?: string;
+  ends_on?: string;
+  duration_weeks?: string;
+  session_count?: string;
+  within_weeks?: string;
+  week_cycle_length?: string;
+  week_in_cycle?: string;
+  additional_tags?: string;
+}
+
+type SchedulingMode = 'ongoing' | 'date_range' | 'duration' | 'session_count';
+const VALID_MODES = new Set<SchedulingMode>(['ongoing', 'date_range', 'duration', 'session_count']);
+
+function parseOptionalInt(val: string | undefined): number | null {
+  if (!val?.trim()) return null;
+  const n = parseInt(val.trim(), 10);
+  return isNaN(n) ? null : n;
 }
 
 function parseTime(t: string): string | null {
@@ -114,6 +132,22 @@ export async function POST(request: NextRequest) {
         ? row.subjects.split(';').map((s) => s.trim()).filter(Boolean)
         : [];
 
+      const additionalTags = row.additional_tags
+        ? row.additional_tags.split(';').map((t) => t.trim()).filter(Boolean)
+        : [];
+
+      // Scheduling mode
+      const rawMode = (row.scheduling_mode?.trim().toLowerCase() || 'ongoing') as SchedulingMode;
+      const schedulingMode: SchedulingMode = VALID_MODES.has(rawMode) ? rawMode : 'ongoing';
+
+      const startsOn = row.starts_on?.trim() || null;
+      const endsOn = row.ends_on?.trim() || null;
+      const durationWeeks = parseOptionalInt(row.duration_weeks);
+      const sessionCount = parseOptionalInt(row.session_count);
+      const withinWeeks = parseOptionalInt(row.within_weeks);
+      const weekCycleLength = parseOptionalInt(row.week_cycle_length);
+      const weekInCycle = parseOptionalInt(row.week_in_cycle);
+
       toInsert.push({
         program_id,
         template_type: 'fully_defined',
@@ -126,7 +160,16 @@ export async function POST(request: NextRequest) {
         instructor_id: instructorId,
         grade_groups: grades,
         required_skills: subjects.length > 0 ? subjects : null,
+        additional_tags: additionalTags.length > 0 ? additionalTags : null,
         is_active: true,
+        scheduling_mode: schedulingMode,
+        starts_on: startsOn,
+        ends_on: endsOn,
+        duration_weeks: durationWeeks,
+        session_count: sessionCount,
+        within_weeks: withinWeeks,
+        week_cycle_length: weekCycleLength && weekCycleLength > 1 ? weekCycleLength : null,
+        week_in_cycle: weekCycleLength && weekCycleLength > 1 ? (weekInCycle ?? 0) : null,
       });
     }
 
