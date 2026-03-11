@@ -2663,16 +2663,18 @@ export default function TemplatesPage() {
     const dropVenueId = draggingTemplate?.venueId ?? null;
     let conflictType: 'none' | 'venue' | 'instructor' | 'lunch' | 'fixed-time' = 'none';
 
-    // Venue conflict
-    const venueConflict = placedTemplates.find((p) => {
-      if (draggingPlacedId && p.id === draggingPlacedId) return false; // skip self
-      if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
-      const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
-      if (pVenueId !== dropVenueId) return false;
-      const pEnd = p.startHour + p.durationHours;
-      return snappedHour < pEnd && p.startHour < endHour;
-    });
-    if (venueConflict) conflictType = 'venue';
+    // Venue conflict (skip if dropping template has no venue)
+    if (dropVenueId) {
+      const venueConflict = placedTemplates.find((p) => {
+        if (draggingPlacedId && p.id === draggingPlacedId) return false; // skip self
+        if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
+        const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
+        if (pVenueId !== dropVenueId) return false;
+        const pEnd = p.startHour + p.durationHours;
+        return snappedHour < pEnd && p.startHour < endHour;
+      });
+      if (venueConflict) conflictType = 'venue';
+    }
 
     // Instructor conflict
     if (!conflictType && draggingTemplate?.instructorId) {
@@ -2701,10 +2703,6 @@ export default function TemplatesPage() {
     e.preventDefault();
     setDropPreview(null);
     setDropConflict('none');
-
-    console.log('[DROP] handleDrop fired', { dayIndex, weekIdx });
-    console.log('[DROP] draggingTemplate:', draggingTemplate?.id, draggingTemplate?.subjects);
-    console.log('[DROP] dataTransfer text:', e.dataTransfer.getData('text/plain'));
 
     // Check if this is a move of an existing placed event
     let movingPlacedId: string | null = draggingPlacedId;
@@ -2783,14 +2781,14 @@ export default function TemplatesPage() {
     // Conflict detection - skip self when moving
     const endHour = startHour + durationHours;
     const dropVenueId = templateToPlace.venueId ?? null;
-    const conflict = placedTemplates.find((p) => {
+    const conflict = dropVenueId ? placedTemplates.find((p) => {
       if (movingPlacedId && p.id === movingPlacedId) return false; // skip self
       if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
       const pVenueId = p.venueId ?? templates.find((t) => t.id === p.templateId)?.venueId ?? null;
       if (pVenueId !== dropVenueId) return false;
       const pEnd = p.startHour + p.durationHours;
       return startHour < pEnd && p.startHour < endHour;
-    });
+    }) : null;
     if (conflict) {
       const venueName = templateToPlace.venue || venues.find((v) => v.id === templateToPlace!.venueId)?.name || 'this slot';
       setToast({ message: `Conflict: ${venueName} is already booked at this time`, type: 'error', id: Date.now() });
@@ -3396,6 +3394,8 @@ export default function TemplatesPage() {
                       const s = timeStringToHour(draggingTemplate.timeSlot.start);
                       const e = timeStringToHour(draggingTemplate.timeSlot.end);
                       if (e > s) previewDuration = e - s;
+                    } else if (draggingTemplate.durationMinutes) {
+                      previewDuration = draggingTemplate.durationMinutes / 60;
                     }
                     // If moving an existing placed event, use its duration
                     if (draggingPlacedId) {
@@ -3421,7 +3421,7 @@ export default function TemplatesPage() {
 
                     return (
                       <div
-                        className="absolute left-0.5 right-0.5 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75"
+                        className="absolute left-0.5 right-0.5 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75 z-[10]"
                         style={{
                           top: `${(dropPreview.hour - dayStartHour) * HOUR_HEIGHT}px`,
                           height: `${previewDuration * HOUR_HEIGHT}px`,
@@ -3437,8 +3437,7 @@ export default function TemplatesPage() {
                             <p className="text-[11px] font-bold" style={{
                               color: dropConflict !== 'none' ? previewBorderColor : draggingTemplate.color,
                             }}>
-                              {formatHour(dropPreview.hour)}
-                              {(draggingTemplate.timeSlot || draggingPlacedId) ? ` – ${formatHour(dropPreview.hour + previewDuration)}` : ''}
+                              {formatHour(dropPreview.hour)} – {formatHour(dropPreview.hour + previewDuration)}
                             </p>
                           </div>
                           <p className="text-[11px] font-semibold text-slate-500 truncate">
