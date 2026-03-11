@@ -2623,7 +2623,7 @@ export default function TemplatesPage() {
   const handleDragOver = (dayIndex: number, weekIdx: number, e: React.DragEvent) => {
     e.preventDefault();
 
-    // Compute duration from template's time slot or default to 1h
+    // Compute duration from template's time slot, duration_minutes, or default to 1h
     let durationHours = 1;
     let fixedStartHour: number | null = null;
     if (draggingTemplate?.timeSlot) {
@@ -2633,6 +2633,8 @@ export default function TemplatesPage() {
         durationHours = end - start;
         fixedStartHour = start;
       }
+    } else if (draggingTemplate?.durationMinutes) {
+      durationHours = draggingTemplate.durationMinutes / 60;
     }
 
     let snappedHour: number;
@@ -2742,6 +2744,8 @@ export default function TemplatesPage() {
         durationHours = end - start;
         fixedStartHour = start;
       }
+    } else if (templateToPlace.durationMinutes) {
+      durationHours = templateToPlace.durationMinutes / 60;
     }
 
     // For moved placed events, preserve original duration
