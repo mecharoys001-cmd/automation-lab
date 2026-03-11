@@ -2,77 +2,65 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { CalendarStatusType } from '@/types/database';
 
-interface CsvRow {
+interface CalendarRow {
   date: string;
-  description: string;
+  description?: string;
   status_type: string;
   early_dismissal_time?: string;
-}
-
-function parseCsv(text: string): CsvRow[] {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-
-  const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/['"]/g, ''));
-  const rows: CsvRow[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map((v) => v.trim().replace(/^["']|["']$/g, ''));
-    const row: Record<string, string> = {};
-    headers.forEach((h, idx) => {
-      row[h] = values[idx] ?? '';
-    });
-
-    if (row.date && row.status_type) {
-      rows.push({
-        date: row.date,
-        description: row.description ?? '',
-        status_type: row.status_type,
-        early_dismissal_time: row.early_dismissal_time,
-      });
-    }
-  }
-
-  return rows;
+  target_instructor_id?: string;
 }
 
 const VALID_STATUS_TYPES: CalendarStatusType[] = ['no_school', 'early_dismissal', 'instructor_exception'];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const programId = formData.get('program_id') as string | null;
+    const { rows: rawRows, program_id: programId } = (await request.json()) as {
+      rows: CalendarRow[];
+      program_id: string;
+    };
 
-    if (!file || !programId) {
-      return NextResponse.json(
-        { error: 'Missing file or program_id' },
-        { status: 400 }
-      );
+    if (!programId) {
+      return NextResponse.json({ error: 'Missing program_id' }, { status: 400 });
     }
 
-    const text = await file.text();
-    const rows = parseCsv(text);
-
-    if (rows.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid rows found in CSV. Expected headers: date, description, status_type, early_dismissal_time' },
-        { status: 400 }
-      );
+    if (!Array.isArray(rawRows) || rawRows.length === 0) {
+      return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
     }
 
-    const entries = rows
-      .filter((r) => VALID_STATUS_TYPES.includes(r.status_type as CalendarStatusType))
-      .map((r) => ({
+    const entries: {
+      program_id: string;
+      date: string;
+      description: string | null;
+      status_type: CalendarStatusType;
+      early_dismissal_time: string | null;
+      target_instructor_id: string | null;
+    }[] = [];
+    let skipped = 0;
+
+    for (const r of rawRows) {
+      if (!DATE_RE.test(r.date)) {
+        skipped++;
+        continue;
+      }
+      if (!VALID_STATUS_TYPES.includes(r.status_type as CalendarStatusType)) {
+        skipped++;
+        continue;
+      }
+      entries.push({
         program_id: programId,
         date: r.date,
         description: r.description || null,
         status_type: r.status_type as CalendarStatusType,
         early_dismissal_time: r.early_dismissal_time || null,
-      }));
+        target_instructor_id: r.target_instructor_id || null,
+      });
+    }
 
-    const skipped = rows.length - entries.length;
+    if (entries.length === 0) {
+      return NextResponse.json({ imported: 0, skipped, total: rawRows.length });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('school_calendar') as any)
@@ -86,7 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       imported: (data ?? []).length,
       skipped,
-      total: rows.length,
+      total: rawRows.length,
     });
   } catch (err) {
     return NextResponse.json(

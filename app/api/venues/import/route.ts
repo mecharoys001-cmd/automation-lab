@@ -9,16 +9,82 @@ interface VenueRow {
   is_virtual?: boolean;
   amenities?: string[] | null;
   description?: string | null;
+  availability_json?: Record<string, unknown> | null;
+  notes?: string | null;
+  min_booking_duration_minutes?: number | null;
+  max_booking_duration_minutes?: number | null;
+  buffer_minutes?: number | null;
+  advance_booking_days?: number | null;
+  cancellation_window_hours?: number | null;
+  cost_per_hour?: number | null;
+  max_concurrent_bookings?: number;
+  blackout_dates?: string[] | null;
+  is_wheelchair_accessible?: boolean;
+  subjects?: string[] | null;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const { rows } = (await request.json()) as { rows: VenueRow[] };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { rows: rawRows } = (await request.json()) as { rows: Record<string, any>[] };
 
-    if (!Array.isArray(rows) || rows.length === 0) {
+    if (!Array.isArray(rawRows) || rawRows.length === 0) {
       return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
     }
+
+    const parseBool = (v: unknown): boolean =>
+      v === true || v === 1 || (typeof v === 'string' && ['true', 'yes', '1'].includes(v.toLowerCase().trim()));
+
+    const parseIntOrNull = (v: unknown): number | null => {
+      if (v == null || v === '') return null;
+      const n = parseInt(String(v), 10);
+      return isNaN(n) ? null : n;
+    };
+
+    const parseFloatOrNull = (v: unknown): number | null => {
+      if (v == null || v === '') return null;
+      const n = parseFloat(String(v));
+      return isNaN(n) ? null : n;
+    };
+
+    const parseSemicolonList = (v: unknown): string[] | null => {
+      if (v == null || v === '') return null;
+      const items = String(v).split(';').map((s) => s.trim()).filter(Boolean);
+      return items.length > 0 ? items : null;
+    };
+
+    const rows: VenueRow[] = rawRows.map((r) => {
+      let availJson: Record<string, unknown> | null = null;
+      if (r.availability_json) {
+        try {
+          availJson = typeof r.availability_json === 'string'
+            ? JSON.parse(r.availability_json)
+            : r.availability_json;
+        } catch { /* ignore invalid JSON */ }
+      }
+      return {
+        name: String(r.name ?? '').trim(),
+        space_type: r.space_type || 'other',
+        max_capacity: parseIntOrNull(r.max_capacity),
+        address: r.address || null,
+        is_virtual: parseBool(r.is_virtual),
+        amenities: parseSemicolonList(r.amenities),
+        description: r.description || null,
+        availability_json: availJson,
+        notes: r.notes || null,
+        min_booking_duration_minutes: parseIntOrNull(r.min_booking_duration_minutes),
+        max_booking_duration_minutes: parseIntOrNull(r.max_booking_duration_minutes),
+        buffer_minutes: parseIntOrNull(r.buffer_minutes),
+        advance_booking_days: parseIntOrNull(r.advance_booking_days),
+        cancellation_window_hours: parseIntOrNull(r.cancellation_window_hours),
+        cost_per_hour: parseFloatOrNull(r.cost_per_hour),
+        max_concurrent_bookings: parseIntOrNull(r.max_concurrent_bookings) ?? 1,
+        blackout_dates: parseSemicolonList(r.blackout_dates),
+        is_wheelchair_accessible: parseBool(r.is_wheelchair_accessible),
+        subjects: parseSemicolonList(r.subjects),
+      };
+    });
 
     // Check for duplicate names against existing venues
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,15 +105,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
       existingNames.add(row.name.toLowerCase().trim());
-      toInsert.push({
-        name: row.name.trim(),
-        space_type: row.space_type || 'other',
-        max_capacity: row.max_capacity ?? null,
-        address: row.address || null,
-        is_virtual: row.is_virtual ?? false,
-        amenities: row.amenities ?? null,
-        description: row.description || null,
-      });
+      toInsert.push(row);
     }
 
     if (toInsert.length === 0) {

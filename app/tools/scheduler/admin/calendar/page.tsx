@@ -5,6 +5,8 @@ import { useProgram } from '../ProgramContext';
 import type { SchoolCalendar, CalendarStatusType, Instructor } from '@/types/database';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
+import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
+import type { CsvRow } from '@/lib/csvDedup';
 import {
   ChevronLeft,
   ChevronRight,
@@ -57,6 +59,39 @@ const STATUS_TOOLTIPS: Record<CalendarStatusType, string> = {
   early_dismissal: 'Events end earlier than usual',
   instructor_exception: 'Schedule exception for a specific staff member',
 };
+
+const CALENDAR_CSV_COLUMNS: CsvColumnDef[] = [
+  { csvHeader: 'date', label: 'Date (YYYY-MM-DD)', required: true },
+  { csvHeader: 'description', label: 'Description' },
+  { csvHeader: 'status_type', label: 'Status Type', required: true },
+  { csvHeader: 'early_dismissal_time', label: 'Early Dismissal Time' },
+  { csvHeader: 'target_instructor_id', label: 'Target Instructor ID' },
+];
+
+const CALENDAR_CSV_EXAMPLE = `date,description,status_type,early_dismissal_time,target_instructor_id
+2026-09-01,Labor Day,no_school,,
+2026-11-26,Thanksgiving Break,no_school,,
+2026-12-23,Winter Break,no_school,,
+2026-10-15,Parent-Teacher Conferences,early_dismissal,13:00,
+2026-03-10,Staff PD - Mr. Smith,instructor_exception,,abc-123`;
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const VALID_STATUS_SET = new Set(['no_school', 'early_dismissal', 'instructor_exception']);
+
+function validateCalendarCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!row.date?.trim()) {
+    errors.push({ row: rowIndex, column: 'date', message: 'Date is required' });
+  } else if (!DATE_RE.test(row.date.trim())) {
+    errors.push({ row: rowIndex, column: 'date', message: 'Date must be YYYY-MM-DD format' });
+  }
+  if (!row.status_type?.trim()) {
+    errors.push({ row: rowIndex, column: 'status_type', message: 'Status type is required' });
+  } else if (!VALID_STATUS_SET.has(row.status_type.trim())) {
+    errors.push({ row: rowIndex, column: 'status_type', message: 'Must be no_school, early_dismissal, or instructor_exception' });
+  }
+  return errors;
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
@@ -401,9 +436,7 @@ export default function CalendarPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   // CSV import
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importLoading, setImportLoading] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; total: number } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Save / Publish / Generate state
   const [isDirty, setIsDirty] = useState(false);
@@ -787,35 +820,6 @@ export default function CalendarPage() {
 
   // ── CSV import ───────────────────────────────────────────────
 
-  const handleImport = async () => {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file || !selectedProgramId) return;
-    setImportLoading(true);
-    setImportResult(null);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('program_id', selectedProgramId);
-      const res = await fetch('/api/calendar/import', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Import failed');
-      const data = await res.json();
-      setImportResult({ imported: data.imported, skipped: data.skipped, total: data.total });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      await fetchEntries();
-      if (data.imported > 0) setIsDirty(true);
-      setToast({ message: `Imported ${data.imported} calendar entries`, type: 'success', id: Date.now() });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Import failed';
-      setError(msg);
-      setToast({ message: msg, type: 'error', id: Date.now() });
-    } finally {
-      setImportLoading(false);
-    }
-  };
-
   // ── Scroll to today ──────────────────────────────────────────
 
   const scrollToToday = () => {
@@ -987,12 +991,12 @@ export default function CalendarPage() {
             <Button
               variant="secondary"
               size="md"
-              icon={importLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              icon={<Upload className="w-4 h-4" />}
               tooltip="Import calendar entries from a CSV file"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importLoading || isSaving || isPublishing || isGenerating}
+              onClick={() => setImportOpen(true)}
+              disabled={isSaving || isPublishing || isGenerating}
             >
-              {importLoading ? 'Importing…' : 'Import CSV'}
+              Import CSV
             </Button>
             <Button
               variant="primary"
@@ -1009,35 +1013,12 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Hidden file input for CSV */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={handleImport}
-        />
-
         {/* Error banner */}
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
             <span>{error}</span>
             <Tooltip text="Dismiss this error">
               <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-4 transition-colors">
-                <X className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          </div>
-        )}
-
-        {/* Import result */}
-        {importResult && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 flex items-center justify-between">
-            <span>
-              Imported {importResult.imported} entries, {importResult.skipped} skipped (of {importResult.total} total).
-            </span>
-            <Tooltip text="Dismiss">
-              <button onClick={() => setImportResult(null)} className="text-emerald-400 hover:text-emerald-600 ml-4 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </Tooltip>
@@ -1362,6 +1343,41 @@ export default function CalendarPage() {
           )}
         </section>
       </div>
+
+      {/* CSV Import Dialog */}
+      <CsvImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import School Calendar from CSV"
+        columns={CALENDAR_CSV_COLUMNS}
+        validateRow={validateCalendarCsvRow}
+        onImport={async (csvRows: CsvRow[]) => {
+          const mapped = csvRows.map((r) => ({
+            date: r.date?.trim() || '',
+            description: r.description?.trim() || '',
+            status_type: r.status_type?.trim() || '',
+            early_dismissal_time: r.early_dismissal_time?.trim() || '',
+            target_instructor_id: r.target_instructor_id?.trim() || '',
+          }));
+          const res = await fetch('/api/calendar/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: mapped, program_id: selectedProgramId }),
+          });
+          if (!res.ok) {
+            const { error } = await res.json();
+            throw new Error(error || 'Import failed');
+          }
+          const result = await res.json();
+          if (result.imported > 0) {
+            await fetchEntries();
+            setIsDirty(true);
+            setToast({ message: `Imported ${result.imported} calendar entries`, type: 'success', id: Date.now() });
+          }
+          return result;
+        }}
+        exampleCsv={CALENDAR_CSV_EXAMPLE}
+      />
 
       {/* Toast notifications */}
       {toast && (

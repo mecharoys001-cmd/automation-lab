@@ -48,7 +48,7 @@ interface ReportData {
 
 type ReportTab = 'instructor-hours' | 'hours-by-tag';
 
-/* ── Sample Instructor Data ────────────────────────────────── */
+/* ── Row Types ────────────────────────────────────────────── */
 
 interface InstructorRow {
   id: string;
@@ -60,97 +60,6 @@ interface InstructorRow {
   monthly: { month: string; hours: number }[];
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-const SAMPLE_INSTRUCTORS: InstructorRow[] = [
-  {
-    id: 'sarah-johnson',
-    name: 'Sarah Johnson',
-    totalHours: 487,
-    avgPerWeek: 12.1,
-    status: 'Active',
-    avatarColor: 'bg-blue-100',
-    monthly: [
-      { month: 'Jan', hours: 48 }, { month: 'Feb', hours: 52 }, { month: 'Mar', hours: 44 },
-      { month: 'Apr', hours: 40 }, { month: 'May', hours: 46 }, { month: 'Jun', hours: 38 },
-      { month: 'Jul', hours: 12 }, { month: 'Aug', hours: 8 },  { month: 'Sep', hours: 42 },
-      { month: 'Oct', hours: 50 }, { month: 'Nov', hours: 55 }, { month: 'Dec', hours: 52 },
-    ],
-  },
-  {
-    id: 'mark-davis',
-    name: 'Mark Davis',
-    totalHours: 342,
-    avgPerWeek: 8.5,
-    status: 'Active',
-    avatarColor: 'bg-emerald-100',
-    monthly: [
-      { month: 'Jan', hours: 32 }, { month: 'Feb', hours: 35 }, { month: 'Mar', hours: 30 },
-      { month: 'Apr', hours: 28 }, { month: 'May', hours: 34 }, { month: 'Jun', hours: 26 },
-      { month: 'Jul', hours: 10 }, { month: 'Aug', hours: 6 },  { month: 'Sep', hours: 30 },
-      { month: 'Oct', hours: 38 }, { month: 'Nov', hours: 40 }, { month: 'Dec', hours: 33 },
-    ],
-  },
-  {
-    id: 'lisa-chen',
-    name: 'Lisa Chen',
-    totalHours: 256,
-    avgPerWeek: 6.4,
-    status: 'Part-time',
-    avatarColor: 'bg-violet-100',
-    monthly: [
-      { month: 'Jan', hours: 24 }, { month: 'Feb', hours: 26 }, { month: 'Mar', hours: 22 },
-      { month: 'Apr', hours: 20 }, { month: 'May', hours: 25 }, { month: 'Jun', hours: 18 },
-      { month: 'Jul', hours: 8 },  { month: 'Aug', hours: 4 },  { month: 'Sep', hours: 22 },
-      { month: 'Oct', hours: 28 }, { month: 'Nov', hours: 30 }, { month: 'Dec', hours: 29 },
-    ],
-  },
-  {
-    id: 'james-wilson',
-    name: 'James Wilson',
-    totalHours: 198,
-    avgPerWeek: 4.9,
-    status: 'Part-time',
-    avatarColor: 'bg-amber-100',
-    monthly: [
-      { month: 'Jan', hours: 18 }, { month: 'Feb', hours: 20 }, { month: 'Mar', hours: 17 },
-      { month: 'Apr', hours: 16 }, { month: 'May', hours: 19 }, { month: 'Jun', hours: 14 },
-      { month: 'Jul', hours: 6 },  { month: 'Aug', hours: 3 },  { month: 'Sep', hours: 16 },
-      { month: 'Oct', hours: 22 }, { month: 'Nov', hours: 24 }, { month: 'Dec', hours: 23 },
-    ],
-  },
-  {
-    id: 'emily-rodriguez',
-    name: 'Emily Rodriguez',
-    totalHours: 156,
-    avgPerWeek: 3.9,
-    status: 'Substitute',
-    avatarColor: 'bg-pink-100',
-    monthly: [
-      { month: 'Jan', hours: 14 }, { month: 'Feb', hours: 16 }, { month: 'Mar', hours: 13 },
-      { month: 'Apr', hours: 12 }, { month: 'May', hours: 15 }, { month: 'Jun', hours: 10 },
-      { month: 'Jul', hours: 4 },  { month: 'Aug', hours: 2 },  { month: 'Sep', hours: 12 },
-      { month: 'Oct', hours: 18 }, { month: 'Nov', hours: 20 }, { month: 'Dec', hours: 20 },
-    ],
-  },
-  {
-    id: 'david-kim',
-    name: 'David Kim',
-    totalHours: 124,
-    avgPerWeek: 3.1,
-    status: 'Active',
-    avatarColor: 'bg-teal-100',
-    monthly: [
-      { month: 'Jan', hours: 11 }, { month: 'Feb', hours: 13 }, { month: 'Mar', hours: 10 },
-      { month: 'Apr', hours: 9 },  { month: 'May', hours: 12 }, { month: 'Jun', hours: 8 },
-      { month: 'Jul', hours: 3 },  { month: 'Aug', hours: 2 },  { month: 'Sep', hours: 10 },
-      { month: 'Oct', hours: 14 }, { month: 'Nov', hours: 16 }, { month: 'Dec', hours: 16 },
-    ],
-  },
-];
-
-/* ── Sample Tag Data ───────────────────────────────────────── */
-
 interface TagRow {
   name: string;
   emoji: string;
@@ -159,15 +68,6 @@ interface TagRow {
   avgDuration: number;
   barColor: string;
 }
-
-const SAMPLE_TAGS: TagRow[] = [
-  { name: 'Strings',    emoji: '🎻', totalHours: 180, sessions: 24, avgDuration: 45, barColor: '#3B82F6' },
-  { name: 'Brass',      emoji: '🎺', totalHours: 120, sessions: 18, avgDuration: 40, barColor: '#10B981' },
-  { name: 'Choral',     emoji: '🎤', totalHours: 95,  sessions: 15, avgDuration: 38, barColor: '#F59E0B' },
-  { name: 'Piano',      emoji: '🎹', totalHours: 88,  sessions: 14, avgDuration: 38, barColor: '#8B5CF6' },
-  { name: 'Percussion', emoji: '🥁', totalHours: 72,  sessions: 12, avgDuration: 36, barColor: '#EF4444' },
-  { name: 'Guitar',     emoji: '🎸', totalHours: 65,  sessions: 10, avgDuration: 39, barColor: '#06B6D4' },
-];
 
 const TAG_EMOJI: Record<string, string> = {
   strings: '🎻', brass: '🎺', choral: '🎤', piano: '🎹',
@@ -264,7 +164,7 @@ function InstructorHoursTab({
           {instructors.length === 0 ? (
             <tr>
               <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-400">
-                No instructor data available for this date range.
+                No staff hours available.
               </td>
             </tr>
           ) : (
@@ -459,7 +359,7 @@ function HoursByTagTab({
           {tags.length === 0 ? (
             <tr>
               <td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-400">
-                No tag data available for this date range.
+                No tag data available.
               </td>
             </tr>
           ) : (
@@ -549,20 +449,27 @@ export default function ReportsPage() {
     }
   }, [programId, programs, startDate, endDate]);
 
-  // Fetch report data
+  // Fetch report data (and re-fetch every 30s for real-time updates)
   useEffect(() => {
     if (!programId || !startDate || !endDate) return;
-    const params = new URLSearchParams({ programId, startDate, endDate });
-    fetch(`/api/reports/summary?${params}`)
-      .then((r) => r.json())
-      .then((data) => { if (data.success) setReportData(data); })
-      .catch(() => {});
+
+    const fetchReport = () => {
+      const params = new URLSearchParams({ programId, startDate, endDate });
+      fetch(`/api/reports/summary?${params}`)
+        .then((r) => r.json())
+        .then((data) => { if (data.success) setReportData(data); })
+        .catch(() => {});
+    };
+
+    fetchReport();
+    const interval = setInterval(fetchReport, 30_000);
+    return () => clearInterval(interval);
   }, [programId, startDate, endDate]);
 
   // Build instructor rows from API data or fallback to samples
   const instructors = useMemo((): InstructorRow[] => {
     if (!reportData || reportData.hours_by_instructor.length === 0) {
-      return SAMPLE_INSTRUCTORS;
+      return [];
     }
 
     const weeks = computeWeeksBetween(startDate, endDate);
@@ -616,7 +523,7 @@ export default function ReportsPage() {
   // Build tag rows from API data or fallback to samples
   const tags = useMemo((): TagRow[] => {
     if (!reportData || reportData.hours_by_tag.length === 0) {
-      return SAMPLE_TAGS;
+      return [];
     }
 
     const tagStats = new Map<string, { count: number; totalMinutes: number }>();
@@ -663,7 +570,7 @@ export default function ReportsPage() {
 
   const dateRangeLabel = startDate && endDate
     ? `${formatMonthYear(startDate)} \u2014 ${formatMonthYear(endDate)}`
-    : 'Nov 2025 \u2014 Jun 2026';
+    : 'Select a date range';
 
   const TABS: { key: ReportTab; label: string; icon: typeof Clock; tooltip: string }[] = [
     { key: 'instructor-hours', label: 'Staff Hours', icon: Clock, tooltip: 'View hours and monthly breakdown per staff member' },

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, X, Mail, Phone,
   Accessibility, Clock, Home, StickyNote, Edit2, Copy,
-  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw,
+  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +15,8 @@ import { Pill } from '../../components/ui/Pill';
 import { Avatar } from '../../components/ui/Avatar';
 import { ClickToCopy } from '../../components/ui/ClickToCopy';
 import { TagSelector } from '../../components/ui/TagSelector';
+import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
+import type { CsvRow } from '@/lib/csvDedup';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 import { SKILL_STYLES } from '../../lib/subjectColors';
 import { useProgram } from '../ProgramContext';
@@ -44,6 +46,68 @@ const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
   { key: 'sunday', short: 'Sun' },
 ];
 const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
+
+/* ── Venue CSV Import config ───────────────────────────────── */
+
+const VENUE_CSV_COLUMNS: CsvColumnDef[] = [
+  { csvHeader: 'name', label: 'Name', required: true },
+  { csvHeader: 'space_type', label: 'Space Type' },
+  { csvHeader: 'max_capacity', label: 'Max Capacity' },
+  { csvHeader: 'address', label: 'Address' },
+  { csvHeader: 'is_virtual', label: 'Is Virtual' },
+  { csvHeader: 'amenities', label: 'Amenities' },
+  { csvHeader: 'description', label: 'Description' },
+  { csvHeader: 'availability_json', label: 'Availability JSON' },
+  { csvHeader: 'notes', label: 'Notes' },
+  { csvHeader: 'min_booking_duration_minutes', label: 'Min Booking (min)' },
+  { csvHeader: 'max_booking_duration_minutes', label: 'Max Booking (min)' },
+  { csvHeader: 'buffer_minutes', label: 'Buffer (min)' },
+  { csvHeader: 'advance_booking_days', label: 'Advance Booking Days' },
+  { csvHeader: 'cancellation_window_hours', label: 'Cancel Window (hrs)' },
+  { csvHeader: 'cost_per_hour', label: 'Cost Per Hour' },
+  { csvHeader: 'max_concurrent_bookings', label: 'Max Concurrent' },
+  { csvHeader: 'blackout_dates', label: 'Blackout Dates' },
+  { csvHeader: 'is_wheelchair_accessible', label: 'Wheelchair Accessible' },
+  { csvHeader: 'subjects', label: 'Subjects' },
+];
+
+const VENUE_CSV_EXAMPLE = `name,space_type,max_capacity,address,is_virtual,amenities,description,availability_json,notes,min_booking_duration_minutes,max_booking_duration_minutes,buffer_minutes,advance_booking_days,cancellation_window_hours,cost_per_hour,max_concurrent_bookings,blackout_dates,is_wheelchair_accessible,subjects
+Classroom 101,classroom,30,123 Main St,false,Whiteboard;Projector;Piano,Main teaching room,,Ground floor room,30,120,15,14,24,25.00,1,2026-12-25;2026-01-01,true,Piano;Guitar
+Virtual Room A,virtual,50,,true,Screen Share;Breakout Rooms,Online meeting space,,,15,60,5,7,12,,2,,,Voice;Theory
+Stage,performance,100,456 Arts Blvd,false,Sound System;Lighting;Stage,Performance venue,,Requires advance setup,60,240,30,30,48,75.00,1,2026-12-24;2026-12-25,true,Choir;Orchestra`;
+
+const isNonNegInt = (v: string): boolean => /^\d+$/.test(v.trim());
+const isNonNegNum = (v: string): boolean => /^\d+(\.\d+)?$/.test(v.trim());
+
+function validateVenueCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!row.name?.trim()) {
+    errors.push({ row: rowIndex, column: 'name', message: 'Name is required' });
+  }
+  const intFields: [string, string][] = [
+    ['max_capacity', 'Max Capacity'],
+    ['min_booking_duration_minutes', 'Min Booking Duration'],
+    ['max_booking_duration_minutes', 'Max Booking Duration'],
+    ['buffer_minutes', 'Buffer Minutes'],
+    ['advance_booking_days', 'Advance Booking Days'],
+    ['cancellation_window_hours', 'Cancellation Window'],
+    ['max_concurrent_bookings', 'Max Concurrent Bookings'],
+  ];
+  for (const [field, label] of intFields) {
+    if (row[field]?.trim() && !isNonNegInt(row[field])) {
+      errors.push({ row: rowIndex, column: field, message: `${label} must be a whole number` });
+    }
+  }
+  if (row.cost_per_hour?.trim() && !isNonNegNum(row.cost_per_hour)) {
+    errors.push({ row: rowIndex, column: 'cost_per_hour', message: 'Must be a number' });
+  }
+  if (row.availability_json?.trim()) {
+    try { JSON.parse(row.availability_json); } catch {
+      errors.push({ row: rowIndex, column: 'availability_json', message: 'Invalid JSON' });
+    }
+  }
+  return errors;
+}
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -1623,6 +1687,7 @@ export default function PeoplePage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [savingVenue, setSavingVenue] = useState(false);
   const [showCreateVenueModal, setShowCreateVenueModal] = useState(false);
+  const [venueImportOpen, setVenueImportOpen] = useState(false);
   const [creatingVenue, setCreatingVenue] = useState(false);
 
   /* ── Fetching ──────────────────────────────────────────── */
@@ -2168,6 +2233,14 @@ export default function PeoplePage() {
             </Badge>
             <div className="flex-1" />
             <Button
+              variant="ghost"
+              icon={<Upload className="w-4 h-4" />}
+              tooltip="Import venues from CSV"
+              onClick={() => setVenueImportOpen(true)}
+            >
+              Import CSV
+            </Button>
+            <Button
               variant="primary"
               icon={<Plus className="w-4 h-4" />}
               tooltip="Add a new venue"
@@ -2299,6 +2372,54 @@ export default function PeoplePage() {
           onDelete={handleDeleteVenue}
         />
       )}
+
+      {/* ── Venue CSV Import Dialog ─────────────────────────── */}
+      <CsvImportDialog
+        open={venueImportOpen}
+        onClose={() => setVenueImportOpen(false)}
+        title="Import Venues from CSV"
+        columns={VENUE_CSV_COLUMNS}
+        validateRow={validateVenueCsvRow}
+        onImport={async (csvRows: CsvRow[]) => {
+          const mapped = csvRows.map((r) => ({
+            name: r.name || '',
+            space_type: r.space_type || '',
+            max_capacity: r.max_capacity || '',
+            address: r.address || '',
+            is_virtual: r.is_virtual || '',
+            amenities: r.amenities || '',
+            description: r.description || '',
+            availability_json: r.availability_json || '',
+            notes: r.notes || '',
+            min_booking_duration_minutes: r.min_booking_duration_minutes || '',
+            max_booking_duration_minutes: r.max_booking_duration_minutes || '',
+            buffer_minutes: r.buffer_minutes || '',
+            advance_booking_days: r.advance_booking_days || '',
+            cancellation_window_hours: r.cancellation_window_hours || '',
+            cost_per_hour: r.cost_per_hour || '',
+            max_concurrent_bookings: r.max_concurrent_bookings || '',
+            blackout_dates: r.blackout_dates || '',
+            is_wheelchair_accessible: r.is_wheelchair_accessible || '',
+            subjects: r.subjects || '',
+          }));
+          const res = await fetch('/api/venues/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: mapped }),
+          });
+          if (!res.ok) {
+            const { error } = await res.json();
+            throw new Error(error || 'Import failed');
+          }
+          const result = await res.json();
+          if (result.imported > 0) {
+            fetchVenues();
+            setToast({ message: `${result.imported} venue(s) imported`, type: 'success', id: Date.now() });
+          }
+          return result;
+        }}
+        exampleCsv={VENUE_CSV_EXAMPLE}
+      />
 
       {/* ── Toast notifications ───────────────────────────── */}
       {toast && (

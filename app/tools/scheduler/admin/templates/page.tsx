@@ -10,6 +10,7 @@ import { TagSelector } from '../../components/ui/TagSelector';
 import { TemplateList } from '../../components/templates/TemplateList';
 import type { TemplateListItem } from '../../components/templates/TemplateList';
 import { skillsMatch } from '@/lib/scheduler/utils';
+import { getSubjectColor } from '../../lib/subjectColors';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -145,7 +146,9 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
     days: db.day_of_week != null ? [db.day_of_week as number] : [],
     timeSlot,
     instructorRotation: db.rotation_mode === 'rotate',
-    color: TEMPLATE_COLORS[index % TEMPLATE_COLORS.length],
+    color: (db.required_skills as string[] | null)?.[0]
+      ? getSubjectColor((db.required_skills as string[])[0]).accent
+      : TEMPLATE_COLORS[index % TEMPLATE_COLORS.length],
     weekCycleLength: (db.week_cycle_length as number | null) ?? null,
     weekInCycle: (db.week_in_cycle as number | null) ?? null,
     // Preserve DB fields for round-trip fidelity
@@ -2933,6 +2936,9 @@ export default function TemplatesPage() {
           ...updated,
           id: created.id,
           venue: created.venue?.name ?? updated.venue ?? '',
+          color: updated.subjects?.[0]
+            ? getSubjectColor(updated.subjects[0]).accent
+            : updated.color,
         };
         setTemplates((prev) => [...prev, newTemplate]);
         setToast({ message: 'Template created', type: 'success', id: Date.now() });
@@ -2947,7 +2953,13 @@ export default function TemplatesPage() {
           throw new Error(body.error ?? 'Failed to update template');
         }
         // Preserve UI-only fields from form, keep server state in sync
-        setTemplates((prev) => prev.map((t) => (t.id === updated.id ? { ...updated } : t)));
+        const coloredUpdate = {
+          ...updated,
+          color: updated.subjects?.[0]
+            ? getSubjectColor(updated.subjects[0]).accent
+            : updated.color,
+        };
+        setTemplates((prev) => prev.map((t) => (t.id === updated.id ? coloredUpdate : t)));
         setToast({ message: 'Template updated', type: 'success', id: Date.now() });
       }
 
