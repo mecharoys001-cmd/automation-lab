@@ -963,7 +963,7 @@ function CalendarDashboard() {
     const endM = String(endMinutes % 60).padStart(2, '0');
     const endTime = `${endH}:${endM}`;
 
-    const sessionBody = {
+    const sessionBody: Record<string, unknown> = {
       program_id: selectedProgramId,
       template_id: null,
       instructor_id: data.instructor_id,
@@ -978,6 +978,11 @@ function CalendarDashboard() {
       notes: data.name, // Store event name in notes since sessions don't have a name field
     };
 
+    // Pass recurrence options if specified
+    if (data.recurrence) {
+      sessionBody.recurrence = data.recurrence;
+    }
+
     const res = await fetch('/api/sessions', {
       method: 'POST',
       cache: 'no-store',
@@ -991,21 +996,36 @@ function CalendarDashboard() {
       throw new Error(body.error || 'Failed to create event');
     }
 
-    const { session } = await res.json();
+    const result = await res.json();
+    const isRecurring = !!(result.count && result.count > 1);
 
-    // If a subject tag was selected, link it to the session
-    if (data.subject_tag_id && session?.id) {
-      await fetch('/api/session-tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: session.id, tag_id: data.subject_tag_id }),
-      }).catch(() => {
-        // Non-critical — tag linking can fail silently
-      });
+    // If a subject tag was selected, link it to the session(s)
+    if (data.subject_tag_id) {
+      const sessionsToTag = isRecurring
+        ? (result.sessions ?? [])
+        : result.session ? [result.session] : [];
+
+      await Promise.all(
+        sessionsToTag
+          .filter((s: { id?: string }) => s?.id)
+          .map((s: { id: string }) =>
+            fetch('/api/session-tags', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: s.id, tag_id: data.subject_tag_id }),
+            }).catch(() => {
+              // Non-critical — tag linking can fail silently
+            })
+          )
+      );
     }
 
     setShowOneOffModal(false);
-    showToast(`"${data.name}" created successfully`);
+    if (isRecurring) {
+      showToast(`"${data.name}" — ${result.count} sessions created`);
+    } else {
+      showToast(`"${data.name}" created successfully`);
+    }
     await fetchSessions();
   }, [selectedProgramId, fetchSessions]);
 

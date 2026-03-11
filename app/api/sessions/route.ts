@@ -21,7 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { skillsMatch } from '@/lib/scheduler/utils';
+import { skillsMatch, parseDate, formatDate } from '@/lib/scheduler/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -204,6 +204,108 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ---------------------------------------------------------------
+    // Recurrence: generate multiple session dates if specified
+    // ---------------------------------------------------------------
+    const recurrence = body.recurrence as {
+      type?: string;
+      interval_weeks?: number;
+      session_count?: number;
+      until_date?: string;
+    } | undefined;
+
+    // Strip recurrence from the insert body — it's not a DB column
+    delete body.recurrence;
+
+    if (recurrence && recurrence.type && recurrence.type !== 'none') {
+      // Determine interval in days and stop condition
+      const intervalDays =
+        recurrence.type === 'weekly' ? 7
+          : recurrence.type === 'every_x_weeks' ? (recurrence.interval_weeks ?? 2) * 7
+            : 7; // default weekly for count/until modes
+
+      const maxSessions =
+        recurrence.type === 'for_x_sessions' ? (recurrence.session_count ?? 4) : 200;
+
+      // Fetch program end date to bound generation
+      let programEndDate: string | null = null;
+      if (body.program_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: prog } = await (supabase.from('programs') as any)
+          .select('end_date')
+          .eq('id', body.program_id)
+          .single();
+        if (prog) programEndDate = prog.end_date;
+      }
+
+      // Fetch school calendar blackout dates for this program
+      const blackoutDates = new Set<string>();
+      if (body.program_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: calEntries } = await (supabase.from('school_calendar') as any)
+          .select('date, status_type')
+          .eq('program_id', body.program_id)
+          .eq('status_type', 'no_school');
+        if (calEntries) {
+          for (const entry of calEntries) {
+            blackoutDates.add(entry.date);
+          }
+        }
+      }
+
+      const untilDate = recurrence.type === 'until_date' && recurrence.until_date
+        ? recurrence.until_date : null;
+
+      // Generate dates
+      const dates: string[] = [];
+      const startDate = parseDate(body.date);
+      const cursor = new Date(startDate);
+
+      while (dates.length < maxSessions) {
+        const dateStr = formatDate(cursor);
+
+        // Stop if past program end
+        if (programEndDate && dateStr > programEndDate) break;
+        // Stop if past until_date
+        if (untilDate && dateStr > untilDate) break;
+
+        // Skip blackout days
+        if (!blackoutDates.has(dateStr)) {
+          dates.push(dateStr);
+        }
+
+        cursor.setDate(cursor.getDate() + intervalDays);
+      }
+
+      if (dates.length === 0) {
+        return NextResponse.json(
+          { error: 'No valid dates found for the recurrence rule (all dates are blackout days or outside program range)' },
+          { status: 400 }
+        );
+      }
+
+      // Build session rows for each date
+      const rows = dates.map((d) => ({ ...body, date: d }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('sessions') as any)
+        .insert(rows)
+        .select();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      trackScheduleChange();
+      return NextResponse.json(
+        { sessions: data, count: data?.length ?? 0 },
+        { status: 201 }
+      );
+    }
+
+    // ---------------------------------------------------------------
+    // Single session (no recurrence)
+    // ---------------------------------------------------------------
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('sessions') as any)
       .insert(body)

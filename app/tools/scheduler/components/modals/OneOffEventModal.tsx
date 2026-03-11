@@ -28,6 +28,15 @@ interface Tag {
   category?: string | null;
 }
 
+export type RecurrenceType = 'none' | 'weekly' | 'every_x_weeks' | 'for_x_sessions' | 'until_date';
+
+export interface RecurrenceOptions {
+  type: RecurrenceType;
+  interval_weeks?: number;   // for 'every_x_weeks'
+  session_count?: number;    // for 'for_x_sessions'
+  until_date?: string;       // for 'until_date' (YYYY-MM-DD)
+}
+
 export interface OneOffEventFormData {
   name: string;
   subject_tag_id: string | null;
@@ -37,6 +46,7 @@ export interface OneOffEventFormData {
   date: string;
   start_time: string; // HH:MM (24h)
   duration_minutes: number;
+  recurrence?: RecurrenceOptions;
 }
 
 interface OneOffEventModalProps {
@@ -97,6 +107,12 @@ export function OneOffEventModal({
   const [durationMinutes, setDurationMinutes] = useState(45);
   const [saving, setSaving] = useState(false);
 
+  // Recurrence state
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
+  const [intervalWeeks, setIntervalWeeks] = useState(2);
+  const [sessionCount, setSessionCount] = useState(4);
+  const [untilDate, setUntilDate] = useState('');
+
   // Reference data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -113,6 +129,10 @@ export function OneOffEventModal({
       setDate(initialDate ?? '');
       setStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
       setDurationMinutes(45);
+      setRecurrenceType('none');
+      setIntervalWeeks(2);
+      setSessionCount(4);
+      setUntilDate('');
       setSaving(false);
     }
   }, [open, initialDate, initialTime]);
@@ -156,6 +176,17 @@ export function OneOffEventModal({
     if (!name.trim()) return;
     setSaving(true);
     try {
+      const recurrence: RecurrenceOptions | undefined =
+        recurrenceType === 'none'
+          ? undefined
+          : recurrenceType === 'weekly'
+            ? { type: 'weekly' }
+            : recurrenceType === 'every_x_weeks'
+              ? { type: 'every_x_weeks', interval_weeks: intervalWeeks }
+              : recurrenceType === 'for_x_sessions'
+                ? { type: 'for_x_sessions', session_count: sessionCount }
+                : { type: 'until_date', until_date: untilDate };
+
       await onSubmit({
         name: name.trim(),
         subject_tag_id: subjectTagId || null,
@@ -165,6 +196,7 @@ export function OneOffEventModal({
         date,
         start_time: startTime,
         duration_minutes: durationMinutes,
+        recurrence,
       });
     } finally {
       setSaving(false);
@@ -337,6 +369,83 @@ export function OneOffEventModal({
               />
             </div>
           </div>
+
+          {/* Recurrence */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ['none', 'One-time only'],
+                ['weekly', 'Weekly'],
+                ['every_x_weeks', 'Every X weeks'],
+                ['for_x_sessions', 'For X sessions'],
+                ['until_date', 'Until date'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setRecurrenceType(value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                    recurrenceType === value
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Conditional fields */}
+            {recurrenceType === 'every_x_weeks' && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-slate-500">Every</span>
+                <input
+                  type="number"
+                  value={intervalWeeks}
+                  onChange={(e) => setIntervalWeeks(Math.max(2, parseInt(e.target.value) || 2))}
+                  min={2}
+                  max={52}
+                  className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                />
+                <span className="text-xs text-slate-500">weeks</span>
+              </div>
+            )}
+
+            {recurrenceType === 'for_x_sessions' && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-slate-500">Repeat for</span>
+                <input
+                  type="number"
+                  value={sessionCount}
+                  onChange={(e) => setSessionCount(Math.max(2, parseInt(e.target.value) || 2))}
+                  min={2}
+                  max={52}
+                  className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                />
+                <span className="text-xs text-slate-500">total sessions</span>
+              </div>
+            )}
+
+            {recurrenceType === 'until_date' && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-slate-500">Repeat until</span>
+                <input
+                  type="date"
+                  value={untilDate}
+                  onChange={(e) => setUntilDate(e.target.value)}
+                  min={date}
+                  className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                />
+              </div>
+            )}
+
+            {recurrenceType !== 'none' && (
+              <p className="text-[11px] text-slate-400">
+                Blackout days will be skipped automatically. Sessions won&apos;t be created outside the program date range.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Divider */}
@@ -354,10 +463,10 @@ export function OneOffEventModal({
             </button>
           </Tooltip>
 
-          <Tooltip text={name.trim() ? 'Create this one-off session' : 'Event name is required'}>
+          <Tooltip text={name.trim() ? (recurrenceType !== 'none' ? 'Create recurring sessions' : 'Create this one-off session') : 'Event name is required'}>
             <button
               onClick={handleSubmit}
-              disabled={!name.trim() || !date || saving}
+              disabled={!name.trim() || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
               className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
@@ -365,7 +474,7 @@ export function OneOffEventModal({
               ) : (
                 <Plus className="w-3.5 h-3.5" />
               )}
-              {saving ? 'Creating...' : 'Create Event'}
+              {saving ? 'Creating...' : recurrenceType !== 'none' ? 'Create Sessions' : 'Create Event'}
             </button>
           </Tooltip>
         </div>
