@@ -1945,7 +1945,8 @@ export default function PeoplePage() {
                 return (
                   <div
                     key={inst.id}
-                    className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                    onClick={() => openDetail(inst)}
+                    className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
                   >
                     {/* Card Header */}
                     <div className="flex items-start justify-between">
@@ -1993,7 +1994,8 @@ export default function PeoplePage() {
                     </div>
 
                     {/* Contact Info (click-to-copy) */}
-                    <div className="flex flex-col gap-1.5">
+                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                    <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
                       {inst.email && (
                         <ClickToCopy
                           text={inst.email}
@@ -2015,7 +2017,8 @@ export default function PeoplePage() {
                     </div>
 
                     {/* Subject Pills (click → filter calendar by tag) */}
-                    <div className="flex flex-wrap gap-1.5">
+                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                    <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
                       {(inst.skills ?? []).map((skill) => {
                         const s = SKILL_STYLES[skill];
                         return (
@@ -2073,16 +2076,9 @@ export default function PeoplePage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-2">
-                      <Tooltip text="View details, sessions, and availability">
-                        <button
-                          onClick={() => openDetail(inst)}
-                          className="flex-1 rounded-md border border-slate-200 py-1.5 text-[13px] font-medium text-blue-500 hover:bg-slate-50 transition-colors text-center"
-                        >
-                          View Details
-                        </button>
-                      </Tooltip>
-                      <Tooltip text="Edit instructor details">
+                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Tooltip text="Edit staff details">
                         <button
                           onClick={() => setEditingInstructor(inst)}
                           className="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
@@ -2093,14 +2089,17 @@ export default function PeoplePage() {
                     </div>
 
                     {/* View on Calendar Link */}
-                    <Tooltip text="Jump to calendar filtered to this instructor">
-                      <Link
-                        href={`/tools/scheduler/admin?instructor=${inst.id}`}
-                        className="text-xs font-medium text-blue-500 hover:text-blue-600"
-                      >
-                        View on Calendar &rarr;
-                      </Link>
-                    </Tooltip>
+                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Tooltip text="Jump to calendar filtered to this staff member">
+                        <Link
+                          href={`/tools/scheduler/admin?instructor=${inst.id}`}
+                          className="text-xs font-medium text-blue-500 hover:text-blue-600"
+                        >
+                          View on Calendar &rarr;
+                        </Link>
+                      </Tooltip>
+                    </div>
                   </div>
                 );
               })}
@@ -2142,7 +2141,8 @@ export default function PeoplePage() {
               {venues.map((venue) => (
                 <div
                   key={venue.id}
-                  className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedVenue(venue)}
+                  className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   {/* Header: Name + Type Badge */}
                   <div className="flex items-start justify-between">
@@ -2164,25 +2164,18 @@ export default function PeoplePage() {
                     </div>
                   </Tooltip>
 
-                  {/* View Details Button */}
-                  <Tooltip text="View and edit venue details">
-                    <button
-                      onClick={() => setSelectedVenue(venue)}
-                      className="w-full rounded-md border border-slate-200 py-1.5 text-[13px] font-medium text-blue-500 hover:bg-slate-50 transition-colors text-center"
-                    >
-                      View Details
-                    </button>
-                  </Tooltip>
-
                   {/* View Schedule Link */}
-                  <Tooltip text="View venue schedule on the calendar">
-                    <Link
-                      href={`/tools/scheduler/admin?venue=${venue.id}`}
-                      className="text-xs font-medium text-blue-500 hover:text-blue-600"
-                    >
-                      View Schedule &rarr;
-                    </Link>
-                  </Tooltip>
+                  {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Tooltip text="View venue schedule on the calendar">
+                      <Link
+                        href={`/tools/scheduler/admin?venue=${venue.id}`}
+                        className="text-xs font-medium text-blue-500 hover:text-blue-600"
+                      >
+                        View Schedule &rarr;
+                      </Link>
+                    </Tooltip>
+                  </div>
                 </div>
               ))}
             </div>
