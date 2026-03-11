@@ -36,6 +36,8 @@ import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
 import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
+import { OneOffEventModal } from '../components/modals/OneOffEventModal';
+import type { OneOffEventFormData } from '../components/modals/OneOffEventModal';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -369,6 +371,9 @@ function CalendarDashboard() {
   const [showResultModal, setShowResultModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isConfirmingGenerate, setIsConfirmingGenerate] = useState(false);
+  // One-off event creation modal
+  const [showOneOffModal, setShowOneOffModal] = useState(false);
+  const [oneOffSlot, setOneOffSlot] = useState<{ date: string; time: string } | null>(null);
   // Portal container for Month/Year views (escapes flex hierarchy)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   // Track recently modified event IDs (eventId -> timestamp) for badge display
@@ -928,6 +933,73 @@ function CalendarDashboard() {
     setShowExportMenu(false);
   }, [events]);
 
+  // One-off event: open modal when an empty time slot is clicked
+  const handleEmptySlotClick = useCallback((date: string, time: string) => {
+    setOneOffSlot({ date, time });
+    setShowOneOffModal(true);
+  }, []);
+
+  // One-off event: create session via API
+  const handleCreateOneOffEvent = useCallback(async (data: OneOffEventFormData) => {
+    if (!selectedProgramId) {
+      showToast('Select a program first', 'error');
+      return;
+    }
+
+    // Compute end_time from start_time + duration
+    const [hStr, mStr] = data.start_time.split(':');
+    const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
+    const endMinutes = startMinutes + data.duration_minutes;
+    const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
+    const endM = String(endMinutes % 60).padStart(2, '0');
+    const endTime = `${endH}:${endM}`;
+
+    const sessionBody = {
+      program_id: selectedProgramId,
+      template_id: null,
+      instructor_id: data.instructor_id,
+      venue_id: data.venue_id,
+      grade_groups: data.grade_groups,
+      date: data.date,
+      start_time: `${data.start_time}:00`,
+      end_time: `${endTime}:00`,
+      duration_minutes: data.duration_minutes,
+      status: 'draft',
+      is_makeup: false,
+      notes: data.name, // Store event name in notes since sessions don't have a name field
+    };
+
+    const res = await fetch('/api/sessions', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sessionBody),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      showToast(body.error || 'Failed to create event', 'error');
+      throw new Error(body.error || 'Failed to create event');
+    }
+
+    const { session } = await res.json();
+
+    // If a subject tag was selected, link it to the session
+    if (data.subject_tag_id && session?.id) {
+      await fetch('/api/session-tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: session.id, tag_id: data.subject_tag_id }),
+      }).catch(() => {
+        // Non-critical — tag linking can fail silently
+      });
+    }
+
+    setShowOneOffModal(false);
+    showToast(`"${data.name}" created successfully`);
+    await fetchSessions();
+  }, [selectedProgramId, fetchSessions]);
+
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* ================================================================= */}
@@ -1082,6 +1154,7 @@ function CalendarDashboard() {
               onOpenEditPanel={openPanel}
               onEventDrop={handleEventDrop}
               onEventResize={handleEventResize}
+              onEmptySlotClick={handleEmptySlotClick}
             />
           </>
         )}
@@ -1096,6 +1169,7 @@ function CalendarDashboard() {
             onBackToMonth={() => setCurrentView('month')}
             conflicts={1}
             onOpenEditPanel={openPanel}
+            onEmptySlotClick={handleEmptySlotClick}
           />
         )}
 
@@ -1181,6 +1255,16 @@ function CalendarDashboard() {
           programId={selectedProgramId ?? undefined}
         />
       )}
+
+      {/* One-Off Event Creation Modal */}
+      <OneOffEventModal
+        open={showOneOffModal}
+        onClose={() => setShowOneOffModal(false)}
+        onSubmit={handleCreateOneOffEvent}
+        initialDate={oneOffSlot?.date}
+        initialTime={oneOffSlot?.time}
+        programId={selectedProgramId}
+      />
     </div>
   );
 }

@@ -43,6 +43,8 @@ export interface WeekViewProps {
   onEventDrop?: (eventId: string, newDate: string, newTime: string, newEndTime: string) => void;
   /** Called when an event is resized (bottom edge dragged) */
   onEventResize?: (eventId: string, newEndTime: string) => void;
+  /** Called when an empty time slot is clicked (for creating one-off events) */
+  onEmptySlotClick?: (date: string, time: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -204,6 +206,7 @@ function WeekEventBlock({
     <Tooltip text={blockTooltip}>
       <div
         ref={ref}
+        data-event-block
         draggable={!!enableDrag}
         onDragStart={enableDrag ? handleDragStart : undefined}
         className={`absolute left-1 right-1 rounded-md cursor-pointer hover:opacity-90 transition-opacity overflow-hidden group ${isCompact ? 'px-1.5 py-0.5 flex items-center gap-1' : 'px-2 py-1'}`}
@@ -288,6 +291,7 @@ export function WeekView({
   onOpenEditPanel,
   onEventDrop,
   onEventResize,
+  onEmptySlotClick,
 }: WeekViewProps) {
   const [viewDate, setViewDate] = useState(() => currentDate ?? new Date());
   const [dayStartHour, setDayStartHour] = useState(initialStartHour);
@@ -599,6 +603,19 @@ export function WeekView({
                   isToday ? 'bg-blue-50/30' : ''
                 } ${isDragOver ? 'bg-blue-50/50' : ''}`}
                 style={{ gridRow: 2 }}
+                onClick={
+                  onEmptySlotClick
+                    ? (e) => {
+                        // Only fire if clicking the grid background, not an event block
+                        if ((e.target as HTMLElement).closest('[data-event-block]')) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const clickY = e.clientY - rect.top;
+                        const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
+                        const snapped = snapTo15Min(rawHour);
+                        onEmptySlotClick(dateKey, formatDecimalToTime(snapped));
+                      }
+                    : undefined
+                }
                 onDragOver={
                   onEventDrop
                     ? (e) => {

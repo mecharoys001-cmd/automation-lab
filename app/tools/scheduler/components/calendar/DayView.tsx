@@ -41,6 +41,8 @@ interface DayViewProps {
   onEditNotes?: (eventId: string, notes: string) => void;
   /** Called when user wants to open the full edit panel for an event */
   onOpenEditPanel?: (event: CalendarEvent) => void;
+  /** Called when an empty time slot is clicked (for creating one-off events) */
+  onEmptySlotClick?: (date: string, time: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -92,6 +94,21 @@ function formatHourLabel(hour: number): string {
   return `${hour - 12} PM`;
 }
 
+/** Convert a decimal hour (e.g. 13.5) to "1:30 PM" format */
+function formatDecimalToTime(decimal: number): string {
+  const clamped = Math.max(0, Math.min(23.75, decimal));
+  const h = Math.floor(clamped);
+  const m = Math.round((clamped - h) * 60);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+/** Snap a decimal hour to the nearest 15-minute increment */
+function snapTo15Min(decimal: number): number {
+  return Math.round(decimal * 4) / 4;
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -128,6 +145,7 @@ function DayEventBlock({
     <Tooltip text={blockTooltip}>
       <div
         ref={ref}
+        data-event-block
         className={`absolute left-1 right-2 rounded-md cursor-pointer hover:opacity-90 transition-opacity overflow-hidden ${isCompact ? 'px-2 py-0.5 flex items-center gap-1.5' : 'px-2.5 py-1.5'}`}
         style={{
           top: `${top}px`,
@@ -190,6 +208,7 @@ export function DayView({
   onReplaceEvent,
   onEditNotes,
   onOpenEditPanel,
+  onEmptySlotClick,
 }: DayViewProps) {
   const [viewDate, setViewDate] = useState(
     () => currentDate ?? new Date(),
@@ -467,6 +486,18 @@ export function DayView({
           <div
             className="relative"
             style={{ gridRow: multiLane ? 2 : 1, minHeight: `${totalHeight}px` }}
+            onClick={
+              onEmptySlotClick
+                ? (e) => {
+                    if ((e.target as HTMLElement).closest('[data-event-block]')) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickY = e.clientY - rect.top;
+                    const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
+                    const snapped = snapTo15Min(rawHour);
+                    onEmptySlotClick(formatDateKey(viewDate), formatDecimalToTime(snapped));
+                  }
+                : undefined
+            }
           >
             {/* Hour grid lines */}
             {hours.map((hour, hIdx) => (

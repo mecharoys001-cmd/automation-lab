@@ -1,0 +1,375 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { X, Loader2, Plus } from 'lucide-react';
+import { Tooltip } from '../ui/Tooltip';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface Instructor {
+  id: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  skills: string[] | null;
+}
+
+interface Venue {
+  id: string;
+  name: string;
+  space_type: string;
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  category?: string | null;
+}
+
+export interface OneOffEventFormData {
+  name: string;
+  subject_tag_id: string | null;
+  instructor_id: string | null;
+  venue_id: string | null;
+  grade_groups: string[];
+  date: string;
+  start_time: string; // HH:MM (24h)
+  duration_minutes: number;
+}
+
+interface OneOffEventModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: OneOffEventFormData) => Promise<void>;
+  /** Pre-filled date in YYYY-MM-DD format */
+  initialDate?: string;
+  /** Pre-filled time in "9:00 AM" display format */
+  initialTime?: string;
+  programId: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const GRADE_OPTIONS = [
+  'Pre-K', 'K', '1st', '2nd', '3rd', '4th', '5th',
+  '6th', '7th', '8th', '9th', '10th', '11th', '12th',
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Convert "9:00 AM" → "09:00" */
+function displayTimeTo24h(time12: string): string {
+  const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return '09:00';
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${m}`;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function OneOffEventModal({
+  open,
+  onClose,
+  onSubmit,
+  initialDate,
+  initialTime,
+  programId,
+}: OneOffEventModalProps) {
+  const [name, setName] = useState('');
+  const [subjectTagId, setSubjectTagId] = useState('');
+  const [instructorId, setInstructorId] = useState('');
+  const [venueId, setVenueId] = useState('');
+  const [gradeGroups, setGradeGroups] = useState<string[]>([]);
+  const [date, setDate] = useState('');
+  const [startTime, setStartTime] = useState('09:00');
+  const [durationMinutes, setDurationMinutes] = useState(45);
+  const [saving, setSaving] = useState(false);
+
+  // Reference data
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setName('');
+      setSubjectTagId('');
+      setInstructorId('');
+      setVenueId('');
+      setGradeGroups([]);
+      setDate(initialDate ?? '');
+      setStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
+      setDurationMinutes(45);
+      setSaving(false);
+    }
+  }, [open, initialDate, initialTime]);
+
+  // Fetch reference data on mount
+  useEffect(() => {
+    if (!open) return;
+
+    const load = async () => {
+      const [instrRes, venueRes, tagRes] = await Promise.all([
+        fetch('/api/instructors?is_active=true'),
+        fetch('/api/venues'),
+        fetch('/api/tags'),
+      ]);
+
+      if (instrRes.ok) {
+        const body = await instrRes.json();
+        setInstructors(body.instructors ?? []);
+      }
+      if (venueRes.ok) {
+        const body = await venueRes.json();
+        setVenues(body.venues ?? []);
+      }
+      if (tagRes.ok) {
+        const body = await tagRes.json();
+        // Filter to subject tags only (category = 'Subjects' or no category)
+        setTags(body.tags ?? []);
+      }
+    };
+
+    load();
+  }, [open]);
+
+  const toggleGrade = useCallback((grade: string) => {
+    setGradeGroups((prev) =>
+      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade],
+    );
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        name: name.trim(),
+        subject_tag_id: subjectTagId || null,
+        instructor_id: instructorId || null,
+        venue_id: venueId || null,
+        grade_groups: gradeGroups,
+        date,
+        start_time: startTime,
+        duration_minutes: durationMinutes,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return null;
+
+  // Filter subject tags (category = 'Subjects')
+  const subjectTags = tags.filter(
+    (t) => t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject',
+  );
+  // If no subject-category tags exist, show all tags as fallback
+  const displayTags = subjectTags.length > 0 ? subjectTags : tags;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative z-[70] w-[520px] max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-2xl shadow-[0_8px_32px_#00000033]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50">
+              <Plus className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-slate-900">Create One-Off Event</h3>
+              <p className="text-[12px] text-slate-500">Assemblies, guest performances, make-up classes</p>
+            </div>
+          </div>
+          <Tooltip text="Close">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          </Tooltip>
+        </div>
+
+        {/* Divider */}
+        <div className="mx-6 my-3 border-t border-slate-100" />
+
+        {/* Form body */}
+        <div className="px-6 pb-4 space-y-4">
+          {/* Event Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Event Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Spring Assembly, Guest Artist Visit"
+              autoFocus
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          {/* Subject + Instructor row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject</label>
+              <select
+                value={subjectTagId}
+                onChange={(e) => setSubjectTagId(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+              >
+                <option value="">— None —</option>
+                {displayTags.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Instructor</label>
+              <select
+                value={instructorId}
+                onChange={(e) => setInstructorId(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+              >
+                <option value="">— None —</option>
+                {instructors.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.first_name} {i.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Venue */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue</label>
+            <select
+              value={venueId}
+              onChange={(e) => setVenueId(e.target.value)}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+            >
+              <option value="">— None —</option>
+              {venues.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.space_type})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Grade Groups */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grade Groups</label>
+            <div className="flex flex-wrap gap-1.5">
+              {GRADE_OPTIONS.map((g) => {
+                const selected = gradeGroups.includes(g);
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => toggleGrade(g)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                      selected
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Date + Time + Duration row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration (min)</label>
+              <input
+                type="number"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Math.max(5, parseInt(e.target.value) || 0))}
+                min={5}
+                max={480}
+                step={5}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="mx-6 my-1 border-t border-slate-100" />
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-3">
+          <Tooltip text="Cancel and close">
+            <button
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </Tooltip>
+
+          <Tooltip text={name.trim() ? 'Create this one-off session' : 'Event name is required'}>
+            <button
+              onClick={handleSubmit}
+              disabled={!name.trim() || !date || saving}
+              className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
+              {saving ? 'Creating...' : 'Create Event'}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+}
