@@ -1683,7 +1683,7 @@ export default function TemplatesPage() {
   const [selectedPlacedId, setSelectedPlacedId] = useState<string | null>(null);
   const [editModalTemplate, setEditModalTemplate] = useState<Template | null>(null);
   const [isNewTemplate, setIsNewTemplate] = useState(false);
-  const [dropPreview, setDropPreview] = useState<{ dayIndex: number; hour: number } | null>(null);
+  const [dropPreview, setDropPreview] = useState<{ dayIndex: number; hour: number; venueId?: string } | null>(null);
   const [draggingPlacedId, setDraggingPlacedId] = useState<string | null>(null);
   const [dropConflict, setDropConflict] = useState<'none' | 'venue' | 'instructor' | 'lunch' | 'fixed-time'>('none');
 
@@ -2691,7 +2691,18 @@ export default function TemplatesPage() {
 
     setDropConflict(conflictType);
     e.dataTransfer.dropEffect = draggingPlacedId ? 'move' : 'copy';
-    setDropPreview({ dayIndex, hour: snappedHour });
+
+    // Detect venue lane in multi-lane mode
+    let targetVenueId: string | undefined;
+    if (selectedVenues.length > 1) {
+      const gridRect = e.currentTarget.getBoundingClientRect();
+      const relativeX = e.clientX - gridRect.left;
+      const laneWidth = gridRect.width / selectedVenues.length;
+      const laneIndex = Math.max(0, Math.min(selectedVenues.length - 1, Math.floor(relativeX / laneWidth)));
+      targetVenueId = selectedVenues[laneIndex];
+    }
+
+    setDropPreview({ dayIndex, hour: snappedHour, venueId: targetVenueId });
   };
 
   const handleDragLeave = () => {
@@ -2778,9 +2789,19 @@ export default function TemplatesPage() {
       return;
     }
 
+    // Detect venue lane in multi-lane mode
+    let laneVenueId: string | null = null;
+    if (selectedVenues.length > 1) {
+      const gridRect = e.currentTarget.getBoundingClientRect();
+      const relativeX = e.clientX - gridRect.left;
+      const laneWidth = gridRect.width / selectedVenues.length;
+      const laneIndex = Math.max(0, Math.min(selectedVenues.length - 1, Math.floor(relativeX / laneWidth)));
+      laneVenueId = selectedVenues[laneIndex];
+    }
+
     // Conflict detection - skip self when moving
     const endHour = startHour + durationHours;
-    const dropVenueId = templateToPlace.venueId ?? null;
+    const dropVenueId = laneVenueId ?? templateToPlace.venueId ?? null;
     const conflict = dropVenueId ? placedTemplates.find((p) => {
       if (movingPlacedId && p.id === movingPlacedId) return false; // skip self
       if (p.dayIndex !== dayIndex || p.weekIndex !== weekIdx) return false;
@@ -2802,7 +2823,7 @@ export default function TemplatesPage() {
       setPlacedTemplates((prev) =>
         prev.map((p) =>
           p.id === movingPlacedId
-            ? { ...p, dayIndex, startHour, weekIndex: weekIdx }
+            ? { ...p, dayIndex, startHour, weekIndex: weekIdx, ...(laneVenueId ? { venueId: laneVenueId } : {}) }
             : p
         ),
       );
@@ -2815,7 +2836,7 @@ export default function TemplatesPage() {
         startHour,
         durationHours,
         weekIndex: weekIdx,
-        venueId: templateToPlace.venueId ?? null,
+        venueId: laneVenueId ?? templateToPlace.venueId ?? null,
       };
       setPlacedTemplates((prev) => [...prev, newPlaced]);
     }
@@ -3387,8 +3408,8 @@ export default function TemplatesPage() {
                     );
                   })()}
 
-                  {/* Drop preview ghost */}
-                  {dropPreview && dropPreview.dayIndex === dayIndex && draggingTemplate && (() => {
+                  {/* Drop preview ghost (single-lane only) */}
+                  {!multiLane && dropPreview && dropPreview.dayIndex === dayIndex && draggingTemplate && (() => {
                     let previewDuration = 1;
                     if (draggingTemplate.timeSlot) {
                       const s = timeStringToHour(draggingTemplate.timeSlot.start);
@@ -3498,6 +3519,71 @@ export default function TemplatesPage() {
                                 />
                               );
                             })}
+                            {/* Drop preview ghost (multi-lane) */}
+                            {dropPreview && dropPreview.dayIndex === dayIndex && dropPreview.venueId === venueId && draggingTemplate && (() => {
+                              let previewDuration = 1;
+                              if (draggingTemplate.timeSlot) {
+                                const s = timeStringToHour(draggingTemplate.timeSlot.start);
+                                const eT = timeStringToHour(draggingTemplate.timeSlot.end);
+                                if (eT > s) previewDuration = eT - s;
+                              } else if (draggingTemplate.durationMinutes) {
+                                previewDuration = draggingTemplate.durationMinutes / 60;
+                              }
+                              if (draggingPlacedId) {
+                                const existingPlaced = placedTemplates.find((p) => p.id === draggingPlacedId);
+                                if (existingPlaced) previewDuration = existingPlaced.durationHours;
+                              }
+                              const previewBorderColor = dropConflict === 'venue' || dropConflict === 'instructor'
+                                ? '#EF4444'
+                                : dropConflict === 'lunch'
+                                  ? '#F59E0B'
+                                  : dropConflict === 'fixed-time'
+                                    ? '#94A3B8'
+                                    : '#22C55E';
+                              const previewBgColor = dropConflict === 'venue' || dropConflict === 'instructor'
+                                ? '#FEF2F215'
+                                : dropConflict === 'lunch'
+                                  ? '#FFFBEB15'
+                                  : dropConflict === 'fixed-time'
+                                    ? '#F1F5F915'
+                                    : `${draggingTemplate.color}15`;
+                              return (
+                                <div
+                                  className="absolute left-0.5 right-0.5 rounded-md border-2 border-dashed pointer-events-none transition-all duration-75 z-[10]"
+                                  style={{
+                                    top: `${(dropPreview.hour - dayStartHour) * HOUR_HEIGHT}px`,
+                                    height: `${previewDuration * HOUR_HEIGHT}px`,
+                                    borderColor: previewBorderColor,
+                                    backgroundColor: previewBgColor,
+                                  }}
+                                >
+                                  <div className="px-1.5 py-1">
+                                    <div className="flex items-center gap-1">
+                                      {dropConflict === 'lunch' && <Coffee className="w-3 h-3 text-amber-500" />}
+                                      {(dropConflict === 'venue' || dropConflict === 'instructor') && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                                      {dropConflict === 'fixed-time' && <Lock className="w-3 h-3 text-slate-400" />}
+                                      <p className="text-[11px] font-bold" style={{
+                                        color: dropConflict !== 'none' ? previewBorderColor : draggingTemplate.color,
+                                      }}>
+                                        {formatHour(dropPreview.hour)} – {formatHour(dropPreview.hour + previewDuration)}
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] font-semibold text-slate-500 truncate">
+                                      {draggingPlacedId ? '↳ Moving' : ''} {getBlockDisplayName(draggingTemplate)}
+                                    </p>
+                                    {dropConflict === 'venue' && (
+                                      <p className="text-[9px] text-red-500 font-medium">Venue conflict</p>
+                                    )}
+                                    {dropConflict === 'instructor' && (
+                                      <p className="text-[9px] text-red-500 font-medium">Staff conflict</p>
+                                    )}
+                                    {dropConflict === 'lunch' && (
+                                      <p className="text-[9px] text-amber-600 font-medium">Overlaps lunch</p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {lanePlacements.map((placed) => {
                               const template = templates.find((t) => t.id === placed.templateId);
                               if (!template) return null;
