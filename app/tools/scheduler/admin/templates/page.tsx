@@ -2163,6 +2163,9 @@ export default function TemplatesPage() {
       if (t.timeSlot) {
         return timeStringToHour(t.timeSlot.end) - timeStringToHour(t.timeSlot.start);
       }
+      if (t.durationMinutes) {
+        return t.durationMinutes / 60;
+      }
       return 0.75; // default 45 min
     };
 
