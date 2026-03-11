@@ -1996,7 +1996,7 @@ export default function PeoplePage() {
                   <div
                     key={inst.id}
                     onClick={() => openDetail(inst)}
-                    className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
+                    className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
                   >
                     {/* Card Header */}
                     <div className="flex items-start justify-between">
@@ -2125,19 +2125,6 @@ export default function PeoplePage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Tooltip text="Edit staff details">
-                        <button
-                          onClick={() => setEditingInstructor(inst)}
-                          className="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-                        >
-                          <Edit2 className="w-3.5 h-3.5 text-slate-400" />
-                        </button>
-                      </Tooltip>
-                    </div>
-
                     {/* View on Calendar Link */}
                     {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
                     <div onClick={(e) => e.stopPropagation()}>
@@ -2150,6 +2137,16 @@ export default function PeoplePage() {
                         </Link>
                       </Tooltip>
                     </div>
+
+                    {/* Edit Button */}
+                    <Tooltip text="Edit">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditingInstructor(inst); }}
+                        className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                    </Tooltip>
                   </div>
                 );
               })}
@@ -2192,7 +2189,7 @@ export default function PeoplePage() {
                 <div
                   key={venue.id}
                   onClick={() => setSelectedVenue(venue)}
-                  className="bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
+                  className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   {/* Header: Name + Type Badge */}
                   <div className="flex items-start justify-between">
@@ -2237,6 +2234,16 @@ export default function PeoplePage() {
                       </Link>
                     </Tooltip>
                   </div>
+
+                  {/* Edit Button */}
+                  <Tooltip text="Edit">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedVenue(venue); }}
+                      className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  </Tooltip>
                 </div>
               ))}
             </div>

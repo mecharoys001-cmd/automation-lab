@@ -92,19 +92,24 @@ function buildSessionTitle(session: any): string {
   const grades: string[] = session.grade_groups ?? session.template?.grade_groups ?? [];
   const gradeSuffix = grades.length > 0 ? ` - Grade ${grades.join(', ')}` : '';
   
-  // Priority 1: Use template name if it exists
+  // Priority 1: Use session name (e.g. one-off events)
+  if (session.name) {
+    return `${session.name}${gradeSuffix}`;
+  }
+
+  // Priority 2: Use template name if it exists
   if (session.template?.name) {
     return `${session.template.name}${gradeSuffix}`;
   }
 
-  // Priority 2: Use subject/skill
+  // Priority 3: Use subject/skill
   const skills: string[] = session.template?.required_skills ?? [];
   if (skills.length > 0) {
     const skill = skills[0].charAt(0).toUpperCase() + skills[0].slice(1);
     return `${skill} Session${gradeSuffix}`;
   }
   
-  // Priority 3: Use instructor name
+  // Priority 4: Use instructor name
   const instructorName = session.instructor
     ? `${session.instructor.first_name ?? ''} ${session.instructor.last_name ?? ''}`.trim()
     : '';
@@ -1013,7 +1018,7 @@ function CalendarDashboard() {
       duration_minutes: data.duration_minutes,
       status: 'draft',
       is_makeup: false,
-      notes: data.name, // Store event name in notes since sessions don't have a name field
+      name: data.name,
     };
 
     // Pass recurrence options if specified

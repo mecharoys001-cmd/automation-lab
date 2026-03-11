@@ -238,7 +238,7 @@ function WeekEventBlock({
         {isCompact ? (
           /* Compact: single line with title + time */
           <>
-            <p className="text-[10px] font-semibold leading-none truncate" style={{ color: colors.text }}>
+            <p className="text-[9px] font-bold leading-none truncate" style={{ color: colors.text }}>
               {event.title}
             </p>
             <p className="text-[9px] font-bold leading-none shrink-0" style={{ color: colors.accent }}>
@@ -249,7 +249,7 @@ function WeekEventBlock({
           /* Normal: full details */
           <>
             <p
-              className="text-[11px] font-semibold leading-snug whitespace-normal"
+              className="text-[11px] font-bold leading-snug whitespace-normal"
               style={{ color: colors.text }}
             >
               {event.title}

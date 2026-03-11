@@ -131,6 +131,12 @@ export async function DELETE(
     const { id } = await params;
     const supabase = createServiceClient();
 
+    // Orphan sessions that reference this template
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('sessions') as any)
+      .update({ template_id: null })
+      .eq('template_id', id);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('session_templates') as any)
       .delete()

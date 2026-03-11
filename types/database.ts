@@ -181,6 +181,7 @@ export interface Session {
   id: string;
   program_id: string;
   template_id: string | null;
+  name: string | null;
   instructor_id: string | null;
   venue_id: string | null;
   grade_groups: string[];

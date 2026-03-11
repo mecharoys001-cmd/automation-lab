@@ -624,6 +624,7 @@ function runSingleAttempt(
           start_time: startTime,
           end_time: endTime,
           duration_minutes: durationMinutes,
+          name: null,
           status: 'draft',
           is_makeup: false,
           replaces_session_id: null,

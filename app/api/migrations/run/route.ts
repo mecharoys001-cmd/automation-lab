@@ -29,6 +29,12 @@ const MIGRATIONS: Migration[] = [
   ADD COLUMN IF NOT EXISTS session_count integer,
   ADD COLUMN IF NOT EXISTS within_weeks integer;`,
   },
+  {
+    name: 'add_session_name',
+    checkTable: 'sessions',
+    checkColumn: 'name',
+    sql: `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS name TEXT;`,
+  },
 ];
 
 async function checkColumnExists(
