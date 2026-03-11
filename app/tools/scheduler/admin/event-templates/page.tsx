@@ -14,34 +14,11 @@ import type { TemplateListItem } from '../../components/templates/TemplateList';
 import { useProgram } from '../ProgramContext';
 import type {
   SessionTemplate, Instructor, Venue,
-  TemplateType, RotationMode, DayOfWeek, TimeBlock,
-  AvailabilityJson,
 } from '@/types/database';
 import { skillsMatch } from '@/lib/scheduler/utils';
 
 /* ── Constants ──────────────────────────────────────────────── */
 
-const DAYS_OF_WEEK = [
-  { value: 0, label: 'Sunday' },
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
-];
-
-const TEMPLATE_TYPES: { value: TemplateType; label: string; desc: string }[] = [
-  { value: 'fully_defined', label: 'Fully Defined', desc: 'All fields specified' },
-  { value: 'tagged_slot', label: 'Tagged Slot', desc: 'Staff assigned by tag' },
-  { value: 'auto_assign', label: 'Auto Assign', desc: 'System picks staff' },
-  { value: 'time_block', label: 'Time Block', desc: 'Reserved time only' },
-];
-
-const ROTATION_MODES: { value: RotationMode; label: string }[] = [
-  { value: 'consistent', label: 'Consistent' },
-  { value: 'rotate', label: 'Rotate' },
-];
 
 const GRADE_OPTIONS = [
   'Pre-K', 'K', '1st', '2nd', '3rd', '4th', '5th',
@@ -124,134 +101,36 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 /* ── Form state ─────────────────────────────────────────────── */
 
 interface TemplateForm {
-  template_type: TemplateType;
-  rotation_mode: RotationMode;
-  day_of_week: number;
-  grade_groups: string[];
-  start_time: string;
-  end_time: string;
+  name: string;
+  required_skills: string[];
   instructor_id: string;
   venue_id: string;
-  required_skills: string[];
-  is_active: boolean;
+  grade_groups: string[];
+  duration_minutes: number;
+  duration_custom: boolean;
   week_cycle_length: number | null;
   week_in_cycle: number | null;
-  no_set_day: boolean;
-  no_set_time: boolean;
-  no_set_instructor: boolean;
-  no_set_venue: boolean;
+  additional_tags: string[];
+  is_active: boolean;
 }
 
 const EMPTY_FORM: TemplateForm = {
-  template_type: 'fully_defined',
-  rotation_mode: 'consistent',
-  day_of_week: 1,
-  grade_groups: [],
-  start_time: '09:00',
-  end_time: '10:00',
+  name: '',
+  required_skills: [],
   instructor_id: '',
   venue_id: '',
-  required_skills: [],
-  is_active: true,
+  grade_groups: [],
+  duration_minutes: 60,
+  duration_custom: false,
   week_cycle_length: null,
   week_in_cycle: null,
-  no_set_day: false,
-  no_set_time: false,
-  no_set_instructor: false,
-  no_set_venue: false,
+  additional_tags: [],
+  is_active: true,
 };
+
+const DURATION_PRESETS = [30, 45, 60, 90];
 
 /* ── Helpers ────────────────────────────────────────────────── */
-
-/** Map numeric day_of_week (0=Sun) to AvailabilityJson key */
-const DAY_NUM_TO_NAME: Record<number, DayOfWeek> = {
-  0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
-  4: 'thursday', 5: 'friday', 6: 'saturday',
-};
-
-/** Safely parse availability_json — handles string, object, or null */
-function parseAvailability(raw: AvailabilityJson | string | null | undefined): AvailabilityJson | null {
-  if (!raw) return null;
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw);
-      return typeof parsed === 'object' && parsed !== null ? parsed : null;
-    } catch {
-      console.warn('[Scheduler] Failed to parse availability_json string:', raw);
-      return null;
-    }
-  }
-  if (typeof raw === 'object') return raw;
-  return null;
-}
-
-/** Check if availability data has ANY day-level entries (vs being empty/null) */
-function hasAnyDayEntries(availability: AvailabilityJson): boolean {
-  return DAYS_OF_WEEK.some((d) => {
-    const dayName = DAY_NUM_TO_NAME[d.value];
-    return dayName in availability;
-  });
-}
-
-/** Check if an instructor/venue is available on a given day */
-function isAvailableOnDay(rawAvailability: AvailabilityJson | string | null, dayNum: number): boolean {
-  const availability = parseAvailability(rawAvailability);
-  if (!availability) return true; // No availability data = assume available
-  if (!hasAnyDayEntries(availability)) return true; // Empty object = assume available
-  const dayName = DAY_NUM_TO_NAME[dayNum];
-  const blocks = availability[dayName];
-  // Key missing when other keys exist = UNAVAILABLE (not set = not available)
-  if (blocks === undefined) return false;
-  return blocks.length > 0; // empty array = unavailable; has blocks = available
-}
-
-/** Check if an instructor/venue is available at a specific time on a given day */
-function isAvailableAtTime(
-  rawAvailability: AvailabilityJson | string | null,
-  dayNum: number,
-  startTime: string,
-  endTime: string,
-): boolean {
-  const availability = parseAvailability(rawAvailability);
-  if (!availability) return true;
-  if (!hasAnyDayEntries(availability)) return true;
-  const dayName = DAY_NUM_TO_NAME[dayNum];
-  const blocks = availability[dayName];
-  // Key missing when other keys exist = UNAVAILABLE
-  if (blocks === undefined) return false;
-  if (blocks.length === 0) return false; // explicitly empty = unavailable
-  return blocks.some((b) => startTime >= b.start && endTime <= b.end);
-}
-
-/** Get all days an instructor/venue is available */
-function getAvailableDays(rawAvailability: AvailabilityJson | string | null): number[] {
-  const availability = parseAvailability(rawAvailability);
-  if (!availability) return DAYS_OF_WEEK.map((d) => d.value); // all days
-  if (!hasAnyDayEntries(availability)) return DAYS_OF_WEEK.map((d) => d.value);
-  return DAYS_OF_WEEK
-    .map((d) => d.value)
-    .filter((dayNum) => {
-      const dayName = DAY_NUM_TO_NAME[dayNum];
-      const blocks = availability[dayName];
-      // Key missing = unavailable when other keys are present
-      if (blocks === undefined) return false;
-      return blocks.length > 0;
-    });
-}
-
-function computeDuration(start: string | null, end: string | null): number {
-  const [sh, sm] = (start || '09:00').split(':').map(Number);
-  const [eh, em] = (end || '10:00').split(':').map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
-}
-
-function formatTime(t: string | null): string {
-  if (!t) return '\u2014';
-  const [h, m] = t.split(':').map(Number);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const hr = h % 12 || 12;
-  return `${hr}:${m.toString().padStart(2, '0')} ${ampm}`;
-}
 
 /* ── Extended template type with joined relations ───────────── */
 
@@ -332,27 +211,19 @@ export default function EventTemplatesPage() {
   };
 
   const openEditForm = (t: TemplateWithRelations) => {
-    const noDay = t.day_of_week == null;
-    const noTime = !t.start_time && !t.end_time;
-    const noInstructor = !t.instructor_id;
-    const noVenue = !t.venue_id;
+    const dur = t.duration_minutes ?? 60;
     setForm({
-      template_type: t.template_type,
-      rotation_mode: t.rotation_mode,
-      day_of_week: t.day_of_week ?? 1,
-      grade_groups: t.grade_groups ?? [],
-      start_time: t.start_time?.slice(0, 5) ?? '',
-      end_time: t.end_time?.slice(0, 5) ?? '',
+      name: t.name ?? '',
+      required_skills: t.required_skills ?? [],
       instructor_id: t.instructor_id ?? '',
       venue_id: t.venue_id ?? '',
-      required_skills: t.required_skills ?? [],
-      is_active: t.is_active,
+      grade_groups: t.grade_groups ?? [],
+      duration_minutes: dur,
+      duration_custom: !DURATION_PRESETS.includes(dur),
       week_cycle_length: t.week_cycle_length,
       week_in_cycle: t.week_in_cycle,
-      no_set_day: noDay,
-      no_set_time: noTime,
-      no_set_instructor: noInstructor,
-      no_set_venue: noVenue,
+      additional_tags: t.additional_tags ?? [],
+      is_active: t.is_active,
     });
     setEditingId(t.id);
     setShowForm(true);
@@ -365,31 +236,7 @@ export default function EventTemplatesPage() {
   };
 
   const updateForm = (patch: Partial<TemplateForm>) => {
-    setForm((prev) => {
-      const next = { ...prev, ...patch };
-
-      // When instructor changes, check if current day/time is still valid
-      if (!next.no_set_day && patch.instructor_id !== undefined && patch.instructor_id) {
-        const inst = instructors.find((i) => i.id === patch.instructor_id);
-        if (inst?.availability_json) {
-          const availDays = getAvailableDays(inst.availability_json);
-          if (!availDays.includes(next.day_of_week)) {
-            // Reset day to first available day
-            next.day_of_week = availDays[0] ?? next.day_of_week;
-          }
-        }
-      }
-
-      // When day changes, check if current instructor is still valid
-      if (!next.no_set_day && patch.day_of_week !== undefined && next.instructor_id) {
-        const inst = instructors.find((i) => i.id === next.instructor_id);
-        if (inst?.availability_json && !isAvailableOnDay(inst.availability_json, next.day_of_week)) {
-          next.instructor_id = '';
-        }
-      }
-
-      return next;
-    });
+    setForm((prev) => ({ ...prev, ...patch }));
   };
 
   const toggleArrayField = (field: 'grade_groups' | 'required_skills', value: string) => {
@@ -404,120 +251,39 @@ export default function EventTemplatesPage() {
 
   /* ── Constraint-based filtering ────────────────────────── */
 
-  /** Instructors filtered by subject match, then annotated with day/time availability */
+  /** Instructors filtered by subject match only */
   const filteredInstructors = useMemo(() => {
     const active = instructors.filter((i) => i.is_active);
-    // Only show instructors whose skills match the template's required_skills
-    const subjectFiltered = active.filter((inst) =>
+    return active.filter((inst) =>
       skillsMatch(inst.skills, form.required_skills.length > 0 ? form.required_skills : null)
     );
-    return subjectFiltered.map((inst) => {
-      if (form.no_set_day) {
-        return { ...inst, available: true, availOnDay: true };
-      }
-      const availOnDay = isAvailableOnDay(inst.availability_json, form.day_of_week);
-      const availAtTime = form.start_time && form.end_time
-        ? isAvailableAtTime(inst.availability_json, form.day_of_week, form.start_time, form.end_time)
-        : availOnDay;
-      return { ...inst, available: availAtTime, availOnDay };
-    });
-  }, [instructors, form.no_set_day, form.day_of_week, form.start_time, form.end_time, form.required_skills]);
-
-  /** Days filtered by selected instructor's availability */
-  const filteredDays = useMemo(() => {
-    if (!form.instructor_id) return DAYS_OF_WEEK.map((d) => ({ ...d, available: true }));
-    const inst = instructors.find((i) => i.id === form.instructor_id);
-    if (!inst) {
-      console.warn('[Scheduler] filteredDays: instructor not found for id:', form.instructor_id);
-      return DAYS_OF_WEEK.map((d) => ({ ...d, available: true }));
-    }
-    const parsed = parseAvailability(inst.availability_json);
-    if (!parsed) {
-      console.warn('[Scheduler] filteredDays: no availability_json for instructor:', inst.first_name, inst.last_name, '— raw value:', inst.availability_json);
-      return DAYS_OF_WEEK.map((d) => ({ ...d, available: true }));
-    }
-    const availDays = getAvailableDays(inst.availability_json);
-    console.info('[Scheduler] filteredDays:', inst.first_name, inst.last_name, '— available days:', availDays.map(d => DAY_NUM_TO_NAME[d]));
-    return DAYS_OF_WEEK.map((d) => ({ ...d, available: availDays.includes(d.value) }));
-  }, [instructors, form.instructor_id]);
-
-  /** Get time blocks for selected instructor on selected day */
-  const selectedInstructorTimeBlocks = useMemo(() => {
-    if (!form.instructor_id) return null;
-    const inst = instructors.find((i) => i.id === form.instructor_id);
-    if (!inst) {
-      console.log('[EventTemplates] No instructor found for id:', form.instructor_id);
-      return null;
-    }
-    
-    console.log('[EventTemplates] Instructor:', inst.first_name, inst.last_name);
-    console.log('[EventTemplates] availability_json:', inst.availability_json);
-    
-    if (!inst.availability_json) {
-      console.log('[EventTemplates] No availability_json on instructor');
-      return null;
-    }
-    
-    const availability = parseAvailability(inst.availability_json);
-    console.log('[EventTemplates] Parsed availability:', availability);
-    
-    if (!availability) {
-      console.log('[EventTemplates] Failed to parse availability');
-      return null;
-    }
-    
-    const dayName = DAY_NUM_TO_NAME[form.day_of_week];
-    console.log('[EventTemplates] Looking for day:', dayName, '(day_of_week:', form.day_of_week, ')');
-    
-    const blocks = availability[dayName];
-    console.log('[EventTemplates] Blocks for', dayName, ':', blocks);
-    
-    if (!blocks || blocks.length === 0) {
-      console.log('[EventTemplates] No blocks found or empty array');
-      return null;
-    }
-    
-    return blocks;
-  }, [instructors, form.instructor_id, form.day_of_week]);
-
-  /** Selected venue info for capacity hint */
-  const selectedVenue = useMemo(() => {
-    if (!form.venue_id) return null;
-    return venues.find((v) => v.id === form.venue_id) ?? null;
-  }, [venues, form.venue_id]);
+  }, [instructors, form.required_skills]);
 
   /* ── CRUD ───────────────────────────────────────────────── */
 
   const handleSave = async () => {
     if (!selectedProgramId) return;
-    if (form.grade_groups.length === 0) {
-      setToast({ message: 'Select at least one grade group', type: 'error', id: Date.now() });
+    if (form.duration_minutes <= 0) {
+      setToast({ message: 'Duration must be greater than 0', type: 'error', id: Date.now() });
       return;
     }
-    if (!form.no_set_time) {
-      const duration = computeDuration(form.start_time, form.end_time);
-      if (duration <= 0) {
-        setToast({ message: 'End time must be after start time', type: 'error', id: Date.now() });
-        return;
-      }
-    }
-
-    const duration = form.no_set_time ? null : computeDuration(form.start_time, form.end_time);
 
     setSaving(true);
     try {
       const body = {
         program_id: selectedProgramId,
-        template_type: form.template_type,
-        rotation_mode: form.rotation_mode,
-        day_of_week: form.no_set_day ? null : form.day_of_week,
+        name: form.name || null,
+        template_type: 'fully_defined' as const,
+        rotation_mode: 'consistent' as const,
+        day_of_week: null,
         grade_groups: form.grade_groups,
-        start_time: form.no_set_time ? null : form.start_time,
-        end_time: form.no_set_time ? null : form.end_time,
-        duration_minutes: duration,
-        instructor_id: form.no_set_instructor ? null : (form.instructor_id || null),
-        venue_id: form.no_set_venue ? null : (form.venue_id || null),
+        start_time: null,
+        end_time: null,
+        duration_minutes: form.duration_minutes,
+        instructor_id: form.instructor_id || null,
+        venue_id: form.venue_id || null,
         required_skills: form.required_skills.length > 0 ? form.required_skills : null,
+        additional_tags: form.additional_tags.length > 0 ? form.additional_tags : null,
         is_active: form.is_active,
         week_cycle_length: form.week_cycle_length,
         week_in_cycle: form.week_in_cycle,
@@ -595,23 +361,23 @@ export default function EventTemplatesPage() {
   /* ── Map templates to TemplateListItem ─────────────────── */
 
   const templateListItems: TemplateListItem[] = templates.map((t) => {
-    const dayLabel = t.day_of_week != null ? (DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '\u2014') : '\u2014';
     const cycleLabel = t.week_cycle_length && t.week_cycle_length > 1
-      ? `Wk ${(t.week_in_cycle ?? 0) + 1}/${t.week_cycle_length}`
+      ? `Every ${t.week_cycle_length} wks`
       : 'Weekly';
     const subject = (t.required_skills ?? []).join(', ') || '\u2014';
+    const displayName = t.name || subject || (t.grade_groups ?? []).join(', ') || 'Untitled';
     return {
       id: t.id,
-      name: (t.grade_groups ?? []).join(', ') || '\u2014',
-      dayLabel,
-      timeLabel: t.start_time && t.end_time ? `${formatTime(t.start_time)} \u2013 ${formatTime(t.end_time)}` : '\u2014',
+      name: displayName,
+      dayLabel: '\u2014',
+      timeLabel: t.duration_minutes ? `${t.duration_minutes} min` : '\u2014',
       gradeGroups: t.grade_groups ?? [],
       instructor: getInstructorName(t.instructor_id),
       venue: getVenueName(t),
       subject,
-      typeLabel: TEMPLATE_TYPES.find((tt) => tt.value === t.template_type)?.label ?? t.template_type,
+      typeLabel: 'Template',
       cycleLabel,
-      tags: t.required_skills ?? [],
+      tags: [...(t.required_skills ?? []), ...(t.additional_tags ?? [])],
       isActive: t.is_active,
     };
   });
@@ -705,186 +471,86 @@ export default function EventTemplatesPage() {
               </button>
             </div>
 
-            {/* Staff */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <label style={rowLabelStyle}>Staff</label>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <select
-                  value={form.instructor_id}
-                  onChange={(e) => updateForm({ instructor_id: e.target.value })}
-                  disabled={form.no_set_instructor}
-                  style={{
-                    ...selectStyle,
-                    ...(form.no_set_instructor ? disabledFieldStyle : {}),
-                    ...(form.instructor_id && !form.no_set_instructor && filteredInstructors.find((i) => i.id === form.instructor_id && !i.available)
-                      ? { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' }
-                      : {}),
-                  }}
-                >
-                  <option value="">— None —</option>
-                  {filteredInstructors
-                    .sort((a, b) => (a.available === b.available ? 0 : a.available ? -1 : 1))
-                    .map((i) => (
-                      <option
-                        key={i.id}
-                        value={i.id}
-                        style={!i.available ? { color: '#94A3B8' } : undefined}
-                      >
-                        {i.first_name} {i.last_name}
-                        {!i.available ? ' (unavailable)' : ''}
-                      </option>
-                    ))}
-                </select>
-                {!form.no_set_instructor && filteredInstructors.length === 0 && form.required_skills.length > 0 && (
-                  <span style={{ fontSize: 11, color: '#EF4444', marginTop: 2 }} title="No staff have the required subjects. Add staff with these subjects on the Staff & Venues page.">
-                    <AlertTriangle className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                    No staff teach {form.required_skills.join(', ')}. Add staff with this subject on the Staff & Venues page.
-                  </span>
-                )}
-                {!form.no_set_instructor && form.required_skills.length > 0 && filteredInstructors.length > 0 && (
-                  <span style={{ fontSize: 11, color: '#64748B', marginTop: 2 }} title="Only staff whose subjects match the template's required subjects are shown">
-                    <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                    Filtered by subject: {form.required_skills.join(', ')}
-                  </span>
-                )}
-                {!form.no_set_instructor && filteredInstructors.some((i) => !i.available) && (
-                  <span style={{ fontSize: 11, color: '#F59E0B', marginTop: 2 }}>
-                    <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                    Filtered by {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label} {form.start_time}–{form.end_time}
-                  </span>
-                )}
-              </div>
-              <InlineFlexToggle
-                checked={form.no_set_instructor}
-                onChange={(checked) => updateForm({ no_set_instructor: checked, ...(checked ? { instructor_id: '' } : {}) })}
+            {/* 1. Name */}
+            <FormField label="Name">
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => updateForm({ name: e.target.value })}
+                placeholder="e.g., Weekly Strings K-2"
+                style={inputStyle}
               />
-            </div>
+            </FormField>
 
-            {/* Venue */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <label style={rowLabelStyle}>Venue</label>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <select
-                  value={form.venue_id}
-                  onChange={(e) => updateForm({ venue_id: e.target.value })}
-                  disabled={form.no_set_venue}
-                  style={{
-                    ...selectStyle,
-                    ...(form.no_set_venue ? disabledFieldStyle : {}),
-                  }}
-                >
-                  <option value="">— None —</option>
-                  {venues.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}{v.max_capacity ? ` (cap: ${v.max_capacity})` : ''}
-                    </option>
-                  ))}
-                </select>
-                {!form.no_set_venue && selectedVenue?.max_capacity && (
-                  <span style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                    Max capacity: {selectedVenue.max_capacity} students
-                  </span>
-                )}
-              </div>
-              <InlineFlexToggle
-                checked={form.no_set_venue}
-                onChange={(checked) => updateForm({ no_set_venue: checked, ...(checked ? { venue_id: '' } : {}) })}
+            {/* 2. Subject */}
+            <FormField label="Subject">
+              <TagSelector
+                value={form.required_skills}
+                onChange={(skills) => {
+                  updateForm({ required_skills: skills });
+                  // Clear instructor if they don't match the new subject
+                  if (form.instructor_id && skills.length > 0) {
+                    const inst = instructors.find((i) => i.id === form.instructor_id);
+                    if (inst && !skillsMatch(inst.skills, skills)) {
+                      updateForm({ required_skills: skills, instructor_id: '' });
+                      return;
+                    }
+                  }
+                }}
+                category="Subjects"
+                placeholder="Select subject..."
               />
-            </div>
+            </FormField>
 
-            {/* Day of Week */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <label style={rowLabelStyle}>Day of Week</label>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <select
-                  value={form.day_of_week}
-                  onChange={(e) => updateForm({ day_of_week: Number(e.target.value) })}
-                  disabled={form.no_set_day}
-                  style={{ ...selectStyle, ...(form.no_set_day ? disabledFieldStyle : {}) }}
-                >
-                  {filteredDays.map((d) => (
-                    <option
-                      key={d.value}
-                      value={d.value}
-                      disabled={!d.available}
-                    >
-                      {d.label}{!d.available ? ' (unavailable)' : ''}
-                    </option>
-                  ))}
-                </select>
-                {!form.no_set_day && filteredDays.some((d) => !d.available) && (
-                  <span style={{ fontSize: 11, color: '#F59E0B', marginTop: 2 }}>
-                    <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                    Filtered by staff availability
-                  </span>
-                )}
-              </div>
-              <InlineFlexToggle
-                checked={form.no_set_day}
-                onChange={(checked) => updateForm({ no_set_day: checked, ...(checked ? {} : { day_of_week: 1 }) })}
-              />
-            </div>
+            {/* 3. Staff */}
+            <FormField label="Staff">
+              <select
+                value={form.instructor_id}
+                onChange={(e) => updateForm({ instructor_id: e.target.value })}
+                style={selectStyle}
+              >
+                <option value="">— None —</option>
+                {filteredInstructors.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.first_name} {i.last_name}
+                  </option>
+                ))}
+              </select>
+              {filteredInstructors.length === 0 && form.required_skills.length > 0 && (
+                <span style={{ fontSize: 11, color: '#EF4444', marginTop: 2 }}>
+                  <AlertTriangle className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
+                  No staff teach {form.required_skills.join(', ')}.{' '}
+                  <a href="/tools/scheduler/admin/people" style={{ color: '#3B82F6', textDecoration: 'underline' }}>
+                    Add on Staff &amp; Venues page
+                  </a>
+                </span>
+              )}
+              {form.required_skills.length > 0 && filteredInstructors.length > 0 && (
+                <span style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                  <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
+                  Filtered by subject: {form.required_skills.join(', ')}
+                </span>
+              )}
+            </FormField>
 
-            {/* Time */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <label style={rowLabelStyle}>Time</label>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="time"
-                  value={form.start_time}
-                  onChange={(e) => updateForm({ start_time: e.target.value })}
-                  disabled={form.no_set_time}
-                  style={{ ...inputStyle, flex: 1, ...(form.no_set_time ? disabledFieldStyle : {}) }}
-                />
-                <span style={{ color: '#94A3B8', fontSize: 14, flexShrink: 0 }}>–</span>
-                <input
-                  type="time"
-                  value={form.end_time}
-                  onChange={(e) => updateForm({ end_time: e.target.value })}
-                  disabled={form.no_set_time}
-                  style={{ ...inputStyle, flex: 1, ...(form.no_set_time ? disabledFieldStyle : {}) }}
-                />
-              </div>
-              <InlineFlexToggle
-                checked={form.no_set_time}
-                onChange={(checked) => updateForm({ no_set_time: checked, ...(checked ? { start_time: '', end_time: '' } : { start_time: '09:00', end_time: '10:00' }) })}
-              />
-            </div>
+            {/* 4. Venue */}
+            <FormField label="Venue">
+              <select
+                value={form.venue_id}
+                onChange={(e) => updateForm({ venue_id: e.target.value })}
+                style={selectStyle}
+              >
+                <option value="">— None —</option>
+                {venues.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}{v.max_capacity ? ` (cap: ${v.max_capacity})` : ''}
+                  </option>
+                ))}
+              </select>
+            </FormField>
 
-            {/* Staff Time Availability */}
-            {!form.no_set_day && selectedInstructorTimeBlocks && selectedInstructorTimeBlocks.length > 0 && (
-              <div style={{
-                padding: 12,
-                backgroundColor: '#F0F9FF',
-                borderRadius: 8,
-                border: '1px solid #BFDBFE',
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#1E40AF', marginBottom: 8 }}>
-                  Staff available on {DAYS_OF_WEEK.find((d) => d.value === form.day_of_week)?.label}:
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {selectedInstructorTimeBlocks.map((block, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: '#1E40AF',
-                        backgroundColor: '#DBEAFE',
-                        padding: '4px 10px',
-                        borderRadius: 6,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {formatTime(block.start)} – {formatTime(block.end)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Grade Groups */}
-            <FormField label="Grade Groups">
+            {/* 5. Grade Group */}
+            <FormField label="Grade Group">
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {GRADE_OPTIONS.map((g) => {
                   const selected = form.grade_groups.includes(g);
@@ -913,49 +579,114 @@ export default function EventTemplatesPage() {
               </div>
             </FormField>
 
-            {/* Required Subjects */}
-            <FormField label="Required Subjects">
-              <TagSelector
-                value={form.required_skills}
-                onChange={(skills) => setForm(prev => ({ ...prev, required_skills: skills }))}
-                category="Subjects"
-                placeholder="Select staff subjects required for this event template..."
-              />
+            {/* 6. Duration */}
+            <FormField label="Duration">
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                {DURATION_PRESETS.map((mins) => {
+                  const selected = !form.duration_custom && form.duration_minutes === mins;
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => updateForm({ duration_minutes: mins, duration_custom: false })}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        border: '1px solid',
+                        borderColor: selected ? '#3B82F6' : '#E2E8F0',
+                        backgroundColor: selected ? '#EFF6FF' : '#FFFFFF',
+                        color: selected ? '#2563EB' : '#64748B',
+                        cursor: 'pointer',
+                        transition: 'all 150ms',
+                      }}
+                    >
+                      {mins} min
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => updateForm({ duration_custom: true })}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: '1px solid',
+                    borderColor: form.duration_custom ? '#3B82F6' : '#E2E8F0',
+                    backgroundColor: form.duration_custom ? '#EFF6FF' : '#FFFFFF',
+                    color: form.duration_custom ? '#2563EB' : '#64748B',
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                  }}
+                >
+                  Custom
+                </button>
+                {form.duration_custom && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="number"
+                      min={1}
+                      max={480}
+                      value={form.duration_minutes}
+                      onChange={(e) => updateForm({ duration_minutes: Number(e.target.value) || 0 })}
+                      style={{ ...inputStyle, width: 80 }}
+                    />
+                    <span style={{ fontSize: 13, color: '#64748B' }}>min</span>
+                  </div>
+                )}
+              </div>
             </FormField>
 
-            {/* Multi-week Pattern */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <FormField label="Week Cycle Length" hint="Leave empty for weekly">
+            {/* 7. Repeats Every X Weeks */}
+            <FormField label="Repeats Every X Weeks">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   type="number"
                   min={1}
                   max={8}
-                  placeholder="1"
-                  value={form.week_cycle_length ?? ''}
+                  value={form.week_cycle_length ?? 1}
                   onChange={(e) => {
-                    const val = e.target.value ? Number(e.target.value) : null;
+                    const val = Number(e.target.value) || 1;
                     updateForm({
-                      week_cycle_length: val,
-                      week_in_cycle: val && val > 1 ? (form.week_in_cycle ?? 0) : null,
+                      week_cycle_length: val <= 1 ? null : val,
+                      week_in_cycle: val > 1 ? (form.week_in_cycle ?? 0) : null,
                     });
                   }}
-                  style={inputStyle}
+                  style={{ ...inputStyle, width: 80 }}
                 />
-              </FormField>
+                <span style={{ fontSize: 13, color: '#64748B' }}>
+                  {(form.week_cycle_length ?? 1) <= 1 ? '(every week)' : 'weeks'}
+                </span>
+              </div>
               {form.week_cycle_length != null && form.week_cycle_length > 1 && (
-                <FormField label="Week in Cycle" hint={`0–${form.week_cycle_length - 1}`}>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: '#64748B', marginBottom: 4, display: 'block' }}>
+                    Week in Cycle
+                  </label>
                   <select
                     value={form.week_in_cycle ?? 0}
                     onChange={(e) => updateForm({ week_in_cycle: Number(e.target.value) })}
-                    style={selectStyle}
+                    style={{ ...selectStyle, width: 140 }}
                   >
                     {Array.from({ length: form.week_cycle_length }, (_, i) => (
                       <option key={i} value={i}>Week {i + 1}</option>
                     ))}
                   </select>
-                </FormField>
+                </div>
               )}
-            </div>
+            </FormField>
+
+            {/* 8. Additional Tags */}
+            <FormField label="Additional Tags">
+              <TagSelector
+                value={form.additional_tags}
+                onChange={(tags) => updateForm({ additional_tags: tags })}
+                placeholder="Select optional tags..."
+              />
+            </FormField>
 
             {/* Active toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -997,7 +728,7 @@ export default function EventTemplatesPage() {
       {deleteConfirmId && (() => {
         const t = templates.find((t) => t.id === deleteConfirmId);
         if (!t) return null;
-        const dayLabel = DAYS_OF_WEEK.find((d) => d.value === t.day_of_week)?.label ?? '';
+        const displayName = t.name || (t.required_skills ?? []).join(', ') || (t.grade_groups ?? []).join(', ') || 'this template';
         return (
           <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
             <div className="absolute inset-0 bg-black/60" onClick={() => setDeleteConfirmId(null)} />
@@ -1018,8 +749,7 @@ export default function EventTemplatesPage() {
                 Delete Event Template
               </h2>
               <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
-                Delete the <strong>{dayLabel}</strong> {formatTime(t.start_time)} – {formatTime(t.end_time)} template
-                for <strong>{(t.grade_groups ?? []).join(', ')}</strong>?
+                Delete <strong>{displayName}</strong>?
               </p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 4 }}>
                 <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} tooltip="Cancel">
@@ -1127,88 +857,3 @@ const selectStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-const disabledFieldStyle: React.CSSProperties = {
-  opacity: 0.45,
-  backgroundColor: '#F1F5F9',
-  cursor: 'not-allowed',
-  pointerEvents: 'none',
-};
-
-const rowLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#64748B',
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-  width: 90,
-  flexShrink: 0,
-  paddingTop: 11,
-};
-
-function ToggleCheckbox({
-  label,
-  tooltip,
-  checked,
-  onChange,
-}: {
-  label: string;
-  tooltip: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        cursor: 'pointer',
-        marginBottom: 4,
-      }}
-      title={tooltip}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        style={{ width: 14, height: 14, accentColor: '#3B82F6', cursor: 'pointer' }}
-      />
-      <span style={{ fontSize: 12, fontWeight: 500, color: checked ? '#3B82F6' : '#94A3B8' }}>
-        {label}
-      </span>
-    </label>
-  );
-}
-
-function InlineFlexToggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-        paddingTop: 9,
-      }}
-      title="Auto-assign by scheduler"
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        style={{ width: 13, height: 13, accentColor: '#3B82F6', cursor: 'pointer' }}
-      />
-      <span style={{ fontSize: 11, fontWeight: 500, color: checked ? '#3B82F6' : '#94A3B8' }}>
-        Auto
-      </span>
-    </label>
-  );
-}

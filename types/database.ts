@@ -128,6 +128,8 @@ export interface SchoolCalendar {
 export interface SessionTemplate {
   id: string;
   program_id: string;
+  /** User-defined display name for the template */
+  name: string | null;
   template_type: TemplateType;
   rotation_mode: RotationMode;
   instructor_id: string | null;
@@ -138,6 +140,8 @@ export interface SessionTemplate {
   duration_minutes: number;
   venue_id: string | null;
   required_skills: string[] | null;
+  /** Optional additional tags (any category) */
+  additional_tags: string[] | null;
   sort_order: number | null;
   is_active: boolean;
   /** Multi-week cycle length. null or 1 = weekly (every week). 2+ = repeats every N weeks. */

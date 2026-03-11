@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info, Lock, Calendar } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, X, ChevronDown, Save, Send, Loader2, Check, AlertTriangle, Wand2, Zap, RefreshCw, Shuffle, Clock, Coffee, Info, Lock, Calendar, Filter } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { VenueToggle } from '../../components/ui/VenueToggle';
+import { TagSelector } from '../../components/ui/TagSelector';
 import { TemplateList } from '../../components/templates/TemplateList';
 import type { TemplateListItem } from '../../components/templates/TemplateList';
+import { skillsMatch } from '@/lib/scheduler/utils';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -39,6 +41,10 @@ interface Template {
   templateType?: string;
   /** Maps from DB required_skills */
   subjects?: string[] | null;
+  /** Maps from DB additional_tags */
+  additionalTags?: string[] | null;
+  /** duration_minutes from DB */
+  durationMinutes?: number | null;
   /** is_active from DB */
   isActive?: boolean;
   /** sort_order from DB */
@@ -120,16 +126,19 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const venue = db.venue as Record<string, any> | null;
 
+  const dbName = (db.name as string | null) ?? '';
+  const autoName = (() => {
+    const subject = (db.required_skills as string[] | null)?.[0] ?? '';
+    const grade = gradeGroups.join(', ');
+    if (subject && grade) return `${subject} - ${grade}`;
+    if (subject) return subject;
+    if (grade) return grade;
+    return 'Untitled Template';
+  })();
+
   return {
     id: db.id as string,
-    name: (() => {
-      const subject = (db.required_skills as string[] | null)?.[0] ?? '';
-      const grade = gradeGroups.join(', ');
-      if (subject && grade) return `${subject} - ${grade}`;
-      if (subject) return subject;
-      if (grade) return grade;
-      return 'Untitled Template';
-    })(),
+    name: dbName || autoName,
     gradeLevel: gradeGroups[0] ?? '',
     instructor: '',
     venue: (venue?.name as string) ?? '',
@@ -145,6 +154,8 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
     venueId: (db.venue_id as string | null) ?? null,
     templateType: (db.template_type as string) ?? 'fully_defined',
     subjects: (db.required_skills as string[] | null) ?? null,
+    additionalTags: (db.additional_tags as string[] | null) ?? null,
+    durationMinutes: (db.duration_minutes as number | null) ?? null,
     isActive: db.is_active !== false,
     sortOrder: (db.sort_order as number | null) ?? null,
   };
@@ -169,11 +180,12 @@ function toDbPayload(t: Template, programId: string) {
 
   return {
     program_id: programId,
-    day_of_week: t.days[0] ?? 1,
+    name: t.name || null,
+    day_of_week: t.days[0] ?? null,
     grade_groups: gradeGroups,
     start_time: startTime,
     end_time: endTime,
-    duration_minutes: Math.max(durationMinutes, 0),
+    duration_minutes: t.durationMinutes ?? Math.max(durationMinutes, 0),
     rotation_mode: t.instructorRotation ? 'rotate' : 'consistent',
     template_type: t.templateType ?? 'fully_defined',
     is_active: t.isActive !== false,
@@ -183,6 +195,7 @@ function toDbPayload(t: Template, programId: string) {
     instructor_id: t.instructorId ?? null,
     venue_id: t.venueId ?? null,
     required_skills: t.subjects ?? null,
+    additional_tags: t.additionalTags ?? null,
     sort_order: t.sortOrder ?? null,
   };
 }
@@ -257,7 +270,6 @@ function emptyTemplate(): Template {
     id: '',
     name: '',
     gradeLevel: '',
-
     instructor: '',
     venue: '',
     days: [],
@@ -266,8 +278,14 @@ function emptyTemplate(): Template {
     color: '',
     weekCycleLength: null,
     weekInCycle: null,
+    durationMinutes: 60,
+    subjects: [],
+    additionalTags: [],
+    gradeGroups: [],
   };
 }
+
+const DURATION_PRESETS = [30, 45, 60, 90];
 
 // ──────────────────────────────────────────────────────────────
 // Toast Notification
@@ -595,8 +613,7 @@ function EditTemplateModal({
   onClose,
   isSaving,
   venues,
-  subjectOptions = [],
-  instructorOptions = [],
+  instructors = [],
 }: {
   template: Template;
   isNew: boolean;
@@ -604,8 +621,7 @@ function EditTemplateModal({
   onClose: () => void;
   isSaving?: boolean;
   venues?: { id: string; name: string }[];
-  subjectOptions?: string[];
-  instructorOptions?: string[];
+  instructors?: { id: string; first_name: string; last_name: string; skills: string[] | null; is_active: boolean }[];
 }) {
   const [local, setLocal] = useState<Template>({ ...template });
 
@@ -617,19 +633,30 @@ function EditTemplateModal({
     onSave(local);
   };
 
+  // Filter instructors by subject
+  const filteredInstructors = instructors.filter((i) =>
+    i.is_active && skillsMatch(i.skills, (local.subjects ?? []).length > 0 ? local.subjects! : null)
+  );
+
+  const dur = local.durationMinutes ?? 60;
+  const isDurationCustom = !DURATION_PRESETS.includes(dur);
+  const [showCustomDuration, setShowCustomDuration] = useState(isDurationCustom);
+
+  const selectCls = "w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  const inputCls = "w-full h-10 bg-white rounded-lg border border-slate-200 px-3 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  const labelCls = "block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-1";
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       {/* Backdrop */}
-      <Tooltip text="Click to close">
-        <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      </Tooltip>
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[640px] max-h-[calc(100vh-2rem)] overflow-y-auto mx-4">
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">
-            {isNew ? 'Create Template' : 'Edit Template'}
+            {isNew ? 'New Event Template' : 'Edit Event Template'}
           </h2>
           <Tooltip text="Close">
             <button
@@ -642,79 +669,233 @@ function EditTemplateModal({
         </div>
 
         {/* Form Body */}
-        <div className="px-6 py-5">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {/* Left Column */}
-            <FormInput
-              label="Template Name"
+        <div className="px-6 py-5 flex flex-col gap-5">
+          {/* 1. Name */}
+          <div>
+            <label className={labelCls}>Name</label>
+            <input
+              type="text"
               value={local.name}
-              onChange={(v) => update('name', v)}
+              onChange={(e) => update('name', e.target.value)}
               placeholder="e.g., Weekly Strings K-2"
-              tooltip="Enter a name to identify this template"
+              className={inputCls}
             />
-            <div>
-              <label className="block text-[13px] font-medium text-slate-900 mb-1.5">Venue</label>
-              <Tooltip text="Assign a room or location for this template" className="block">
-                <div className="relative">
-                  <select
-                    value={local.venueId ?? ''}
-                    onChange={(e) => {
-                      const id = e.target.value || null;
-                      const name = venues?.find((v) => v.id === id)?.name ?? '';
-                      setLocal((prev) => ({ ...prev, venueId: id, venue: name }));
+          </div>
+
+          {/* 2. Subject */}
+          <div>
+            <label className={labelCls}>Subject</label>
+            <TagSelector
+              value={local.subjects ?? []}
+              onChange={(skills) => {
+                // Clear instructor if they don't match new subject
+                if (local.instructorId && skills.length > 0) {
+                  const inst = instructors.find((i) => i.id === local.instructorId);
+                  if (inst && !skillsMatch(inst.skills, skills)) {
+                    setLocal((prev) => ({ ...prev, subjects: skills, instructorId: null, instructor: '' }));
+                    return;
+                  }
+                }
+                update('subjects', skills);
+              }}
+              category="Subjects"
+              placeholder="Select subject..."
+            />
+          </div>
+
+          {/* 3. Staff */}
+          <div>
+            <label className={labelCls}>Staff</label>
+            <div className="relative">
+              <select
+                value={local.instructorId ?? ''}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  const inst = instructors.find((i) => i.id === id);
+                  setLocal((prev) => ({
+                    ...prev,
+                    instructorId: id,
+                    instructor: inst ? `${inst.first_name} ${inst.last_name}` : '',
+                  }));
+                }}
+                className={selectCls}
+              >
+                <option value="">— None —</option>
+                {filteredInstructors.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.first_name} {i.last_name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+            {filteredInstructors.length === 0 && (local.subjects ?? []).length > 0 && (
+              <span className="text-[11px] text-red-500 mt-1 inline-flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                No staff teach {(local.subjects ?? []).join(', ')}.{' '}
+                <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
+                  Add on Staff &amp; Venues page
+                </a>
+              </span>
+            )}
+            {(local.subjects ?? []).length > 0 && filteredInstructors.length > 0 && (
+              <span className="text-[11px] text-slate-500 mt-1 inline-flex items-center gap-1">
+                <Filter className="w-3 h-3" />
+                Filtered by subject: {(local.subjects ?? []).join(', ')}
+              </span>
+            )}
+          </div>
+
+          {/* 4. Venue */}
+          <div>
+            <label className={labelCls}>Venue</label>
+            <div className="relative">
+              <select
+                value={local.venueId ?? ''}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  const name = venues?.find((v) => v.id === id)?.name ?? '';
+                  setLocal((prev) => ({ ...prev, venueId: id, venue: name }));
+                }}
+                className={selectCls}
+              >
+                <option value="">— None —</option>
+                {(venues ?? []).map((v) => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* 5. Grade Group */}
+          <div>
+            <label className={labelCls}>Grade Group</label>
+            <div className="flex flex-wrap gap-1.5">
+              {GRADE_OPTIONS.map((g) => {
+                const sel = (local.gradeGroups ?? []).includes(g);
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => {
+                      const cur = local.gradeGroups ?? [];
+                      const next = sel ? cur.filter((v) => v !== g) : [...cur, g];
+                      setLocal((prev) => ({ ...prev, gradeGroups: next, gradeLevel: next[0] ?? '' }));
                     }}
-                    className="w-full h-10 bg-white rounded-lg border border-slate-200 px-3 pr-10 text-[13px] text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`px-3 py-1 rounded-full text-[13px] font-medium border transition-colors cursor-pointer ${
+                      sel
+                        ? 'bg-blue-50 text-blue-600 border-blue-500'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                    }`}
                   >
-                    <option value="">No venue</option>
-                    {(venues ?? []).map((v) => (
-                      <option key={v.id} value={v.id}>{v.name}</option>
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 6. Duration */}
+          <div>
+            <label className={labelCls}>Duration</label>
+            <div className="flex gap-1.5 flex-wrap items-center">
+              {DURATION_PRESETS.map((mins) => {
+                const sel = !showCustomDuration && dur === mins;
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => {
+                      setShowCustomDuration(false);
+                      update('durationMinutes', mins);
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-colors cursor-pointer ${
+                      sel
+                        ? 'bg-blue-50 text-blue-600 border-blue-500'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {mins} min
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowCustomDuration(true)}
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-colors cursor-pointer ${
+                  showCustomDuration
+                    ? 'bg-blue-50 text-blue-600 border-blue-500'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                Custom
+              </button>
+              {showCustomDuration && (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={1}
+                    max={480}
+                    value={dur}
+                    onChange={(e) => update('durationMinutes', Number(e.target.value) || 0)}
+                    className="w-20 h-10 bg-white rounded-lg border border-slate-200 px-3 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <span className="text-[13px] text-slate-500">min</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 7. Repeats Every X Weeks */}
+          <div>
+            <label className={labelCls}>Repeats Every X Weeks</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={8}
+                value={local.weekCycleLength ?? 1}
+                onChange={(e) => {
+                  const val = Number(e.target.value) || 1;
+                  setLocal((prev) => ({
+                    ...prev,
+                    weekCycleLength: val <= 1 ? null : val,
+                    weekInCycle: val > 1 ? (prev.weekInCycle ?? 0) : null,
+                  }));
+                }}
+                className="w-20 h-10 bg-white rounded-lg border border-slate-200 px-3 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <span className="text-[13px] text-slate-500">
+                {(local.weekCycleLength ?? 1) <= 1 ? '(every week)' : 'weeks'}
+              </span>
+            </div>
+            {local.weekCycleLength != null && local.weekCycleLength > 1 && (
+              <div className="mt-2">
+                <label className="block text-[12px] font-medium text-slate-500 mb-1">Week in Cycle</label>
+                <div className="relative w-36">
+                  <select
+                    value={local.weekInCycle ?? 0}
+                    onChange={(e) => update('weekInCycle', Number(e.target.value))}
+                    className={selectCls + ' !w-36'}
+                  >
+                    {Array.from({ length: local.weekCycleLength }, (_, i) => (
+                      <option key={i} value={i}>Week {i + 1}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
-              </Tooltip>
-            </div>
-            <FormSelect
-              label="Grade Level"
-              value={local.gradeLevel ?? ''}
-              onChange={(v) => update('gradeLevel', v)}
-              options={GRADE_OPTIONS}
-              tooltip="Select the target grade level or range"
-            />
-            <DayChips
-              label="Day of Week"
-              selected={local.days}
-              onChange={(v) => update('days', v)}
-            />
-            <FormSelect
-              label="Subject"
-              value={local.subjects?.[0] ?? ''}
-              onChange={(v) => update('subjects', v ? [v] : [])}
-              options={subjectOptions}
-              tooltip="Choose the subject for this template"
-            />
-            <TimeSlotInput
-              label="Time Slot"
-              value={local.timeSlot ?? { start: '09:00', end: '10:00' }}
-              onChange={(v) => update('timeSlot', v)}
-            />
-            <FormSelect
-              label="Staff"
-              value={local.instructor ?? ''}
-              onChange={(v) => update('instructor', v)}
-              options={instructorOptions}
-              tooltip="Assign a staff member to this template"
-            />
-            <RotationToggle
-              label="Staff Rotation"
-              enabled={local.instructorRotation}
-              onChange={(v) => update('instructorRotation', v)}
-            />
-            <WeekCycleInput
-              cycleLength={local.weekCycleLength}
-              weekInCycle={local.weekInCycle}
-              onCycleLengthChange={(v) => update('weekCycleLength', v)}
-              onWeekInCycleChange={(v) => update('weekInCycle', v)}
+              </div>
+            )}
+          </div>
+
+          {/* 8. Additional Tags */}
+          <div>
+            <label className={labelCls}>Additional Tags</label>
+            <TagSelector
+              value={local.additionalTags ?? []}
+              onChange={(tags) => update('additionalTags', tags)}
+              placeholder="Select optional tags..."
             />
           </div>
         </div>
@@ -1692,7 +1873,7 @@ export default function TemplatesPage() {
 
   // ── Subject & Instructor options (fetched from API) ──
   const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
-  const [instructorOptions, setInstructorOptions] = useState<string[]>([]);
+  const [instructorData, setInstructorData] = useState<{ id: string; first_name: string; last_name: string; skills: string[] | null; is_active: boolean }[]>([]);
 
   // ── Buffer time ──
   const [bufferEnabled, setBufferEnabled] = useState(false);
@@ -1712,11 +1893,7 @@ export default function TemplatesPage() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data.instructors)) {
-          setInstructorOptions(
-            data.instructors.map((i: { first_name: string; last_name: string }) =>
-              `${i.first_name} ${i.last_name}`.trim()
-            )
-          );
+          setInstructorData(data.instructors);
         }
       })
       .catch(() => {});
@@ -3372,8 +3549,7 @@ export default function TemplatesPage() {
           }}
           isSaving={isSavingTemplate}
           venues={venues}
-          subjectOptions={subjectOptions}
-          instructorOptions={instructorOptions}
+          instructors={instructorData}
         />
       )}
 
