@@ -100,12 +100,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 6. Delete non-default tags (default tags persist as organizational structure)
+    // 6. Delete tags EXCEPT Subjects and Space Types (those are default categories)
+    const PRESERVED_CATEGORIES = ['Subjects', 'Skills', 'Space Types', 'Spaces Type'];
     const { data: tagData, error: tagErr } = await sb
       .from('tags')
       .delete()
+      .not('category', 'in', `(${PRESERVED_CATEGORIES.map(c => `"${c}"`).join(',')})`)
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      // Just delete all tags - defaults will be recreated on next program creation
       .select('id');
 
     if (tagErr) {
