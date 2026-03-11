@@ -1018,15 +1018,61 @@ function CalendarDashboard() {
   }, []);
 
   // Template sidebar: open one-off modal pre-filled from template
-  const handleTemplateSelect = useCallback((template: EventTemplate, date?: string, time?: string) => {
+  const handleTemplateSelect = useCallback(async (template: EventTemplate, date?: string, time?: string) => {
+    // If we have a date and time (drag-drop from sidebar), create session directly — no modal
+    if (date && time && selectedProgramId) {
+      const startTime = time; // already "HH:MM" from formatDecimalToTime
+      const durationMin = template.duration_minutes ?? 45;
+      const [hStr, mStr] = startTime.split(':');
+      const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
+      const endMinutes = startMinutes + durationMin;
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+      try {
+        const res = await fetch('/api/sessions', {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            program_id: selectedProgramId,
+            template_id: template.id,
+            instructor_id: template.instructor_id ?? null,
+            venue_id: template.venue_id ?? null,
+            grade_groups: template.grade_groups ?? [],
+            date,
+            start_time: `${startTime}:00`,
+            end_time: `${endTime}:00`,
+            duration_minutes: durationMin,
+            status: 'draft',
+            is_makeup: false,
+            name: template.name || template.required_skills?.[0] || 'Event',
+          }),
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          showToast(body.error || 'Failed to schedule event', 'error');
+          return;
+        }
+
+        showToast(`Scheduled "${template.name || template.required_skills?.[0] || 'Event'}" on ${date} at ${startTime}`, 'success');
+        // Refresh sessions
+        await fetchSessions();
+      } catch (err) {
+        showToast('Failed to schedule event', 'error');
+        console.error(err);
+      }
+      return;
+    }
+
+    // No date/time (clicked from sidebar without drag) — open the one-off modal
     setOneOffSlot({
       date: date ?? '',
       time: time ?? '',
     });
-    // Store template data for the modal to pick up
     setSelectedTemplate(template);
     setShowOneOffModal(true);
-  }, []);
+  }, [selectedProgramId, showToast, fetchSessions]);
 
   // One-off event: create session via API
   const handleCreateOneOffEvent = useCallback(async (data: OneOffEventFormData) => {
