@@ -134,6 +134,16 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     ? session.tags.map((t: { name?: string }) => t.name).filter(Boolean)
     : [];
 
+  // Populate subjects from template skills OR subject-category tags
+  const templateSubjects = Array.isArray(session.template?.required_skills) ? session.template.required_skills : [];
+  const tagSubjects = Array.isArray(session.tags)
+    ? session.tags
+        .filter((t: { category?: string }) => t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject')
+        .map((t: { name?: string }) => t.name)
+        .filter(Boolean)
+    : [];
+  const allSubjects = [...templateSubjects, ...tagSubjects];
+
   const gradeLabel = session.grade_groups?.length
     ? `Grade ${session.grade_groups.join(', ')}`
     : '';
@@ -150,9 +160,10 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     date: session.date,
     status: session.status ?? 'draft',
     venue: session.venue?.name,
-    subjects: Array.isArray(session.template?.required_skills) ? session.template.required_skills : [],
+    subjects: allSubjects,
     tags: tagNames,
     notes: session.notes ?? undefined,
+    templateId: session.template_id ?? session.template?.id ?? undefined,
   };
 }
 
@@ -812,6 +823,32 @@ function CalendarDashboard() {
     };
   }, [fetchSessions]);
 
+  const handleDeleteEvent = useCallback(async (eventId: string, mode: 'single' | 'future') => {
+    try {
+      if (mode === 'single') {
+        const res = await fetch(`/api/sessions/${eventId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Failed to delete session');
+        }
+        setEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+        showToast('Session canceled', 'success');
+      } else {
+        const res = await fetch(`/api/sessions/delete-future?session_id=${eventId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Failed to delete future sessions');
+        }
+        const { deleted } = await res.json();
+        await fetchSessions();
+        showToast(`Canceled ${deleted} session${deleted !== 1 ? 's' : ''}`, 'success');
+      }
+      closePanel();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete', 'error');
+    }
+  }, [fetchSessions, closePanel]);
+
   // Auto-generate draft schedule — first shows preview, then confirms
   const handleGenerateSchedule = useCallback(async () => {
     if (!selectedProgramId) {
@@ -1308,6 +1345,7 @@ function CalendarDashboard() {
           open={panelState.open}
           onClose={closePanel}
           onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
         />
       )}
 

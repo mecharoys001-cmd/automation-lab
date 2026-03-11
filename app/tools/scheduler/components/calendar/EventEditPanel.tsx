@@ -10,6 +10,7 @@ import {
   Plus,
   Loader2,
   Check,
+  Trash2,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { skillsMatch } from '@/lib/scheduler/utils';
@@ -54,6 +55,7 @@ export interface EventEditPanelProps {
   open: boolean;
   onClose: () => void;
   onSave?: (eventId: string, data: EventEditPanelData) => void | Promise<void>;
+  onDelete?: (eventId: string, mode: 'single' | 'future') => void | Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +89,7 @@ function from24h(time24: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelProps) {
+export function EventEditPanel({ event, open, onClose, onSave, onDelete }: EventEditPanelProps) {
   // Form state
   const [editTitle, setEditTitle] = useState(event.title);
   const [editVenue, setEditVenue] = useState(event.venue ?? '');
@@ -98,6 +100,9 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
   const [editTags, setEditTags] = useState<string[]>(event.tags ?? []);
   const [editNotes, setEditNotes] = useState(event.notes ?? '');
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<'single' | 'future' | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Dropdown data
   const [venues, setVenues] = useState<VenueOption[]>([]);
@@ -280,6 +285,22 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
     setEditTags(event.tags ?? []);
     setEditNotes(event.notes ?? '');
     onClose();
+  };
+
+  const handleDeleteClick = async (mode: 'single' | 'future') => {
+    if (deleteConfirm !== mode) {
+      setDeleteConfirm(mode);
+      return;
+    }
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(event.id, mode);
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirm(null);
+      setShowDeleteMenu(false);
+    }
   };
 
   // Count qualified instructors (those not currently assigned, filtered by subject)
@@ -679,34 +700,83 @@ export function EventEditPanel({ event, open, onClose, onSave }: EventEditPanelP
         </div>
 
         {/* ================================================================= */}
-        {/* Panel Footer — right-aligned Cancel + Save Changes               */}
+        {/* Panel Footer — Delete left, Cancel + Save right                 */}
         {/* ================================================================= */}
-        <div className="flex items-center justify-end gap-3 px-4 py-4 border-t border-[#E2E8F0] shrink-0">
-          <Tooltip text="Discard changes and close the panel">
-            <button
-              onClick={handleCancel}
-              disabled={isSaving}
-              className="rounded-lg border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-medium text-[#64748B] hover:bg-[#F1F5F9] transition-colors cursor-pointer disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </Tooltip>
-          <Tooltip text="Save session changes">
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !editTitle.trim()}
-              className="rounded-lg bg-[#3B82F6] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
+        <div className="flex items-center justify-between px-4 py-4 border-t border-[#E2E8F0] shrink-0">
+          {/* Delete section — left side */}
+          {onDelete ? (
+            <div className="relative">
+              <Tooltip text="Delete this session">
+                <button
+                  onClick={() => {
+                    setShowDeleteMenu(!showDeleteMenu);
+                    setDeleteConfirm(null);
+                  }}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  Delete
+                </button>
+              </Tooltip>
+
+              {showDeleteMenu && (
+                <div className="absolute bottom-full left-0 mb-1 w-56 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-10 overflow-hidden">
+                  <button
+                    onClick={() => handleDeleteClick('single')}
+                    disabled={isDeleting}
+                    className="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {deleteConfirm === 'single' ? 'Are you sure?' : 'Cancel This Session'}
+                  </button>
+                  {event.templateId && (
+                    <button
+                      onClick={() => handleDeleteClick('future')}
+                      disabled={isDeleting}
+                      className="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-[#E2E8F0] transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {deleteConfirm === 'future' ? 'Are you sure?' : 'Cancel All Future Sessions'}
+                    </button>
+                  )}
+                </div>
               )}
-            </button>
-          </Tooltip>
+            </div>
+          ) : (
+            <div />
+          )}
+
+          {/* Save/Cancel — right side */}
+          <div className="flex items-center gap-3">
+            <Tooltip text="Discard changes and close the panel">
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="rounded-lg border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-medium text-[#64748B] hover:bg-[#F1F5F9] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </Tooltip>
+            <Tooltip text="Save session changes">
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !editTitle.trim()}
+                className="rounded-lg bg-[#3B82F6] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </div>,

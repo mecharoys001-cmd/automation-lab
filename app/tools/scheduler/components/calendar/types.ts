@@ -30,4 +30,5 @@ export interface CalendarEvent {
   subjects?: string[]; // e.g. ['strings'], from template.required_skills
   tags?: string[];
   notes?: string;      // session notes
+  templateId?: string; // session_template id for bulk operations
 }
