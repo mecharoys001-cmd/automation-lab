@@ -2622,6 +2622,7 @@ export default function TemplatesPage() {
 
   const handleDragOver = (dayIndex: number, weekIdx: number, e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = draggingPlacedId ? 'move' : 'copy';
 
     // Compute duration from template's time slot, duration_minutes, or default to 1h
     let durationHours = 1;
@@ -2700,6 +2701,10 @@ export default function TemplatesPage() {
     e.preventDefault();
     setDropPreview(null);
     setDropConflict('none');
+
+    console.log('[DROP] handleDrop fired', { dayIndex, weekIdx });
+    console.log('[DROP] draggingTemplate:', draggingTemplate?.id, draggingTemplate?.subjects);
+    console.log('[DROP] dataTransfer text:', e.dataTransfer.getData('text/plain'));
 
     // Check if this is a move of an existing placed event
     let movingPlacedId: string | null = draggingPlacedId;
