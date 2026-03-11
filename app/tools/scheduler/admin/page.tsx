@@ -88,21 +88,30 @@ function formatTimeDisplay(time24: string): string {
 /** Build a readable title from a generated session's template data. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildSessionTitle(session: any): string {
-  const skills: string[] = session.template?.required_skills ?? [];
   const grades: string[] = session.grade_groups ?? session.template?.grade_groups ?? [];
   const gradeSuffix = grades.length > 0 ? ` - Grade ${grades.join(', ')}` : '';
+  
+  // Priority 1: Use template name if it exists
+  if (session.template?.name) {
+    return `${session.template.name}${gradeSuffix}`;
+  }
 
+  // Priority 2: Use subject/skill
+  const skills: string[] = session.template?.required_skills ?? [];
   if (skills.length > 0) {
     const skill = skills[0].charAt(0).toUpperCase() + skills[0].slice(1);
     return `${skill} Session${gradeSuffix}`;
   }
-  // Instructor: API returns { first_name, last_name }, not { name }
+  
+  // Priority 3: Use instructor name
   const instructorName = session.instructor
     ? `${session.instructor.first_name ?? ''} ${session.instructor.last_name ?? ''}`.trim()
     : '';
   if (instructorName) {
     return `${instructorName} Session${gradeSuffix}`;
   }
+  
+  // Fallback
   return `Session${gradeSuffix}`;
 }
 
