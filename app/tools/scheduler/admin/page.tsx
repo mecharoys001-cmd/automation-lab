@@ -37,8 +37,7 @@ import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
 import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
-import { OneOffEventModal } from '../components/modals/OneOffEventModal';
-import type { OneOffEventFormData } from '../components/modals/OneOffEventModal';
+import { CreateTemplateModal } from '../components/modals/CreateTemplateModal';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -1113,93 +1112,6 @@ function CalendarDashboard() {
     setShowOneOffModal(true);
   }, [selectedProgramId, showToast, fetchSessions, dbVenues]);
 
-  // One-off event: create session via API
-  const handleCreateOneOffEvent = useCallback(async (data: OneOffEventFormData) => {
-    if (!selectedProgramId) {
-      showToast('Select a program first', 'error');
-      return;
-    }
-
-    // Compute end_time from start_time + duration
-    const startTime24 = to24h(data.start_time);
-    const [hStr, mStr] = startTime24.split(':');
-    const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
-    const endMinutes = startMinutes + data.duration_minutes;
-    const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
-    const endM = String(endMinutes % 60).padStart(2, '0');
-    const endTime = `${endH}:${endM}`;
-
-    const sessionBody: Record<string, unknown> = {
-      program_id: selectedProgramId,
-      template_id: null,
-      instructor_id: data.instructor_id,
-      venue_id: data.venue_id,
-      grade_groups: data.grade_groups,
-      date: data.date,
-      start_time: `${startTime24}:00`,
-      end_time: `${endTime}:00`,
-      duration_minutes: data.duration_minutes,
-      status: 'draft',
-      is_makeup: false,
-      name: data.name,
-    };
-
-    // Pass recurrence options if specified
-    if (data.recurrence) {
-      sessionBody.recurrence = data.recurrence;
-    }
-
-    // Pass instructor rotation IDs if specified
-    if (data.rotation_instructor_ids && data.rotation_instructor_ids.length >= 2) {
-      sessionBody.rotation_instructor_ids = data.rotation_instructor_ids;
-    }
-
-    const res = await fetch('/api/sessions', {
-      method: 'POST',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sessionBody),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      showToast(body.error || 'Failed to create event', 'error');
-      throw new Error(body.error || 'Failed to create event');
-    }
-
-    const result = await res.json();
-    const isRecurring = !!(result.count && result.count > 1);
-
-    // If a subject tag was selected, link it to the session(s)
-    if (data.subject_tag_id) {
-      const sessionsToTag = isRecurring
-        ? (result.sessions ?? [])
-        : result.session ? [result.session] : [];
-
-      await Promise.all(
-        sessionsToTag
-          .filter((s: { id?: string }) => s?.id)
-          .map((s: { id: string }) =>
-            fetch('/api/session-tags', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ session_id: s.id, tag_id: data.subject_tag_id }),
-            }).catch(() => {
-              // Non-critical — tag linking can fail silently
-            })
-          )
-      );
-    }
-
-    setShowOneOffModal(false);
-    if (isRecurring) {
-      showToast(`"${data.name}" — ${result.count} sessions created`);
-    } else {
-      showToast(`"${data.name}" created successfully`);
-    }
-    await fetchSessions();
-  }, [selectedProgramId, fetchSessions]);
-
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* ================================================================= */}
@@ -1475,15 +1387,14 @@ function CalendarDashboard() {
         />
       )}
 
-      {/* One-Off Event Creation Modal */}
-      <OneOffEventModal
+      {/* Create Template + Session Modal */}
+      <CreateTemplateModal
         open={showOneOffModal}
         onClose={() => { setShowOneOffModal(false); setSelectedTemplate(null); }}
-        onSubmit={handleCreateOneOffEvent}
+        onCreated={fetchSessions}
         initialDate={oneOffSlot?.date}
         initialTime={oneOffSlot?.time}
         programId={selectedProgramId}
-        initialTemplate={selectedTemplate ?? undefined}
       />
     </div>
   );
