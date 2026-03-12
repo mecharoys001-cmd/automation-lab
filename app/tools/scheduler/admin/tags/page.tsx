@@ -226,9 +226,16 @@ export default function TagsPage() {
     }
   }, [customCategories]);
 
+  // Normalize category names — consolidate singular/plural variants (e.g. "Subject"/"Subjects")
+  const normalizeCategory = (cat: string): string => {
+    const lower = cat.toLowerCase().trim();
+    if (lower === 'subject') return 'Subjects';
+    return cat;
+  };
+
   // Get all unique categories (from tags + custom ones)
-  const categoriesFromTags = Array.from(new Set(tags.map(t => t.category || 'General')));
-  const categories = Array.from(new Set([...categoriesFromTags, ...customCategories])).sort();
+  const categoriesFromTags = Array.from(new Set(tags.map(t => normalizeCategory(t.category || 'General'))));
+  const categories = Array.from(new Set([...categoriesFromTags, ...customCategories.map(normalizeCategory)])).sort();
 
   // Quick add tag(s) - supports comma-separated values
   const handleQuickAdd = async () => {
@@ -699,7 +706,7 @@ export default function TagsPage() {
       <div className="flex-1 overflow-y-auto px-8 py-6">
         <div className="space-y-4">
           {categories.map(category => {
-            const categoryTags = tags.filter(t => (t.category || 'General') === category);
+            const categoryTags = tags.filter(t => normalizeCategory(t.category || 'General') === category);
             const isCollapsed = collapsedCategories.has(category);
 
             return (

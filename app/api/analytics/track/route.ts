@@ -30,31 +30,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const svc = createServiceClient();
+    // Analytics is non-critical — fail gracefully so it never blocks the app
+    try {
+      const svc = createServiceClient();
 
-    // Insert event
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (svc.from('analytics_events') as any).insert({
-      user_id: user.id,
-      user_email: user.email,
-      session_id,
-      event_type,
-      page_path,
-      element_id: element_id || null,
-      element_text: element_text || null,
-      user_agent: request.headers.get('user-agent') || null,
-      metadata: metadata || {},
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (svc.from('analytics_events') as any).insert({
+        user_id: user.id,
+        user_email: user.email,
+        session_id,
+        event_type,
+        page_path,
+        element_id: element_id || null,
+        element_text: element_text || null,
+        user_agent: request.headers.get('user-agent') || null,
+        metadata: metadata || {},
+      });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error('[analytics] Failed to insert event:', error.message);
+      } else {
+        // Cleanup: delete events older than 30 days (run opportunistically)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (svc.from('analytics_events') as any)
+          .delete()
+          .lt('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      }
+    } catch (analyticsErr) {
+      console.error('[analytics] Unexpected error:', analyticsErr);
     }
-
-    // Cleanup: delete events older than 30 days (run opportunistically)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (svc.from('analytics_events') as any)
-      .delete()
-      .lt('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {

@@ -929,6 +929,31 @@ export function WeekView({
                         </div>
                       );
                     })}
+                    {/* Unassigned venue lane — events with no venue */}
+                    {(() => {
+                      const unassignedEvents = filteredEvents.filter((e) => !e.venue);
+                      if (unassignedEvents.length === 0) return null;
+                      return (
+                        <div
+                          className="relative flex-1 border-l border-dashed border-slate-200"
+                          style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
+                        >
+                          {unassignedEvents.map((event) => (
+                            <WeekEventBlock
+                              key={event.id}
+                              event={event}
+                              dayStartHour={dayStartHour}
+                              onHover={showPopover}
+                              onLeave={hidePopover}
+                              onClick={handleEventClick}
+                              onContextMenu={onEventContextMenu}
+                              onResizeEnd={onEventResize}
+                              enableDrag={!!onEventDrop}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })()}
                     {/* Drop preview ghost (multi-lane) */}
                     {dropPreview && dropPreview.dayIdx === dayIdx && (() => {
                       const laneIdx = dropPreview.venueId ? selectedVenues.indexOf(dropPreview.venueId) : -1;

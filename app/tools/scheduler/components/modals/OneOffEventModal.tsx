@@ -183,15 +183,7 @@ export function OneOffEventModal({
         const allTags: Tag[] = body.tags ?? [];
         setTags(allTags);
 
-        // If template has required_skills, try to match a subject tag
-        if (initialTemplate?.required_skills?.length) {
-          const skill = initialTemplate.required_skills[0].toLowerCase();
-          const matchingTag = allTags.find(
-            (t) => t.name.toLowerCase() === skill ||
-              t.name.toLowerCase().includes(skill),
-          );
-          if (matchingTag) setSubjectTagId(matchingTag.id);
-        }
+        // Don't auto-select tags from template skills — user must explicitly choose
       }
     };
 
@@ -307,20 +299,27 @@ export function OneOffEventModal({
             />
           </div>
 
-          {/* Subject + Instructor row */}
+          {/* Subject Tag + Instructor row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject</label>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject Tag</label>
               <select
                 value={subjectTagId}
                 onChange={(e) => setSubjectTagId(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+                className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer ${
+                  subjectTagId ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'
+                }`}
               >
-                <option value="">— None —</option>
+                <option value="">— No tag —</option>
                 {displayTags.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
+              {subjectTagId && (
+                <p className="text-[11px] text-blue-600">
+                  Tag will be applied to this event
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">

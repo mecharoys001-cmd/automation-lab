@@ -53,8 +53,8 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       // Check if this program has sessions using subject tags
       const hasSubjects = sessions.some((s: { tags?: string[] | null }) => (s.tags ?? []).length > 0);
 
-      // Check templates (global shared resource)
-      const templatesRes = await fetch('/api/templates');
+      // Check templates for THIS program
+      const templatesRes = await fetch(`/api/templates?program_id=${selectedProgramId}`);
       const templatesData = await templatesRes.json();
       const hasTemplates = templatesData.templates?.length > 0;
 
