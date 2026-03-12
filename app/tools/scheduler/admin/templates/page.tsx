@@ -50,6 +50,8 @@ interface Template {
   isActive?: boolean;
   /** sort_order from DB */
   sortOrder?: number | null;
+  /** How many times per week this template should be scheduled (1-5, default 1) */
+  sessionsPerWeek?: number | null;
 }
 
 interface PlacedTemplate {
@@ -160,6 +162,7 @@ function fromDbTemplate(db: Record<string, any>, index: number): Template {
     additionalTags: (db.additional_tags as string[] | null) ?? null,
     durationMinutes: (db.duration_minutes as number | null) ?? null,
     isActive: db.is_active !== false,
+    sessionsPerWeek: (db.sessions_per_week as number | null) ?? 1,
     sortOrder: (db.sort_order as number | null) ?? null,
   };
 }
@@ -199,6 +202,7 @@ function toDbPayload(t: Template, programId: string) {
     template_type: t.templateType ?? 'fully_defined',
     is_active: t.isActive !== false,
     week_cycle_length: t.weekCycleLength,
+    sessions_per_week: t.sessionsPerWeek ?? 1,
     week_in_cycle: t.weekInCycle,
     // Preserve DB-synced fields
     instructor_id: t.instructorId ?? null,
@@ -866,7 +870,33 @@ function EditTemplateModal({
             </div>
           </div>
 
-          {/* 7. Repeats Every X Weeks */}
+          {/* 7. Sessions Per Week */}
+          <div>
+            <label className={labelCls}>Sessions Per Week</label>
+            <Tooltip text="How many times per week this event should be scheduled (1 = once, 5 = daily)">
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setLocal((prev) => ({ ...prev, sessionsPerWeek: n }))}
+                    className={`h-10 w-12 rounded-lg border text-[13px] font-medium transition-colors ${
+                      (local.sessionsPerWeek ?? 1) === n
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
+                    }`}
+                  >
+                    {n}×
+                  </button>
+                ))}
+                <span className="text-[13px] text-slate-500 ml-1">
+                  {(local.sessionsPerWeek ?? 1) === 1 ? '(once a week)' : (local.sessionsPerWeek ?? 1) === 5 ? '(daily)' : 'per week'}
+                </span>
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* 8. Repeats Every X Weeks */}
           <div>
             <label className={labelCls}>Repeats Every X Weeks</label>
             <div className="flex items-center gap-2">

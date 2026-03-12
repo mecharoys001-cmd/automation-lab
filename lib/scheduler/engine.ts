@@ -314,8 +314,18 @@ function runSingleAttempt(
       group.push(tmpl);
       templatesByDay.set(effectiveDay, group);
     } else {
-      // No day assigned — schedule on all weekdays (1=Mon through 5=Fri)
-      for (let d = 1; d <= 5; d++) {
+      // No day assigned — spread across weekdays based on sessions_per_week (default 1)
+      const perWeek = Math.min(Math.max((tmpl as any).sessions_per_week ?? 1, 1), 5);
+      // Distribute evenly: 1→Mon, 2→Mon/Wed, 3→Mon/Wed/Fri, 4→Mon-Thu, 5→Mon-Fri
+      const daySpread: Record<number, number[]> = {
+        1: [1],           // Monday
+        2: [1, 3],        // Mon, Wed
+        3: [1, 3, 5],     // Mon, Wed, Fri
+        4: [1, 2, 3, 4],  // Mon-Thu
+        5: [1, 2, 3, 4, 5], // Mon-Fri
+      };
+      const days = daySpread[perWeek] ?? [1];
+      for (const d of days) {
         const group = templatesByDay.get(d) ?? [];
         group.push(tmpl);
         templatesByDay.set(d, group);
