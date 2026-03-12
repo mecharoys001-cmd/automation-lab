@@ -943,6 +943,23 @@ export function WeekView({
                         </div>
                       );
                     })}
+                    {/* Venue-less events: overlay spanning all lanes */}
+                    {filteredEvents
+                      .filter((e) => !e.venue)
+                      .map((event) => (
+                        <div key={event.id} className="absolute inset-x-0 z-[3] pointer-events-auto px-0.5">
+                          <WeekEventBlock
+                            event={event}
+                            dayStartHour={dayStartHour}
+                            onHover={showPopover}
+                            onLeave={hidePopover}
+                            onClick={handleEventClick}
+                            onContextMenu={onEventContextMenu}
+                            onResizeEnd={onEventResize}
+                            enableDrag={!!onEventDrop}
+                          />
+                        </div>
+                      ))}
                     {/* Drop preview ghost (multi-lane) */}
                     {dropPreview && dropPreview.dayIdx === dayIdx && (() => {
                       const laneIdx = dropPreview.venueId ? selectedVenues.indexOf(dropPreview.venueId) : -1;
