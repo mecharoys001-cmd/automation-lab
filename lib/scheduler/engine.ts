@@ -316,15 +316,26 @@ function runSingleAttempt(
     } else {
       // No day assigned — spread across weekdays based on sessions_per_week (default 1)
       const perWeek = Math.min(Math.max((tmpl as any).sessions_per_week ?? 1, 1), 5);
-      // Distribute evenly: 1→Mon, 2→Mon/Wed, 3→Mon/Wed/Fri, 4→Mon-Thu, 5→Mon-Fri
-      const daySpread: Record<number, number[]> = {
-        1: [1],           // Monday
-        2: [1, 3],        // Mon, Wed
-        3: [1, 3, 5],     // Mon, Wed, Fri
-        4: [1, 2, 3, 4],  // Mon-Thu
-        5: [1, 2, 3, 4, 5], // Mon-Fri
-      };
-      const days = daySpread[perWeek] ?? [1];
+
+      // If starts_on is set and perWeek is 1, use the day-of-week of starts_on
+      // instead of defaulting to Monday. This ensures "starts 3/26 (Thu)" → schedules on Thursdays.
+      let days: number[];
+      if (perWeek === 1 && tmpl.starts_on) {
+        const startsDate = parseDate(tmpl.starts_on);
+        const startsDow = startsDate.getDay(); // 0=Sun, 1=Mon, ...
+        // If starts_on falls on a weekend, default to Monday
+        days = (startsDow >= 1 && startsDow <= 5) ? [startsDow] : [1];
+      } else {
+        // Distribute evenly: 1→Mon, 2→Mon/Wed, 3→Mon/Wed/Fri, 4→Mon-Thu, 5→Mon-Fri
+        const daySpread: Record<number, number[]> = {
+          1: [1],           // Monday
+          2: [1, 3],        // Mon, Wed
+          3: [1, 3, 5],     // Mon, Wed, Fri
+          4: [1, 2, 3, 4],  // Mon-Thu
+          5: [1, 2, 3, 4, 5], // Mon-Fri
+        };
+        days = daySpread[perWeek] ?? [1];
+      }
       for (const d of days) {
         const group = templatesByDay.get(d) ?? [];
         group.push(tmpl);
@@ -454,14 +465,16 @@ function runSingleAttempt(
             });
 
             if ((hasAvailableInstructor || qualifiedInsts.length === 0) && hasAvailableVenue) {
-              // Check no conflict with already-assigned sessions on this day
-              const hasConflict = generatedSessions.some(d =>
+              // For auto-time, we only need to avoid stacking sessions for the SAME template
+              // on the same date. Different templates CAN run simultaneously (different staff/venues).
+              const hasSameTemplateConflict = generatedSessions.some(d =>
                 d.date === targetDate &&
+                d.template_id === tmpl.id &&
                 d.start_time && d.end_time &&
                 scanStartStr < d.end_time.slice(0, 5) &&
                 scanEndStr > d.start_time.slice(0, 5)
               );
-              if (!hasConflict) {
+              if (!hasSameTemplateConflict) {
                 startTime = `${scanStartStr}:00`;
                 endTime = `${scanEndStr}:00`;
                 dayNextSlot.set(dayKey, scanEnd);
