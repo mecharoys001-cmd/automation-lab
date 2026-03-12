@@ -732,6 +732,7 @@ function CalendarDashboard() {
         program_id: selectedProgramId,
         start_date,
         end_date,
+        exclude_status: 'canceled',
       });
 
       const res = await fetch(`/api/sessions?${params.toString()}`, { cache: 'no-store', signal });
