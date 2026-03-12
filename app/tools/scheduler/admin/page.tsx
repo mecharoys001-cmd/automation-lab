@@ -43,6 +43,13 @@ import type { TemplateFormData } from '../components/modals/TemplateFormModal';
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
 // ---------------------------------------------------------------------------
+/** Convert stored grade ("10th", "Pre-K", "K", "1st") to display format ("Grade 10", "Pre-K", "K", "Grade 1") */
+function formatGradeDisplay(grade: string): string {
+  if (grade === 'Pre-K' || grade === 'K') return grade;
+  const num = grade.replace(/(st|nd|rd|th)$/i, '');
+  return `Grade ${num}`;
+}
+
 function to24h(time12: string): string {
   if (!time12) return '';
   if (/^\d{2}:\d{2}$/.test(time12)) return time12;
@@ -90,7 +97,7 @@ function formatTimeDisplay(time24: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildSessionTitle(session: any): string {
   const grades: string[] = session.grade_groups ?? session.template?.grade_groups ?? [];
-  const gradeSuffix = grades.length > 0 ? ` - ${grades.join(', ')}` : '';
+  const gradeSuffix = grades.length > 0 ? ` - ${grades.map(formatGradeDisplay).join(', ')}` : '';
   
   // Priority 1: Use session name (e.g. one-off events)
   if (session.name) {
@@ -145,7 +152,7 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
   const allSubjects = [...templateSubjects, ...tagSubjects];
 
   const gradeLabel = session.grade_groups?.length
-    ? session.grade_groups.join(', ')
+    ? session.grade_groups.map(formatGradeDisplay).join(', ')
     : '';
 
   return {
