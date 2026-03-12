@@ -1018,7 +1018,7 @@ function CalendarDashboard() {
   }, []);
 
   // Template sidebar: open one-off modal pre-filled from template
-  const handleTemplateSelect = useCallback(async (template: EventTemplate, date?: string, time?: string) => {
+  const handleTemplateSelect = useCallback(async (template: EventTemplate, date?: string, time?: string, venueId?: string) => {
     // If we have a date and time (drag-drop from sidebar), create session directly — no modal
     if (date && time && selectedProgramId) {
       // time comes as "HH:mm:00" from formatDecimalTo24h — already 24h format
@@ -1029,6 +1029,14 @@ function CalendarDashboard() {
       const endMinutes = startMinutes + durationMin;
       const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}:00`;
 
+      // Use venue from drop lane, fall back to template default.
+      // venueId from WeekView is the venue *name* (lanes use names); resolve to UUID.
+      let resolvedVenueId: string | null = template.venue_id ?? null;
+      if (venueId) {
+        const match = dbVenues.find((v) => v.name === venueId || v.id === venueId);
+        resolvedVenueId = match?.id ?? null;
+      }
+
       try {
         const res = await fetch('/api/sessions', {
           method: 'POST',
@@ -1038,7 +1046,7 @@ function CalendarDashboard() {
             program_id: selectedProgramId,
             template_id: template.id,
             instructor_id: template.instructor_id ?? null,
-            venue_id: template.venue_id ?? null,
+            venue_id: resolvedVenueId,
             grade_groups: template.grade_groups ?? [],
             date,
             start_time: startTime,
@@ -1073,7 +1081,7 @@ function CalendarDashboard() {
     });
     setSelectedTemplate(template);
     setShowOneOffModal(true);
-  }, [selectedProgramId, showToast, fetchSessions]);
+  }, [selectedProgramId, showToast, fetchSessions, dbVenues]);
 
   // One-off event: create session via API
   const handleCreateOneOffEvent = useCallback(async (data: OneOffEventFormData) => {

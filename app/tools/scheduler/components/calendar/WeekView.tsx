@@ -60,7 +60,7 @@ export interface WeekViewProps {
   /** Called when an empty time slot is clicked (for creating one-off events) */
   onEmptySlotClick?: (date: string, time: string) => void;
   /** Called when a template is dropped or clicked on the calendar */
-  onTemplateSelect?: (template: EventTemplate, date?: string, time?: string) => void;
+  onTemplateSelect?: (template: EventTemplate, date?: string, time?: string, venueId?: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -615,12 +615,24 @@ export function WeekView({
       const dropY = e.clientY - rect.top;
       const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
       const snapped = snapTo15Min(rawHour);
-      onTemplateSelect(template, weekDateKeys[dayIdx], formatDecimalTo24h(snapped));
+
+      // Detect venue lane from horizontal drop position in multi-lane mode
+      let droppedVenueId: string | undefined;
+      if (selectedVenues.length > 1) {
+        const dropX = e.clientX - rect.left;
+        const laneWidth = rect.width / selectedVenues.length;
+        const laneIdx = Math.min(Math.floor(dropX / laneWidth), selectedVenues.length - 1);
+        droppedVenueId = selectedVenues[laneIdx];
+      } else if (selectedVenues.length === 1) {
+        droppedVenueId = selectedVenues[0];
+      }
+
+      onTemplateSelect(template, weekDateKeys[dayIdx], formatDecimalTo24h(snapped), droppedVenueId);
       return true;
     } catch {
       return false;
     }
-  }, [onTemplateSelect, dayStartHour, weekDateKeys]);
+  }, [onTemplateSelect, dayStartHour, weekDateKeys, selectedVenues]);
 
   // Clear drop preview when drag ends (e.g. cancelled with Esc)
   useEffect(() => {
