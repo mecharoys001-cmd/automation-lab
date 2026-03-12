@@ -163,6 +163,8 @@ export interface SessionTemplate {
   session_count: number | null;
   /** Max weeks window for session_count mode */
   within_weeks: number | null;
+  /** How many sessions per week (1=once, 5=daily). Default 1. */
+  sessions_per_week: number;
   created_at: string;
 }
 

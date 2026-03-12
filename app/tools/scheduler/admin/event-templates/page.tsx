@@ -185,6 +185,7 @@ interface TemplateForm {
   duration_weeks: number | null;
   session_count: number | null;
   within_weeks: number | null;
+  sessions_per_week: number;
 }
 
 const EMPTY_FORM: TemplateForm = {
@@ -205,6 +206,7 @@ const EMPTY_FORM: TemplateForm = {
   duration_weeks: null,
   session_count: null,
   within_weeks: null,
+  sessions_per_week: 1,
 };
 
 const DURATION_PRESETS = [30, 45, 60, 90];
@@ -309,6 +311,7 @@ export default function EventTemplatesPage() {
       duration_weeks: t.duration_weeks,
       session_count: t.session_count,
       within_weeks: t.within_weeks,
+      sessions_per_week: t.sessions_per_week ?? 1,
     });
     setEditingId(t.id);
     setShowForm(true);
@@ -378,6 +381,7 @@ export default function EventTemplatesPage() {
         duration_weeks: form.duration_weeks,
         session_count: form.session_count,
         within_weeks: form.within_weeks,
+        sessions_per_week: form.sessions_per_week,
       };
 
       const url = editingId ? `/api/templates/${editingId}` : '/api/templates';
@@ -886,7 +890,36 @@ export default function EventTemplatesPage() {
               </div>
             </FormField>
 
-            {/* 7. Repeats Every X Weeks */}
+            {/* 7. Sessions Per Week */}
+            <FormField label="Sessions Per Week">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => updateForm({ sessions_per_week: n })}
+                    style={{
+                      height: 40,
+                      width: 48,
+                      borderRadius: 8,
+                      border: `1px solid ${form.sessions_per_week === n ? '#3B82F6' : '#E2E8F0'}`,
+                      background: form.sessions_per_week === n ? '#3B82F6' : '#fff',
+                      color: form.sessions_per_week === n ? '#fff' : '#334155',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {n}×
+                  </button>
+                ))}
+                <span style={{ fontSize: 13, color: '#64748B', marginLeft: 4 }}>
+                  {form.sessions_per_week === 1 ? '(once a week)' : form.sessions_per_week === 5 ? '(daily)' : 'per week'}
+                </span>
+              </div>
+            </FormField>
+
+            {/* 8. Repeats Every X Weeks */}
             <FormField label="Repeats Every X Weeks">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
