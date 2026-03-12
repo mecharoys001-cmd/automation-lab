@@ -791,7 +791,11 @@ export default function SettingsPage() {
 
         <Tooltip text="Reopen the getting started checklist in the bottom-right corner">
           <button
-            onClick={() => window.dispatchEvent(new Event('reopen-onboarding'))}
+            onClick={() => {
+              localStorage.removeItem('onboarding_dismissed');
+              localStorage.removeItem('onboarding_minimized');
+              window.dispatchEvent(new Event('reopen-onboarding'));
+            }}
             className={btnPrimary}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
