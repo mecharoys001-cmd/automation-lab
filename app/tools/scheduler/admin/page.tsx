@@ -1021,7 +1021,7 @@ function CalendarDashboard() {
   const handleTemplateSelect = useCallback(async (template: EventTemplate, date?: string, time?: string) => {
     // If we have a date and time (drag-drop from sidebar), create session directly — no modal
     if (date && time && selectedProgramId) {
-      const startTime = time; // already "HH:MM" from formatDecimalToTime
+      const startTime = to24h(time); // time is 12-hour ("9:30 AM") from formatDecimalToTime — convert to "HH:MM"
       const durationMin = template.duration_minutes ?? 45;
       const [hStr, mStr] = startTime.split(':');
       const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
@@ -1082,7 +1082,8 @@ function CalendarDashboard() {
     }
 
     // Compute end_time from start_time + duration
-    const [hStr, mStr] = data.start_time.split(':');
+    const startTime24 = to24h(data.start_time);
+    const [hStr, mStr] = startTime24.split(':');
     const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
     const endMinutes = startMinutes + data.duration_minutes;
     const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
@@ -1096,7 +1097,7 @@ function CalendarDashboard() {
       venue_id: data.venue_id,
       grade_groups: data.grade_groups,
       date: data.date,
-      start_time: `${data.start_time}:00`,
+      start_time: `${startTime24}:00`,
       end_time: `${endTime}:00`,
       duration_minutes: data.duration_minutes,
       status: 'draft',

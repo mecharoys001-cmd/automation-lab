@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, CheckCircle2, ChevronRight, Zap, Users, MapPin, FileText, Calendar, Minimize2, ListChecks, Tags } from 'lucide-react';
 import { Tooltip } from './ui/Tooltip';
+import { useProgram } from '../admin/ProgramContext';
 
 interface OnboardingStep {
   id: string;
@@ -19,6 +20,8 @@ interface OnboardingChecklistProps {
 }
 
 export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
+  const { selectedProgramId, selectedProgram, updateWizardState } = useProgram();
+
   const [minimized, setMinimized] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('onboarding_minimized') === 'true';
@@ -28,43 +31,34 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkProgress();
-  }, []);
-
-  async function checkProgress() {
+  const checkProgress = useCallback(async () => {
+    if (!selectedProgramId) return;
+    setLoading(true);
     try {
-      // Check programs
-      const programsRes = await fetch('/api/programs');
-      const programsData = await programsRes.json();
-      const hasPrograms = programsData.programs?.length > 0;
+      // Check programs (always true since we have a selected program)
+      const hasPrograms = true;
 
-      // Check instructors
-      const instructorsRes = await fetch('/api/instructors');
-      const instructorsData = await instructorsRes.json();
-      const hasInstructors = instructorsData.instructors?.length > 0;
+      // Fetch sessions for THIS program to check per-program resource usage
+      const sessionsRes = await fetch(`/api/sessions?program_id=${selectedProgramId}`);
+      const sessionsData = await sessionsRes.json();
+      const sessions = sessionsData.sessions ?? [];
+      const hasSessions = sessions.length > 0;
 
-      // Check venues
-      const venuesRes = await fetch('/api/venues');
-      const venuesData = await venuesRes.json();
-      const hasVenues = venuesData.venues?.length > 0;
+      // Check if this program has sessions with assigned instructors
+      const hasInstructors = sessions.some((s: { instructor_id?: string | null }) => s.instructor_id != null);
 
-      // Check tags (subjects)
-      const tagsRes = await fetch('/api/tags');
-      const tagsData = await tagsRes.json();
-      const hasSubjects = (tagsData.tags ?? []).some((t: { category?: string }) => ['Skills', 'Subjects'].includes(t.category ?? ''));
+      // Check if this program has sessions with assigned venues
+      const hasVenues = sessions.some((s: { venue_id?: string | null }) => s.venue_id != null);
 
-      // Check templates
+      // Check if this program has sessions using subject tags
+      const hasSubjects = sessions.some((s: { tags?: string[] | null }) => (s.tags ?? []).length > 0);
+
+      // Check templates (global shared resource)
       const templatesRes = await fetch('/api/templates');
       const templatesData = await templatesRes.json();
       const hasTemplates = templatesData.templates?.length > 0;
 
-      // Check sessions
-      const sessionsRes = await fetch('/api/sessions');
-      const sessionsData = await sessionsRes.json();
-      const hasSessions = sessionsData.sessions?.length > 0;
-
-      setSteps([
+      const newSteps: OnboardingStep[] = [
         {
           id: 'program',
           title: 'Create a program',
@@ -114,13 +108,20 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           link: '/tools/scheduler/admin/calendar',
           completed: hasSessions,
         },
-      ]);
+      ];
+
+      setSteps(newSteps);
     } catch (err) {
       console.error('Failed to check onboarding progress:', err);
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedProgramId]);
+
+  // Re-check progress when program changes
+  useEffect(() => {
+    checkProgress();
+  }, [checkProgress]);
 
   const handleMinimize = () => {
     setMinimized(true);
@@ -141,6 +142,13 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     window.addEventListener('reopen-onboarding', handleReopen);
     return () => window.removeEventListener('reopen-onboarding', handleReopen);
   }, []);
+
+  const handleStepClick = async (stepIndex: number) => {
+    // Update wizard_step to track current progress
+    if (selectedProgram && stepIndex > selectedProgram.wizard_step) {
+      await updateWizardState(selectedProgram.wizard_completed, stepIndex);
+    }
+  };
 
   const requiredSteps = steps.filter((s) => !s.optional);
   const completedCount = requiredSteps.filter((s) => s.completed).length;
@@ -223,10 +231,11 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
 
       {/* Steps */}
       <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto">
-        {steps.map((step) => (
+        {steps.map((step, index) => (
           <a
             key={step.id}
             href={step.link}
+            onClick={() => handleStepClick(index)}
             className={`block rounded-lg border transition-all ${
               step.completed
                 ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'

@@ -190,6 +190,14 @@ export function MonthView({
   }, [allVenues]);
 
   const multiLane = selectedVenues.length > 1;
+  const numLanes = selectedVenues.length;
+
+  // Column width scales with venue count: 1 lane = equal 1fr, 2+ lanes = wider columns
+  const gridTemplateColumns = useMemo(() => {
+    if (numLanes <= 1) return 'repeat(7, minmax(0, 1fr))';
+    const minWidth = 120 + numLanes * 60; // e.g. 2 lanes = 240px, 3 = 300px, 4 = 360px
+    return `repeat(7, minmax(${minWidth}px, 1fr))`;
+  }, [numLanes]);
 
   // Popover state
   const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
@@ -352,11 +360,11 @@ export function MonthView({
       )}
 
       {/* ------- Unified Grid (sticky headers + day columns) ------- */}
-      <div className="flex-1 overflow-y-auto bg-white" style={{ minWidth: 0 }}>
+      <div className="flex-1 overflow-auto bg-white" style={{ minWidth: 0 }}>
         <div
           className="grid min-h-full"
           style={{
-            gridTemplateColumns: 'repeat(7, 1fr)',
+            gridTemplateColumns,
             gridTemplateRows: 'auto',
             gridAutoRows: 'auto',
           }}
@@ -400,9 +408,10 @@ export function MonthView({
                 style={{ gridColumn: 'auto' }}
               >
                 <div
-                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-200 box-border min-h-[100px] ${
+                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-200 box-border min-h-[100px] overflow-hidden ${
                     dayOfWeek < 6 ? 'border-r border-slate-200' : ''
                   } ${isToday ? 'bg-blue-50/30' : ''}`}
+                  style={{ minWidth: 0 }}
                   onClick={() => onDayClick?.(date)}
                 >
                   <span

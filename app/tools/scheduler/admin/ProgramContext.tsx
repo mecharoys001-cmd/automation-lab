@@ -6,9 +6,12 @@ import type { Program } from '@/types/database';
 interface ProgramContextValue {
   programs: Program[];
   selectedProgramId: string | null;
+  selectedProgram: Program | null;
   setSelectedProgramId: (id: string) => void;
   loading: boolean;
   refetchPrograms: () => Promise<void>;
+  /** Update wizard state for the selected program */
+  updateWizardState: (wizardCompleted: boolean, wizardStep: number) => Promise<void>;
 }
 
 const STORAGE_KEY = 'symphonix-selected-program';
@@ -16,9 +19,11 @@ const STORAGE_KEY = 'symphonix-selected-program';
 const ProgramContext = createContext<ProgramContextValue>({
   programs: [],
   selectedProgramId: null,
+  selectedProgram: null,
   setSelectedProgramId: () => {},
   loading: true,
   refetchPrograms: async () => {},
+  updateWizardState: async () => {},
 });
 
 export function ProgramProvider({ children }: { children: React.ReactNode }) {
@@ -63,14 +68,40 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
+
+  const updateWizardState = useCallback(async (wizardCompleted: boolean, wizardStep: number) => {
+    if (!selectedProgramId) return;
+    try {
+      const res = await fetch(`/api/programs/${selectedProgramId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wizard_completed: wizardCompleted, wizard_step: wizardStep }),
+      });
+      if (!res.ok) throw new Error('Failed to update wizard state');
+      // Update local state
+      setPrograms((prev) =>
+        prev.map((p) =>
+          p.id === selectedProgramId
+            ? { ...p, wizard_completed: wizardCompleted, wizard_step: wizardStep }
+            : p
+        )
+      );
+    } catch (err) {
+      console.error('Failed to update wizard state:', err);
+    }
+  }, [selectedProgramId]);
+
   return (
     <ProgramContext.Provider
       value={{
         programs,
         selectedProgramId,
+        selectedProgram,
         setSelectedProgramId: handleSetProgramId,
         loading,
         refetchPrograms: fetchPrograms,
+        updateWizardState,
       }}
     >
       {children}

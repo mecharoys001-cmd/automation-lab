@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
@@ -83,47 +83,67 @@ interface UserProfile {
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { selectedProgram, selectedProgramId } = useProgram();
   const [user, setUser] = useState<UserProfile | undefined>();
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('onboarding_dismissed') !== 'true';
-    }
-    return false;
-  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const prevProgramIdRef = useRef<string | null>(null);
 
+  // Show/hide onboarding based on per-program wizard_completed state
   useEffect(() => {
-    // Listen for custom event to re-open onboarding from Settings
+    if (!selectedProgram) return;
+
+    const programChanged = prevProgramIdRef.current !== null && prevProgramIdRef.current !== selectedProgramId;
+    prevProgramIdRef.current = selectedProgramId;
+
+    if (!selectedProgram.wizard_completed) {
+      // Program's wizard is incomplete — show the checklist
+      setShowOnboarding(true);
+    } else if (programChanged) {
+      // Switched to a completed program — hide the checklist
+      setShowOnboarding(false);
+    }
+  }, [selectedProgram, selectedProgramId]);
+
+  // Listen for custom events
+  useEffect(() => {
     const handleReopenOnboarding = () => {
-      localStorage.removeItem('onboarding_dismissed');
+      setShowOnboarding(true);
+    };
+    const handleNewProgramCreated = () => {
+      // New program created — wizard will auto-show via the effect above
+      // since the new program has wizard_completed=false
       setShowOnboarding(true);
     };
     window.addEventListener('reopen-onboarding', handleReopenOnboarding);
-    return () => window.removeEventListener('reopen-onboarding', handleReopenOnboarding);
-  }, []);
-
-  // Sync state from localStorage on every navigation (handles remounts)
-  useEffect(() => {
-    const dismissed = localStorage.getItem('onboarding_dismissed');
-    setShowOnboarding(dismissed !== 'true');
+    window.addEventListener('new-program-created', handleNewProgramCreated);
+    return () => {
+      window.removeEventListener('reopen-onboarding', handleReopenOnboarding);
+      window.removeEventListener('new-program-created', handleNewProgramCreated);
+    };
   }, []);
 
   // Fetch the current authenticated user
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      console.log('[AdminLayout] authUser:', JSON.stringify(authUser, null, 2));
       if (!authUser) return;
       const fullName =
         authUser.user_metadata?.full_name ||
         authUser.user_metadata?.name ||
         authUser.email?.split('@')[0] ||
         'User';
+      console.log('[AdminLayout] fullName:', fullName);
       const parts = fullName.trim().split(/\s+/);
       const initials =
         parts.length >= 2
           ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
           : fullName.slice(0, 2).toUpperCase();
+      console.log('[AdminLayout] initials:', initials);
       const role = authUser.user_metadata?.role || 'Administrator';
-      setUser({ name: fullName, initials, role });
+      const userObj = { name: fullName, initials, role };
+      console.log('[AdminLayout] setting user:', userObj);
+      setUser(userObj);
     });
   }, []);
 
@@ -134,7 +154,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const handleCloseOnboarding = useCallback(() => {
-    localStorage.setItem('onboarding_dismissed', 'true');
     setShowOnboarding(false);
   }, []);
 
@@ -150,7 +169,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Onboarding Checklist (bottom-right corner) */}
+      {/* Onboarding Checklist (bottom-right corner) — per-program */}
       {showOnboarding && <OnboardingChecklist onClose={handleCloseOnboarding} />}
     </div>
   );

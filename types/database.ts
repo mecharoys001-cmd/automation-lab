@@ -112,6 +112,8 @@ export interface Program {
   end_date: string;
   allows_mixing: boolean;
   default_venue_id: string | null;
+  wizard_completed: boolean;
+  wizard_step: number;
   created_at: string;
 }
 

@@ -219,9 +219,18 @@ export default function SettingsPage() {
         const res = await fetch('/api/programs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...programForm, allows_mixing: true }),
+          body: JSON.stringify({ ...programForm, allows_mixing: true, wizard_completed: false, wizard_step: 0 }),
         });
         if (!res.ok) throw new Error('Failed to create program');
+        const created = await res.json();
+        await refetchPrograms();
+        // Select the new program and auto-launch wizard
+        if (created.program?.id) {
+          setSelectedProgramId(created.program.id);
+          window.dispatchEvent(new CustomEvent('new-program-created'));
+        }
+        cancelProgramForm();
+        return;
       }
       await refetchPrograms();
       cancelProgramForm();
@@ -385,7 +394,6 @@ export default function SettingsPage() {
 
       // Reset onboarding checklist so it reappears after clearing data
       if (clearMode === 'all') {
-        localStorage.removeItem('onboarding_dismissed');
         localStorage.removeItem('onboarding_minimized');
         window.dispatchEvent(new Event('reopen-onboarding'));
       }
@@ -792,7 +800,6 @@ export default function SettingsPage() {
         <Tooltip text="Reopen the getting started checklist in the bottom-right corner">
           <button
             onClick={() => {
-              localStorage.removeItem('onboarding_dismissed');
               localStorage.removeItem('onboarding_minimized');
               window.dispatchEvent(new Event('reopen-onboarding'));
             }}
