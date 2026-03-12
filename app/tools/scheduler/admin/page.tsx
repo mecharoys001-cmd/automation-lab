@@ -90,7 +90,7 @@ function formatTimeDisplay(time24: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildSessionTitle(session: any): string {
   const grades: string[] = session.grade_groups ?? session.template?.grade_groups ?? [];
-  const gradeSuffix = grades.length > 0 ? ` - Grade ${grades.join(', ')}` : '';
+  const gradeSuffix = grades.length > 0 ? ` - ${grades.join(', ')}` : '';
   
   // Priority 1: Use session name (e.g. one-off events)
   if (session.name) {
@@ -145,7 +145,7 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
   const allSubjects = [...templateSubjects, ...tagSubjects];
 
   const gradeLabel = session.grade_groups?.length
-    ? `Grade ${session.grade_groups.join(', ')}`
+    ? session.grade_groups.join(', ')
     : '';
 
   return {
