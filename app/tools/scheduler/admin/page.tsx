@@ -1021,12 +1021,13 @@ function CalendarDashboard() {
   const handleTemplateSelect = useCallback(async (template: EventTemplate, date?: string, time?: string) => {
     // If we have a date and time (drag-drop from sidebar), create session directly — no modal
     if (date && time && selectedProgramId) {
-      const startTime = to24h(time); // time is 12-hour ("9:30 AM") from formatDecimalToTime — convert to "HH:MM"
+      // time comes as "HH:mm:00" from formatDecimalTo24h — already 24h format
+      const startTime = time.length === 5 ? `${time}:00` : time; // ensure HH:mm:ss
       const durationMin = template.duration_minutes ?? 45;
       const [hStr, mStr] = startTime.split(':');
       const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
       const endMinutes = startMinutes + durationMin;
-      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}:00`;
 
       try {
         const res = await fetch('/api/sessions', {
@@ -1040,8 +1041,8 @@ function CalendarDashboard() {
             venue_id: template.venue_id ?? null,
             grade_groups: template.grade_groups ?? [],
             date,
-            start_time: `${startTime}:00`,
-            end_time: `${endTime}:00`,
+            start_time: startTime,
+            end_time: endTime,
             duration_minutes: durationMin,
             status: 'draft',
             is_makeup: false,

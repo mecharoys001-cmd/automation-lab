@@ -104,6 +104,14 @@ function formatDecimalToTime(decimal: number): string {
   return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+/** Format decimal hour to 24-hour HH:mm:ss string for data storage */
+function formatDecimalTo24h(decimal: number): string {
+  const clamped = Math.max(0, Math.min(23.75, decimal));
+  const h = Math.floor(clamped);
+  const m = Math.round((clamped - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+}
+
 /** Snap a decimal hour to the nearest 15-minute increment */
 function snapTo15Min(decimal: number): number {
   return Math.round(decimal * 4) / 4;
@@ -494,7 +502,7 @@ export function DayView({
                     const clickY = e.clientY - rect.top;
                     const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
                     const snapped = snapTo15Min(rawHour);
-                    onEmptySlotClick(formatDateKey(viewDate), formatDecimalToTime(snapped));
+                    onEmptySlotClick(formatDateKey(viewDate), formatDecimalTo24h(snapped));
                   }
                 : undefined
             }

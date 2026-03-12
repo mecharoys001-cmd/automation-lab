@@ -128,6 +128,14 @@ function formatDecimalToTime(decimal: number): string {
   return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+/** Format decimal hour to 24-hour HH:mm:ss string for data storage */
+function formatDecimalTo24h(decimal: number): string {
+  const clamped = Math.max(0, Math.min(23.75, decimal));
+  const h = Math.floor(clamped);
+  const m = Math.round((clamped - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+}
+
 /** Snap a decimal hour to the nearest 15-minute increment */
 function snapTo15Min(decimal: number): number {
   return Math.round(decimal * 4) / 4;
@@ -209,7 +217,7 @@ function WeekEventBlock({
       const newHeight = Math.max(HOUR_HEIGHT * 0.25, startHeight + deltaY);
       const newDuration = (newHeight + 2) / HOUR_HEIGHT;
       const newEnd = snapTo15Min(startHour + newDuration);
-      onResizeEnd(event.id, formatDecimalToTime(newEnd));
+      onResizeEnd(event.id, formatDecimalTo24h(newEnd));
     };
 
     document.addEventListener('mousemove', onMove);
@@ -607,7 +615,7 @@ export function WeekView({
       const dropY = e.clientY - rect.top;
       const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
       const snapped = snapTo15Min(rawHour);
-      onTemplateSelect(template, weekDateKeys[dayIdx], formatDecimalToTime(snapped));
+      onTemplateSelect(template, weekDateKeys[dayIdx], formatDecimalTo24h(snapped));
       return true;
     } catch {
       return false;
@@ -783,7 +791,7 @@ export function WeekView({
                         const clickY = e.clientY - rect.top;
                         const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
                         const snapped = snapTo15Min(rawHour);
-                        onEmptySlotClick(dateKey, formatDecimalToTime(snapped));
+                        onEmptySlotClick(dateKey, formatDecimalTo24h(snapped));
                       }
                     : undefined
                 }
@@ -855,8 +863,8 @@ export function WeekView({
                           onEventDrop(
                             eventId,
                             newDate,
-                            formatDecimalToTime(snappedStart),
-                            formatDecimalToTime(snappedEnd),
+                            formatDecimalTo24h(snappedStart),
+                            formatDecimalTo24h(snappedEnd),
                           );
                         } catch {
                           // ignore malformed data
