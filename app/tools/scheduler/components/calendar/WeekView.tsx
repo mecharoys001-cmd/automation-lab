@@ -45,6 +45,7 @@ export interface WeekViewProps {
   dayEndHour?: number;
   /** Called when user cancels a session via popover */
   onCancelSession?: (eventId: string) => void;
+  onCancelFutureSessions?: (eventId: string) => void;
   /** Called when user wants to replace instructor (with optional substitute ID) */
   onReplaceInstructor?: (eventId: string, substituteId?: string) => void;
   /** Called when user wants to replace event (with optional template ID) */
@@ -418,6 +419,7 @@ export function WeekView({
   dayStartHour: initialStartHour = 8,
   dayEndHour: initialEndHour = 15,
   onCancelSession,
+  onCancelFutureSessions,
   onReplaceInstructor,
   onReplaceEvent,
   onEditNotes,
@@ -506,18 +508,18 @@ export function WeekView({
   /** Cancel a session */
   const handleCancelSession = useCallback(async (eventId: string) => {
     try {
-      const res = await fetch(`/api/calendar/${eventId}`, {
+      const res = await fetch(`/api/sessions/${eventId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'canceled' }),
       });
       if (res.ok) {
         closePopover();
+        onCancelSession?.(eventId);
       }
     } catch (err) {
       console.error('Failed to cancel event:', err);
     }
-    onCancelSession?.(eventId);
   }, [closePopover, onCancelSession]);
 
   /** Replace instructor (with optional substitute ID) */
@@ -1024,6 +1026,10 @@ export function WeekView({
           onClose={closePopover}
           onViewDetails={onEventClick}
           onCancel={handleCancelSession}
+          onCancelFuture={(eventId: string) => {
+            closePopover();
+            onCancelFutureSessions?.(eventId);
+          }}
           onReplaceInstructor={handleReplaceInstructor}
           onReplaceEvent={handleReplaceEvent}
           onEditNotes={handleSaveNotes}

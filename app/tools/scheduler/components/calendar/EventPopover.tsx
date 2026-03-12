@@ -102,6 +102,8 @@ export interface EventPopoverProps {
   onViewDetails?: (event: CalendarEvent) => void;
   /** Open the side edit panel for this event */
   onOpenEditPanel?: (event: CalendarEvent) => void;
+  /** Callback when user cancels all future sessions */
+  onCancelFuture?: (eventId: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +123,7 @@ export function EventPopover({
   onReplaceEvent,
   onViewDetails,
   onOpenEditPanel,
+  onCancelFuture,
 }: EventPopoverProps) {
   // Cancel / replace flow
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -944,10 +947,25 @@ export function EventPopover({
                 size="sm"
                 onClick={handleFinalCancel}
                 className="w-full"
-                tooltip="Cancel without replacement"
+                tooltip="Cancel this session without replacement"
               >
-                Just Cancel (No Replacement)
+                Just Cancel This Session
               </Button>
+              {event.templateId && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    onCancelFuture?.(event.id);
+                    setShowReplaceOptions(false);
+                    onClose();
+                  }}
+                  className="w-full"
+                  tooltip="Cancel this and all future sessions with the same template"
+                >
+                  Cancel All Future Sessions
+                </Button>
+              )}
             </div>
 
             {/* Similar event suggestions */}

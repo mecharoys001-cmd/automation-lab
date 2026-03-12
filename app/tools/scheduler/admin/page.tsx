@@ -1357,6 +1357,21 @@ function CalendarDashboard() {
               onEventResize={handleEventResize}
               onEmptySlotClick={handleEmptySlotClick}
               onTemplateSelect={handleTemplateSelect}
+              onCancelSession={() => fetchSessions()}
+              onCancelFutureSessions={async (eventId: string) => {
+                try {
+                  const res = await fetch(`/api/sessions/cancel-future?session_id=${eventId}`, { method: 'PATCH' });
+                  if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || 'Failed to cancel future sessions');
+                  }
+                  const { canceled } = await res.json();
+                  showToast(`Canceled ${canceled} future session${canceled !== 1 ? 's' : ''}`, 'success');
+                  await fetchSessions();
+                } catch (err) {
+                  showToast(err instanceof Error ? err.message : 'Failed to cancel', 'error');
+                }
+              }}
             />
           </>
         )}
