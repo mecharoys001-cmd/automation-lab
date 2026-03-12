@@ -44,6 +44,10 @@ export async function PATCH(
       }
     }
 
+    // Extract tag_names before updating the session (not a DB column)
+    const tagNames: string[] | undefined = body.tag_names;
+    delete body.tag_names;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('sessions') as any)
       .update(body)
@@ -58,6 +62,53 @@ export async function PATCH(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Sync session_tags if tag_names was provided
+    if (tagNames !== undefined) {
+      // Delete existing session_tags for this session
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('session_tags') as any)
+        .delete()
+        .eq('session_id', id);
+
+      if (tagNames.length > 0) {
+        // Look up tag IDs by name
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: tagRows } = await (supabase.from('tags') as any)
+          .select('id, name')
+          .in('name', tagNames);
+
+        if (tagRows && tagRows.length > 0) {
+          const insertRows = tagRows.map((t: { id: string }) => ({
+            session_id: id,
+            tag_id: t.id,
+          }));
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('session_tags') as any).insert(insertRows);
+        }
+      }
+
+      // Re-fetch to get updated tags
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: refreshed } = await (supabase.from('sessions') as any)
+        .select(`
+          *,
+          instructor:instructors(*),
+          venue:venues(*),
+          session_tags(tag:tags(*))
+        `)
+        .eq('id', id)
+        .single();
+
+      if (refreshed) {
+        const { session_tags: refreshedTags, ...refreshedRest } = refreshed as Record<string, unknown>;
+        const tags = Array.isArray(refreshedTags)
+          ? (refreshedTags as Record<string, unknown>[]).map((st) => st.tag).filter(Boolean)
+          : [];
+        trackScheduleChange();
+        return NextResponse.json({ session: { ...refreshedRest, tags } });
+      }
     }
 
     // Flatten session_tags into tags array

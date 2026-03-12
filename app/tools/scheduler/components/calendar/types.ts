@@ -1,6 +1,6 @@
 import { EVENT_COLORS as UNIFIED_EVENT_COLORS } from '../../lib/subjectColors';
 
-export type EventType = 'strings' | 'brass' | 'piano' | 'percussion' | 'choral' | 'guitar' | 'woodwind';
+export type EventType = 'strings' | 'brass' | 'piano' | 'percussion' | 'choral' | 'guitar' | 'woodwind' | 'general';
 
 export const EVENT_COLORS: Record<string, { accent: string; bg: string; text: string }> = UNIFIED_EVENT_COLORS;
 
@@ -12,6 +12,7 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   choral: 'Choral',
   guitar: 'Guitar',
   woodwind: 'Woodwind',
+  general: 'General',
 };
 
 export interface CalendarEvent {
@@ -31,4 +32,11 @@ export interface CalendarEvent {
   tags?: string[];
   notes?: string;      // session notes
   templateId?: string; // session_template id for bulk operations
+  // Raw IDs for edit mode
+  instructorId?: string;
+  venueId?: string;
+  sessionName?: string;       // raw name (without grade suffix)
+  gradeGroups?: string[];     // raw grade groups e.g. ["3rd", "K"]
+  durationMinutes?: number;
+  subjectTagId?: string;
 }

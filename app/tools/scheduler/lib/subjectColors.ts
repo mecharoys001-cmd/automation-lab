@@ -124,6 +124,7 @@ const KNOWN_SUBJECTS: Record<string, { emoji: string; hue: number }> = {
   choir:         { emoji: '🎤', hue: 330 },  // alias
   guitar:        { emoji: '🎸', hue: 160 },  // emerald
   woodwind:      { emoji: '🪈', hue: 174 },  // teal
+  general:         { emoji: '🎵', hue: 220 },  // neutral blue-gray
   'general music': { emoji: '🎵', hue: 250 }, // indigo
   'music theory': { emoji: '📖', hue: 200 },  // sky
   composition:   { emoji: '✏️', hue: 290 },  // purple

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Loader2, Plus, CalendarPlus } from 'lucide-react';
+import { X, Loader2, Plus, CalendarPlus, Pencil, Trash2, XCircle } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +61,25 @@ export interface InitialTemplate {
   duration_minutes: number;
 }
 
+export interface EditEventData {
+  id: string;
+  title: string;
+  date: string;
+  time: string;          // "9:00 AM" display format
+  endTime: string;       // "10:00 AM" display format
+  instructor: string;    // display name
+  instructorId?: string;
+  venue?: string;
+  venueId?: string;
+  gradeGroups?: string[];
+  subjects?: string[];
+  subjectTagId?: string;
+  tags?: string[];
+  notes?: string;
+  status?: string;
+  templateId?: string;
+}
+
 interface OneOffEventModalProps {
   open: boolean;
   onClose: () => void;
@@ -72,6 +91,12 @@ interface OneOffEventModalProps {
   programId: string | null;
   /** Pre-fill form from a template (e.g. dragged from sidebar) */
   initialTemplate?: InitialTemplate;
+  /** When provided, modal is in edit mode and pre-fills from this event */
+  editEvent?: EditEventData;
+  /** Called when deleting an event in edit mode */
+  onDelete?: (eventId: string, mode: 'single' | 'future') => void | Promise<void>;
+  /** Called when cancelling an event in edit mode */
+  onCancelEvent?: (eventId: string, mode: 'single' | 'future') => void | Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +128,14 @@ function displayTimeTo24h(time12: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
+/** Calculate duration in minutes from two 24h time strings */
+function calculateDuration(start24: string, end24: string): number {
+  const [sH, sM] = start24.split(':').map(Number);
+  const [eH, eM] = end24.split(':').map(Number);
+  const diff = (eH * 60 + eM) - (sH * 60 + sM);
+  return diff > 0 ? diff : 45; // fallback to 45 if invalid
+}
+
 export function OneOffEventModal({
   open,
   onClose,
@@ -111,6 +144,9 @@ export function OneOffEventModal({
   initialTime,
   programId,
   initialTemplate,
+  editEvent,
+  onDelete,
+  onCancelEvent,
 }: OneOffEventModalProps) {
   const [name, setName] = useState('');
   const [subjectTagId, setSubjectTagId] = useState('');
@@ -140,14 +176,44 @@ export function OneOffEventModal({
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setName(initialTemplate?.name ?? '');
-      setSubjectTagId('');
-      setInstructorId(initialTemplate?.instructor_id ?? '');
-      setVenueId(initialTemplate?.venue_id ?? '');
-      setGradeGroups(initialTemplate?.grade_groups ?? []);
-      setDate(initialDate ?? '');
-      setStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
-      setDurationMinutes(initialTemplate?.duration_minutes ?? 45);
+      if (editEvent) {
+        // EDIT MODE: pre-fill from existing event
+        setName(editEvent.title);
+        setDate(editEvent.date);
+        const start24 = editEvent.time ? displayTimeTo24h(editEvent.time) : '09:00';
+        setStartTime(start24);
+
+        // Calculate duration from start/end time
+        if (editEvent.endTime) {
+          const end24 = displayTimeTo24h(editEvent.endTime);
+          setDurationMinutes(calculateDuration(start24, end24));
+        } else {
+          setDurationMinutes(45);
+        }
+
+        setSubjectTagId(editEvent.subjectTagId ?? '');
+        setInstructorId(editEvent.instructorId ?? '');
+        setVenueId(editEvent.venueId ?? '');
+        setGradeGroups(editEvent.gradeGroups ?? []);
+      } else if (initialTemplate) {
+        setName(initialTemplate.name ?? '');
+        setSubjectTagId('');
+        setInstructorId(initialTemplate.instructor_id ?? '');
+        setVenueId(initialTemplate.venue_id ?? '');
+        setGradeGroups(initialTemplate.grade_groups ?? []);
+        setDate(initialDate ?? '');
+        setStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
+        setDurationMinutes(initialTemplate.duration_minutes ?? 45);
+      } else {
+        setName('');
+        setSubjectTagId('');
+        setInstructorId('');
+        setVenueId('');
+        setGradeGroups([]);
+        setDate(initialDate ?? '');
+        setStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
+        setDurationMinutes(45);
+      }
       setRecurrenceType('none');
       setIntervalWeeks(2);
       setSessionCount(4);
@@ -156,7 +222,7 @@ export function OneOffEventModal({
       setRotationInstructorIds([]);
       setSaving(false);
     }
-  }, [open, initialDate, initialTime, initialTemplate]);
+  }, [open, editEvent, initialDate, initialTime, initialTemplate]);
 
   // Fetch reference data on mount
   useEffect(() => {
@@ -249,8 +315,10 @@ export function OneOffEventModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
           <div className="flex items-center gap-3">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${initialTemplate ? 'bg-emerald-50' : 'bg-blue-50'}`}>
-              {initialTemplate ? (
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${editEvent ? 'bg-amber-50' : initialTemplate ? 'bg-emerald-50' : 'bg-blue-50'}`}>
+              {editEvent ? (
+                <Pencil className="w-5 h-5 text-amber-500" />
+              ) : initialTemplate ? (
                 <CalendarPlus className="w-5 h-5 text-emerald-500" />
               ) : (
                 <Plus className="w-5 h-5 text-blue-500" />
@@ -258,9 +326,11 @@ export function OneOffEventModal({
             </div>
             <div>
               <h3 className="text-[15px] font-semibold text-slate-900">
-                {initialTemplate ? 'Schedule Event' : 'Create One-Off Event'}
+                {editEvent ? 'Edit Event' : initialTemplate ? 'Schedule Event' : 'Create One-Off Event'}
               </h3>
-              {initialTemplate ? (
+              {editEvent ? (
+                <p className="text-[12px] text-slate-500">Update event details</p>
+              ) : initialTemplate ? (
                 <p className="text-[12px] text-slate-500">
                   {initialTemplate.name || initialTemplate.required_skills?.[0] || 'Event'} — {initialTemplate.duration_minutes ?? 45}m
                 </p>
@@ -416,8 +486,8 @@ export function OneOffEventModal({
             </div>
           </div>
 
-          {/* Recurrence */}
-          <div className="space-y-2">
+          {/* Recurrence (hidden in edit mode — only applies to new events) */}
+          {!editEvent && <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
             <div className="flex flex-wrap gap-1.5">
               {([
@@ -550,38 +620,77 @@ export function OneOffEventModal({
                 )}
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         {/* Divider */}
         <div className="mx-6 my-1 border-t border-slate-100 shrink-0" />
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-3 shrink-0">
-          <Tooltip text="Cancel and close">
-            <button
-              onClick={onClose}
-              disabled={saving}
-              className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </Tooltip>
-
-          <Tooltip text={name.trim() ? (recurrenceType !== 'none' ? 'Create recurring sessions' : 'Create this one-off session') : 'Event name is required'}>
-            <button
-              onClick={handleSubmit}
-              disabled={!name.trim() || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Plus className="w-3.5 h-3.5" />
+        <div className="flex items-center justify-between px-6 pb-6 pt-3 shrink-0">
+          {/* Delete / Cancel Event — left side (edit mode only) */}
+          {editEvent ? (
+            <div className="flex gap-2">
+              {onDelete && (
+                <Tooltip text="Delete this event">
+                  <button
+                    onClick={() => onDelete(editEvent.id, 'single')}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                </Tooltip>
               )}
-              {saving ? 'Creating...' : recurrenceType !== 'none' ? 'Create Sessions' : 'Create Event'}
-            </button>
-          </Tooltip>
+              {onCancelEvent && (
+                <Tooltip text="Mark this event as cancelled">
+                  <button
+                    onClick={() => onCancelEvent(editEvent.id, 'single')}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    Cancel Event
+                  </button>
+                </Tooltip>
+              )}
+            </div>
+          ) : (
+            <div />
+          )}
+
+          {/* Cancel / Save — right side */}
+          <div className="flex items-center gap-3">
+            <Tooltip text="Cancel and close">
+              <button
+                onClick={onClose}
+                disabled={saving}
+                className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </Tooltip>
+
+            <Tooltip text={name.trim() ? (editEvent ? 'Save changes' : recurrenceType !== 'none' ? 'Create recurring sessions' : 'Create this one-off session') : 'Event name is required'}>
+              <button
+                onClick={handleSubmit}
+                disabled={!name.trim() || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : editEvent ? null : (
+                  <Plus className="w-3.5 h-3.5" />
+                )}
+                {saving
+                  ? (editEvent ? 'Saving...' : 'Creating...')
+                  : editEvent
+                    ? 'Save Changes'
+                    : recurrenceType !== 'none' ? 'Create Sessions' : 'Create Event'}
+              </button>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </div>

@@ -30,9 +30,9 @@ import { EventContextMenu } from '../components/calendar/EventContextMenu';
 import type { ContextMenuAction } from '../components/calendar/EventContextMenu';
 import { EVENT_COLORS } from '../components/calendar/types';
 import type { CalendarEvent, EventType } from '../components/calendar/types';
-import { EventEditPanel } from '../components/calendar/EventEditPanel';
-import type { EventEditPanelData } from '../components/calendar/EventEditPanel';
 import { useEventEditPanel } from '../components/calendar/useEventEditPanel';
+import { OneOffEventModal } from '../components/modals/OneOffEventModal';
+import type { OneOffEventFormData } from '../components/modals/OneOffEventModal';
 import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
@@ -69,7 +69,7 @@ import type { SessionWithRelations } from '../../../../types/database';
 // Helpers — map generated sessions to CalendarEvent
 // ---------------------------------------------------------------------------
 
-const KNOWN_EVENT_TYPES = ['strings', 'brass', 'piano', 'percussion', 'choral', 'guitar', 'woodwind'] as const;
+const KNOWN_EVENT_TYPES = ['strings', 'brass', 'piano', 'percussion', 'choral', 'guitar', 'woodwind', 'general'] as const;
 
 // Upcoming events for the "Needs Assignment" sidebar
 /** Best-effort mapping from a template's required subjects to an EventType. */
@@ -79,7 +79,7 @@ function deriveEventType(template: any): EventType {
   const match = KNOWN_EVENT_TYPES.find((t) =>
     skills.some((s: string) => s.toLowerCase().includes(t)),
   );
-  return (match ?? 'strings') as EventType;
+  return (match ?? 'general') as EventType;
 }
 
 /** Convert 24-hour "HH:MM" to display format "9:00 AM". */
@@ -155,6 +155,13 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     ? session.grade_groups.map(formatGradeDisplay).join(', ')
     : '';
 
+  // Find the subject tag ID from subject-category tags
+  const subjectTag = Array.isArray(session.tags)
+    ? session.tags.find((t: { category?: string }) =>
+        t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject'
+      )
+    : undefined;
+
   return {
     id: session.id,
     title: buildSessionTitle(session),
@@ -171,6 +178,13 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     tags: tagNames,
     notes: session.notes ?? undefined,
     templateId: session.template_id ?? session.template?.id ?? undefined,
+    // Raw IDs for edit mode
+    instructorId: session.instructor_id ?? session.instructor?.id ?? undefined,
+    venueId: session.venue_id ?? session.venue?.id ?? undefined,
+    sessionName: session.name ?? session.template?.name ?? undefined,
+    gradeGroups: session.grade_groups ?? session.template?.grade_groups ?? undefined,
+    durationMinutes: session.duration_minutes ?? undefined,
+    subjectTagId: subjectTag?.id ?? undefined,
   };
 }
 
@@ -530,54 +544,6 @@ function CalendarDashboard() {
     openPanel(event);
   }, [openPanel]);
 
-  const handleSaveEvent = useCallback(async (eventId: string, data: EventEditPanelData) => {
-    // Capture previous state for revert
-    const prevEvents = events;
-
-    // Optimistic update
-    setEvents((prev) =>
-      prev.map((ev) =>
-        ev.id === eventId
-          ? {
-              ...ev,
-              title: data.title,
-              venue: data.venue,
-              instructor: data.instructor,
-              date: data.date,
-              time: data.time,
-              endTime: data.endTime,
-              tags: data.tags,
-              notes: data.notes,
-            }
-          : ev,
-      ),
-    );
-    markRecentlyModified(eventId);
-
-    // Persist immediately
-    try {
-      const res = await fetch(`/api/sessions/${eventId}`, {
-        method: 'PATCH',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: data.date,
-          start_time: to24h(data.time),
-          end_time: to24h(data.endTime),
-          notes: data.notes,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to save');
-      }
-    } catch (err) {
-      // Revert on failure
-      setEvents(prevEvents);
-      showToast(err instanceof Error ? err.message : 'Failed to save event', 'error');
-    }
-  }, [events, markRecentlyModified]);
-
   // Drag-and-drop: optimistic update + immediate persist
   const handleEventDrop = useCallback(
     (eventId: string, newDate: string, newTime: string, newEndTime: string) => {
@@ -830,6 +796,44 @@ function CalendarDashboard() {
       controller.abort();
     };
   }, [fetchSessions]);
+
+  const handleSaveEvent = useCallback(async (data: OneOffEventFormData) => {
+    const editingEvent = panelState.event;
+    if (!editingEvent) return;
+    const eventId = editingEvent.id;
+
+    // Calculate end time from start + duration
+    const [sH, sM] = data.start_time.split(':').map(Number);
+    const endMinutes = sH * 60 + sM + data.duration_minutes;
+    const endTime24 = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+    try {
+      const res = await fetch(`/api/sessions/${eventId}`, {
+        method: 'PATCH',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          date: data.date,
+          start_time: data.start_time,
+          end_time: endTime24,
+          duration_minutes: data.duration_minutes,
+          instructor_id: data.instructor_id,
+          venue_id: data.venue_id,
+          grade_groups: data.grade_groups,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to save');
+      }
+      showToast('Event updated', 'success');
+      await fetchSessions();
+      closePanel();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to save event', 'error');
+    }
+  }, [panelState.event, fetchSessions, closePanel]);
 
   const handleDeleteEvent = useCallback(async (eventId: string, mode: 'single' | 'future') => {
     try {
@@ -1359,13 +1363,31 @@ function CalendarDashboard() {
         />
       )}
 
-      {/* Event Edit Side Panel */}
+      {/* Event Edit Modal */}
       {panelState.event && (
-        <EventEditPanel
-          event={panelState.event}
+        <OneOffEventModal
           open={panelState.open}
           onClose={closePanel}
-          onSave={handleSaveEvent}
+          onSubmit={handleSaveEvent}
+          programId={selectedProgramId}
+          editEvent={{
+            id: panelState.event.id,
+            title: panelState.event.sessionName ?? panelState.event.title,
+            date: panelState.event.date,
+            time: panelState.event.time,
+            endTime: panelState.event.endTime ?? '',
+            instructor: panelState.event.instructor,
+            instructorId: panelState.event.instructorId,
+            venue: panelState.event.venue,
+            venueId: panelState.event.venueId,
+            gradeGroups: panelState.event.gradeGroups,
+            subjects: panelState.event.subjects,
+            subjectTagId: panelState.event.subjectTagId,
+            tags: panelState.event.tags,
+            notes: panelState.event.notes,
+            status: panelState.event.status,
+            templateId: panelState.event.templateId,
+          }}
           onDelete={handleDeleteEvent}
           onCancelEvent={handleCancelEvent}
         />

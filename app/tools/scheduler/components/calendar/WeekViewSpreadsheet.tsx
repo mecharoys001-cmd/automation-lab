@@ -73,7 +73,7 @@ function EventBlock({
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
-  const colors = EVENT_COLORS[event.type] || EVENT_COLORS.strings;
+  const colors = EVENT_COLORS[event.type] || EVENT_COLORS.general;
 
   const eventStart = timeToHours(event.startTime);
   const eventEnd = timeToHours(event.endTime);
