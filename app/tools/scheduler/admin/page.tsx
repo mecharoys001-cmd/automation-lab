@@ -37,7 +37,8 @@ import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
 import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
-import { CreateTemplateModal } from '../components/modals/CreateTemplateModal';
+import { TemplateFormModal } from '../components/modals/TemplateFormModal';
+import type { TemplateFormData } from '../components/modals/TemplateFormModal';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -1388,13 +1389,98 @@ function CalendarDashboard() {
       )}
 
       {/* Create Template + Session Modal */}
-      <CreateTemplateModal
+      <TemplateFormModal
         open={showOneOffModal}
         onClose={() => { setShowOneOffModal(false); setSelectedTemplate(null); }}
-        onCreated={fetchSessions}
+        onSave={async (formData: TemplateFormData) => {
+          if (!selectedProgramId) throw new Error('Select a program first');
+
+          // Step 1: Create the template
+          const templateBody = {
+            program_id: selectedProgramId,
+            name: formData.name || null,
+            template_type: 'fully_defined' as const,
+            rotation_mode: 'consistent' as const,
+            day_of_week: null,
+            grade_groups: formData.grade_groups,
+            start_time: null,
+            end_time: null,
+            duration_minutes: formData.duration_minutes,
+            instructor_id: formData.instructor_id || null,
+            venue_id: formData.venue_id || null,
+            required_skills: formData.required_skills.length > 0 ? formData.required_skills : null,
+            additional_tags: formData.additional_tags.length > 0 ? formData.additional_tags : null,
+            is_active: formData.is_active,
+            week_cycle_length: formData.week_cycle_length,
+            week_in_cycle: formData.week_in_cycle,
+            scheduling_mode: formData.scheduling_mode,
+            starts_on: formData.starts_on || null,
+            ends_on: formData.ends_on || null,
+            duration_weeks: formData.duration_weeks,
+            session_count: formData.session_count,
+            within_weeks: formData.within_weeks,
+            sessions_per_week: formData.sessions_per_week,
+          };
+
+          const templateRes = await fetch('/api/templates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(templateBody),
+          });
+
+          if (!templateRes.ok) {
+            const body = await templateRes.json().catch(() => ({}));
+            throw new Error(body.error || 'Failed to create template');
+          }
+
+          const { template } = await templateRes.json();
+
+          // Step 2: Create a session at the clicked slot
+          const sessionDateVal = (formData as any).sessionDate;
+          const sessionStartTimeVal = (formData as any).sessionStartTime || '09:00';
+          if (sessionDateVal) {
+            const [hStr, mStr] = sessionStartTimeVal.split(':');
+            const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
+            const endMinutes = startMinutes + formData.duration_minutes;
+            const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
+            const endM = String(endMinutes % 60).padStart(2, '0');
+            const endTime = `${endH}:${endM}`;
+
+            const sessionBody = {
+              program_id: selectedProgramId,
+              template_id: template.id,
+              instructor_id: formData.instructor_id || null,
+              venue_id: formData.venue_id || null,
+              grade_groups: formData.grade_groups,
+              date: sessionDateVal,
+              start_time: `${sessionStartTimeVal}:00`,
+              end_time: `${endTime}:00`,
+              duration_minutes: formData.duration_minutes,
+              status: 'draft',
+              is_makeup: false,
+              name: formData.name || null,
+            };
+
+            const sessionRes = await fetch('/api/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(sessionBody),
+            });
+
+            if (!sessionRes.ok) {
+              const body = await sessionRes.json().catch(() => ({}));
+              throw new Error(body.error || 'Failed to create session');
+            }
+          }
+
+          await fetchSessions();
+        }}
         initialDate={oneOffSlot?.date}
         initialTime={oneOffSlot?.time}
         programId={selectedProgramId}
+        showSessionFields
+        title="Create Event Template"
+        submitLabel="Create Template & Session"
       />
     </div>
   );
