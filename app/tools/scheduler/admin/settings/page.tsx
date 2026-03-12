@@ -383,6 +383,13 @@ export default function SettingsPage() {
         .filter(([, v]) => (v as number) > 0)
         .map(([k, v]) => `${v} ${k}`);
 
+      // Reset onboarding checklist so it reappears after clearing data
+      if (clearMode === 'all') {
+        localStorage.removeItem('onboarding_dismissed');
+        localStorage.removeItem('onboarding_minimized');
+        window.dispatchEvent(new Event('reopen-onboarding'));
+      }
+
       setClearModalOpen(false);
       setToast({
         message: parts.length > 0
