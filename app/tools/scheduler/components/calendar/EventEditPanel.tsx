@@ -11,6 +11,7 @@ import {
   Loader2,
   Check,
   Trash2,
+  XCircle,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { InstructorEditModal } from '../modals/InstructorEditModal';
@@ -58,6 +59,7 @@ export interface EventEditPanelProps {
   onClose: () => void;
   onSave?: (eventId: string, data: EventEditPanelData) => void | Promise<void>;
   onDelete?: (eventId: string, mode: 'single' | 'future') => void | Promise<void>;
+  onCancelEvent?: (eventId: string, mode: 'single' | 'future') => void | Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +93,7 @@ function from24h(time24: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function EventEditPanel({ event, open, onClose, onSave, onDelete }: EventEditPanelProps) {
+export function EventEditPanel({ event, open, onClose, onSave, onDelete, onCancelEvent }: EventEditPanelProps) {
   // Form state
   const [editTitle, setEditTitle] = useState(event.title);
   const [editVenue, setEditVenue] = useState(event.venue ?? '');
@@ -104,6 +106,9 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<'single' | 'future' | null>(null);
+  const [showCancelMenu, setShowCancelMenu] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState<'single' | 'future' | null>(null);
+  const [isCanceling, setIsCanceling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Dropdown data
@@ -302,6 +307,22 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
       setIsDeleting(false);
       setDeleteConfirm(null);
       setShowDeleteMenu(false);
+    }
+  };
+
+  const handleCancelClick = async (mode: 'single' | 'future') => {
+    if (cancelConfirm !== mode) {
+      setCancelConfirm(mode);
+      return;
+    }
+    if (!onCancelEvent) return;
+    setIsCanceling(true);
+    try {
+      await onCancelEvent(event.id, mode);
+    } finally {
+      setIsCanceling(false);
+      setCancelConfirm(null);
+      setShowCancelMenu(false);
     }
   };
 
@@ -667,7 +688,7 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
                     disabled={isDeleting}
                     className="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    {deleteConfirm === 'single' ? 'Are you sure?' : 'Cancel This Session'}
+                    {deleteConfirm === 'single' ? 'Are you sure?' : 'Delete This Session'}
                   </button>
                   {event.templateId && (
                     <button
@@ -675,7 +696,7 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
                       disabled={isDeleting}
                       className="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-[#E2E8F0] transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      {deleteConfirm === 'future' ? 'Are you sure?' : 'Cancel All Future Sessions'}
+                      {deleteConfirm === 'future' ? 'Are you sure?' : 'Delete All Future Sessions'}
                     </button>
                   )}
                 </div>
@@ -683,6 +704,50 @@ export function EventEditPanel({ event, open, onClose, onSave, onDelete }: Event
             </div>
           ) : (
             <div />
+          )}
+
+          {/* Cancel Session button (set status to canceled) */}
+          {onCancelEvent && (
+            <div className="relative">
+              <Tooltip text="Cancel this session (mark as canceled)">
+                <button
+                  onClick={() => {
+                    setShowCancelMenu(!showCancelMenu);
+                    setCancelConfirm(null);
+                  }}
+                  disabled={isCanceling}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isCanceling ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <XCircle className="w-3.5 h-3.5" />
+                  )}
+                  Cancel Session
+                </button>
+              </Tooltip>
+
+              {showCancelMenu && (
+                <div className="absolute bottom-full left-0 mb-1 w-56 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-10 overflow-hidden">
+                  <button
+                    onClick={() => handleCancelClick('single')}
+                    disabled={isCanceling}
+                    className="w-full text-left px-3 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {cancelConfirm === 'single' ? 'Are you sure?' : 'Cancel This Session'}
+                  </button>
+                  {event.templateId && (
+                    <button
+                      onClick={() => handleCancelClick('future')}
+                      disabled={isCanceling}
+                      className="w-full text-left px-3 py-2.5 text-sm text-amber-600 hover:bg-amber-50 border-t border-[#E2E8F0] transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {cancelConfirm === 'future' ? 'Are you sure?' : 'Cancel All Future Sessions'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Save/Cancel — right side */}

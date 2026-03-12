@@ -849,6 +849,35 @@ function CalendarDashboard() {
     }
   }, [fetchSessions, closePanel]);
 
+  const handleCancelEvent = useCallback(async (eventId: string, mode: 'single' | 'future') => {
+    try {
+      if (mode === 'single') {
+        const res = await fetch(`/api/sessions/${eventId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'canceled' }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Failed to cancel session');
+        }
+        showToast('Session canceled', 'success');
+      } else {
+        const res = await fetch(`/api/sessions/cancel-future?session_id=${eventId}`, { method: 'PATCH' });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Failed to cancel future sessions');
+        }
+        const { canceled } = await res.json();
+        showToast(`Canceled ${canceled} session${canceled !== 1 ? 's' : ''}`, 'success');
+      }
+      await fetchSessions();
+      closePanel();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to cancel', 'error');
+    }
+  }, [fetchSessions, closePanel]);
+
   // Auto-generate draft schedule — first shows preview, then confirms
   const handleGenerateSchedule = useCallback(async () => {
     if (!selectedProgramId) {
@@ -1402,6 +1431,7 @@ function CalendarDashboard() {
           onClose={closePanel}
           onSave={handleSaveEvent}
           onDelete={handleDeleteEvent}
+          onCancelEvent={handleCancelEvent}
         />
       )}
 
