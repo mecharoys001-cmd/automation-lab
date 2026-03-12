@@ -434,7 +434,16 @@ function runSingleAttempt(
               return blocks.some(b => b.start <= scanStartStr && b.end >= scanEndStr);
             });
 
-            if (hasAvailableInstructor || qualifiedInsts.length === 0) {
+            // Also check venue availability at this time
+            const hasAvailableVenue = venues.length === 0 || venues.some(v => {
+              const vAvail = v.availability_json as Record<string, { start: string; end: string }[]> | null;
+              if (!vAvail) return true;
+              const vBlocks = vAvail[dayName];
+              if (!vBlocks || vBlocks.length === 0) return false;
+              return vBlocks.some(b => b.start <= scanStartStr && b.end >= scanEndStr);
+            });
+
+            if ((hasAvailableInstructor || qualifiedInsts.length === 0) && hasAvailableVenue) {
               // Check no conflict with already-assigned sessions on this day
               const hasConflict = generatedSessions.some(d =>
                 d.date === targetDate &&
@@ -698,7 +707,7 @@ function runSingleAttempt(
           start_time: startTime,
           end_time: endTime,
           duration_minutes: durationMinutes,
-          name: null,
+          name: tmpl.name || (tmpl.required_skills?.length ? tmpl.required_skills[0] : null),
           status: 'draft',
           is_makeup: false,
           replaces_session_id: null,

@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Calendar,
   Users,
-  LayoutTemplate,
   Tags,
   Settings,
   LogOut,
@@ -55,12 +54,6 @@ const defaultNavItems: NavItem[] = [
     href: '/people',
     icon: Users,
     tooltip: 'Manage staff and venues',
-  },
-  {
-    label: 'Schedule Builder',
-    href: '/templates',
-    icon: LayoutTemplate,
-    tooltip: 'Build weekly schedule templates and configure day times',
   },
   {
     label: 'Tags',

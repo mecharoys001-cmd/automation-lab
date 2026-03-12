@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, ChevronRight, Zap, Users, MapPin, FileText, Calendar, Minimize2, ListChecks, Tags } from 'lucide-react';
+import { X, CheckCircle2, ChevronRight, Zap, Users, MapPin, FileText, Calendar, Minimize2, ListChecks, Tags } from 'lucide-react';
 import { Tooltip } from './ui/Tooltip';
 
 interface OnboardingStep {
@@ -11,6 +11,12 @@ interface OnboardingStep {
   icon: React.ElementType;
   link: string;
   completed: boolean;
+  optional?: boolean;
+}
+
+interface StepGroup {
+  label: string;
+  steps: OnboardingStep[];
 }
 
 interface OnboardingChecklistProps {
@@ -24,7 +30,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     }
     return false;
   });
-  const [steps, setSteps] = useState<OnboardingStep[]>([]);
+  const [stepGroups, setStepGroups] = useState<StepGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,54 +69,73 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       const sessionsData = await sessionsRes.json();
       const hasSessions = sessionsData.sessions?.length > 0;
 
-      setSteps([
+      setStepGroups([
         {
-          id: 'program',
-          title: 'Create your first program',
-          description: 'Set up a program with start and end dates',
-          icon: Calendar,
-          link: '/tools/scheduler/admin/settings',
-          completed: hasPrograms,
+          label: 'Start Here',
+          steps: [
+            {
+              id: 'calendar',
+              title: 'Open the Calendar',
+              description: 'Your main workspace — create and manage all events here',
+              icon: Calendar,
+              link: '/tools/scheduler/admin/calendar',
+              completed: hasSessions,
+            },
+            {
+              id: 'first-event',
+              title: 'Create your first event',
+              description: 'Click any time slot to add an event — set recurrence inline',
+              icon: Zap,
+              link: '/tools/scheduler/admin/calendar',
+              completed: hasSessions,
+            },
+          ],
         },
         {
-          id: 'subjects',
-          title: 'Set up subjects',
-          description: 'Create subject tags (e.g. Piano, Dance) — these appear on the intake form',
-          icon: Tags,
-          link: '/tools/scheduler/admin/tags',
-          completed: hasSubjects,
-        },
-        {
-          id: 'instructors',
-          title: 'Add staff',
-          description: 'Add staff or send the intake form for self-registration',
-          icon: Users,
-          link: '/tools/scheduler/admin/people',
-          completed: hasInstructors,
-        },
-        {
-          id: 'venues',
-          title: 'Set up venues',
-          description: 'Define classrooms, stages, and teaching spaces',
-          icon: MapPin,
-          link: '/tools/scheduler/admin/people',
-          completed: hasVenues,
-        },
-        {
-          id: 'templates',
-          title: 'Build your schedule',
-          description: 'Create event templates and place them on the weekly grid',
-          icon: FileText,
-          link: '/tools/scheduler/admin/templates',
-          completed: hasTemplates,
-        },
-        {
-          id: 'schedule',
-          title: 'Generate your first schedule',
-          description: 'Auto-generate classes from your templates',
-          icon: Zap,
-          link: '/tools/scheduler/admin/calendar',
-          completed: hasSessions,
+          label: 'Recommended Setup',
+          steps: [
+            {
+              id: 'program',
+              title: 'Create a program',
+              description: 'Set up a program with start and end dates',
+              icon: Calendar,
+              link: '/tools/scheduler/admin/settings',
+              completed: hasPrograms,
+            },
+            {
+              id: 'subjects',
+              title: 'Set up subjects',
+              description: 'Create subject tags (e.g. Piano, Dance) for the intake form',
+              icon: Tags,
+              link: '/tools/scheduler/admin/tags',
+              completed: hasSubjects,
+            },
+            {
+              id: 'instructors',
+              title: 'Add staff',
+              description: 'Add staff or send the intake form for self-registration',
+              icon: Users,
+              link: '/tools/scheduler/admin/people',
+              completed: hasInstructors,
+            },
+            {
+              id: 'venues',
+              title: 'Set up venues',
+              description: 'Define classrooms, stages, and teaching spaces',
+              icon: MapPin,
+              link: '/tools/scheduler/admin/people',
+              completed: hasVenues,
+            },
+            {
+              id: 'templates',
+              title: 'Create event templates',
+              description: 'Optional — save reusable presets to speed up event creation',
+              icon: FileText,
+              link: '/tools/scheduler/admin/event-templates',
+              completed: hasTemplates,
+              optional: true,
+            },
+          ],
         },
       ]);
     } catch (err) {
@@ -140,8 +165,10 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     return () => window.removeEventListener('reopen-onboarding', handleReopen);
   }, []);
 
-  const completedCount = steps.filter((s) => s.completed).length;
-  const totalCount = steps.length;
+  const allSteps = stepGroups.flatMap((g) => g.steps);
+  const requiredSteps = allSteps.filter((s) => !s.optional);
+  const completedCount = requiredSteps.filter((s) => s.completed).length;
+  const totalCount = requiredSteps.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isComplete = completedCount === totalCount;
 
@@ -180,7 +207,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           <div>
             <h3 className="text-base font-semibold text-white">Getting Started</h3>
             <p className="text-xs text-blue-100 mt-0.5">
-              {isComplete ? 'All set up! 🎉' : 'Complete these steps to set up your scheduler'}
+              {isComplete ? 'All set up! 🎉' : 'Start scheduling right from the calendar'}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -219,65 +246,76 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       </div>
 
       {/* Steps */}
-      <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto">
-        {steps.map((step, index) => (
-          <a
-            key={step.id}
-            href={step.link}
-            className={`block rounded-lg border transition-all ${
-              step.completed
-                ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
-                : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50'
-            }`}
-          >
-            <div className="p-3.5">
-              <div className="flex items-start gap-3">
-                {/* Step Icon/Check */}
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
+      <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+        {stepGroups.map((group) => (
+          <div key={group.label}>
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+              {group.label}
+            </h4>
+            <div className="space-y-2">
+              {group.steps.map((step) => (
+                <a
+                  key={step.id}
+                  href={step.link}
+                  className={`block rounded-lg border transition-all ${
                     step.completed
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-slate-100 text-slate-400'
+                      ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50'
                   }`}
                 >
-                  {step.completed ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
-                    <step.icon className="w-4 h-4" />
-                  )}
-                </div>
+                  <div className="p-3.5">
+                    <div className="flex items-start gap-3">
+                      {/* Step Icon/Check */}
+                      <div
+                        className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
+                          step.completed
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {step.completed ? (
+                          <CheckCircle2 className="w-5 h-5" />
+                        ) : (
+                          <step.icon className="w-4 h-4" />
+                        )}
+                      </div>
 
-                {/* Step Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-400">
-                      Step {index + 1}
-                    </span>
-                    {step.completed && (
-                      <span className="text-xs font-medium text-emerald-600">
-                        Complete
-                      </span>
-                    )}
+                      {/* Step Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {step.optional && (
+                            <span className="text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                              Optional
+                            </span>
+                          )}
+                          {step.completed && (
+                            <span className="text-xs font-medium text-emerald-600">
+                              Complete
+                            </span>
+                          )}
+                        </div>
+                        <h4
+                          className={`text-sm font-semibold mt-0.5 ${
+                            step.completed ? 'text-emerald-900' : 'text-slate-900'
+                          }`}
+                        >
+                          {step.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                          {step.description}
+                        </p>
+                      </div>
+
+                      {/* Arrow */}
+                      {!step.completed && (
+                        <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 mt-2" />
+                      )}
+                    </div>
                   </div>
-                  <h4
-                    className={`text-sm font-semibold mt-0.5 ${
-                      step.completed ? 'text-emerald-900' : 'text-slate-900'
-                    }`}
-                  >
-                    {step.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
-                    {step.description}
-                  </p>
-                </div>
-
-                {/* Arrow */}
-                {!step.completed && (
-                  <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 mt-2" />
-                )}
-              </div>
+                </a>
+              ))}
             </div>
-          </a>
+          </div>
         ))}
       </div>
 

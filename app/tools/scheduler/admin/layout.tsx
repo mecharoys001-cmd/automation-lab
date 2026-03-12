@@ -10,7 +10,6 @@ import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import {
   CalendarDays,
   LayoutDashboard,
-  FileText,
   GraduationCap,
   Tags,
   Users,
@@ -24,7 +23,6 @@ import {
 
 const adminNavItems = [
   { href: '/admin', label: 'Calendar', icon: LayoutDashboard, tooltip: 'View and manage the class calendar' },
-  { href: '/admin/templates', label: 'Schedule Builder', icon: FileText, tooltip: 'Build weekly schedule templates and configure day times' },
   { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Create and manage event templates for scheduling' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Create and manage class tags and categories' },
   { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Manage staff, their availability, and venue spaces' },
