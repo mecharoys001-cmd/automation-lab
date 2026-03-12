@@ -92,6 +92,8 @@ export interface TemplateFormModalProps {
 function displayTimeTo24h(time12: string): string {
   if (!time12) return '09:00';
   if (/^\d{2}:\d{2}$/.test(time12)) return time12;
+  // Handle HH:mm:ss format
+  if (/^\d{2}:\d{2}:\d{2}$/.test(time12)) return time12.slice(0, 5);
   const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (!match) return '09:00';
   let h = parseInt(match[1], 10);
