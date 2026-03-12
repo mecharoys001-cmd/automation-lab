@@ -75,8 +75,15 @@ function SidebarProgramSelector() {
   );
 }
 
+interface UserProfile {
+  name: string;
+  initials: string;
+  role: string;
+}
+
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [user, setUser] = useState<UserProfile | undefined>();
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('onboarding_dismissed') !== 'true';
@@ -100,6 +107,26 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     setShowOnboarding(dismissed !== 'true');
   }, []);
 
+  // Fetch the current authenticated user
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (!authUser) return;
+      const fullName =
+        authUser.user_metadata?.full_name ||
+        authUser.user_metadata?.name ||
+        authUser.email?.split('@')[0] ||
+        'User';
+      const parts = fullName.trim().split(/\s+/);
+      const initials =
+        parts.length >= 2
+          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+          : fullName.slice(0, 2).toUpperCase();
+      const role = authUser.user_metadata?.role || 'Administrator';
+      setUser({ name: fullName, initials, role });
+    });
+  }, []);
+
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -114,7 +141,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen">
       {/* Dark sidebar with program selector */}
-      <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} onLogout={handleLogout} />
+      <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} onLogout={handleLogout} user={user} />
 
       {/* Main content — light theme matching design spec */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
