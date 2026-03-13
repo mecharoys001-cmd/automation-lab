@@ -642,43 +642,106 @@ export function TemplateFormModal({
             </div>
           </FormField>
 
-          {/* Repeats Every X Weeks */}
-          <FormField label="Repeats Every X Weeks">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="number"
-                min={1}
-                max={8}
-                value={form.week_cycle_length ?? 1}
-                onChange={(e) => {
-                  const val = Number(e.target.value) || 1;
-                  updateForm({
-                    week_cycle_length: val <= 1 ? null : val,
-                    week_in_cycle: val > 1 ? (form.week_in_cycle ?? 0) : null,
-                  });
-                }}
-                style={{ ...inputStyle, width: 80 }}
-              />
-              <span style={{ fontSize: 13, color: '#64748B' }}>
-                {(form.week_cycle_length ?? 1) <= 1 ? '(every week)' : 'weeks'}
-              </span>
+          {/* Schedule Pattern */}
+          <FormField label="Schedule Pattern">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Radio options */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: (form.week_cycle_length ?? 1) === 1 ? '#3B82F6' : '#E2E8F0', backgroundColor: (form.week_cycle_length ?? 1) === 1 ? '#EFF6FF' : 'transparent' }}>
+                <input
+                  type="radio"
+                  checked={(form.week_cycle_length ?? 1) === 1}
+                  onChange={() => updateForm({ week_cycle_length: null, week_in_cycle: null })}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Every week</span>
+                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 'auto' }}>(runs weekly)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: form.week_cycle_length === 2 ? '#3B82F6' : '#E2E8F0', backgroundColor: form.week_cycle_length === 2 ? '#EFF6FF' : 'transparent' }}>
+                <input
+                  type="radio"
+                  checked={form.week_cycle_length === 2}
+                  onChange={() => updateForm({ week_cycle_length: 2, week_in_cycle: form.week_in_cycle ?? 0 })}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Alternating weeks</span>
+                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 'auto' }}>(Week A / Week B)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: form.week_cycle_length === 3 ? '#3B82F6' : '#E2E8F0', backgroundColor: form.week_cycle_length === 3 ? '#EFF6FF' : 'transparent' }}>
+                <input
+                  type="radio"
+                  checked={form.week_cycle_length === 3}
+                  onChange={() => updateForm({ week_cycle_length: 3, week_in_cycle: form.week_in_cycle ?? 0 })}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Every 3 weeks</span>
+                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 'auto' }}>(Week A / Week B / Week C)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: (form.week_cycle_length ?? 1) > 3 ? '#3B82F6' : '#E2E8F0', backgroundColor: (form.week_cycle_length ?? 1) > 3 ? '#EFF6FF' : 'transparent' }}>
+                <input
+                  type="radio"
+                  checked={(form.week_cycle_length ?? 1) > 3}
+                  onChange={() => updateForm({ week_cycle_length: 4, week_in_cycle: form.week_in_cycle ?? 0 })}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Custom rotation:</span>
+                <input
+                  type="number"
+                  min={4}
+                  max={8}
+                  value={(form.week_cycle_length ?? 1) > 3 ? (form.week_cycle_length ?? 4) : 4}
+                  onChange={(e) => {
+                    const val = Math.max(4, Number(e.target.value) || 4);
+                    updateForm({ week_cycle_length: val, week_in_cycle: form.week_in_cycle ?? 0 });
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if ((form.week_cycle_length ?? 1) <= 3) {
+                      updateForm({ week_cycle_length: 4, week_in_cycle: 0 });
+                    }
+                  }}
+                  style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
+                />
+                <span style={{ fontSize: 12, color: '#64748B' }}>weeks</span>
+              </label>
+
+              {/* Week in cycle selector (shown when > 1 week) */}
+              {form.week_cycle_length != null && form.week_cycle_length > 1 && (
+                <div style={{ marginTop: 8, padding: '12px', backgroundColor: '#F8FAFC', borderRadius: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>
+                    This template runs in:
+                  </label>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {Array.from({ length: form.week_cycle_length }, (_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => updateForm({ week_in_cycle: i })}
+                        style={{
+                          padding: '6px 16px',
+                          borderRadius: 9999,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          border: '1px solid',
+                          borderColor: (form.week_in_cycle ?? 0) === i ? '#3B82F6' : '#E2E8F0',
+                          backgroundColor: (form.week_in_cycle ?? 0) === i ? '#EFF6FF' : '#FFFFFF',
+                          color: (form.week_in_cycle ?? 0) === i ? '#2563EB' : '#64748B',
+                          cursor: 'pointer',
+                          transition: 'all 150ms',
+                        }}
+                      >
+                        Week {String.fromCharCode(65 + i)}
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 8, margin: 0 }}>
+                    💡 Tip: Use alternating weeks for schedules that rotate. For example, if Grade 3 Piano runs in Week A and Grade 4 Piano runs in Week B, create both templates and assign them to different weeks.
+                  </p>
+                </div>
+              )}
             </div>
-            {form.week_cycle_length != null && form.week_cycle_length > 1 && (
-              <div style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#64748B', marginBottom: 4, display: 'block' }}>
-                  Week in Cycle
-                </label>
-                <select
-                  value={form.week_in_cycle ?? 0}
-                  onChange={(e) => updateForm({ week_in_cycle: Number(e.target.value) })}
-                  style={{ ...selectStyle, width: 140 }}
-                >
-                  {Array.from({ length: form.week_cycle_length }, (_, i) => (
-                    <option key={i} value={i}>Week {i + 1}</option>
-                  ))}
-                </select>
-              </div>
-            )}
           </FormField>
 
           {/* Additional Tags */}
