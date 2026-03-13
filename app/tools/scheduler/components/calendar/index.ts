@@ -9,5 +9,5 @@ export { useEventPopover } from './useEventPopover';
 export { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
 export type { CalendarEvent, EventType } from './types';
 export type { ContextMenuAction } from './EventContextMenu';
-export type { EventPopoverProps, EventEditData } from './EventPopover';
+export type { EventPopoverProps } from './EventPopover';
 export type { WeekViewProps } from './WeekView';

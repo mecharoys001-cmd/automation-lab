@@ -19,8 +19,6 @@ import {
   Loader2,
   Check,
   Pencil,
-  Save,
-  ChevronDown,
   Sparkles,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -49,17 +47,6 @@ interface TemplateEvent {
   instructor_name?: string;
 }
 
-interface VenueOption {
-  id: string;
-  name: string;
-}
-
-interface TagOption {
-  id: string;
-  name: string;
-  color: string | null;
-}
-
 /** Similar event suggestion (same type, different instructor) */
 interface SimilarEvent {
   id: string;
@@ -68,16 +55,6 @@ interface SimilarEvent {
   time: string;
   date: string;
   venue?: string;
-}
-
-/** Data shape emitted by the Save callback */
-export interface EventEditData {
-  title: string;
-  venue: string;
-  date: string;
-  time: string;
-  endTime: string;
-  tags: string[];
 }
 
 export interface EventPopoverProps {
@@ -90,8 +67,6 @@ export interface EventPopoverProps {
   onClose: () => void;
   /** Callback when user saves notes */
   onEditNotes?: (eventId: string, notes: string) => void;
-  /** Callback when user saves edited event fields */
-  onSave?: (eventId: string, data: EventEditData) => void;
   /** Callback when user cancels the event */
   onCancel?: (eventId: string) => void;
   /** Callback when user wants to replace instructor */
@@ -100,7 +75,7 @@ export interface EventPopoverProps {
   onReplaceEvent?: (eventId: string, templateId?: string) => void;
   /** Open full event details */
   onViewDetails?: (event: CalendarEvent) => void;
-  /** Open the side edit panel for this event */
+  /** Open the edit modal for this event */
   onOpenEditPanel?: (event: CalendarEvent) => void;
   /** Callback when user cancels all future sessions */
   onCancelFuture?: (eventId: string) => void;
@@ -117,7 +92,6 @@ export function EventPopover({
   onPin,
   onClose,
   onEditNotes,
-  onSave,
   onCancel,
   onReplaceInstructor,
   onReplaceEvent,
@@ -138,24 +112,6 @@ export function EventPopover({
   // Notes
   const [noteText, setNoteText] = useState(event.notes ?? '');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
-
-  // Edit mode state
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(event.title);
-  const [editVenue, setEditVenue] = useState(event.venue ?? '');
-  const [editDate, setEditDate] = useState(event.date);
-  const [editTime, setEditTime] = useState(event.time);
-  const [editEndTime, setEditEndTime] = useState(event.endTime ?? '');
-  const [editTags, setEditTags] = useState<string[]>(event.tags ?? []);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Dropdown data
-  const [venues, setVenues] = useState<VenueOption[]>([]);
-  const [allTags, setAllTags] = useState<TagOption[]>([]);
-  const [loadingVenues, setLoadingVenues] = useState(false);
-  const [loadingTags, setLoadingTags] = useState(false);
-  const [showTagDropdown, setShowTagDropdown] = useState(false);
-  const tagDropdownRef = useRef<HTMLDivElement>(null);
 
   // Similar event suggestions (for replace flow)
   const [similarEvents, setSimilarEvents] = useState<SimilarEvent[]>([]);
@@ -204,7 +160,7 @@ export function EventPopover({
   useEffect(() => {
     setPlaced(false);
     requestAnimationFrame(computePosition);
-  }, [computePosition, pinned, showCancelConfirm, showReplaceOptions, showSubstitutes, showTemplates, isEditingNotes, isEditing, showTagDropdown]);
+  }, [computePosition, pinned, showCancelConfirm, showReplaceOptions, showSubstitutes, showTemplates, isEditingNotes]);
 
   useEffect(() => {
     if (placed && !animatedIn) {
@@ -216,17 +172,12 @@ export function EventPopover({
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isEditing) {
-          setIsEditing(false);
-          resetEditFields();
-        } else {
-          onClose();
-        }
+        onClose();
       }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, isEditing]);
+  }, [onClose]);
 
   // Close on click outside when pinned
   useEffect(() => {
@@ -244,81 +195,6 @@ export function EventPopover({
       document.removeEventListener('mousedown', handleClick);
     };
   }, [pinned, onClose]);
-
-  // Close tag dropdown on outside click
-  useEffect(() => {
-    if (!showTagDropdown) return;
-    const handleClick = (e: MouseEvent) => {
-      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
-        setShowTagDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showTagDropdown]);
-
-  // -------------------------------------------------------------------------
-  // Edit helpers
-  // -------------------------------------------------------------------------
-
-  function resetEditFields() {
-    setEditTitle(event.title);
-    setEditVenue(event.venue ?? '');
-    setEditDate(event.date);
-    setEditTime(event.time);
-    setEditEndTime(event.endTime ?? '');
-    setEditTags(event.tags ?? []);
-  }
-
-  const enterEditMode = async () => {
-    setIsEditing(true);
-    resetEditFields();
-
-    // Fetch venues & tags concurrently
-    setLoadingVenues(true);
-    setLoadingTags(true);
-
-    try {
-      const [venuesRes, tagsRes] = await Promise.all([
-        fetch('/api/venues'),
-        fetch('/api/tags'),
-      ]);
-      const venuesData = await venuesRes.json();
-      const tagsData = await tagsRes.json();
-      setVenues(venuesData.venues ?? []);
-      setAllTags(tagsData.tags ?? []);
-    } catch {
-      setVenues([]);
-      setAllTags([]);
-    } finally {
-      setLoadingVenues(false);
-      setLoadingTags(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!onSave) return;
-    setIsSaving(true);
-    try {
-      await onSave(event.id, {
-        title: editTitle.trim(),
-        venue: editVenue,
-        date: editDate,
-        time: editTime,
-        endTime: editEndTime,
-        tags: editTags,
-      });
-      setIsEditing(false);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const toggleTag = (tagName: string) => {
-    setEditTags((prev) =>
-      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
-    );
-  };
 
   // -------------------------------------------------------------------------
   // Notes
@@ -479,24 +355,12 @@ export function EventPopover({
           <Calendar className="w-4 h-4 shrink-0" style={{ color: colors.accent }} />
         </Tooltip>
 
-        {isEditing ? (
-          <Tooltip text="Edit class name">
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className="flex-1 min-w-0 text-[13px] font-bold text-slate-900 bg-white/80 border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              aria-label="Class name"
-            />
-          </Tooltip>
-        ) : (
-          <h3 className="text-[13px] font-bold text-slate-900 flex-1 truncate">
-            {event.title}
-          </h3>
-        )}
+        <h3 className="text-[13px] font-bold text-slate-900 flex-1 truncate">
+          {event.title}
+        </h3>
 
-        {/* Edit – opens side panel instead of inline editing */}
-        {pinned && !isEditing && !inCancelFlow && onOpenEditPanel && (
+        {/* Edit – opens modal */}
+        {pinned && !inCancelFlow && onOpenEditPanel && (
           <Tooltip text="Edit class details">
             <button
               onClick={() => { onOpenEditPanel(event); onClose(); }}
@@ -507,19 +371,6 @@ export function EventPopover({
             </button>
           </Tooltip>
         )}
-        {/* Inline edit toggle – kept for reference, currently wired to side panel above
-        {pinned && !isEditing && !inCancelFlow && (
-          <Tooltip text="Edit event details">
-            <button
-              onClick={enterEditMode}
-              className="p-1 rounded hover:bg-white/60 transition-colors cursor-pointer"
-              aria-label="Edit event"
-            >
-              <Pencil className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-          </Tooltip>
-        )}
-        */}
 
         {/* Pin/unpin toggle */}
         <Tooltip text={pinned ? 'Unpin popover' : 'Pin popover open'}>
@@ -552,200 +403,12 @@ export function EventPopover({
       {/* ----------------------------------------------------------------- */}
       <div className="px-4 py-3 space-y-2.5">
         {/* Subtitle */}
-        {event.subtitle && !isEditing && (
+        {event.subtitle && (
           <p className="text-[11px] text-slate-500">{event.subtitle}</p>
         )}
 
-        {/* ---- EDIT MODE ---- */}
-        {isEditing ? (
-          <div className="space-y-3">
-            {/* Date & Time */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <Tooltip text="Class date and time">
-                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                </Tooltip>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
-                  Date &amp; Time
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Tooltip text="Class date">
-                  <input
-                    type="date"
-                    value={editDate}
-                    onChange={(e) => setEditDate(e.target.value)}
-                    className="flex-1 text-[12px] text-slate-700 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
-                    aria-label="Class date"
-                  />
-                </Tooltip>
-              </div>
-              <div className="flex gap-2">
-                <Tooltip text="Start time">
-                  <input
-                    type="time"
-                    value={to24h(editTime)}
-                    onChange={(e) => setEditTime(from24h(e.target.value))}
-                    className="flex-1 text-[12px] text-slate-700 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
-                    aria-label="Start time"
-                  />
-                </Tooltip>
-                <span className="text-[12px] text-slate-400 self-center">&ndash;</span>
-                <Tooltip text="End time">
-                  <input
-                    type="time"
-                    value={to24h(editEndTime)}
-                    onChange={(e) => setEditEndTime(from24h(e.target.value))}
-                    className="flex-1 text-[12px] text-slate-700 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
-                    aria-label="End time"
-                  />
-                </Tooltip>
-              </div>
-            </div>
-
-            {/* Venue dropdown */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <Tooltip text="Class venue">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                </Tooltip>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
-                  Venue
-                </span>
-              </div>
-              <Tooltip text="Select a venue">
-                <div className="relative">
-                  <select
-                    value={editVenue}
-                    onChange={(e) => setEditVenue(e.target.value)}
-                    disabled={loadingVenues}
-                    className="w-full text-[12px] text-slate-700 border border-slate-200 rounded-lg px-2.5 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white appearance-none cursor-pointer disabled:opacity-50"
-                    aria-label="Venue"
-                  >
-                    <option value="">
-                      {loadingVenues ? 'Loading venues...' : '— Select venue —'}
-                    </option>
-                    {venues.map((v) => (
-                      <option key={v.id} value={v.name}>
-                        {v.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </Tooltip>
-            </div>
-
-            {/* Tags multi-select */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <Tooltip text="Class tags">
-                  <Tag className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                </Tooltip>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
-                  Tags
-                </span>
-              </div>
-
-              {/* Selected tags */}
-              {editTags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {editTags.map((tag) => (
-                    <Tooltip key={tag} text={`Remove tag "${tag}"`}>
-                      <button
-                        onClick={() => toggleTag(tag)}
-                        className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 rounded-2xl px-2.5 py-0.5 text-[11px] font-medium hover:bg-blue-200 transition-colors cursor-pointer"
-                        aria-label={`Remove tag ${tag}`}
-                      >
-                        {tag}
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Tooltip>
-                  ))}
-                </div>
-              )}
-
-              {/* Tag picker dropdown */}
-              <div ref={tagDropdownRef} className="relative">
-                <Tooltip text="Add or remove tags">
-                  <button
-                    onClick={() => setShowTagDropdown(!showTagDropdown)}
-                    disabled={loadingTags}
-                    className="w-full flex items-center justify-between text-[12px] text-slate-500 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
-                    aria-label="Toggle tag picker"
-                  >
-                    <span>{loadingTags ? 'Loading tags...' : 'Select tags...'}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showTagDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-                </Tooltip>
-
-                {showTagDropdown && allTags.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full max-h-[140px] overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
-                    {allTags.map((tag) => {
-                      const selected = editTags.includes(tag.name);
-                      return (
-                        <Tooltip key={tag.id} text={selected ? `Remove "${tag.name}"` : `Add "${tag.name}"`} position="right">
-                          <button
-                            onClick={() => toggleTag(tag.name)}
-                            className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer ${
-                              selected
-                                ? 'bg-blue-50 text-blue-700 font-medium'
-                                : 'text-slate-700 hover:bg-slate-50'
-                            }`}
-                            aria-label={selected ? `Remove tag ${tag.name}` : `Add tag ${tag.name}`}
-                          >
-                            <div
-                              className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                                selected
-                                  ? 'bg-blue-500 border-blue-500'
-                                  : 'border-slate-300'
-                              }`}
-                            >
-                              {selected && <Check className="w-2.5 h-2.5 text-white" />}
-                            </div>
-                            {tag.color && (
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: tag.color }}
-                              />
-                            )}
-                            <span className="truncate">{tag.name}</span>
-                          </button>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Save / Cancel edit buttons */}
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSave}
-                disabled={isSaving || !editTitle.trim()}
-                icon={isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                className="flex-1"
-                tooltip="Save class changes"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => { setIsEditing(false); resetEditFields(); }}
-                className="flex-1"
-                tooltip="Discard changes"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          /* ---- VIEW MODE ---- */
-          <>
+        {/* ---- VIEW MODE ---- */}
+        <>
             {/* Time */}
             <div className="flex items-center gap-2">
               <Tooltip text="Class time">
@@ -830,11 +493,10 @@ export function EventPopover({
                 </div>
               </div>
             )}
-          </>
-        )}
+        </>
 
-        {/* Notes Section (pinned only, view mode only) */}
-        {pinned && !isEditing && (
+        {/* Notes Section (pinned only) */}
+        {pinned && (
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -1117,7 +779,7 @@ export function EventPopover({
       {/* ----------------------------------------------------------------- */}
       {/* Footer Actions (when not in cancel flow and not editing)           */}
       {/* ----------------------------------------------------------------- */}
-      {!inCancelFlow && !isEditing && (
+      {!inCancelFlow && (
         <div className="flex items-center gap-2 px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 rounded-b-xl">
           <Tooltip text="Cancel this session">
             <button
@@ -1159,36 +821,6 @@ export function EventPopover({
 // ---------------------------------------------------------------------------
 // Time-conversion helpers
 // ---------------------------------------------------------------------------
-
-/** Convert "9:00 AM" / "2:30 PM" to "09:00" / "14:30" for <input type="time"> */
-function to24h(time12: string): string {
-  if (!time12) return '';
-  // Already in 24h format (HH:MM)?
-  if (/^\d{2}:\d{2}$/.test(time12)) return time12;
-
-  const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return time12;
-
-  let h = parseInt(match[1], 10);
-  const m = match[2];
-  const period = match[3].toUpperCase();
-
-  if (period === 'PM' && h !== 12) h += 12;
-  if (period === 'AM' && h === 12) h = 0;
-
-  return `${String(h).padStart(2, '0')}:${m}`;
-}
-
-/** Convert "14:30" to "2:30 PM" for display */
-function from24h(time24: string): string {
-  if (!time24) return '';
-  const [hStr, m] = time24.split(':');
-  let h = parseInt(hStr, 10);
-  const period = h >= 12 ? 'PM' : 'AM';
-  if (h === 0) h = 12;
-  else if (h > 12) h -= 12;
-  return `${h}:${m} ${period}`;
-}
 
 /** Format HH:MM:SS to "h:mm AM/PM" */
 function formatTime(time: string): string {
