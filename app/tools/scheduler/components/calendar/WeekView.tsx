@@ -920,7 +920,7 @@ export function WeekView({
                       return (
                         <div
                           key={venueId}
-                          className={`relative flex-1 ${
+                          className={`relative flex-1 overflow-hidden ${
                             laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                           }`}
                           style={{
