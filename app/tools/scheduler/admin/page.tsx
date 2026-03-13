@@ -823,8 +823,8 @@ function CalendarDashboard() {
           instructor_id: data.instructor_id || null,
           venue_id: data.venue_id || null,
           grade_groups: data.grade_groups,
-          // Map required_skills (array of tag names) to first subject
-          subject_tag_id: data.required_skills?.[0] ?? null,
+          // Preserve existing subject tag ID (don't change it during edit)
+          // If we need to support changing subjects, we'd need to lookup tag IDs by name
         }),
       });
       if (!res.ok) {
