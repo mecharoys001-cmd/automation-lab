@@ -312,7 +312,7 @@ function VenueDetailModal({
   onSave: (updates: Record<string, unknown>) => Promise<void> | void;
   onDelete: () => Promise<void> | void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   /* ── Space types from tags API ─── */
