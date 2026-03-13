@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  Plus, Loader2, AlertTriangle, X, Filter,
+  Plus, Loader2, AlertTriangle, Filter,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TagSelector } from '../ui/TagSelector';
+import { Modal, ModalButton } from '../ui/Modal';
 import type {
   Instructor, Venue, SchedulingMode,
 } from '@/types/database';
@@ -249,575 +250,509 @@ export function TemplateFormModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div
-        style={{
-          position: 'relative',
-          borderRadius: 16,
-          backgroundColor: '#FFFFFF',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          maxWidth: 600,
-          width: '100%',
-          margin: '0 16px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Header */}
-        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 28px 0 28px' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-            {modalTitle}
-          </h2>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={modalTitle}
+      width="600px"
+      footer={
+        <>
+          <ModalButton onClick={onClose}>Cancel</ModalButton>
+          <ModalButton
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={saving}
+            loading={saving}
           >
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
-        </div>
+            {saving ? (showSessionFields ? 'Creating...' : 'Saving...') : buttonLabel}
+          </ModalButton>
+        </>
+      }
+    >
+      <div className="p-6 space-y-5">
 
-        {/* Scrollable form body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Error banner */}
+        {error && (
+          <div className="px-3 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-medium">
+            {error}
+          </div>
+        )}
 
-          {/* Error banner */}
-          {error && (
-            <div className="px-3 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-medium">
-              {error}
-            </div>
-          )}
+        {/* 1. Name */}
+        <FormField label="Name">
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => updateForm({ name: e.target.value })}
+            placeholder="e.g., Weekly Strings K-2"
+            autoFocus
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+          />
+        </FormField>
 
-          {/* 1. Name */}
-          <FormField label="Name">
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => updateForm({ name: e.target.value })}
-              placeholder="e.g., Weekly Strings K-2"
-              autoFocus
-              style={inputStyle}
-            />
-          </FormField>
-
-          {/* 2. Subject */}
-          <FormField label="Subject">
-            <TagSelector
-              value={form.required_skills}
-              onChange={(skills) => {
-                updateForm({ required_skills: skills });
-                // Clear instructor if they don't match the new subject
-                if (form.instructor_id && skills.length > 0) {
-                  const inst = instructors.find((i) => i.id === form.instructor_id);
-                  if (inst && !skillsMatch(inst.skills, skills)) {
-                    updateForm({ required_skills: skills, instructor_id: '' });
-                    return;
-                  }
+        {/* 2. Subject */}
+        <FormField label="Subject">
+          <TagSelector
+            value={form.required_skills}
+            onChange={(skills) => {
+              updateForm({ required_skills: skills });
+              // Clear instructor if they don't match the new subject
+              if (form.instructor_id && skills.length > 0) {
+                const inst = instructors.find((i) => i.id === form.instructor_id);
+                if (inst && !skillsMatch(inst.skills, skills)) {
+                  updateForm({ required_skills: skills, instructor_id: '' });
+                  return;
                 }
-              }}
-              category="Subjects"
-              placeholder="Select subject..."
-            />
-          </FormField>
+              }
+            }}
+            category="Subjects"
+            placeholder="Select subject..."
+          />
+        </FormField>
 
-          {/* 3. Staff */}
-          <FormField label="Staff">
-            <select
-              value={form.instructor_id}
-              onChange={(e) => updateForm({ instructor_id: e.target.value })}
-              style={selectStyle}
-            >
-              <option value="">— None —</option>
-              {filteredInstructors.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.first_name} {i.last_name}
-                </option>
-              ))}
-            </select>
-            {filteredInstructors.length === 0 && form.required_skills.length > 0 && (
-              <span style={{ fontSize: 11, color: '#EF4444', marginTop: 2 }}>
-                <AlertTriangle className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                No staff teach {form.required_skills.join(', ')}.{' '}
-                <a href="/tools/scheduler/admin/people" style={{ color: '#3B82F6', textDecoration: 'underline' }}>
-                  Add on Staff &amp; Venues page
-                </a>
-              </span>
-            )}
-            {form.required_skills.length > 0 && filteredInstructors.length > 0 && (
-              <span style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                <Filter className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />
-                Filtered by subject: {form.required_skills.join(', ')}
-              </span>
-            )}
-          </FormField>
+        {/* 3. Staff */}
+        <FormField label="Staff">
+          <select
+            value={form.instructor_id}
+            onChange={(e) => updateForm({ instructor_id: e.target.value })}
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors appearance-none"
+          >
+            <option value="">— None —</option>
+            {filteredInstructors.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.first_name} {i.last_name}
+              </option>
+            ))}
+          </select>
+          {filteredInstructors.length === 0 && form.required_skills.length > 0 && (
+            <span className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
+              <AlertTriangle className="w-3 h-3 inline align-middle" />
+              No staff teach {form.required_skills.join(', ')}.{' '}
+              <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
+                Add on Staff &amp; Venues page
+              </a>
+            </span>
+          )}
+          {form.required_skills.length > 0 && filteredInstructors.length > 0 && (
+            <span className="text-[11px] text-slate-500 mt-0.5 inline-flex items-center gap-0.5">
+              <Filter className="w-3 h-3 inline align-middle" />
+              Filtered by subject: {form.required_skills.join(', ')}
+            </span>
+          )}
+        </FormField>
 
-          {/* 4. Venue */}
-          <FormField label="Venue">
-            <select
-              value={form.venue_id}
-              onChange={(e) => updateForm({ venue_id: e.target.value })}
-              style={selectStyle}
-            >
-              <option value="">— None —</option>
-              {venues.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}{(v as any).max_capacity ? ` (cap: ${(v as any).max_capacity})` : ''}
-                </option>
-              ))}
-            </select>
-          </FormField>
+        {/* 4. Venue */}
+        <FormField label="Venue">
+          <select
+            value={form.venue_id}
+            onChange={(e) => updateForm({ venue_id: e.target.value })}
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors appearance-none"
+          >
+            <option value="">— None —</option>
+            {venues.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}{(v as any).max_capacity ? ` (cap: ${(v as any).max_capacity})` : ''}
+              </option>
+            ))}
+          </select>
+        </FormField>
 
-          {/* 5. Grade Group */}
-          <FormField label="Grade Group">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {GRADE_OPTIONS.map((g) => {
-                const selected = form.grade_groups.includes(g);
-                return (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => toggleArrayField('grade_groups', g)}
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: 9999,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      border: '1px solid',
-                      borderColor: selected ? '#3B82F6' : '#E2E8F0',
-                      backgroundColor: selected ? '#EFF6FF' : '#FFFFFF',
-                      color: selected ? '#2563EB' : '#64748B',
-                      cursor: 'pointer',
-                      transition: 'all 150ms',
-                    }}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-            </div>
-          </FormField>
+        {/* 5. Grade Group */}
+        <FormField label="Grade Group">
+          <div className="flex flex-wrap gap-1.5">
+            {GRADE_OPTIONS.map((g) => {
+              const selected = form.grade_groups.includes(g);
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => toggleArrayField('grade_groups', g)}
+                  className={`px-3 py-1 rounded-full text-[13px] font-medium border transition-all cursor-pointer ${
+                    selected
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {g}
+                </button>
+              );
+            })}
+          </div>
+        </FormField>
 
-          {/* 6. Scheduling Mode */}
-          <FormField label="Scheduling Mode" hint="When classes are generated">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {/* Ongoing */}
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="scheduling_mode"
-                  value="ongoing"
-                  checked={form.scheduling_mode === 'ongoing'}
-                  onChange={() => updateForm({ scheduling_mode: 'ongoing' })}
-                  style={{ marginTop: 3, accentColor: '#3B82F6' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Ongoing</span>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Runs for the entire program year</div>
-                </div>
-              </label>
+        {/* 6. Scheduling Mode */}
+        <FormField label="Scheduling Mode" hint="When classes are generated">
+          <div className="flex flex-col gap-2.5">
+            {/* Ongoing */}
+            <label className={`flex items-start gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${(form.week_cycle_length ?? 1) === 1 && form.scheduling_mode === 'ongoing' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                name="scheduling_mode"
+                value="ongoing"
+                checked={form.scheduling_mode === 'ongoing'}
+                onChange={() => updateForm({ scheduling_mode: 'ongoing' })}
+                className="mt-0.5 accent-blue-500"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-slate-700">Ongoing</span>
+                <div className="text-xs text-slate-400 mt-0.5">Runs for the entire program year</div>
+              </div>
+            </label>
 
-              {/* Date Range */}
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="scheduling_mode"
-                  value="date_range"
-                  checked={form.scheduling_mode === 'date_range'}
-                  onChange={() => updateForm({ scheduling_mode: 'date_range' })}
-                  style={{ marginTop: 3, accentColor: '#3B82F6' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Date Range</span>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Runs between specific start and end dates</div>
-                  {form.scheduling_mode === 'date_range' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-                      <div>
-                        <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>From</label>
-                        <input
-                          type="date"
-                          value={form.starts_on}
-                          onChange={(e) => updateForm({ starts_on: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Until</label>
-                        <input
-                          type="date"
-                          value={form.ends_on}
-                          onChange={(e) => updateForm({ ends_on: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </div>
+            {/* Date Range */}
+            <label className={`flex items-start gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.scheduling_mode === 'date_range' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                name="scheduling_mode"
+                value="date_range"
+                checked={form.scheduling_mode === 'date_range'}
+                onChange={() => updateForm({ scheduling_mode: 'date_range' })}
+                className="mt-0.5 accent-blue-500"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-slate-700">Date Range</span>
+                <div className="text-xs text-slate-400 mt-0.5">Runs between specific start and end dates</div>
+                {form.scheduling_mode === 'date_range' && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 block mb-0.5">From</label>
+                      <input
+                        type="date"
+                        value={form.starts_on}
+                        onChange={(e) => updateForm({ starts_on: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                      />
                     </div>
-                  )}
-                </div>
-              </label>
+                    <div>
+                      <label className="text-[11px] text-slate-500 block mb-0.5">Until</label>
+                      <input
+                        type="date"
+                        value={form.ends_on}
+                        onChange={(e) => updateForm({ ends_on: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </label>
 
-              {/* Duration */}
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="scheduling_mode"
-                  value="duration"
-                  checked={form.scheduling_mode === 'duration'}
-                  onChange={() => updateForm({ scheduling_mode: 'duration' })}
-                  style={{ marginTop: 3, accentColor: '#3B82F6' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Duration</span>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Starts on a date and runs for a set number of weeks</div>
-                  {form.scheduling_mode === 'duration' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+            {/* Duration */}
+            <label className={`flex items-start gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.scheduling_mode === 'duration' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                name="scheduling_mode"
+                value="duration"
+                checked={form.scheduling_mode === 'duration'}
+                onChange={() => updateForm({ scheduling_mode: 'duration' })}
+                className="mt-0.5 accent-blue-500"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-slate-700">Duration</span>
+                <div className="text-xs text-slate-400 mt-0.5">Starts on a date and runs for a set number of weeks</div>
+                {form.scheduling_mode === 'duration' && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
+                      <input
+                        type="date"
+                        value={form.starts_on}
+                        onChange={(e) => updateForm({ starts_on: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-500 block mb-0.5">Weeks</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={52}
+                        value={form.duration_weeks ?? ''}
+                        onChange={(e) => updateForm({ duration_weeks: e.target.value ? Number(e.target.value) : null })}
+                        placeholder="e.g. 12"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {/* Session Count */}
+            <label className={`flex items-start gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.scheduling_mode === 'session_count' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                name="scheduling_mode"
+                value="session_count"
+                checked={form.scheduling_mode === 'session_count'}
+                onChange={() => updateForm({ scheduling_mode: 'session_count' })}
+                className="mt-0.5 accent-blue-500"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-slate-700">Class Count</span>
+                <div className="text-xs text-slate-400 mt-0.5">Create a fixed number of classes, optionally within a time window</div>
+                {form.scheduling_mode === 'session_count' && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
+                      <input
+                        type="date"
+                        value={form.starts_on}
+                        onChange={(e) => updateForm({ starts_on: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Starts</label>
+                        <label className="text-[11px] text-slate-500 block mb-0.5">Number of Classes</label>
                         <input
-                          type="date"
-                          value={form.starts_on}
-                          onChange={(e) => updateForm({ starts_on: e.target.value })}
-                          style={inputStyle}
+                          type="number"
+                          min={1}
+                          max={200}
+                          value={form.session_count ?? ''}
+                          onChange={(e) => updateForm({ session_count: e.target.value ? Number(e.target.value) : null })}
+                          placeholder="e.g. 10"
+                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
                         />
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Weeks</label>
+                        <label className="text-[11px] text-slate-500 block mb-0.5">Within X Weeks (optional)</label>
                         <input
                           type="number"
                           min={1}
                           max={52}
-                          value={form.duration_weeks ?? ''}
-                          onChange={(e) => updateForm({ duration_weeks: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="e.g. 12"
-                          style={inputStyle}
+                          value={form.within_weeks ?? ''}
+                          onChange={(e) => updateForm({ within_weeks: e.target.value ? Number(e.target.value) : null })}
+                          placeholder="No limit"
+                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
                         />
                       </div>
                     </div>
-                  )}
-                </div>
-              </label>
-
-              {/* Session Count */}
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="scheduling_mode"
-                  value="session_count"
-                  checked={form.scheduling_mode === 'session_count'}
-                  onChange={() => updateForm({ scheduling_mode: 'session_count' })}
-                  style={{ marginTop: 3, accentColor: '#3B82F6' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Class Count</span>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Create a fixed number of classes, optionally within a time window</div>
-                  {form.scheduling_mode === 'session_count' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                      <div>
-                        <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Starts</label>
-                        <input
-                          type="date"
-                          value={form.starts_on}
-                          onChange={(e) => updateForm({ starts_on: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        <div>
-                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Number of Classes</label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={200}
-                            value={form.session_count ?? ''}
-                            onChange={(e) => updateForm({ session_count: e.target.value ? Number(e.target.value) : null })}
-                            placeholder="e.g. 10"
-                            style={inputStyle}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 11, color: '#64748B', display: 'block', marginBottom: 2 }}>Within X Weeks (optional)</label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={52}
-                            value={form.within_weeks ?? ''}
-                            onChange={(e) => updateForm({ within_weeks: e.target.value ? Number(e.target.value) : null })}
-                            placeholder="No limit"
-                            style={inputStyle}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </label>
-            </div>
-          </FormField>
-
-          {/* 7. Session Duration */}
-          <FormField label="Class Duration">
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-              {DURATION_PRESETS.map((mins) => {
-                const selected = !form.duration_custom && form.duration_minutes === mins;
-                return (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => updateForm({ duration_minutes: mins, duration_custom: false })}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: 8,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      border: '1px solid',
-                      borderColor: selected ? '#3B82F6' : '#E2E8F0',
-                      backgroundColor: selected ? '#EFF6FF' : '#FFFFFF',
-                      color: selected ? '#2563EB' : '#64748B',
-                      cursor: 'pointer',
-                      transition: 'all 150ms',
-                    }}
-                  >
-                    {mins} min
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => updateForm({ duration_custom: true })}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: '1px solid',
-                  borderColor: form.duration_custom ? '#3B82F6' : '#E2E8F0',
-                  backgroundColor: form.duration_custom ? '#EFF6FF' : '#FFFFFF',
-                  color: form.duration_custom ? '#2563EB' : '#64748B',
-                  cursor: 'pointer',
-                  transition: 'all 150ms',
-                }}
-              >
-                Custom
-              </button>
-              {form.duration_custom && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <input
-                    type="number"
-                    min={1}
-                    max={480}
-                    value={form.duration_minutes}
-                    onChange={(e) => updateForm({ duration_minutes: Number(e.target.value) || 0 })}
-                    style={{ ...inputStyle, width: 80 }}
-                  />
-                  <span style={{ fontSize: 13, color: '#64748B' }}>min</span>
-                </div>
-              )}
-            </div>
-          </FormField>
-
-          {/* Sessions Per Week */}
-          <FormField label="Sessions Per Week">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => updateForm({ sessions_per_week: n })}
-                  style={{
-                    height: 40,
-                    width: 48,
-                    borderRadius: 8,
-                    border: `1px solid ${form.sessions_per_week === n ? '#3B82F6' : '#E2E8F0'}`,
-                    background: form.sessions_per_week === n ? '#3B82F6' : '#fff',
-                    color: form.sessions_per_week === n ? '#fff' : '#334155',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {n}×
-                </button>
-              ))}
-              <span style={{ fontSize: 13, color: '#64748B', marginLeft: 4 }}>
-                {form.sessions_per_week === 1 ? '(once a week)' : form.sessions_per_week === 5 ? '(daily)' : 'per week'}
-              </span>
-            </div>
-          </FormField>
-
-          {/* Schedule Pattern */}
-          <FormField label="Schedule Pattern">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* Radio options */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: (form.week_cycle_length ?? 1) === 1 ? '#3B82F6' : '#E2E8F0', backgroundColor: (form.week_cycle_length ?? 1) === 1 ? '#EFF6FF' : 'transparent' }}>
-                <input
-                  type="radio"
-                  checked={(form.week_cycle_length ?? 1) === 1}
-                  onChange={() => updateForm({ week_cycle_length: null, week_in_cycle: null })}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Every week</span>
-                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 'auto' }}>(runs weekly)</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: form.week_cycle_length === 2 ? '#3B82F6' : '#E2E8F0', backgroundColor: form.week_cycle_length === 2 ? '#EFF6FF' : 'transparent' }}>
-                <input
-                  type="radio"
-                  checked={form.week_cycle_length === 2}
-                  onChange={() => updateForm({ week_cycle_length: 2, week_in_cycle: form.week_in_cycle ?? 0 })}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Alternating weeks</span>
-                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 'auto' }}>(Week A / Week B)</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: form.week_cycle_length === 3 ? '#3B82F6' : '#E2E8F0', backgroundColor: form.week_cycle_length === 3 ? '#EFF6FF' : 'transparent' }}>
-                <input
-                  type="radio"
-                  checked={form.week_cycle_length === 3}
-                  onChange={() => updateForm({ week_cycle_length: 3, week_in_cycle: form.week_in_cycle ?? 0 })}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Every 3 weeks</span>
-                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 'auto' }}>(Week A / Week B / Week C)</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, border: '1px solid', borderColor: (form.week_cycle_length ?? 1) > 3 ? '#3B82F6' : '#E2E8F0', backgroundColor: (form.week_cycle_length ?? 1) > 3 ? '#EFF6FF' : 'transparent' }}>
-                <input
-                  type="radio"
-                  checked={(form.week_cycle_length ?? 1) > 3}
-                  onChange={() => updateForm({ week_cycle_length: 4, week_in_cycle: form.week_in_cycle ?? 0 })}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#0F172A' }}>Custom rotation:</span>
-                <input
-                  type="number"
-                  min={4}
-                  max={8}
-                  value={(form.week_cycle_length ?? 1) > 3 ? (form.week_cycle_length ?? 4) : 4}
-                  onChange={(e) => {
-                    const val = Math.max(4, Number(e.target.value) || 4);
-                    updateForm({ week_cycle_length: val, week_in_cycle: form.week_in_cycle ?? 0 });
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if ((form.week_cycle_length ?? 1) <= 3) {
-                      updateForm({ week_cycle_length: 4, week_in_cycle: 0 });
-                    }
-                  }}
-                  style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
-                />
-                <span style={{ fontSize: 12, color: '#64748B' }}>weeks</span>
-              </label>
-
-              {/* Week in cycle selector (shown when > 1 week) */}
-              {form.week_cycle_length != null && form.week_cycle_length > 1 && (
-                <div style={{ marginTop: 8, padding: '12px', backgroundColor: '#F8FAFC', borderRadius: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>
-                    This template runs in:
-                  </label>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {Array.from({ length: form.week_cycle_length }, (_, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => updateForm({ week_in_cycle: i })}
-                        style={{
-                          padding: '6px 16px',
-                          borderRadius: 9999,
-                          fontSize: 13,
-                          fontWeight: 500,
-                          border: '1px solid',
-                          borderColor: (form.week_in_cycle ?? 0) === i ? '#3B82F6' : '#E2E8F0',
-                          backgroundColor: (form.week_in_cycle ?? 0) === i ? '#EFF6FF' : '#FFFFFF',
-                          color: (form.week_in_cycle ?? 0) === i ? '#2563EB' : '#64748B',
-                          cursor: 'pointer',
-                          transition: 'all 150ms',
-                        }}
-                      >
-                        Week {String.fromCharCode(65 + i)}
-                      </button>
-                    ))}
                   </div>
-                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 8, margin: 0 }}>
-                    💡 Tip: Use alternating weeks for schedules that rotate. For example, if Grade 3 Piano runs in Week A and Grade 4 Piano runs in Week B, create both templates and assign them to different weeks.
-                  </p>
-                </div>
-              )}
-            </div>
-          </FormField>
-
-          {/* Additional Tags */}
-          <FormField label="Additional Tags">
-            <TagSelector
-              value={form.additional_tags}
-              onChange={(tags) => updateForm({ additional_tags: tags })}
-              placeholder="Select optional tags..."
-            />
-          </FormField>
-
-          {/* Active toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(e) => updateForm({ is_active: e.target.checked })}
-                style={{ width: 16, height: 16, accentColor: '#3B82F6' }}
-              />
-              <span style={{ fontSize: 14, fontWeight: 500, color: '#334155' }}>Active</span>
+                )}
+              </div>
             </label>
           </div>
+        </FormField>
 
-          {/* Session fields (only shown when creating from calendar) */}
-          {showSessionFields && (
-            <>
-              <div style={{ borderTop: '1px solid #E2E8F0', marginTop: 4, paddingTop: 16 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Session Placement
-                </span>
+        {/* 7. Session Duration */}
+        <FormField label="Class Duration">
+          <div className="flex gap-1.5 flex-wrap items-center">
+            {DURATION_PRESETS.map((mins) => {
+              const selected = !form.duration_custom && form.duration_minutes === mins;
+              return (
+                <button
+                  key={mins}
+                  type="button"
+                  onClick={() => updateForm({ duration_minutes: mins, duration_custom: false })}
+                  className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-all cursor-pointer ${
+                    selected
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {mins} min
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => updateForm({ duration_custom: true })}
+              className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-all cursor-pointer ${
+                form.duration_custom
+                  ? 'border-blue-500 bg-blue-50 text-blue-600'
+                  : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              Custom
+            </button>
+            {form.duration_custom && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={1}
+                  max={480}
+                  value={form.duration_minutes}
+                  onChange={(e) => updateForm({ duration_minutes: Number(e.target.value) || 0 })}
+                  className="w-20 h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+                <span className="text-[13px] text-slate-500">min</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <FormField label="Session Date">
-                  <input
-                    type="date"
-                    value={sessionDate}
-                    onChange={(e) => setSessionDate(e.target.value)}
-                    style={inputStyle}
-                  />
-                </FormField>
-                <FormField label="Start Time">
-                  <input
-                    type="time"
-                    value={sessionStartTime}
-                    onChange={(e) => setSessionStartTime(e.target.value)}
-                    style={inputStyle}
-                  />
-                </FormField>
+            )}
+          </div>
+        </FormField>
+
+        {/* Sessions Per Week */}
+        <FormField label="Sessions Per Week">
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => updateForm({ sessions_per_week: n })}
+                className={`h-10 w-12 rounded-lg text-[13px] font-semibold border transition-all cursor-pointer ${
+                  form.sessions_per_week === n
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {n}×
+              </button>
+            ))}
+            <span className="text-[13px] text-slate-500 ml-1">
+              {form.sessions_per_week === 1 ? '(once a week)' : form.sessions_per_week === 5 ? '(daily)' : 'per week'}
+            </span>
+          </div>
+        </FormField>
+
+        {/* Schedule Pattern */}
+        <FormField label="Schedule Pattern">
+          <div className="flex flex-col gap-2">
+            {/* Radio options */}
+            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${(form.week_cycle_length ?? 1) === 1 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                checked={(form.week_cycle_length ?? 1) === 1}
+                onChange={() => updateForm({ week_cycle_length: null, week_in_cycle: null })}
+                className="cursor-pointer accent-blue-500"
+              />
+              <span className="text-[13px] font-medium text-slate-900">Every week</span>
+              <span className="text-xs text-slate-500 ml-auto">(runs weekly)</span>
+            </label>
+
+            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.week_cycle_length === 2 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                checked={form.week_cycle_length === 2}
+                onChange={() => updateForm({ week_cycle_length: 2, week_in_cycle: form.week_in_cycle ?? 0 })}
+                className="cursor-pointer accent-blue-500"
+              />
+              <span className="text-[13px] font-medium text-slate-900">Alternating weeks</span>
+              <span className="text-xs text-slate-500 ml-auto">(Week A / Week B)</span>
+            </label>
+
+            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.week_cycle_length === 3 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                checked={form.week_cycle_length === 3}
+                onChange={() => updateForm({ week_cycle_length: 3, week_in_cycle: form.week_in_cycle ?? 0 })}
+                className="cursor-pointer accent-blue-500"
+              />
+              <span className="text-[13px] font-medium text-slate-900">Every 3 weeks</span>
+              <span className="text-xs text-slate-500 ml-auto">(Week A / Week B / Week C)</span>
+            </label>
+
+            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${(form.week_cycle_length ?? 1) > 3 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
+              <input
+                type="radio"
+                checked={(form.week_cycle_length ?? 1) > 3}
+                onChange={() => updateForm({ week_cycle_length: 4, week_in_cycle: form.week_in_cycle ?? 0 })}
+                className="cursor-pointer accent-blue-500"
+              />
+              <span className="text-[13px] font-medium text-slate-900">Custom rotation:</span>
+              <input
+                type="number"
+                min={4}
+                max={8}
+                value={(form.week_cycle_length ?? 1) > 3 ? (form.week_cycle_length ?? 4) : 4}
+                onChange={(e) => {
+                  const val = Math.max(4, Number(e.target.value) || 4);
+                  updateForm({ week_cycle_length: val, week_in_cycle: form.week_in_cycle ?? 0 });
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if ((form.week_cycle_length ?? 1) <= 3) {
+                    updateForm({ week_cycle_length: 4, week_in_cycle: 0 });
+                  }
+                }}
+                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+              <span className="text-xs text-slate-500">weeks</span>
+            </label>
+
+            {/* Week in cycle selector (shown when > 1 week) */}
+            {form.week_cycle_length != null && form.week_cycle_length > 1 && (
+              <div className="mt-2 p-3 bg-slate-50 rounded-lg">
+                <label className="text-xs font-semibold text-slate-900 mb-2 block">
+                  This template runs in:
+                </label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {Array.from({ length: form.week_cycle_length }, (_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => updateForm({ week_in_cycle: i })}
+                      className={`px-4 py-1.5 rounded-full text-[13px] font-medium border transition-all cursor-pointer ${
+                        (form.week_in_cycle ?? 0) === i
+                          ? 'border-blue-500 bg-blue-50 text-blue-600'
+                          : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      Week {String.fromCharCode(65 + i)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 mt-2">
+                  Tip: Use alternating weeks for schedules that rotate. For example, if Grade 3 Piano runs in Week A and Grade 4 Piano runs in Week B, create both templates and assign them to different weeks.
+                </p>
               </div>
-            </>
-          )}
+            )}
+          </div>
+        </FormField>
 
-        </div>{/* end scrollable form body */}
+        {/* Additional Tags */}
+        <FormField label="Additional Tags">
+          <TagSelector
+            value={form.additional_tags}
+            onChange={(tags) => updateForm({ additional_tags: tags })}
+            placeholder="Select optional tags..."
+          />
+        </FormField>
 
-        {/* Actions */}
-        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 12, padding: '16px 28px', borderTop: '1px solid #E2E8F0' }}>
-          <Button variant="secondary" onClick={onClose} tooltip="Discard changes">
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={saving}
-            tooltip={isEditing ? 'Save template changes' : 'Create new template'}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {showSessionFields ? 'Creating...' : 'Saving...'}
-              </>
-            ) : buttonLabel}
-          </Button>
+        {/* Active toggle */}
+        <div className="flex items-center gap-2.5">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) => updateForm({ is_active: e.target.checked })}
+              className="w-4 h-4 accent-blue-500"
+            />
+            <span className="text-sm font-medium text-slate-700">Active</span>
+          </label>
         </div>
+
+        {/* Session fields (only shown when creating from calendar) */}
+        {showSessionFields && (
+          <>
+            <div className="border-t border-slate-200 mt-1 pt-4">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Session Placement
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Session Date">
+                <input
+                  type="date"
+                  value={sessionDate}
+                  onChange={(e) => setSessionDate(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+              </FormField>
+              <FormField label="Start Time">
+                <input
+                  type="time"
+                  value={sessionStartTime}
+                  onChange={(e) => setSessionStartTime(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+              </FormField>
+            </div>
+          </>
+        )}
+
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -825,36 +760,12 @@ export function TemplateFormModal({
 
 function FormField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
         {label}
-        {hint && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#94A3B8' }}>{hint}</span>}
+        {hint && <span className="font-normal normal-case ml-1.5 text-slate-400">{hint}</span>}
       </label>
       {children}
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  height: 40,
-  backgroundColor: '#FFFFFF',
-  borderRadius: 8,
-  border: '1px solid #E2E8F0',
-  padding: '0 12px',
-  fontSize: 14,
-  color: '#0F172A',
-  outline: 'none',
-  width: '100%',
-  fontFamily: 'Inter, sans-serif',
-};
-
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: 'none' as const,
-  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-  backgroundPosition: 'right 0.5rem center',
-  backgroundRepeat: 'no-repeat',
-  backgroundSize: '1.25rem 1.25rem',
-  paddingRight: '2rem',
-  cursor: 'pointer',
-};

@@ -18,6 +18,7 @@ import { TagSelector } from '../../components/ui/TagSelector';
 import { AvailabilityEditor, isHourAvailable, formatHourLabel } from '../../components/ui/AvailabilityEditor';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import { InstructorEditModal } from '../../components/modals/InstructorEditModal';
+import { Modal, ModalButton } from '../../components/ui/Modal';
 import type { InstructorFormData } from '../../components/modals/InstructorEditModal';
 import type { CsvRow } from '@/lib/csvDedup';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
@@ -381,236 +382,13 @@ function VenueDetailModal({
   const isAccessible = venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible');
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white shadow-xl">
-
-        {/* ── Header ─────────────────────────────────── */}
-        <div className="bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
-          {editing ? (
-            <Tooltip text="Venue name">
-              <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="text-[22px] font-bold text-slate-900 bg-transparent border-b-2 border-blue-400 outline-none w-full max-w-[400px]"
-                placeholder="Venue name"
-              />
-            </Tooltip>
-          ) : (
-            <h2 className="text-[22px] font-bold text-slate-900">{venue.name}</h2>
-          )}
-          <div className="flex-1" />
-          <Tooltip text="Close venue details">
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
-            >
-              <X className="w-4 h-4 text-slate-500" />
-            </button>
-          </Tooltip>
-        </div>
-
-        {/* ── Body (Read-only OR Edit) ────────────────── */}
-        <div className="flex-1 overflow-y-auto">
-        {!editing ? (
-          /* ── READ-ONLY VIEW ─── */
-          <div className="divide-y divide-slate-200">
-
-            {/* Capacity & Space Type */}
-            <div className="flex items-center px-6 py-3 gap-6">
-              <Tooltip text="Maximum capacity">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-slate-400" />
-                  <span className="text-[13px] text-slate-700">
-                    Capacity: <span className="font-medium">{venue.max_capacity ?? 'Not set'}</span>
-                  </span>
-                </div>
-              </Tooltip>
-              <Tooltip text="Space type">
-                <div className="flex items-center gap-1.5">
-                  <Home className="w-4 h-4 text-slate-400" />
-                  <span className="text-[13px] text-slate-700">
-                    Space Type: <span className="font-medium">{venue.space_type || 'Not set'}</span>
-                  </span>
-                </div>
-              </Tooltip>
-            </div>
-
-            {/* Subjects */}
-            {venue.subjects && venue.subjects.length > 0 && (
-              <div className="flex items-center flex-wrap px-6 py-3 gap-1.5">
-                <span className="text-[13px] text-slate-500 mr-1">Subjects:</span>
-                {venue.subjects.map((s) => (
-                  <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                    {s}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Accessibility */}
-            <div className="flex items-center px-6 py-3 gap-1.5">
-              <Accessibility className="w-4 h-4 text-slate-400" />
-              <span className="text-[13px] text-slate-700">
-                Wheelchair accessible:{' '}
-                <span className={`font-medium ${isAccessible ? 'text-emerald-600' : 'text-slate-400'}`}>
-                  {isAccessible ? 'Yes' : 'No'}
-                </span>
-              </span>
-            </div>
-
-            {/* Setup / Teardown Buffer */}
-            <div className="flex items-center px-6 py-3 gap-1.5">
-              <Tooltip text="Setup and teardown time required before/after events">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  <span className="text-[13px] text-slate-700">
-                    Setup/Teardown buffer:{' '}
-                    <span className="font-medium">
-                      {venue.buffer_minutes != null ? `${venue.buffer_minutes} min` : 'None'}
-                    </span>
-                  </span>
-                </div>
-              </Tooltip>
-            </div>
-
-            {/* Availability */}
-            <div className="px-6 py-3 space-y-2">
-              <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
-              <AvailabilityGrid availability={venue.availability_json} />
-            </div>
-
-            {/* Notes */}
-            <div className="px-6 py-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <StickyNote className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Notes</span>
-              </div>
-              <p className="text-sm text-slate-600 whitespace-pre-wrap">
-                {venue.notes || <span className="text-slate-400">No notes added</span>}
-              </p>
-            </div>
-          </div>
-        ) : (
-          /* ── EDIT VIEW ─── */
-          <div className="px-6 py-4 space-y-5">
-            {/* Capacity */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
-              <Tooltip text="Maximum number of people this venue can hold">
-                <input
-                  type="number"
-                  min="0"
-                  value={capacity}
-                  onChange={(e) => setCapacity(e.target.value)}
-                  placeholder="e.g. 30"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-                />
-              </Tooltip>
-            </div>
-
-            {/* Availability Times */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability Times</label>
-              <AvailabilityEditor
-                value={editAvailability}
-                onChange={setEditAvailability}
-              />
-            </div>
-
-            {/* Space Type */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
-              <Tooltip text="Select the space type for this venue">
-                <div className="relative">
-                  <select
-                    value={roomType}
-                    onChange={(e) => setRoomType(e.target.value)}
-                    className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors"
-                  >
-                    <option value="">Select space type…</option>
-                    {spaceTypes.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                    {/* Show current value if not in fetched list */}
-                    {roomType && !spaceTypes.includes(roomType) && (
-                      <option key={roomType} value={roomType}>{roomType}</option>
-                    )}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                </div>
-              </Tooltip>
-            </div>
-
-            {/* Subjects (Optional) */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
-                <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
-                  <AlertTriangle className="w-3 h-3 text-slate-400" />
-                </Tooltip>
-              </div>
-              <TagSelector
-                category="Subjects"
-                value={venueSubjects}
-                onChange={setVenueSubjects}
-                placeholder="All subjects (no restriction)"
-              />
-            </div>
-
-            {/* Accessibility */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Accessibility</label>
-              <Tooltip text="Mark if this venue is wheelchair accessible">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={accessible}
-                    onChange={(e) => setAccessible(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
-                  />
-                  <span className="text-sm text-slate-700">Wheelchair accessible</span>
-                </label>
-              </Tooltip>
-            </div>
-
-            {/* Setup / Teardown Buffer */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup / Teardown Buffer</label>
-              <Tooltip text="Minutes needed before and after events for setup and cleanup">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    value={bufferMinutes}
-                    onChange={(e) => setBufferMinutes(e.target.value)}
-                    placeholder="0"
-                    className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-                  />
-                  <span className="text-sm text-slate-500">minutes</span>
-                </div>
-              </Tooltip>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
-              <Tooltip text="Additional notes or special instructions for this venue">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add notes about this venue…"
-                  rows={3}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
-                />
-              </Tooltip>
-            </div>
-          </div>
-        )}
-        </div>{/* end scrollable body */}
-
-        {/* ── Footer ─────────────────────────────────── */}
-        <div className="bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={editing ? '' : venue.name}
+      width="700px"
+      footer={
+        <>
           <Tooltip text="Jump to calendar filtered to this venue">
             <Link
               href={`/tools/scheduler/admin?venue=${venue.id}`}
@@ -620,73 +398,263 @@ function VenueDetailModal({
               View Schedule &rarr;
             </Link>
           </Tooltip>
-          <div className="flex items-center gap-3">
-            {editing ? (
-              <>
-                {confirmDelete ? (
-                  <div className="flex items-center gap-2 mr-auto">
-                    <span className="text-xs text-red-600 font-medium">Delete this venue?</span>
-                    <Tooltip text="Confirm deletion">
-                      <button
-                        onClick={onDelete}
-                        disabled={deleting}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
-                      >
-                        {deleting ? 'Deleting…' : 'Yes, Delete'}
-                      </button>
-                    </Tooltip>
-                    <Tooltip text="Cancel deletion">
-                      <button
-                        onClick={() => setConfirmDelete(false)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </Tooltip>
-                  </div>
-                ) : (
-                  <Tooltip text="Delete this venue permanently">
+          <div className="flex-1" />
+          {editing ? (
+            <>
+              {confirmDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-600 font-medium">Delete this venue?</span>
+                  <Tooltip text="Confirm deletion">
                     <button
-                      onClick={() => setConfirmDelete(true)}
-                      className="px-4 py-2 rounded-lg text-[13px] font-medium border border-red-200 text-red-500 hover:bg-red-50 transition-colors mr-auto"
+                      onClick={onDelete}
+                      disabled={deleting}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
                     >
-                      Delete
+                      {deleting ? 'Deleting…' : 'Yes, Delete'}
                     </button>
                   </Tooltip>
-                )}
-                <Tooltip text="Discard changes">
+                  <Tooltip text="Cancel deletion">
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </Tooltip>
+                </div>
+              ) : (
+                <Tooltip text="Delete this venue permanently">
                   <button
-                    onClick={handleCancelEdit}
-                    className="px-4 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                    onClick={() => setConfirmDelete(true)}
+                    className="px-4 py-2 rounded-lg text-[13px] font-medium border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
                   >
-                    Cancel
+                    Delete
                   </button>
                 </Tooltip>
-                <Tooltip text="Save venue details">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving || !editName.trim()}
-                    className="px-4 py-2 rounded-lg text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
-                  >
-                    {saving ? 'Saving\u2026' : 'Save Changes'}
-                  </button>
-                </Tooltip>
-              </>
-            ) : (
-              <Tooltip text="Edit venue details">
-                <button
-                  onClick={() => setEditing(true)}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Edit
-                </button>
-              </Tooltip>
-            )}
+              )}
+              <ModalButton onClick={handleCancelEdit}>Cancel</ModalButton>
+              <ModalButton variant="primary" onClick={handleSave} disabled={saving || !editName.trim()} loading={saving}>
+                Save Changes
+              </ModalButton>
+            </>
+          ) : (
+            <ModalButton onClick={() => setEditing(true)} icon={<Edit2 className="w-3.5 h-3.5" />}>
+              Edit
+            </ModalButton>
+          )}
+        </>
+      }
+    >
+      {/* Editable name when in edit mode */}
+      {editing && (
+        <div className="px-6 py-3">
+          <Tooltip text="Venue name">
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="text-[22px] font-bold text-slate-900 bg-transparent border-b-2 border-blue-400 outline-none w-full max-w-[400px]"
+              placeholder="Venue name"
+            />
+          </Tooltip>
+        </div>
+      )}
+
+      {!editing ? (
+        /* ── READ-ONLY VIEW ─── */
+        <div className="divide-y divide-slate-200">
+
+          {/* Capacity & Space Type */}
+          <div className="flex items-center px-6 py-3 gap-6">
+            <Tooltip text="Maximum capacity">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-slate-400" />
+                <span className="text-[13px] text-slate-700">
+                  Capacity: <span className="font-medium">{venue.max_capacity ?? 'Not set'}</span>
+                </span>
+              </div>
+            </Tooltip>
+            <Tooltip text="Space type">
+              <div className="flex items-center gap-1.5">
+                <Home className="w-4 h-4 text-slate-400" />
+                <span className="text-[13px] text-slate-700">
+                  Space Type: <span className="font-medium">{venue.space_type || 'Not set'}</span>
+                </span>
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Subjects */}
+          {venue.subjects && venue.subjects.length > 0 && (
+            <div className="flex items-center flex-wrap px-6 py-3 gap-1.5">
+              <span className="text-[13px] text-slate-500 mr-1">Subjects:</span>
+              {venue.subjects.map((s) => (
+                <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Accessibility */}
+          <div className="flex items-center px-6 py-3 gap-1.5">
+            <Accessibility className="w-4 h-4 text-slate-400" />
+            <span className="text-[13px] text-slate-700">
+              Wheelchair accessible:{' '}
+              <span className={`font-medium ${isAccessible ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {isAccessible ? 'Yes' : 'No'}
+              </span>
+            </span>
+          </div>
+
+          {/* Setup / Teardown Buffer */}
+          <div className="flex items-center px-6 py-3 gap-1.5">
+            <Tooltip text="Setup and teardown time required before/after events">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <span className="text-[13px] text-slate-700">
+                  Setup/Teardown buffer:{' '}
+                  <span className="font-medium">
+                    {venue.buffer_minutes != null ? `${venue.buffer_minutes} min` : 'None'}
+                  </span>
+                </span>
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Availability */}
+          <div className="px-6 py-3 space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
+            <AvailabilityGrid availability={venue.availability_json} />
+          </div>
+
+          {/* Notes */}
+          <div className="px-6 py-3">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <StickyNote className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Notes</span>
+            </div>
+            <p className="text-sm text-slate-600 whitespace-pre-wrap">
+              {venue.notes || <span className="text-slate-400">No notes added</span>}
+            </p>
           </div>
         </div>
-      </div>
-    </div>
+      ) : (
+        /* ── EDIT VIEW ─── */
+        <div className="px-6 py-4 space-y-5">
+          {/* Capacity */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
+            <Tooltip text="Maximum number of people this venue can hold">
+              <input
+                type="number"
+                min="0"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+                placeholder="e.g. 30"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+            </Tooltip>
+          </div>
+
+          {/* Availability Times */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability Times</label>
+            <AvailabilityEditor
+              value={editAvailability}
+              onChange={setEditAvailability}
+            />
+          </div>
+
+          {/* Space Type */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
+            <Tooltip text="Select the space type for this venue">
+              <div className="relative">
+                <select
+                  value={roomType}
+                  onChange={(e) => setRoomType(e.target.value)}
+                  className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors"
+                >
+                  <option value="">Select space type…</option>
+                  {spaceTypes.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                  {/* Show current value if not in fetched list */}
+                  {roomType && !spaceTypes.includes(roomType) && (
+                    <option key={roomType} value={roomType}>{roomType}</option>
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Subjects (Optional) */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
+              <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
+                <AlertTriangle className="w-3 h-3 text-slate-400" />
+              </Tooltip>
+            </div>
+            <TagSelector
+              category="Subjects"
+              value={venueSubjects}
+              onChange={setVenueSubjects}
+              placeholder="All subjects (no restriction)"
+            />
+          </div>
+
+          {/* Accessibility */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Accessibility</label>
+            <Tooltip text="Mark if this venue is wheelchair accessible">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={accessible}
+                  onChange={(e) => setAccessible(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                />
+                <span className="text-sm text-slate-700">Wheelchair accessible</span>
+              </label>
+            </Tooltip>
+          </div>
+
+          {/* Setup / Teardown Buffer */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup / Teardown Buffer</label>
+            <Tooltip text="Minutes needed before and after events for setup and cleanup">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={bufferMinutes}
+                  onChange={(e) => setBufferMinutes(e.target.value)}
+                  placeholder="0"
+                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                />
+                <span className="text-sm text-slate-500">minutes</span>
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+            <Tooltip text="Additional notes or special instructions for this venue">
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes about this venue…"
+                rows={3}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+              />
+            </Tooltip>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -719,119 +687,13 @@ function InstructorDetailModal({
 }) {
   const router = useRouter();
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white shadow-xl">
-        {/* Header */}
-        <div className="bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
-          <h2 className="text-[22px] font-bold text-slate-900">
-            {instructor.first_name} {instructor.last_name}
-          </h2>
-          <Tooltip text={instructor.is_active ? 'Active staff member' : 'Inactive staff member'}>
-            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${instructor.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          </Tooltip>
-          {instructor.on_call && (
-            <Badge variant="status" color="green" tooltip="Available for last-minute substitutions">
-              On-Call
-            </Badge>
-          )}
-          <div className="flex-1" />
-          <Tooltip text="Close details">
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
-            >
-              <X className="w-4 h-4 text-slate-500" />
-            </button>
-          </Tooltip>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto">
-
-        {/* Contact (click-to-copy) */}
-        <div className="flex items-center px-6 py-3 gap-6">
-          {instructor.email && (
-            <ClickToCopy
-              text={instructor.email}
-              label="email"
-              icon={Mail}
-              textClassName="text-[13px] text-blue-500"
-              buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-            />
-          )}
-          {instructor.phone && (
-            <ClickToCopy
-              text={instructor.phone}
-              label="phone"
-              icon={Phone}
-              textClassName="text-[13px] text-slate-500"
-              buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-            />
-          )}
-        </div>
-
-        <div className="h-px bg-slate-200" />
-
-        {/* Subjects (clickable → calendar filter) */}
-        <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Subjects</span>
-          {(instructor.skills ?? []).map((skill) => {
-            const s = SKILL_STYLES[skill];
-            return (
-              <Pill key={skill} variant="skill"
-                bgColor={s?.bg ?? 'bg-slate-100'} textColor={s?.text ?? 'text-slate-600'}
-                tooltip={`Click to view calendar filtered by ${skill}`}
-                onClick={() => {
-                  onClose();
-                  router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`);
-                }}>
-                {s?.emoji ?? '🎵'} {skill}
-              </Pill>
-            );
-          })}
-          {(!instructor.skills || instructor.skills.length === 0) && (
-            <span className="text-sm text-slate-400">No subjects listed</span>
-          )}
-        </div>
-
-        <div className="h-px bg-slate-200" />
-
-        {/* Availability */}
-        <div className="px-6 py-3 space-y-2">
-          <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
-          <AvailabilityGrid availability={instructor.availability_json} />
-        </div>
-
-        <div className="h-px bg-slate-200" />
-
-        {/* Sessions */}
-        <div className="px-6 py-3 space-y-2.5">
-          <h3 className="text-sm font-semibold text-slate-900">
-            {loadingSessions ? 'Loading classes\u2026' : `${sessionCount ?? 0} Active Classes`}
-          </h3>
-          {!loadingSessions && sessions.slice(0, 3).map((s) => (
-            <div key={s.id} className="flex items-center bg-slate-100 rounded-lg h-9 px-3 gap-2">
-              <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Class'}</span>
-              <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
-                {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
-                {s.start_time?.slice(0, 5)}
-              </span>
-              <Badge variant="status"
-                color={s.status === 'scheduled' || s.status === 'published' ? 'green' : s.status === 'draft' ? 'amber' : s.status === 'canceled' || s.status === 'cancelled' ? 'red' : 'slate'}>
-                {s.status === 'scheduled' ? 'Active' : s.status === 'published' ? 'Active' : s.status === 'draft' ? 'Draft' : s.status === 'canceled' ? 'Cancelled' : s.status}
-              </Badge>
-            </div>
-          ))}
-          {!loadingSessions && sessions.length === 0 && (
-            <p className="text-sm text-slate-400">No classes assigned yet.</p>
-          )}
-        </div>
-
-        </div>{/* end scrollable body */}
-
-        {/* Footer */}
-        <div className="bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={`${instructor.first_name} ${instructor.last_name}`}
+      width="700px"
+      footer={
+        <>
           <Tooltip text="Jump to calendar filtered to this staff member">
             <Link
               href={`/tools/scheduler/admin?instructor=${instructor.id}`}
@@ -841,38 +703,131 @@ function InstructorDetailModal({
               View on Calendar &rarr;
             </Link>
           </Tooltip>
-          <div className="flex items-center gap-3">
-            <Tooltip text={instructor.on_call ? 'Remove from on-call list' : 'Mark as available for substitutions'}>
-              <button
-                onClick={onToggleOnCall}
-                disabled={togglingOnCall}
-                className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
-                  instructor.on_call
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                }`}
-              >
-                {togglingOnCall ? 'Updating\u2026' : instructor.on_call ? 'On-Call \u2713' : 'Set On-Call'}
-              </button>
-            </Tooltip>
-            <Tooltip text={instructor.is_active ? 'Make this staff member inactive' : 'Activate this staff member'}>
-              <button
-                onClick={onToggleStatus}
-                disabled={togglingStatus}
-                className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
-                  instructor.is_active
-                    ? 'border-red-300 text-red-500 hover:bg-red-50'
-                    : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
-                }`}
-              >
-                {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Make Inactive' : 'Activate'}
-              </button>
-            </Tooltip>
-            <Button variant="secondary" tooltip="Edit staff member profile" onClick={onEdit}>Edit</Button>
-          </div>
-        </div>
+          <div className="flex-1" />
+          <Tooltip text={instructor.on_call ? 'Remove from on-call list' : 'Mark as available for substitutions'}>
+            <button
+              onClick={onToggleOnCall}
+              disabled={togglingOnCall}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                instructor.on_call
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              {togglingOnCall ? 'Updating\u2026' : instructor.on_call ? 'On-Call \u2713' : 'Set On-Call'}
+            </button>
+          </Tooltip>
+          <Tooltip text={instructor.is_active ? 'Make this staff member inactive' : 'Activate this staff member'}>
+            <button
+              onClick={onToggleStatus}
+              disabled={togglingStatus}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
+                instructor.is_active
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+              }`}
+            >
+              {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Make Inactive' : 'Activate'}
+            </button>
+          </Tooltip>
+          <Button variant="secondary" tooltip="Edit staff member profile" onClick={onEdit}>Edit</Button>
+        </>
+      }
+    >
+      {/* Status badges */}
+      <div className="flex items-center gap-2.5 px-6 py-3">
+        <Tooltip text={instructor.is_active ? 'Active staff member' : 'Inactive staff member'}>
+          <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${instructor.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+        </Tooltip>
+        <span className="text-sm text-slate-500">{instructor.is_active ? 'Active' : 'Inactive'}</span>
+        {instructor.on_call && (
+          <Badge variant="status" color="green" tooltip="Available for last-minute substitutions">
+            On-Call
+          </Badge>
+        )}
       </div>
-    </div>
+
+      <div className="h-px bg-slate-200" />
+
+      {/* Contact (click-to-copy) */}
+      <div className="flex items-center px-6 py-3 gap-6">
+        {instructor.email && (
+          <ClickToCopy
+            text={instructor.email}
+            label="email"
+            icon={Mail}
+            textClassName="text-[13px] text-blue-500"
+            buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+          />
+        )}
+        {instructor.phone && (
+          <ClickToCopy
+            text={instructor.phone}
+            label="phone"
+            icon={Phone}
+            textClassName="text-[13px] text-slate-500"
+            buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+          />
+        )}
+      </div>
+
+      <div className="h-px bg-slate-200" />
+
+      {/* Subjects (clickable → calendar filter) */}
+      <div className="flex items-center flex-wrap gap-2 px-6 py-3">
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Subjects</span>
+        {(instructor.skills ?? []).map((skill) => {
+          const s = SKILL_STYLES[skill];
+          return (
+            <Pill key={skill} variant="skill"
+              bgColor={s?.bg ?? 'bg-slate-100'} textColor={s?.text ?? 'text-slate-600'}
+              tooltip={`Click to view calendar filtered by ${skill}`}
+              onClick={() => {
+                onClose();
+                router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`);
+              }}>
+              {s?.emoji ?? '🎵'} {skill}
+            </Pill>
+          );
+        })}
+        {(!instructor.skills || instructor.skills.length === 0) && (
+          <span className="text-sm text-slate-400">No subjects listed</span>
+        )}
+      </div>
+
+      <div className="h-px bg-slate-200" />
+
+      {/* Availability */}
+      <div className="px-6 py-3 space-y-2">
+        <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
+        <AvailabilityGrid availability={instructor.availability_json} />
+      </div>
+
+      <div className="h-px bg-slate-200" />
+
+      {/* Sessions */}
+      <div className="px-6 py-3 space-y-2.5">
+        <h3 className="text-sm font-semibold text-slate-900">
+          {loadingSessions ? 'Loading classes\u2026' : `${sessionCount ?? 0} Active Classes`}
+        </h3>
+        {!loadingSessions && sessions.slice(0, 3).map((s) => (
+          <div key={s.id} className="flex items-center bg-slate-100 rounded-lg h-9 px-3 gap-2">
+            <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Class'}</span>
+            <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
+              {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+              {s.start_time?.slice(0, 5)}
+            </span>
+            <Badge variant="status"
+              color={s.status === 'scheduled' || s.status === 'published' ? 'green' : s.status === 'draft' ? 'amber' : s.status === 'canceled' || s.status === 'cancelled' ? 'red' : 'slate'}>
+              {s.status === 'scheduled' ? 'Active' : s.status === 'published' ? 'Active' : s.status === 'draft' ? 'Draft' : s.status === 'canceled' ? 'Cancelled' : s.status}
+            </Badge>
+          </div>
+        ))}
+        {!loadingSessions && sessions.length === 0 && (
+          <p className="text-sm text-slate-400">No classes assigned yet.</p>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -974,225 +929,193 @@ function VenueCreateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white shadow-xl">
-        {/* Header */}
-        <div className="bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
-          <h2 className="text-[22px] font-bold text-slate-900">Add Venue</h2>
-          <div className="flex-1" />
-          <Tooltip text="Close without saving">
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
-            >
-              <X className="w-4 h-4 text-slate-500" />
-            </button>
+    <Modal
+      open={true}
+      onClose={onClose}
+      title="Add Venue"
+      width="560px"
+      footer={
+        <>
+          <ModalButton onClick={onClose}>Cancel</ModalButton>
+          <ModalButton
+            variant="primary"
+            onClick={() => onSave(form)}
+            disabled={saving || !form.name.trim()}
+            loading={saving}
+            icon={!saving ? <Save className="w-3.5 h-3.5" /> : undefined}
+          >
+            {saving ? 'Creating…' : 'Add Venue'}
+          </ModalButton>
+        </>
+      }
+    >
+      <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">
+        {/* Name */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Name *</label>
+          <Tooltip text="Venue or room name" className="w-full">
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setField('name', e.target.value)}
+              placeholder="e.g. Main Stage"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+            />
           </Tooltip>
         </div>
 
-        {/* Form */}
-        <div className="flex-1 overflow-y-auto">
-        <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">
-          {/* Name */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Name *</label>
-            <Tooltip text="Venue or room name" className="w-full">
+        {/* Space Type (from tags) */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <label className="text-xs font-semibold text-slate-500">Space Type</label>
+            <Tooltip text="Add a new space type">
+              <button
+                type="button"
+                onClick={() => setShowAddSpaceType((v) => !v)}
+                className="inline-flex items-center justify-center w-4 h-4 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </Tooltip>
+            <Tooltip text="Refresh space types list">
+              <button
+                type="button"
+                onClick={fetchSpaceTypes}
+                disabled={loadingSpaceTypes}
+                className="inline-flex items-center justify-center w-4 h-4 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${loadingSpaceTypes ? 'animate-spin' : ''}`} />
+              </button>
+            </Tooltip>
+          </div>
+          {showAddSpaceType && (
+            <div className="flex items-center gap-1.5 mb-1.5">
               <input
                 type="text"
-                required
-                value={form.name}
-                onChange={(e) => setField('name', e.target.value)}
-                placeholder="e.g. Main Stage"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                value={newSpaceTypeName}
+                onChange={(e) => setNewSpaceTypeName(e.target.value)}
+                placeholder="New space type name"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSpaceType(); } }}
+                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                autoFocus
               />
-            </Tooltip>
-          </div>
-
-          {/* Space Type (from tags) */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="text-xs font-semibold text-slate-500">Space Type</label>
-              <Tooltip text="Add a new space type">
+              <Tooltip text="Create space type tag">
                 <button
                   type="button"
-                  onClick={() => setShowAddSpaceType((v) => !v)}
-                  className="inline-flex items-center justify-center w-4 h-4 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                  onClick={handleAddSpaceType}
+                  disabled={addingSpaceType || !newSpaceTypeName.trim()}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </Tooltip>
-              <Tooltip text="Refresh space types list">
-                <button
-                  type="button"
-                  onClick={fetchSpaceTypes}
-                  disabled={loadingSpaceTypes}
-                  className="inline-flex items-center justify-center w-4 h-4 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3 h-3 ${loadingSpaceTypes ? 'animate-spin' : ''}`} />
+                  {addingSpaceType ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
                 </button>
               </Tooltip>
             </div>
-            {showAddSpaceType && (
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <input
-                  type="text"
-                  value={newSpaceTypeName}
-                  onChange={(e) => setNewSpaceTypeName(e.target.value)}
-                  placeholder="New space type name"
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSpaceType(); } }}
-                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-                  autoFocus
-                />
-                <Tooltip text="Create space type tag">
-                  <button
-                    type="button"
-                    onClick={handleAddSpaceType}
-                    disabled={addingSpaceType || !newSpaceTypeName.trim()}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-                  >
-                    {addingSpaceType ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
-                  </button>
-                </Tooltip>
-              </div>
-            )}
-            <div className="relative">
-              <select
-                value={form.space_type}
-                onChange={(e) => setField('space_type', e.target.value)}
-                disabled={loadingSpaceTypes}
-                className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <option value="">{loadingSpaceTypes ? 'Loading...' : spaceTypes.length === 0 ? 'None yet — use + to add' : 'Select type...'}</option>
-                {spaceTypes.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Subjects (Optional) */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
-              <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
-                <AlertTriangle className="w-3 h-3 text-slate-400" />
-              </Tooltip>
-            </div>
-            <TagSelector
-              category="Subjects"
-              value={form.subjects}
-              onChange={(val) => setField('subjects', val as unknown as VenueFormData['subjects'])}
-              placeholder="All subjects (no restriction)"
-            />
-          </div>
-
-          {/* Max Capacity */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Max Capacity</label>
-            <Tooltip text="Maximum number of people this venue can hold (leave blank for unlimited)" className="w-full">
-              <input
-                type="number"
-                min={1}
-                value={form.max_capacity}
-                onChange={(e) => setField('max_capacity', e.target.value)}
-                placeholder="e.g. 30"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-              />
-            </Tooltip>
-          </div>
-
-          {/* Wheelchair Accessible */}
-          <div>
-            <Tooltip text="Indicate if this venue is wheelchair accessible">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={form.is_wheelchair_accessible}
-                  onChange={(e) => setField('is_wheelchair_accessible', e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
-                />
-                <span className="text-sm text-slate-700">Wheelchair Accessible</span>
-              </label>
-            </Tooltip>
-          </div>
-
-          {/* Setup / Teardown Buffer */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup/Teardown Buffer</label>
-            <Tooltip text="Minutes needed before and after events for setup and teardown" className="w-full">
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  value={form.buffer_minutes}
-                  onChange={(e) => setField('buffer_minutes', e.target.value)}
-                  placeholder="0"
-                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-                />
-                <span className="text-sm text-slate-500">minutes</span>
-              </div>
-            </Tooltip>
-          </div>
-
-          {/* Availability */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability</label>
-            <AvailabilityEditor
-              value={form.availability_json}
-              onChange={(v) => setField('availability_json', v)}
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
-            <Tooltip text="Internal notes about this venue" className="w-full">
-              <textarea
-                value={form.notes}
-                onChange={(e) => setField('notes', e.target.value)}
-                placeholder="Add notes about this venue…"
-                rows={3}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
-              />
-            </Tooltip>
-          </div>
-        </form>
-        </div>{/* end scrollable body */}
-
-        {/* Footer */}
-        <div className="bg-white border-t border-slate-200 flex items-center justify-end h-14 px-6 gap-3 shrink-0">
-          <Tooltip text="Discard changes">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-[13px] font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+          )}
+          <div className="relative">
+            <select
+              value={form.space_type}
+              onChange={(e) => setField('space_type', e.target.value)}
+              disabled={loadingSpaceTypes}
+              className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer disabled:opacity-50"
             >
-              Cancel
-            </button>
-          </Tooltip>
-          <Tooltip text="Create venue">
-            <button
-              onClick={() => onSave(form)}
-              disabled={saving || !form.name.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Creating…
-                </>
-              ) : (
-                <>
-                  <Save className="w-3.5 h-3.5" />
-                  Add Venue
-                </>
-              )}
-            </button>
+              <option value="">{loadingSpaceTypes ? 'Loading...' : spaceTypes.length === 0 ? 'None yet — use + to add' : 'Select type...'}</option>
+              {spaceTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Subjects (Optional) */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
+            <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
+              <AlertTriangle className="w-3 h-3 text-slate-400" />
+            </Tooltip>
+          </div>
+          <TagSelector
+            category="Subjects"
+            value={form.subjects}
+            onChange={(val) => setField('subjects', val as unknown as VenueFormData['subjects'])}
+            placeholder="All subjects (no restriction)"
+          />
+        </div>
+
+        {/* Max Capacity */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Max Capacity</label>
+          <Tooltip text="Maximum number of people this venue can hold (leave blank for unlimited)" className="w-full">
+            <input
+              type="number"
+              min={1}
+              value={form.max_capacity}
+              onChange={(e) => setField('max_capacity', e.target.value)}
+              placeholder="e.g. 30"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+            />
           </Tooltip>
         </div>
-      </div>
-    </div>
+
+        {/* Wheelchair Accessible */}
+        <div>
+          <Tooltip text="Indicate if this venue is wheelchair accessible">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.is_wheelchair_accessible}
+                onChange={(e) => setField('is_wheelchair_accessible', e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+              />
+              <span className="text-sm text-slate-700">Wheelchair Accessible</span>
+            </label>
+          </Tooltip>
+        </div>
+
+        {/* Setup / Teardown Buffer */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup/Teardown Buffer</label>
+          <Tooltip text="Minutes needed before and after events for setup and teardown" className="w-full">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                value={form.buffer_minutes}
+                onChange={(e) => setField('buffer_minutes', e.target.value)}
+                placeholder="0"
+                className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+              <span className="text-sm text-slate-500">minutes</span>
+            </div>
+          </Tooltip>
+        </div>
+
+        {/* Availability */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability</label>
+          <AvailabilityEditor
+            value={form.availability_json}
+            onChange={(v) => setField('availability_json', v)}
+          />
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+          <Tooltip text="Internal notes about this venue" className="w-full">
+            <textarea
+              value={form.notes}
+              onChange={(e) => setField('notes', e.target.value)}
+              placeholder="Add notes about this venue…"
+              rows={3}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+            />
+          </Tooltip>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

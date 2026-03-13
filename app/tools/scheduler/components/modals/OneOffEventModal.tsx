@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Loader2, Plus, CalendarPlus, Pencil, Trash2, XCircle } from 'lucide-react';
+import { Loader2, Plus, CalendarPlus, Pencil, Trash2, XCircle } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { Modal, ModalButton } from '../ui/Modal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -248,8 +249,6 @@ export function OneOffEventModal({
         // Filter to subject tags only (category = 'Subjects' or no category)
         const allTags: Tag[] = body.tags ?? [];
         setTags(allTags);
-
-        // Don't auto-select tags from template skills — user must explicitly choose
       }
     };
 
@@ -305,329 +304,22 @@ export function OneOffEventModal({
   // If no subject-category tags exist, show all tags as fallback
   const displayTags = subjectTags.length > 0 ? subjectTags : tags;
 
+  const modalTitle = editEvent ? 'Edit Event' : initialTemplate ? 'Schedule Event' : 'Create One-Off Event';
+  const modalSubtitle = editEvent
+    ? 'Update event details'
+    : initialTemplate
+      ? `${initialTemplate.name || initialTemplate.required_skills?.[0] || 'Event'} — ${initialTemplate.duration_minutes ?? 45}m`
+      : 'Assemblies, guest performances, make-up classes';
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative z-[70] w-[520px] max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${editEvent ? 'bg-amber-50' : initialTemplate ? 'bg-emerald-50' : 'bg-blue-50'}`}>
-              {editEvent ? (
-                <Pencil className="w-5 h-5 text-amber-500" />
-              ) : initialTemplate ? (
-                <CalendarPlus className="w-5 h-5 text-emerald-500" />
-              ) : (
-                <Plus className="w-5 h-5 text-blue-500" />
-              )}
-            </div>
-            <div>
-              <h3 className="text-[15px] font-semibold text-slate-900">
-                {editEvent ? 'Edit Event' : initialTemplate ? 'Schedule Event' : 'Create One-Off Event'}
-              </h3>
-              {editEvent ? (
-                <p className="text-[12px] text-slate-500">Update event details</p>
-              ) : initialTemplate ? (
-                <p className="text-[12px] text-slate-500">
-                  {initialTemplate.name || initialTemplate.required_skills?.[0] || 'Event'} — {initialTemplate.duration_minutes ?? 45}m
-                </p>
-              ) : (
-                <p className="text-[12px] text-slate-500">Assemblies, guest performances, make-up classes</p>
-              )}
-            </div>
-          </div>
-          <Tooltip text="Close">
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4 text-slate-400" />
-            </button>
-          </Tooltip>
-        </div>
-
-        {/* Divider */}
-        <div className="mx-6 my-3 border-t border-slate-100 shrink-0" />
-
-        {/* Form body */}
-        <div className="px-6 pb-4 space-y-4 overflow-y-auto flex-1 min-h-0">
-          {/* Event Name */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Event Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Spring Assembly, Guest Artist Visit"
-              autoFocus
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-            />
-          </div>
-
-          {/* Subject Tag + Instructor row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject Tag</label>
-              <select
-                value={subjectTagId}
-                onChange={(e) => setSubjectTagId(e.target.value)}
-                className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer ${
-                  subjectTagId ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'
-                }`}
-              >
-                <option value="">— No tag —</option>
-                {displayTags.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-              {subjectTagId && (
-                <p className="text-[11px] text-blue-600">
-                  Tag will be applied to this event
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Staff</label>
-              <select
-                value={instructorId}
-                onChange={(e) => setInstructorId(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
-              >
-                <option value="">— None —</option>
-                {instructors.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.first_name} {i.last_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Venue */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue</label>
-            <select
-              value={venueId}
-              onChange={(e) => setVenueId(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
-            >
-              <option value="">— None —</option>
-              {venues.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} ({v.space_type})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Grade Groups */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grade Groups</label>
-            <div className="flex flex-wrap gap-1.5">
-              {GRADE_OPTIONS.map((g) => {
-                const selected = gradeGroups.includes(g);
-                return (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => toggleGrade(g)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
-                      selected
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Date + Time + Duration row */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration (min)</label>
-              <input
-                type="number"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Math.max(5, parseInt(e.target.value) || 0))}
-                min={5}
-                max={480}
-                step={5}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Recurrence (hidden in edit mode — only applies to new events) */}
-          {!editEvent && <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                ['none', 'One-time only'],
-                ['weekly', 'Weekly'],
-                ['every_x_weeks', 'Every X weeks'],
-                ['for_x_sessions', 'For X sessions'],
-                ['until_date', 'Until date'],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRecurrenceType(value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                    recurrenceType === value
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Conditional fields */}
-            {recurrenceType === 'every_x_weeks' && (
-              <div className="flex items-center gap-2 pt-1">
-                <span className="text-xs text-slate-500">Every</span>
-                <input
-                  type="number"
-                  value={intervalWeeks}
-                  onChange={(e) => setIntervalWeeks(Math.max(2, parseInt(e.target.value) || 2))}
-                  min={2}
-                  max={52}
-                  className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-                />
-                <span className="text-xs text-slate-500">weeks</span>
-              </div>
-            )}
-
-            {recurrenceType === 'for_x_sessions' && (
-              <div className="flex items-center gap-2 pt-1">
-                <span className="text-xs text-slate-500">Repeat for</span>
-                <input
-                  type="number"
-                  value={sessionCount}
-                  onChange={(e) => setSessionCount(Math.max(2, parseInt(e.target.value) || 2))}
-                  min={2}
-                  max={52}
-                  className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-                />
-                <span className="text-xs text-slate-500">total sessions</span>
-              </div>
-            )}
-
-            {recurrenceType === 'until_date' && (
-              <div className="flex items-center gap-2 pt-1">
-                <span className="text-xs text-slate-500">Repeat until</span>
-                <input
-                  type="date"
-                  value={untilDate}
-                  onChange={(e) => setUntilDate(e.target.value)}
-                  min={date}
-                  className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-                />
-              </div>
-            )}
-
-            {recurrenceType !== 'none' && (
-              <p className="text-[11px] text-slate-400">
-                Blackout days will be skipped automatically. Sessions won&apos;t be created outside the program date range.
-              </p>
-            )}
-
-            {/* Instructor Rotation */}
-            {recurrenceType !== 'none' && (
-              <div className="space-y-2 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rotateInstructors}
-                    onChange={(e) => {
-                      setRotateInstructors(e.target.checked);
-                      if (!e.target.checked) setRotationInstructorIds([]);
-                    }}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
-                  />
-                  <span className="text-xs font-medium text-slate-600">Rotate Instructors</span>
-                </label>
-
-                {rotateInstructors && (
-                  <div className="space-y-1.5 pl-6">
-                    <p className="text-[11px] text-slate-400">
-                      Select 2+ staff to rotate through recurring sessions (A, B, A, B, ...).
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {instructors.map((instr) => {
-                        const selected = rotationInstructorIds.includes(instr.id);
-                        return (
-                          <button
-                            key={instr.id}
-                            type="button"
-                            onClick={() =>
-                              setRotationInstructorIds((prev) =>
-                                selected
-                                  ? prev.filter((id) => id !== instr.id)
-                                  : [...prev, instr.id],
-                              )
-                            }
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
-                              selected
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                          >
-                            {instr.first_name} {instr.last_name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {rotateInstructors && rotationInstructorIds.length >= 2 && (
-                      <p className="text-[11px] text-slate-500">
-                        Rotation order: {rotationInstructorIds.map((id) => {
-                          const i = instructors.find((x) => x.id === id);
-                          return i ? `${i.first_name} ${i.last_name[0]}.` : '?';
-                        }).join(' → ')}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>}
-        </div>
-
-        {/* Divider */}
-        <div className="mx-6 my-1 border-t border-slate-100 shrink-0" />
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 pb-6 pt-3 shrink-0">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={modalTitle}
+      subtitle={modalSubtitle}
+      width="520px"
+      footer={
+        <>
           {/* Delete / Cancel Event — left side (edit mode only) */}
           {editEvent ? (
             <div className="flex gap-2">
@@ -659,41 +351,293 @@ export function OneOffEventModal({
           ) : (
             <div />
           )}
+          <div className="flex-1" />
+          <ModalButton onClick={onClose} disabled={saving}>Cancel</ModalButton>
+          <ModalButton
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={!name.trim() || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
+            loading={saving}
+          >
+            {saving
+              ? (editEvent ? 'Saving...' : 'Creating...')
+              : editEvent
+                ? 'Save Changes'
+                : recurrenceType !== 'none' ? 'Create Sessions' : 'Create Event'}
+          </ModalButton>
+        </>
+      }
+    >
+      {/* Form body */}
+      <div className="px-6 pb-4 pt-2 space-y-4">
+        {/* Event Name */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Event Name <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Spring Assembly, Guest Artist Visit"
+            autoFocus
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+          />
+        </div>
 
-          {/* Cancel / Save — right side */}
-          <div className="flex items-center gap-3">
-            <Tooltip text="Cancel and close">
-              <button
-                onClick={onClose}
-                disabled={saving}
-                className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </Tooltip>
+        {/* Subject Tag + Instructor row */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject Tag</label>
+            <select
+              value={subjectTagId}
+              onChange={(e) => setSubjectTagId(e.target.value)}
+              className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer ${
+                subjectTagId ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'
+              }`}
+            >
+              <option value="">— No tag —</option>
+              {displayTags.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            {subjectTagId && (
+              <p className="text-[11px] text-blue-600">
+                Tag will be applied to this event
+              </p>
+            )}
+          </div>
 
-            <Tooltip text={name.trim() ? (editEvent ? 'Save changes' : recurrenceType !== 'none' ? 'Create recurring sessions' : 'Create this one-off session') : 'Event name is required'}>
-              <button
-                onClick={handleSubmit}
-                disabled={!name.trim() || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : editEvent ? null : (
-                  <Plus className="w-3.5 h-3.5" />
-                )}
-                {saving
-                  ? (editEvent ? 'Saving...' : 'Creating...')
-                  : editEvent
-                    ? 'Save Changes'
-                    : recurrenceType !== 'none' ? 'Create Sessions' : 'Create Event'}
-              </button>
-            </Tooltip>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Staff</label>
+            <select
+              value={instructorId}
+              onChange={(e) => setInstructorId(e.target.value)}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+            >
+              <option value="">— None —</option>
+              {instructors.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.first_name} {i.last_name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
+
+        {/* Venue */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue</label>
+          <select
+            value={venueId}
+            onChange={(e) => setVenueId(e.target.value)}
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+          >
+            <option value="">— None —</option>
+            {venues.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name} ({v.space_type})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Grade Groups */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grade Groups</label>
+          <div className="flex flex-wrap gap-1.5">
+            {GRADE_OPTIONS.map((g) => {
+              const selected = gradeGroups.includes(g);
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => toggleGrade(g)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                    selected
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {g}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Date + Time + Duration row */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration (min)</label>
+            <input
+              type="number"
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(Math.max(5, parseInt(e.target.value) || 0))}
+              min={5}
+              max={480}
+              step={5}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Recurrence (hidden in edit mode — only applies to new events) */}
+        {!editEvent && <div className="space-y-2">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
+          <div className="flex flex-wrap gap-1.5">
+            {([
+              ['none', 'One-time only'],
+              ['weekly', 'Weekly'],
+              ['every_x_weeks', 'Every X weeks'],
+              ['for_x_sessions', 'For X sessions'],
+              ['until_date', 'Until date'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setRecurrenceType(value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  recurrenceType === value
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Conditional fields */}
+          {recurrenceType === 'every_x_weeks' && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-slate-500">Every</span>
+              <input
+                type="number"
+                value={intervalWeeks}
+                onChange={(e) => setIntervalWeeks(Math.max(2, parseInt(e.target.value) || 2))}
+                min={2}
+                max={52}
+                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+              <span className="text-xs text-slate-500">weeks</span>
+            </div>
+          )}
+
+          {recurrenceType === 'for_x_sessions' && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-slate-500">Repeat for</span>
+              <input
+                type="number"
+                value={sessionCount}
+                onChange={(e) => setSessionCount(Math.max(2, parseInt(e.target.value) || 2))}
+                min={2}
+                max={52}
+                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+              <span className="text-xs text-slate-500">total sessions</span>
+            </div>
+          )}
+
+          {recurrenceType === 'until_date' && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-slate-500">Repeat until</span>
+              <input
+                type="date"
+                value={untilDate}
+                onChange={(e) => setUntilDate(e.target.value)}
+                min={date}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          )}
+
+          {recurrenceType !== 'none' && (
+            <p className="text-[11px] text-slate-400">
+              Blackout days will be skipped automatically. Sessions won&apos;t be created outside the program date range.
+            </p>
+          )}
+
+          {/* Instructor Rotation */}
+          {recurrenceType !== 'none' && (
+            <div className="space-y-2 pt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rotateInstructors}
+                  onChange={(e) => {
+                    setRotateInstructors(e.target.checked);
+                    if (!e.target.checked) setRotationInstructorIds([]);
+                  }}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+                />
+                <span className="text-xs font-medium text-slate-600">Rotate Instructors</span>
+              </label>
+
+              {rotateInstructors && (
+                <div className="space-y-1.5 pl-6">
+                  <p className="text-[11px] text-slate-400">
+                    Select 2+ staff to rotate through recurring sessions (A, B, A, B, ...).
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {instructors.map((instr) => {
+                      const selected = rotationInstructorIds.includes(instr.id);
+                      return (
+                        <button
+                          key={instr.id}
+                          type="button"
+                          onClick={() =>
+                            setRotationInstructorIds((prev) =>
+                              selected
+                                ? prev.filter((id) => id !== instr.id)
+                                : [...prev, instr.id],
+                            )
+                          }
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                            selected
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {instr.first_name} {instr.last_name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {rotateInstructors && rotationInstructorIds.length >= 2 && (
+                    <p className="text-[11px] text-slate-500">
+                      Rotation order: {rotationInstructorIds.map((id) => {
+                        const i = instructors.find((x) => x.id === id);
+                        return i ? `${i.first_name} ${i.last_name[0]}.` : '?';
+                      }).join(' → ')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>}
       </div>
-    </div>
+    </Modal>
   );
 }
-// Deployment timestamp: Thu Mar 12 21:31:55 EDT 2026
