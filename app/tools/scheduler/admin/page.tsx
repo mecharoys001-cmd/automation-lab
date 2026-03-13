@@ -13,6 +13,10 @@ import {
   Trash2,
   AlertTriangle,
   Download,
+  MapPin,
+  CircleDot,
+  GraduationCap,
+  Tag,
 } from 'lucide-react';
 import { showToast } from '../lib/toast';
 import { Button } from '../components/ui/Button';
@@ -20,7 +24,7 @@ import { ViewToggle } from '../components/ui/ViewToggle';
 import { Badge } from '../components/ui/Badge';
 import { Tooltip } from '../components/ui/Tooltip';
 import { FilterBar } from '../components/layout/FilterBar';
-import type { ActiveFilters } from '../components/layout/FilterBar';
+import type { ActiveFilters, FilterConfig } from '../components/layout/FilterBar';
 import { WeekView } from '../components/calendar/WeekView';
 import type { EventTemplate } from '../components/calendar/WeekView';
 import { MonthView } from '../components/calendar/MonthView';
@@ -195,25 +199,19 @@ function eventMatchesFilters(event: CalendarEvent, filters: ActiveFilters): bool
   for (const [key, values] of Object.entries(filters)) {
     if (values.length === 0) continue;
 
-    switch (key) {
-      case 'instructor':
-        if (!values.includes(event.instructor)) return false;
-        break;
-      case 'venue':
-        if (event.venue && !values.includes(event.venue)) return false;
-        break;
-      case 'eventType':
-        if (!values.includes(event.type)) return false;
-        break;
-      case 'grade':
-        if (!values.includes(event.subtitle)) return false;
-        break;
-      case 'status':
-        if (event.status && !values.includes(event.status)) return false;
-        break;
-      case 'tags':
-        if (!event.tags || !event.tags.some((t) => values.includes(t))) return false;
-        break;
+    if (key === 'instructor') {
+      if (!values.includes(event.instructor)) return false;
+    } else if (key === 'venue') {
+      if (!event.venue || !values.includes(event.venue)) return false;
+    } else if (key === 'status') {
+      if (!event.status || !values.includes(event.status)) return false;
+    } else if (key === 'grade') {
+      if (!event.gradeLevel || !values.includes(event.gradeLevel)) return false;
+    } else if (key === 'eventType') {
+      if (!values.includes(event.type)) return false;
+    } else if (key === 'tags' || key.startsWith('tag_')) {
+      // Tag category filter: check if event has ANY of the selected tags
+      if (!event.tags || !event.tags.some((t) => values.includes(t))) return false;
     }
   }
   return true;
@@ -394,6 +392,11 @@ function CalendarDashboard() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+  const [filterOptions, setFilterOptions] = useState({
+    instructors: [] as { id: string; first_name: string; last_name: string }[],
+    venues: [] as { id: string; name: string }[],
+    tags: [] as { id: string; name: string; category: string | null }[],
+  });
   const [contextMenu, setContextMenu] = useState<{
     event: CalendarEvent;
     position: { x: number; y: number };
@@ -794,6 +797,109 @@ function CalendarDashboard() {
       controller.abort();
     };
   }, [fetchSessions]);
+
+  // Fetch dynamic filter options from API
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      const [instRes, venueRes, tagRes] = await Promise.all([
+        fetch('/api/instructors'),
+        fetch('/api/venues'),
+        fetch('/api/tags'),
+      ]);
+      const [instData, venueData, tagData] = await Promise.all([
+        instRes.json(),
+        venueRes.json(),
+        tagRes.json(),
+      ]);
+      setFilterOptions({
+        instructors: instData.instructors || [],
+        venues: venueData.venues || [],
+        tags: tagData.tags || [],
+      });
+    } catch (err) {
+      console.error('[fetchFilterOptions]', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFilterOptions();
+  }, [fetchFilterOptions]);
+
+  // Build dynamic filter configs from fetched data
+  const dynamicFilters = useMemo<FilterConfig[]>(() => {
+    const staffFilter: FilterConfig = {
+      key: 'instructor',
+      label: 'Staff',
+      icon: UserIcon,
+      tooltip: 'Filter by staff member',
+      options: filterOptions.instructors.map(i => ({
+        value: `${i.first_name} ${i.last_name}`.trim(),
+        label: `${i.first_name} ${i.last_name}`.trim(),
+      })),
+    };
+
+    const venueFilter: FilterConfig = {
+      key: 'venue',
+      label: 'Venue',
+      icon: MapPin,
+      tooltip: 'Filter by venue',
+      options: filterOptions.venues.map(v => ({
+        value: v.name,
+        label: v.name,
+      })),
+    };
+
+    const statusFilter: FilterConfig = {
+      key: 'status',
+      label: 'Status',
+      icon: CircleDot,
+      tooltip: 'Filter by session status',
+      options: [
+        { value: 'draft', label: 'Draft' },
+        { value: 'published', label: 'Published' },
+        { value: 'canceled', label: 'Canceled' },
+        { value: 'completed', label: 'Completed' },
+      ],
+    };
+
+    // Extract unique grades from events
+    const uniqueGrades = new Set<string>();
+    events.forEach(event => {
+      if (event.gradeLevel) uniqueGrades.add(event.gradeLevel);
+    });
+
+    const gradeFilter: FilterConfig = {
+      key: 'grade',
+      label: 'Grade',
+      icon: GraduationCap,
+      tooltip: 'Filter by grade',
+      options: Array.from(uniqueGrades).sort().map(g => ({
+        value: g,
+        label: g,
+      })),
+    };
+
+    // Tag filters — one filter per category
+    const tagsByCategory = filterOptions.tags.reduce((acc, tag) => {
+      const cat = tag.category || 'Other';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(tag);
+      return acc;
+    }, {} as Record<string, typeof filterOptions.tags>);
+
+    const tagFilters: FilterConfig[] = Object.entries(tagsByCategory).map(([category, tags]) => ({
+      key: `tag_${category.toLowerCase().replace(/\s+/g, '-')}`,
+      label: category,
+      icon: Tag,
+      tooltip: `Filter by ${category.toLowerCase()}`,
+      options: tags.map(t => ({
+        value: t.name,
+        label: t.name,
+      })),
+    }));
+
+    return [staffFilter, venueFilter, statusFilter, gradeFilter, ...tagFilters];
+  }, [filterOptions, events]);
 
   const handleSaveEvent = useCallback(async (data: TemplateFormData & { sessionDate?: string; sessionStartTime?: string }) => {
     const editingEvent = panelState.event;
@@ -1260,6 +1366,7 @@ function CalendarDashboard() {
       {/* FILTER BAR                                                         */}
       {/* ================================================================= */}
       <FilterBar
+        filters={dynamicFilters}
         activeFilters={activeFilters}
         onFiltersChange={setActiveFilters}
       />
