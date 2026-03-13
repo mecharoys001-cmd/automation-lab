@@ -383,10 +383,10 @@ function VenueDetailModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white shadow-xl">
 
         {/* ── Header ─────────────────────────────────── */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
+        <div className="bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
           {editing ? (
             <Tooltip text="Venue name">
               <input
@@ -410,9 +410,8 @@ function VenueDetailModal({
           </Tooltip>
         </div>
 
-        <div className="h-px bg-slate-200" />
-
         {/* ── Body (Read-only OR Edit) ────────────────── */}
+        <div className="flex-1 overflow-y-auto">
         {!editing ? (
           /* ── READ-ONLY VIEW ─── */
           <div className="divide-y divide-slate-200">
@@ -608,11 +607,10 @@ function VenueDetailModal({
             </div>
           </div>
         )}
-
-        <div className="h-px bg-slate-200" />
+        </div>{/* end scrollable body */}
 
         {/* ── Footer ─────────────────────────────────── */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
+        <div className="bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
           <Tooltip text="Jump to calendar filtered to this venue">
             <Link
               href={`/tools/scheduler/admin?venue=${venue.id}`}
@@ -723,9 +721,9 @@ function InstructorDetailModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[700px] max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white shadow-xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
+        <div className="bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
           <h2 className="text-[22px] font-bold text-slate-900">
             {instructor.first_name} {instructor.last_name}
           </h2>
@@ -748,7 +746,8 @@ function InstructorDetailModal({
           </Tooltip>
         </div>
 
-        <div className="h-px bg-slate-200" />
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
 
         {/* Contact (click-to-copy) */}
         <div className="flex items-center px-6 py-3 gap-6">
@@ -829,10 +828,10 @@ function InstructorDetailModal({
           )}
         </div>
 
-        <div className="h-px bg-slate-200" />
+        </div>{/* end scrollable body */}
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
+        <div className="bg-white border-t border-slate-200 flex items-center justify-between h-14 px-6 shrink-0">
           <Tooltip text="Jump to calendar filtered to this staff member">
             <Link
               href={`/tools/scheduler/admin?instructor=${instructor.id}`}
@@ -977,9 +976,9 @@ function VenueCreateModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white shadow-xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
+        <div className="bg-white border-b border-slate-200 flex items-center h-14 px-6 gap-2.5 shrink-0">
           <h2 className="text-[22px] font-bold text-slate-900">Add Venue</h2>
           <div className="flex-1" />
           <Tooltip text="Close without saving">
@@ -993,6 +992,7 @@ function VenueCreateModal({
         </div>
 
         {/* Form */}
+        <div className="flex-1 overflow-y-auto">
         <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">
           {/* Name */}
           <div>
@@ -1159,9 +1159,10 @@ function VenueCreateModal({
             </Tooltip>
           </div>
         </form>
+        </div>{/* end scrollable body */}
 
-        {/* Footer — sticky at bottom */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 flex items-center justify-end h-14 px-6 gap-3 shrink-0">
+        {/* Footer */}
+        <div className="bg-white border-t border-slate-200 flex items-center justify-end h-14 px-6 gap-3 shrink-0">
           <Tooltip text="Discard changes">
             <button
               onClick={onClose}
