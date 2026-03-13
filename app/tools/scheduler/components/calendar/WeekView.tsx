@@ -225,10 +225,7 @@ function WeekEventBlock({
     document.addEventListener('mouseup', onUp);
   };
 
-  const blockTooltip = `${event.title} — ${event.time}${event.endTime ? ` – ${event.endTime}` : ''}${event.instructor ? ` · ${event.instructor}` : ''}${event.venue ? ` · ${event.venue}` : ''} (${EVENT_TYPE_LABELS[event.type]})${enableDrag ? ' · Drag to reschedule' : ''}`;
-
   return (
-    <Tooltip text={blockTooltip}>
       <div
         ref={ref}
         data-event-block
@@ -292,7 +289,6 @@ function WeekEventBlock({
           />
         )}
       </div>
-    </Tooltip>
   );
 }
 
