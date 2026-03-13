@@ -82,9 +82,9 @@ export function InstructorEditModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="relative z-[70] w-[560px] max-h-[calc(100vh-2rem)] rounded-2xl bg-white shadow-xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center h-14 px-6 gap-2.5">
+        <div className="shrink-0 flex items-center h-14 px-6 gap-2.5">
           <h2 className="text-[22px] font-bold text-slate-900">
             {isNew ? 'Add Staff Member' : 'Edit Staff Member'}
           </h2>
@@ -99,9 +99,10 @@ export function InstructorEditModal({
           </Tooltip>
         </div>
 
-        <div className="h-px bg-slate-200" />
+        <div className="h-px bg-slate-200 shrink-0" />
 
-        {/* Form */}
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto">
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5">
           {/* First Name */}
           <div>
@@ -227,11 +228,12 @@ export function InstructorEditModal({
           </div>
           )}
         </form>
+        </div>
 
-        <div className="h-px bg-slate-200" />
+        <div className="h-px bg-slate-200 shrink-0" />
 
         {/* Footer */}
-        <div className="flex items-center justify-between h-14 px-6">
+        <div className="shrink-0 flex items-center justify-between h-14 px-6">
           <div>
             {onDelete && !isNew && (
               confirmDelete ? (
