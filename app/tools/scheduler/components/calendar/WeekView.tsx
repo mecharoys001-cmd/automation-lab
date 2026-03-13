@@ -234,7 +234,7 @@ function WeekEventBlock({
         data-event-block
         draggable={!!enableDrag}
         onDragStart={enableDrag ? handleDragStart : undefined}
-        className={`absolute left-1 right-1 rounded-md cursor-pointer hover:opacity-90 transition-opacity overflow-hidden group ${isCompact ? 'px-1.5 py-0.5 flex items-center gap-1' : 'px-2 py-1'}`}
+        className={`absolute left-1 right-1 rounded-md cursor-pointer overflow-hidden group transition-all ${isCompact ? 'px-1.5 py-0.5 flex items-center gap-1' : 'px-2 py-1'} hover:right-auto hover:min-w-full hover:z-[10] hover:shadow-lg hover:pr-4`}
         style={{
           top: `${top}px`,
           height: `${Math.max(height, 22)}px`,
@@ -258,26 +258,26 @@ function WeekEventBlock({
           /* Normal: full details */
           <>
             <p
-              className="text-[11px] font-bold leading-snug whitespace-normal"
+              className="text-[11px] font-bold leading-snug truncate group-hover:whitespace-normal"
               style={{ color: colors.text }}
             >
               {event.title}
             </p>
-            <p className="text-[10px] font-bold leading-tight mt-0.5" style={{ color: colors.accent }}>
+            <p className="text-[10px] font-bold leading-tight mt-0.5 truncate group-hover:whitespace-normal" style={{ color: colors.accent }}>
               {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
             </p>
             {height >= 50 && (
-              <p className="text-[10px] text-slate-500 leading-snug whitespace-normal mt-0.5">
+              <p className="text-[10px] text-slate-500 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.instructor}
               </p>
             )}
             {height >= 50 && event.venue && (
-              <p className="text-[9px] text-slate-400 leading-snug whitespace-normal mt-0.5 truncate">
+              <p className="text-[9px] text-slate-400 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.venue}
               </p>
             )}
             {height >= 64 && event.gradeLevel && (
-              <p className="text-[10px] text-slate-400 leading-snug whitespace-normal mt-0.5">
+              <p className="text-[10px] text-slate-400 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.gradeLevel}
               </p>
             )}
@@ -920,7 +920,7 @@ export function WeekView({
                       return (
                         <div
                           key={venueId}
-                          className={`relative flex-1 overflow-hidden ${
+                          className={`relative flex-1 ${
                             laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                           }`}
                           style={{
