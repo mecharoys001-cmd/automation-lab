@@ -31,14 +31,12 @@ import type { ContextMenuAction } from '../components/calendar/EventContextMenu'
 import { EVENT_COLORS } from '../components/calendar/types';
 import type { CalendarEvent, EventType } from '../components/calendar/types';
 import { useEventEditPanel } from '../components/calendar/useEventEditPanel';
-import { OneOffEventModal } from '../components/modals/OneOffEventModal';
-import type { OneOffEventFormData } from '../components/modals/OneOffEventModal';
+import { TemplateFormModal } from '../components/modals/TemplateFormModal';
+import type { TemplateFormData } from '../components/modals/TemplateFormModal';
 import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
 import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
-import { TemplateFormModal } from '../components/modals/TemplateFormModal';
-import type { TemplateFormData } from '../components/modals/TemplateFormModal';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -797,13 +795,17 @@ function CalendarDashboard() {
     };
   }, [fetchSessions]);
 
-  const handleSaveEvent = useCallback(async (data: OneOffEventFormData) => {
+  const handleSaveEvent = useCallback(async (data: TemplateFormData & { sessionDate?: string; sessionStartTime?: string }) => {
     const editingEvent = panelState.event;
     if (!editingEvent) return;
     const eventId = editingEvent.id;
 
+    // Use session fields if provided, otherwise preserve existing
+    const sessionDate = (data as any).sessionDate ?? editingEvent.date;
+    const sessionStartTime = (data as any).sessionStartTime ?? '09:00';
+
     // Calculate end time from start + duration
-    const [sH, sM] = data.start_time.split(':').map(Number);
+    const [sH, sM] = sessionStartTime.split(':').map(Number);
     const endMinutes = sH * 60 + sM + data.duration_minutes;
     const endTime24 = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
 
@@ -814,13 +816,15 @@ function CalendarDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
-          date: data.date,
-          start_time: data.start_time,
+          date: sessionDate,
+          start_time: sessionStartTime,
           end_time: endTime24,
           duration_minutes: data.duration_minutes,
-          instructor_id: data.instructor_id,
-          venue_id: data.venue_id,
+          instructor_id: data.instructor_id || null,
+          venue_id: data.venue_id || null,
           grade_groups: data.grade_groups,
+          // Map required_skills (array of tag names) to first subject
+          subject_tag_id: data.required_skills?.[0] ?? null,
         }),
       });
       if (!res.ok) {
@@ -1365,31 +1369,37 @@ function CalendarDashboard() {
 
       {/* Event Edit Modal */}
       {panelState.event && (
-        <OneOffEventModal
+        <TemplateFormModal
           open={panelState.open}
           onClose={closePanel}
-          onSubmit={handleSaveEvent}
+          onSave={handleSaveEvent}
           programId={selectedProgramId}
-          editEvent={{
-            id: panelState.event.id,
-            title: panelState.event.sessionName ?? panelState.event.title,
-            date: panelState.event.date,
-            time: panelState.event.time,
-            endTime: panelState.event.endTime ?? '',
-            instructor: panelState.event.instructor,
-            instructorId: panelState.event.instructorId,
-            venue: panelState.event.venue,
-            venueId: panelState.event.venueId,
-            gradeGroups: panelState.event.gradeGroups,
-            subjects: panelState.event.subjects,
-            subjectTagId: panelState.event.subjectTagId,
-            tags: panelState.event.tags,
-            notes: panelState.event.notes,
-            status: panelState.event.status,
-            templateId: panelState.event.templateId,
+          initialData={{
+            name: panelState.event.sessionName ?? panelState.event.title,
+            required_skills: panelState.event.subjects ?? [],
+            instructor_id: panelState.event.instructorId ?? '',
+            venue_id: panelState.event.venueId ?? '',
+            grade_groups: panelState.event.gradeGroups ?? [],
+            duration_minutes: panelState.event.durationMinutes ?? 60,
+            duration_custom: false,
+            additional_tags: panelState.event.tags ?? [],
+            week_cycle_length: null,
+            week_in_cycle: null,
+            is_active: true,
+            scheduling_mode: 'ongoing',
+            starts_on: '',
+            ends_on: '',
+            duration_weeks: null,
+            session_count: null,
+            within_weeks: null,
+            sessions_per_week: 1,
           }}
-          onDelete={handleDeleteEvent}
-          onCancelEvent={handleCancelEvent}
+          initialDate={panelState.event.date}
+          initialTime={panelState.event.time}
+          initialVenueId={panelState.event.venueId}
+          showSessionFields={true}
+          title="Edit Event"
+          submitLabel="Save Changes"
         />
       )}
 
