@@ -1,6 +1,6 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
 /* ─────────────────────────────────────────────────────────────
@@ -39,6 +39,12 @@ import { Tooltip } from './Tooltip';
  * - Long forms remain usable on small screens
  * ───────────────────────────────────────────────────────────── */
 
+export interface ModalWarning {
+  id: string;
+  label: string;
+  message: React.ReactNode;
+}
+
 export interface ModalProps {
   /** Whether the modal is open */
   open: boolean;
@@ -60,6 +66,8 @@ export interface ModalProps {
   className?: string;
   /** Ref to the scrollable body container (for IntersectionObserver, sticky warnings, etc.) */
   bodyRef?: React.Ref<HTMLDivElement>;
+  /** Validation warnings displayed as cards between body and footer */
+  warnings?: ModalWarning[];
 }
 
 export function Modal({
@@ -73,6 +81,7 @@ export function Modal({
   disableBackdropClose = false,
   className = '',
   bodyRef,
+  warnings,
 }: ModalProps) {
   if (!open) return null;
 
@@ -119,6 +128,24 @@ export function Modal({
         <div ref={bodyRef} className="flex-1 overflow-y-auto">
           {children}
         </div>
+
+        {/* ── Warnings (fixed, above footer) ─────────────────── */}
+        {warnings && warnings.length > 0 && (
+          <div className="shrink-0 px-6 py-3 border-t border-amber-200 bg-amber-50/80 space-y-2">
+            {warnings.map((w) => (
+              <div
+                key={w.id}
+                className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-white px-3 py-2.5 shadow-sm"
+              >
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-amber-700">{w.label}</span>
+                  <p className="text-xs text-amber-600 mt-0.5 leading-relaxed">{w.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Footer (sticky bottom) ───────────────────────── */}
         {footer && (

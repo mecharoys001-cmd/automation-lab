@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2, Plus, CalendarPlus, Pencil, Trash2, XCircle, AlertTriangle } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { Modal, ModalButton } from '../ui/Modal';
-import { useStickyWarnings, StickyWarningBanner } from '../ui/StickyWarnings';
 import { availabilityCoversWindow, toTimeWindow, parseDate, dayIndexToName } from '@/lib/scheduler/utils';
 import type { AvailabilityJson } from '@/types/database';
 
@@ -172,10 +171,6 @@ export function OneOffEventModal({
   // Instructor rotation state
   const [rotateInstructors, setRotateInstructors] = useState(false);
   const [rotationInstructorIds, setRotationInstructorIds] = useState<string[]>([]);
-
-  // Sticky warnings
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const { hiddenIds, warningRef } = useStickyWarnings(bodyRef);
 
   // Reference data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -417,7 +412,14 @@ export function OneOffEventModal({
       title={modalTitle}
       subtitle={modalSubtitle}
       width="520px"
-      bodyRef={bodyRef}
+      warnings={[
+        ...(venueConflict
+          ? [{ id: 'venue', label: 'Venue Conflict', message: venueConflict }]
+          : []),
+        ...(instructorAvailabilityWarning
+          ? [{ id: 'instructor-availability', label: 'Staff Availability', message: instructorAvailabilityWarning }]
+          : []),
+      ]}
       footer={
         <>
           {/* Delete / Cancel Event — left side (edit mode only) */}
@@ -530,7 +532,7 @@ export function OneOffEventModal({
               ))}
             </select>
             {instructorAvailabilityWarning && (
-              <p ref={warningRef('instructor-availability')} className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+              <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                 {instructorAvailabilityWarning}
               </p>
@@ -554,7 +556,7 @@ export function OneOffEventModal({
             ))}
           </select>
           {venueConflict && (
-            <p ref={warningRef('venue')} className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+            <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
               <span className="inline-block w-3 h-3 rounded-full bg-red-100 text-red-600 text-center text-[9px] font-bold leading-3">!</span>
               {venueConflict}
             </p>
@@ -762,17 +764,6 @@ export function OneOffEventModal({
 
       </div>
 
-      {/* Sticky warning banner — must be a direct child of scroll container (bodyRef) */}
-      <StickyWarningBanner
-        warnings={[
-          ...(venueConflict && hiddenIds.has('venue')
-            ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
-            : []),
-          ...(instructorAvailabilityWarning && hiddenIds.has('instructor-availability')
-            ? [{ id: 'instructor-availability', label: 'Staff', message: instructorAvailabilityWarning }]
-            : []),
-        ]}
-      />
     </Modal>
   );
 }

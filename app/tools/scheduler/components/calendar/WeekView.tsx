@@ -1154,7 +1154,7 @@ export function WeekView({
           onReplaceInstructor={handleReplaceInstructor}
           onReplaceEvent={handleReplaceEvent}
           onEditNotes={handleSaveNotes}
-          onOpenEditPanel={onOpenEditPanel}
+          onOpenEditPanel={onOpenEditPanel ? (ev) => { closePopover(); onOpenEditPanel(ev); } : undefined}
         />
       )}
     </div>

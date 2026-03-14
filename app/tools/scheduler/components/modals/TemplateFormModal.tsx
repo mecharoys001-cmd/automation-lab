@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Plus, Loader2, AlertTriangle, Filter,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TagSelector } from '../ui/TagSelector';
 import { Modal, ModalButton } from '../ui/Modal';
-import { useStickyWarnings, StickyWarningBanner } from '../ui/StickyWarnings';
 import type {
   Instructor, Venue, SchedulingMode,
 } from '@/types/database';
@@ -130,10 +129,6 @@ export function TemplateFormModal({
   // Session fields (only used when showSessionFields is true)
   const [sessionDate, setSessionDate] = useState('');
   const [sessionStartTime, setSessionStartTime] = useState('09:00');
-
-  // Sticky warnings
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const { hiddenIds, warningRef } = useStickyWarnings(bodyRef);
 
   // Reference data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -335,7 +330,14 @@ export function TemplateFormModal({
       onClose={onClose}
       title={modalTitle}
       width="600px"
-      bodyRef={bodyRef}
+      warnings={[
+        ...(filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate))
+          ? [{ id: 'staff', label: 'Staff Availability', message: `No staff available${form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}${showSessionFields && sessionDate ? ' at this date/time' : ''}` }]
+          : []),
+        ...(venueConflict
+          ? [{ id: 'venue', label: 'Venue Conflict', message: venueConflict }]
+          : []),
+      ]}
       footer={
         <>
           <ModalButton onClick={onClose}>Cancel</ModalButton>
@@ -406,7 +408,7 @@ export function TemplateFormModal({
             ))}
           </select>
           {filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && (
-            <span ref={warningRef('staff')} className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
+            <span className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
               No staff available{form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}{showSessionFields && sessionDate ? ' at this date/time' : ''}.{' '}
               <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
@@ -437,7 +439,7 @@ export function TemplateFormModal({
             ))}
           </select>
           {venueConflict && (
-            <span ref={warningRef('venue')} className="text-[11px] text-red-600 mt-0.5 inline-flex items-center gap-1">
+            <span className="text-[11px] text-red-600 mt-0.5 inline-flex items-center gap-1">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
               {venueConflict}
             </span>
@@ -843,17 +845,6 @@ export function TemplateFormModal({
 
       </div>
 
-      {/* Sticky warning banner — must be a direct child of scroll container (bodyRef) */}
-      <StickyWarningBanner
-        warnings={[
-          ...(filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && hiddenIds.has('staff')
-            ? [{ id: 'staff', label: 'Staff', message: `No staff available${form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}${showSessionFields && sessionDate ? ' at this date/time' : ''}` }]
-            : []),
-          ...(venueConflict && hiddenIds.has('venue')
-            ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
-            : []),
-        ]}
-      />
     </Modal>
   );
 }
