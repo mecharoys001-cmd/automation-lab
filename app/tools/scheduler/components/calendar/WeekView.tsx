@@ -959,8 +959,8 @@ export function WeekView({
                 ))}
 
                 {/* Hover lane highlight */}
-                {console.log('Render hover state', hoverState)}
                 {hoverState && hoverState.dayIdx === dayIdx && multiLane && hoverState.venueId && (() => {
+                  console.log('Render hover state', hoverState);
                   const laneIdx = selectedVenues.indexOf(hoverState.venueId!);
                   const laneCount = selectedVenues.length;
                   if (laneIdx < 0) return null;
