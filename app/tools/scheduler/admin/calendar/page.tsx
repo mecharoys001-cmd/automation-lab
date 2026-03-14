@@ -257,7 +257,7 @@ function MonthGrid({
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Month header */}
-      <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
         <h3 className="text-[15px] font-semibold text-slate-900">
           {MONTH_NAMES[month]} {year}
         </h3>
@@ -270,14 +270,14 @@ function MonthGrid({
         )}
       </div>
 
-      <div className="p-3">
+      <div className="px-2 py-1">
         {/* Day-of-week headers */}
-        <div className="grid grid-cols-7 border-b border-slate-100 mb-0.5">
+        <div className="grid grid-cols-7">
           {DAY_HEADERS.map((d, i) => (
             <Tooltip key={d} text={DAY_FULL_NAMES[i]}>
               <div
-                className={`text-[11px] font-semibold uppercase tracking-wider text-center py-2 ${
-                  i === 0 || i === 6 ? 'text-slate-300' : 'text-slate-400'
+                className={`text-[10px] font-semibold uppercase tracking-wider text-center py-1 ${
+                  i === 0 || i === 6 ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
                 {d}
@@ -287,10 +287,10 @@ function MonthGrid({
         </div>
 
         {/* Day cells grid */}
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-7 border-t border-l border-slate-200">
           {/* Leading blanks */}
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`blank-s-${i}`} className="min-h-[52px] border-b border-r border-slate-50 bg-slate-50/30" />
+            <div key={`blank-s-${i}`} className="h-12 border-b border-r border-slate-200 bg-slate-50/40" />
           ))}
 
           {/* Day cells */}
@@ -330,67 +330,47 @@ function MonthGrid({
 
             const isSelected = selectedDates.has(dateStr);
 
-            let cellBg = isWeekend ? 'bg-slate-50/50' : 'bg-white';
-            if (primaryStatus) {
-              cellBg = STATUS_COLORS[primaryStatus].cell;
-            }
-
             return (
               <Tooltip key={day} text={tooltipText}>
                 <div
                   onMouseDown={(e) => onDayMouseDown(dateStr, e)}
                   onMouseEnter={() => onDayMouseEnter(dateStr)}
-                  className={`min-h-[52px] border-b border-r border-slate-100 px-1 py-0.5 transition-colors cursor-pointer select-none ${cellBg} ${
+                  className={`h-12 border-b border-r border-slate-200 flex flex-col items-center justify-center transition-colors cursor-pointer select-none ${
                     isSelected
-                      ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/80'
-                      : !primaryStatus ? 'hover:bg-slate-50' : ''
-                  }`}
+                      ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
+                      : primaryStatus
+                      ? STATUS_COLORS[primaryStatus].cell
+                      : isToday
+                      ? 'bg-blue-50'
+                      : isWeekend
+                      ? 'bg-slate-50/60'
+                      : 'bg-white'
+                  } ${!isSelected && !primaryStatus ? 'hover:bg-slate-100' : ''}`}
                 >
                   {/* Day number */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-xs font-medium leading-none inline-flex items-center justify-center w-5 h-5 rounded-full ${
-                        isToday
-                          ? 'bg-blue-500 text-white font-bold'
-                          : isWeekend
-                          ? 'text-slate-400'
-                          : 'text-slate-700'
-                      }`}
-                    >
-                      {day}
-                    </span>
-                    {dayEntries.length > 1 && (
-                      <span className="text-[9px] text-slate-400 font-medium">
-                        +{dayEntries.length}
-                      </span>
-                    )}
-                  </div>
+                  <span
+                    className={`text-xs font-medium leading-none inline-flex items-center justify-center w-6 h-6 rounded-full ${
+                      isToday
+                        ? 'bg-blue-500 text-white font-bold'
+                        : isSelected
+                        ? 'text-blue-800 font-semibold'
+                        : isWeekend
+                        ? 'text-slate-400'
+                        : 'text-slate-700'
+                    }`}
+                  >
+                    {day}
+                  </span>
 
-                  {/* Event indicators */}
+                  {/* Status dots */}
                   {dayEntries.length > 0 && (
-                    <div className="mt-0.5 space-y-px overflow-hidden">
-                      {dayEntries.slice(0, 2).map((entry, idx) => (
-                        <div
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      {dayEntries.slice(0, 3).map((entry, idx) => (
+                        <span
                           key={idx}
-                          className={`flex items-center gap-0.5 rounded px-0.5 py-px ${
-                            primaryStatus && idx === 0 ? '' : 'bg-opacity-60'
-                          }`}
-                        >
-                          <span className={`shrink-0 h-1.5 w-1.5 rounded-full ${STATUS_COLORS[entry.status_type].dot}`} />
-                          <span className="text-[9px] leading-tight truncate font-medium text-slate-600">
-                            {entry.description
-                              ? entry.description.length > 12
-                                ? entry.description.slice(0, 12) + '...'
-                                : entry.description
-                              : STATUS_LABELS[entry.status_type]}
-                          </span>
-                        </div>
+                          className={`h-1.5 w-1.5 rounded-full ${STATUS_COLORS[entry.status_type].dot}`}
+                        />
                       ))}
-                      {dayEntries.length > 2 && (
-                        <span className="text-[8px] text-slate-400 pl-0.5">
-                          +{dayEntries.length - 2} more
-                        </span>
-                      )}
                     </div>
                   )}
                 </div>
@@ -400,7 +380,7 @@ function MonthGrid({
 
           {/* Trailing blanks to complete the last row */}
           {Array.from({ length: trailingBlanks }).map((_, i) => (
-            <div key={`blank-e-${i}`} className="min-h-[52px] border-b border-r border-slate-50 bg-slate-50/30" />
+            <div key={`blank-e-${i}`} className="h-12 border-b border-r border-slate-200 bg-slate-50/40" />
           ))}
         </div>
       </div>
@@ -921,7 +901,6 @@ export default function CalendarPage() {
 
   const clearSelection = useCallback(() => {
     setSelectedDates(new Set());
-    lastClickedDateRef.current = null;
   }, []);
 
   /** Select all visible days across all rendered months */
