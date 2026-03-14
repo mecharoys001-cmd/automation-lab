@@ -10,6 +10,15 @@ import { Tooltip } from '../ui/Tooltip';
 import { Pill } from '../ui/Pill';
 
 // ──────────────────────────────────────────────────────────────
+// Constants
+// ──────────────────────────────────────────────────────────────
+
+const GRADE_OPTIONS = [
+  'Pre-K', 'K', '1st', '2nd', '3rd', '4th', '5th',
+  '6th', '7th', '8th', '9th', '10th', '11th', '12th',
+];
+
+// ──────────────────────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────────────────────
 
@@ -172,19 +181,21 @@ export function TemplateList({
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Derive unique options from template data
+  // Grade options use the canonical list (filtered to those present in data)
+  // to prevent multi-grade combinations from appearing as compound options.
   const filterOptions = useMemo(() => {
-    const grades = new Set<string>();
+    const gradesInData = new Set<string>();
     const tags = new Set<string>();
     const instructors = new Set<string>();
     const venues = new Set<string>();
     for (const t of templates) {
-      (t.gradeGroups ?? []).forEach((g) => grades.add(g));
+      (t.gradeGroups ?? []).forEach((g) => gradesInData.add(g));
       (t.tags ?? []).forEach((tag) => tags.add(tag));
       if (t.instructor) instructors.add(t.instructor);
       if (t.venue) venues.add(t.venue);
     }
     return {
-      grades: Array.from(grades).sort(),
+      grades: GRADE_OPTIONS.filter((g) => gradesInData.has(g)),
       tags: Array.from(tags).sort(),
       instructors: Array.from(instructors).sort(),
       venues: Array.from(venues).sort(),
@@ -523,7 +534,7 @@ function TableView({
 
   const columns: { key: SortColumn; label: string }[] = [
     { key: 'name', label: 'Name' },
-    { key: 'subject', label: 'Subject' },
+    { key: 'subject', label: 'Event Type' },
     { key: 'day', label: 'Day' },
     { key: 'time', label: 'Time' },
     { key: 'instructor', label: 'Staff' },
@@ -606,7 +617,7 @@ function TableView({
               <td style={{ padding: '12px 16px', fontSize: 14, color: '#0F172A', fontWeight: 600 }}>
                 {t.name || '\u2014'}
               </td>
-              {/* Subject */}
+              {/* Event Type */}
               <td style={{ padding: '12px 16px', fontSize: 14, color: '#334155' }}>
                 {t.subject || '\u2014'}
               </td>

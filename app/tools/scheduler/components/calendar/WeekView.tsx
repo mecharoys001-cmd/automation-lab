@@ -59,7 +59,7 @@ export interface WeekViewProps {
   /** Called when an event is resized (bottom edge dragged) */
   onEventResize?: (eventId: string, newEndTime: string) => void;
   /** Called when an empty time slot is clicked (for creating one-off events) */
-  onEmptySlotClick?: (date: string, time: string) => void;
+  onEmptySlotClick?: (date: string, time: string, venueId?: string) => void;
   /** Called when a template is dropped or clicked on the calendar */
   onTemplateSelect?: (template: EventTemplate, date?: string, time?: string, venueId?: string) => void;
 }
@@ -466,6 +466,46 @@ export function WeekView({
   const draggingTemplateRef = useRef<EventTemplate | null>(null);
 
   // -------------------------------------------------------------------------
+  // Hover state for click-to-create: lane highlight + time tooltip
+  // -------------------------------------------------------------------------
+  const [hoverState, setHoverState] = useState<{
+    dayIdx: number;
+    venueId?: string;
+    time: string;       // display format e.g. "9:15 AM"
+    cursorY: number;    // px relative to day column
+  } | null>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleGridMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>, dayIdx: number) => {
+    if (!onEmptySlotClick) return;
+    // Don't show hover when over an event block
+    if ((e.target as HTMLElement).closest('[data-event-block]')) {
+      setHoverState(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cursorY = e.clientY - rect.top;
+    const rawHour = dayStartHour + cursorY / HOUR_HEIGHT;
+    const snapped = snapTo15Min(rawHour);
+    const time = formatDecimalToTime(snapped);
+
+    // Determine venue lane if multi-lane
+    let venueId: string | undefined;
+    if (multiLane && selectedVenues.length > 1) {
+      const mouseX = e.clientX - rect.left;
+      const laneWidth = rect.width / selectedVenues.length;
+      const laneIdx = Math.min(Math.floor(mouseX / laneWidth), selectedVenues.length - 1);
+      venueId = selectedVenues[laneIdx];
+    }
+
+    setHoverState({ dayIdx, venueId, time, cursorY });
+  }, [onEmptySlotClick, dayStartHour, multiLane, selectedVenues]);
+
+  const handleGridMouseLeave = useCallback(() => {
+    setHoverState(null);
+  }, []);
+
+  // -------------------------------------------------------------------------
   // Fetch additional event details (placeholder API)
   // -------------------------------------------------------------------------
   const fetchEventDetails = useCallback(async (eventId: string) => {
@@ -791,7 +831,7 @@ export function WeekView({
                 className={`relative box-border ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
                   isToday ? 'bg-blue-50/30' : ''
                 } ${isDragOver ? 'bg-blue-50/50' : ''}`}
-                style={{ gridRow: 2 }}
+                style={{ gridRow: 2, cursor: onEmptySlotClick ? 'crosshair' : undefined }}
                 onClick={
                   onEmptySlotClick
                     ? (e) => {
@@ -801,10 +841,20 @@ export function WeekView({
                         const clickY = e.clientY - rect.top;
                         const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
                         const snapped = snapTo15Min(rawHour);
-                        onEmptySlotClick(dateKey, formatDecimalTo24h(snapped));
+                        // Determine venue lane if multi-lane
+                        let clickedVenueId: string | undefined;
+                        if (multiLane && selectedVenues.length > 1) {
+                          const mouseX = e.clientX - rect.left;
+                          const laneWidth = rect.width / selectedVenues.length;
+                          const laneIdx = Math.min(Math.floor(mouseX / laneWidth), selectedVenues.length - 1);
+                          clickedVenueId = selectedVenues[laneIdx];
+                        }
+                        onEmptySlotClick(dateKey, formatDecimalTo24h(snapped), clickedVenueId);
                       }
                     : undefined
                 }
+                onMouseMove={(e) => handleGridMouseMove(e, dayIdx)}
+                onMouseLeave={handleGridMouseLeave}
                 onDragOver={
                   (onEventDrop || onTemplateSelect)
                     ? (e) => {
@@ -905,6 +955,61 @@ export function WeekView({
                     }}
                   />
                 ))}
+
+                {/* Hover lane highlight */}
+                {hoverState && hoverState.dayIdx === dayIdx && multiLane && hoverState.venueId && (() => {
+                  const laneIdx = selectedVenues.indexOf(hoverState.venueId!);
+                  const laneCount = selectedVenues.length;
+                  if (laneIdx < 0) return null;
+                  return (
+                    <div
+                      className="absolute top-0 bottom-0 pointer-events-none z-[1] transition-opacity duration-100"
+                      style={{
+                        left: `${(laneIdx / laneCount) * 100}%`,
+                        width: `${(1 / laneCount) * 100}%`,
+                        backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                      }}
+                    />
+                  );
+                })()}
+
+                {/* Full-column highlight for single-lane mode */}
+                {hoverState && hoverState.dayIdx === dayIdx && !multiLane && (
+                  <div
+                    className="absolute inset-0 pointer-events-none z-[1] transition-opacity duration-100"
+                    style={{ backgroundColor: 'rgba(59, 130, 246, 0.04)' }}
+                  />
+                )}
+
+                {/* Time tooltip at cursor */}
+                {hoverState && hoverState.dayIdx === dayIdx && (
+                  <div
+                    className="absolute pointer-events-none z-[20] flex items-center gap-1"
+                    style={{
+                      top: `${hoverState.cursorY}px`,
+                      left: '50%',
+                      transform: 'translate(-50%, -100%) translateY(-8px)',
+                    }}
+                  >
+                    <div className="px-2 py-1 rounded-md bg-slate-800 text-white text-[11px] font-medium shadow-lg whitespace-nowrap">
+                      {hoverState.time}
+                    </div>
+                  </div>
+                )}
+
+                {/* Snap-line indicator at hovered time */}
+                {hoverState && hoverState.dayIdx === dayIdx && (() => {
+                  const snappedHour = parseTimeToHour(hoverState.time);
+                  const lineY = (snappedHour - dayStartHour) * HOUR_HEIGHT;
+                  return (
+                    <div
+                      className="absolute left-0 right-0 pointer-events-none z-[2]"
+                      style={{ top: `${lineY}px` }}
+                    >
+                      <div className="w-full border-t-2 border-blue-400/40 border-dashed" />
+                    </div>
+                  );
+                })()}
 
                 {multiLane ? (
                   /* Multi-lane rendering: split day column into venue lanes */

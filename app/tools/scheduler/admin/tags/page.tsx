@@ -82,12 +82,12 @@ const TAG_CSV_COLUMNS: CsvColumnDef[] = [
 ];
 
 const TAG_CSV_EXAMPLE = `name,color,description,category,emoji
-Piano,#3B82F6,Piano lessons and keyboard practice,Subjects,🎹
-Strings,#10B981,Violin viola cello and bass,Subjects,🎻
+Piano,#3B82F6,Piano lessons and keyboard practice,Event Type,🎹
+Strings,#10B981,Violin viola cello and bass,Event Type,🎻
 Showcase,#F59E0B,Performance and recital events,Event Types,🌟
 Grade 3-5,#8B5CF6,Upper elementary students,Grade Levels,📚
 Field Trip,#EC4899,Off-site musical excursions,Event Types,🎭
-Percussion,#EF4444,Drum sets timpani and mallet percussion,Subjects,🥁`;
+Percussion,#EF4444,Drum sets timpani and mallet percussion,Event Type,🥁`;
 
 const isValidHexColor = (v: string): boolean => /^#[0-9A-Fa-f]{6}$/.test(v.trim());
 
@@ -229,7 +229,7 @@ export default function TagsPage() {
   // Normalize category names — consolidate singular/plural variants (e.g. "Subject"/"Subjects")
   const normalizeCategory = (cat: string): string => {
     const lower = cat.toLowerCase().trim();
-    if (lower === 'subject') return 'Subjects';
+    if (lower === 'subject' || lower === 'subjects') return 'Event Type';
     return cat;
   };
 

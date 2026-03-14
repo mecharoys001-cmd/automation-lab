@@ -191,9 +191,9 @@ export function InstructorDetailModal({
 
       <div className="h-px bg-slate-200" />
 
-      {/* ── Subjects ───────────────────────────────────────── */}
+      {/* ── Event Type ───────────────────────────────────────── */}
       <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Subjects</span>
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Event Type</span>
         {data.skills.length > 0 ? (
           data.skills.map((skill) => (
             <Pill
@@ -201,14 +201,14 @@ export function InstructorDetailModal({
               variant="skill"
               bgColor={skill.bgColor ?? 'bg-blue-100'}
               textColor={skill.textColor ?? 'text-blue-500'}
-              tooltip={onSubjectClick ? `Click to view calendar filtered by ${skill.name}` : `Subject: ${skill.name}`}
+              tooltip={onSubjectClick ? `Click to view calendar filtered by ${skill.name}` : `Event Type: ${skill.name}`}
               onClick={onSubjectClick ? () => onSubjectClick(skill.name) : undefined}
             >
               {skill.emoji ? `${skill.emoji} ` : ''}{skill.name}
             </Pill>
           ))
         ) : (
-          <span className="text-sm text-slate-400">No subjects listed</span>
+          <span className="text-sm text-slate-400">No event types listed</span>
         )}
       </div>
 

@@ -246,7 +246,7 @@ export function OneOffEventModal({
       }
       if (tagRes.ok) {
         const body = await tagRes.json();
-        // Filter to subject tags only (category = 'Subjects' or no category)
+        // Filter to event type tags only (category = 'Event Type' or legacy 'Subjects')
         const allTags: Tag[] = body.tags ?? [];
         setTags(allTags);
       }
@@ -297,11 +297,11 @@ export function OneOffEventModal({
 
   if (!open) return null;
 
-  // Filter subject tags (category = 'Subjects')
+  // Filter event type tags (category = 'Event Type' or legacy 'Subjects')
   const subjectTags = tags.filter(
-    (t) => t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject',
+    (t) => t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject',
   );
-  // If no subject-category tags exist, show all tags as fallback
+  // If no event type tags exist, show all tags as fallback
   const displayTags = subjectTags.length > 0 ? subjectTags : tags;
 
   const modalTitle = editEvent ? 'Edit Event' : initialTemplate ? 'Schedule Event' : 'Create One-Off Event';
@@ -385,10 +385,10 @@ export function OneOffEventModal({
           />
         </div>
 
-        {/* Subject Tag + Instructor row */}
+        {/* Event Type Tag + Instructor row */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject Tag</label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Event Type</label>
             <select
               value={subjectTagId}
               onChange={(e) => setSubjectTagId(e.target.value)}

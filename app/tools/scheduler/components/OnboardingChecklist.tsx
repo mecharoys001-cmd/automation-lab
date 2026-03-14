@@ -50,7 +50,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       // Check if this program has sessions with assigned venues
       const hasVenues = sessions.some((s: { venue_id?: string | null }) => s.venue_id != null);
 
-      // Check if this program has sessions using subject tags
+      // Check if this program has sessions using event type tags
       const hasSubjects = sessions.some((s: { tags?: string[] | null }) => (s.tags ?? []).length > 0);
 
       // Check templates for THIS program
@@ -68,9 +68,9 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           completed: hasPrograms,
         },
         {
-          id: 'subjects',
-          title: 'Set up subjects',
-          description: 'Create subject tags (e.g. Piano, Dance) for the intake form',
+          id: 'event_types',
+          title: 'Set up event types',
+          description: 'Create event type tags (e.g. Piano, Dance) for the intake form',
           icon: Tags,
           link: '/tools/scheduler/admin/tags',
           completed: hasSubjects,

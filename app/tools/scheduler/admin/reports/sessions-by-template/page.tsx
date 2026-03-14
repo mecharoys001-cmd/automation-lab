@@ -169,7 +169,7 @@ export default function SessionsByTemplatePage() {
     gradeFilter.length + subjectFilter.length + dayFilter.length + (statusFilter !== 'all' ? 1 : 0);
 
   function exportCSV() {
-    const headers = ['Template', 'Grade', 'Subject', 'Day', 'Total Sessions', 'Published', 'Draft', 'Completed', 'Canceled'];
+    const headers = ['Template', 'Grade', 'Event Type', 'Day', 'Total Sessions', 'Published', 'Draft', 'Completed', 'Canceled'];
     const rows = sortedData.map((row) => [
       row.template_name,
       row.grade_groups.join(', '),
@@ -239,7 +239,7 @@ export default function SessionsByTemplatePage() {
 
           {/* Subject Filter */}
           <div className="relative">
-            <Tooltip text="Filter by subject/skill">
+            <Tooltip text="Filter by event type">
               <select
                 multiple
                 value={subjectFilter}
@@ -247,7 +247,7 @@ export default function SessionsByTemplatePage() {
                 className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 size={1}
               >
-                <option value="" disabled>Subject</option>
+                <option value="" disabled>Event Type</option>
                 {allSubjects.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -341,7 +341,7 @@ export default function SessionsByTemplatePage() {
                       onClick={() => handleSort('subject')}
                       className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900"
                     >
-                      Subject {getSortIcon('subject')}
+                      Event Type {getSortIcon('subject')}
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-700">Day</th>

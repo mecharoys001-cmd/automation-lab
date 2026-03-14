@@ -901,7 +901,7 @@ export default function SettingsPage() {
             </button>
           </Tooltip>
 
-          <Tooltip text="Load MASSIVE dataset (50 staff, 16 venues, 200+ templates, 30+ subjects) for stress/load testing">
+          <Tooltip text="Load MASSIVE dataset (50 staff, 16 venues, 200+ templates, 30+ event types) for stress/load testing">
             <button
               onClick={() => handleSeed('full')}
               disabled={seeding}

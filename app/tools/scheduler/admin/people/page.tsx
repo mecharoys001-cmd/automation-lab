@@ -72,7 +72,7 @@ const VENUE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'max_concurrent_bookings', label: 'Max Concurrent' },
   { csvHeader: 'blackout_dates', label: 'Blackout Dates' },
   { csvHeader: 'is_wheelchair_accessible', label: 'Wheelchair Accessible' },
-  { csvHeader: 'subjects', label: 'Subjects' },
+  { csvHeader: 'subjects', label: 'Event Type' },
 ];
 
 const VENUE_CSV_EXAMPLE = `name,space_type,max_capacity,address,is_virtual,amenities,description,availability_json,notes,min_booking_duration_minutes,max_booking_duration_minutes,buffer_minutes,advance_booking_days,cancellation_window_hours,cost_per_hour,max_concurrent_bookings,blackout_dates,is_wheelchair_accessible,subjects
@@ -486,7 +486,7 @@ function VenueDetailModal({
           {/* Subjects */}
           {venue.subjects && venue.subjects.length > 0 && (
             <div className="flex items-center flex-wrap px-6 py-3 gap-1.5">
-              <span className="text-[13px] text-slate-500 mr-1">Subjects:</span>
+              <span className="text-[13px] text-slate-500 mr-1">Event Type:</span>
               {venue.subjects.map((s) => (
                 <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
                   {s}
@@ -592,16 +592,16 @@ function VenueDetailModal({
           {/* Subjects (Optional) */}
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
-              <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
+              <label className="text-xs font-semibold text-slate-500">Event Type (Optional)</label>
+              <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
                 <AlertTriangle className="w-3 h-3 text-slate-400" />
               </Tooltip>
             </div>
             <TagSelector
-              category="Subjects"
+              category="Event Type"
               value={venueSubjects}
               onChange={setVenueSubjects}
-              placeholder="All subjects (no restriction)"
+              placeholder="All event types (no restriction)"
             />
           </div>
 
@@ -775,7 +775,7 @@ function InstructorDetailModal({
 
       {/* Subjects (clickable → calendar filter) */}
       <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Subjects</span>
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Event Type</span>
         {(instructor.skills ?? []).map((skill) => {
           const s = SKILL_STYLES[skill];
           return (
@@ -791,7 +791,7 @@ function InstructorDetailModal({
           );
         })}
         {(!instructor.skills || instructor.skills.length === 0) && (
-          <span className="text-sm text-slate-400">No subjects listed</span>
+          <span className="text-sm text-slate-400">No event types listed</span>
         )}
       </div>
 
@@ -1031,16 +1031,16 @@ function VenueCreateModal({
         {/* Subjects (Optional) */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="text-xs font-semibold text-slate-500">Subjects (Optional)</label>
-            <Tooltip text="Restrict this venue to specific subjects. Leave empty for all subjects.">
+            <label className="text-xs font-semibold text-slate-500">Event Type (Optional)</label>
+            <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
               <AlertTriangle className="w-3 h-3 text-slate-400" />
             </Tooltip>
           </div>
           <TagSelector
-            category="Subjects"
+            category="Event Type"
             value={form.subjects}
             onChange={(val) => setField('subjects', val as unknown as VenueFormData['subjects'])}
-            placeholder="All subjects (no restriction)"
+            placeholder="All event types (no restriction)"
           />
         </div>
 
@@ -1470,7 +1470,7 @@ export default function PeoplePage() {
             <div className="flex-1" />
 
             {/* Search Bar */}
-            <Tooltip text="Search by name, email, or subject">
+            <Tooltip text="Search by name, email, or event type">
               <div className="flex items-center w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
                 <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
@@ -1625,7 +1625,7 @@ export default function PeoplePage() {
                         );
                       })}
                       {(!inst.skills || inst.skills.length === 0) && (
-                        <span className="text-[11px] text-slate-400">No subjects listed</span>
+                        <span className="text-[11px] text-slate-400">No event types listed</span>
                       )}
                     </div>
 

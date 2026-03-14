@@ -143,11 +143,11 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     ? session.tags.map((t: { name?: string }) => t.name).filter(Boolean)
     : [];
 
-  // Populate subjects from template skills OR subject-category tags
+  // Populate event types from template skills OR event type category tags
   const templateSubjects = Array.isArray(session.template?.required_skills) ? session.template.required_skills : [];
   const tagSubjects = Array.isArray(session.tags)
     ? session.tags
-        .filter((t: { category?: string }) => t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject')
+        .filter((t: { category?: string }) => t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject')
         .map((t: { name?: string }) => t.name)
         .filter(Boolean)
     : [];
@@ -157,10 +157,10 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     ? session.grade_groups.map(formatGradeDisplay).join(', ')
     : '';
 
-  // Find the subject tag ID from subject-category tags
+  // Find the event type tag ID from event type category tags
   const subjectTag = Array.isArray(session.tags)
     ? session.tags.find((t: { category?: string }) =>
-        t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject'
+        t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject'
       )
     : undefined;
 
@@ -422,7 +422,7 @@ function CalendarDashboard() {
   const [isConfirmingGenerate, setIsConfirmingGenerate] = useState(false);
   // One-off event creation modal
   const [showOneOffModal, setShowOneOffModal] = useState(false);
-  const [oneOffSlot, setOneOffSlot] = useState<{ date: string; time: string } | null>(null);
+  const [oneOffSlot, setOneOffSlot] = useState<{ date: string; time: string; venueId?: string } | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
   // Portal container for Month/Year views (escapes flex hierarchy)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
@@ -1163,8 +1163,8 @@ function CalendarDashboard() {
   }, [events]);
 
   // One-off event: open modal when an empty time slot is clicked
-  const handleEmptySlotClick = useCallback((date: string, time: string) => {
-    setOneOffSlot({ date, time });
+  const handleEmptySlotClick = useCallback((date: string, time: string, venueId?: string) => {
+    setOneOffSlot({ date, time, venueId });
     setShowOneOffModal(true);
   }, []);
 
@@ -1623,6 +1623,7 @@ function CalendarDashboard() {
         }}
         initialDate={oneOffSlot?.date}
         initialTime={oneOffSlot?.time}
+        initialVenueId={oneOffSlot?.venueId ? dbVenues.find(v => v.name === oneOffSlot.venueId)?.id : undefined}
         programId={selectedProgramId}
         showSessionFields
         title="Create Event Template"

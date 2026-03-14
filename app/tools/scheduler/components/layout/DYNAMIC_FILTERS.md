@@ -26,14 +26,14 @@ function MyCalendarPage() {
   // Apply filters to your data
   const filteredSessions = applyFilters(sessions, {
     status: (session, values) => values.includes(session.status),
-    tag_subjects: (session, values) =>
+    tag_event_type: (session, values) =>
       session.tags?.some(tag => values.includes(tag)),
   });
 
   return (
     <div>
       <DynamicFilterBar
-        tagCategories={['Subjects', 'Subject', 'Event Type']}
+        tagCategories={['Event Type']}
         activeFilters={activeFilters}
         onFiltersChange={setActiveFilters}
       />
@@ -91,7 +91,7 @@ const staticFilters = [
 
 <DynamicFilterBar
   staticFilters={staticFilters}
-  tagCategories={['Subjects', 'Event Type']}
+  tagCategories={['Event Type']}
   activeFilters={activeFilters}
   onFiltersChange={setActiveFilters}
 />
@@ -106,23 +106,19 @@ const staticFilters = [
 ```tsx
 const filteredSessions = applyFilters(sessions, {
   // Match by instructor ID
-  instructor: (session, values) => 
+  instructor: (session, values) =>
     session.instructor_id ? values.includes(session.instructor_id) : false,
-  
+
   // Match by venue ID
-  venue: (session, values) => 
+  venue: (session, values) =>
     session.venue_id ? values.includes(session.venue_id) : false,
-  
+
   // Match by status
-  status: (session, values) => 
+  status: (session, values) =>
     values.includes(session.status),
-  
-  // Match tags (Subjects category)
-  tag_subjects: (session, values) =>
-    session.tags?.some(tag => values.includes(tag)) ?? false,
-  
+
   // Match tags (Event Type category)
-  tag_event_type: (session, values) => 
+  tag_event_type: (session, values) =>
     session.tags?.some(tag => values.includes(tag)) ?? false,
 });
 ```
@@ -131,8 +127,8 @@ const filteredSessions = applyFilters(sessions, {
 
 ```tsx
 const filteredInstructors = applyFilters(instructors, {
-  // Match by subjects
-  tag_subjects: (instructor, values) =>
+  // Match by event type
+  tag_event_type: (instructor, values) =>
     instructor.skills?.some(skill => values.includes(skill)) ?? false,
   
   // Match by status
@@ -145,12 +141,10 @@ const filteredInstructors = applyFilters(instructors, {
 
 ## Tag Category Filter Keys
 
-When you specify `tagCategories={['Subjects', 'Subject']}`, the filter bar creates these keys:
+When you specify `tagCategories={['Event Type']}`, the filter bar creates these keys:
 
 | Category | Filter Key | Example Value |
 |----------|-----------|---------------|
-| Subjects | `tag_subjects` | "Percussion" |
-| Subject | `tag_subject` | "Theory" |
 | Event Type | `tag_event_type` | "Workshop" |
 | Administrative | `tag_administrative` | "TA Check-In" |
 
@@ -162,9 +156,7 @@ When you specify `tagCategories={['Subjects', 'Subject']}`, the filter bar creat
 
 Default categories (can be created in Tags page):
 
-- **Subjects** — Instructor competencies (Percussion, Strings, Brass, etc.)
-- **Subject** — Class types (Instrumental, Vocal, Theory, etc.)
-- **Event Type** — Special events (Field Trip, Showcase, Workshop, etc.)
+- **Event Type** — Event categories (Percussion, Strings, Workshop, Field Trip, Showcase, etc.)
 - **Administrative** — Internal tags (TA Check-In, Setup, etc.)
 - **General** — Catch-all category
 
@@ -189,8 +181,6 @@ Edit `CATEGORY_ICONS` in `DynamicFilterBar.tsx`:
 import { Music, Book, Calendar, Settings } from 'lucide-react';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  Subjects: Music,
-  Subject: Book,
   'Event Type': Calendar,
   Administrative: Settings,
 };
@@ -256,7 +246,6 @@ export default function CalendarPage() {
     instructor: (s, vals) => s.instructor_id && vals.includes(s.instructor_id),
     venue: (s, vals) => s.venue_id && vals.includes(s.venue_id),
     status: (s, vals) => vals.includes(s.status),
-    tag_subjects: (s, vals) => s.tags?.some(t => vals.includes(t)),
     tag_event_type: (s, vals) => s.tags?.some(t => vals.includes(t)),
   });
 
@@ -264,7 +253,7 @@ export default function CalendarPage() {
     <div>
       <DynamicFilterBar
         staticFilters={staticFilters}
-        tagCategories={['Subjects', 'Event Type']}
+        tagCategories={['Event Type']}
         activeFilters={activeFilters}
         onFiltersChange={setActiveFilters}
       />
@@ -295,7 +284,7 @@ import { DynamicFilterBar } from '../components/layout/DynamicFilterBar';
 // Options auto-populate from tags!
 
 <DynamicFilterBar
-  tagCategories={['Subjects', 'Subject']}
+  tagCategories={['Event Type']}
   activeFilters={activeFilters}
   onFiltersChange={setActiveFilters}
 />
@@ -316,6 +305,6 @@ import { DynamicFilterBar } from '../components/layout/DynamicFilterBar';
 ## Next Steps
 
 1. **Run tag migrations** (see `/database/migrations/README.md`)
-2. **Seed default tags** (Subjects, Subject, Event Type categories)
+2. **Seed default tags** (Event Type categories)
 3. **Replace `FilterBar` with `DynamicFilterBar` in your pages**
 4. **Enjoy auto-populating filters!** 🎉

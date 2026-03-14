@@ -200,15 +200,15 @@ export function InstructorEditModal({
           </Tooltip>
         </div>
 
-        {/* Subjects */}
+        {/* Event Type */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-2">Subjects</label>
-          <Tooltip text="Select the subjects this staff member teaches">
+          <label className="block text-xs font-semibold text-slate-500 mb-2">Event Type</label>
+          <Tooltip text="Select the event types this staff member teaches">
             <TagSelector
               value={form.skills}
               onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
-              category="Subjects"
-              placeholder="Select staff subjects..."
+              category="Event Type"
+              placeholder="Select staff event types..."
             />
           </Tooltip>
         </div>

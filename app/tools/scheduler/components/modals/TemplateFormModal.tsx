@@ -290,13 +290,13 @@ export function TemplateFormModal({
           />
         </FormField>
 
-        {/* 2. Subject */}
-        <FormField label="Subject">
+        {/* 2. Event Type */}
+        <FormField label="Event Type">
           <TagSelector
             value={form.required_skills}
             onChange={(skills) => {
               updateForm({ required_skills: skills });
-              // Clear instructor if they don't match the new subject
+              // Clear instructor if they don't match the new event type
               if (form.instructor_id && skills.length > 0) {
                 const inst = instructors.find((i) => i.id === form.instructor_id);
                 if (inst && !skillsMatch(inst.skills, skills)) {
@@ -305,8 +305,8 @@ export function TemplateFormModal({
                 }
               }
             }}
-            category="Subjects"
-            placeholder="Select subject..."
+            category="Event Type"
+            placeholder="Select event type..."
           />
         </FormField>
 
@@ -336,7 +336,7 @@ export function TemplateFormModal({
           {form.required_skills.length > 0 && filteredInstructors.length > 0 && (
             <span className="text-[11px] text-slate-500 mt-0.5 inline-flex items-center gap-0.5">
               <Filter className="w-3 h-3 inline align-middle" />
-              Filtered by subject: {form.required_skills.join(', ')}
+              Filtered by event type: {form.required_skills.join(', ')}
             </span>
           )}
         </FormField>

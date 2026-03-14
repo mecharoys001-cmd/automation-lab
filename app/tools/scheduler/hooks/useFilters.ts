@@ -10,7 +10,7 @@ import type { ActiveFilters } from '../components/layout/DynamicFilterBar';
  * const filteredSessions = applyFilters(sessions, {
  *   instructor: (session, values) => values.includes(session.instructor?.name),
  *   status: (session, values) => values.includes(session.status),
- *   tag_subjects: (session, values) => session.tags?.some(tag => values.includes(tag)),
+ *   tag_event_type: (session, values) => session.tags?.some(tag => values.includes(tag)),
  * });
  */
 

@@ -34,7 +34,7 @@ const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'end_time', label: 'End Time', required: true },
   { csvHeader: 'venue', label: 'Venue' },
   { csvHeader: 'instructor', label: 'Staff' },
-  { csvHeader: 'subjects', label: 'Subjects' },
+  { csvHeader: 'subjects', label: 'Event Type' },
   { csvHeader: 'grades', label: 'Grades' },
   { csvHeader: 'scheduling_mode', label: 'Scheduling Mode' },
   { csvHeader: 'starts_on', label: 'Starts On' },

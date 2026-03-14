@@ -121,12 +121,12 @@ export default function IntakePage() {
   const [programLoading, setProgramLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch subjects (tags with category "Subjects", fallback to "Skills" for legacy data)
+    // Fetch event types (tags with category "Event Type", fallback to "Subjects"/"Skills" for legacy data)
     fetch('/api/tags')
       .then((res) => res.json())
       .then((data) => {
         const tags: SubjectTag[] = (data.tags ?? []).filter(
-          (t: SubjectTag) => ['Skills', 'Subjects'].includes(t.category)
+          (t: SubjectTag) => ['Skills', 'Subjects', 'Event Type'].includes(t.category)
         );
         setAvailableSubjects(tags);
       })
@@ -258,7 +258,7 @@ export default function IntakePage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
-    if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one subject';
+    if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one event type';
     if (selectedSlots.size === 0) newErrors.availability = 'Please select your availability';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -357,7 +357,7 @@ export default function IntakePage() {
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold sm:text-3xl">Staff Intake Form</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Please provide your contact information, subjects, and weekly availability.
+            Please provide your contact information, event types, and weekly availability.
           </p>
         </div>
 
@@ -458,9 +458,9 @@ export default function IntakePage() {
             </div>
           </div>
 
-          {/* ── Subjects ──────────────────────────────────── */}
+          {/* ── Event Types ──────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
-            <h2 className="text-lg font-semibold mb-1">Subjects</h2>
+            <h2 className="text-lg font-semibold mb-1">Event Types</h2>
             <p className="text-xs text-muted-foreground mb-4">
               Select all areas you are qualified to teach. <span className="text-red-400">*</span>
             </p>
@@ -471,18 +471,18 @@ export default function IntakePage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Loading subjects...
+                Loading event types...
               </div>
             ) : availableSubjects.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No subjects have been created yet. An administrator needs to add subject tags first.
+                No event types have been created yet. An administrator needs to add event type tags first.
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {availableSubjects.map((subject) => {
                   const checked = selectedSkills.has(subject.name);
                   return (
-                    <Tooltip key={subject.id} text={`Toggle ${subject.name} teaching subject`}>
+                    <Tooltip key={subject.id} text={`Toggle ${subject.name} event type`}>
                       <label
                         className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
                           checked

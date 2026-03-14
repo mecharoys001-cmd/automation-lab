@@ -17,7 +17,7 @@ interface TagSelectorProps {
   value: string[];
   /** Callback when selection changes */
   onChange: (tags: string[]) => void;
-  /** Filter tags by category (e.g., "Subjects", "Space Types") */
+  /** Filter tags by category (e.g., "Event Type", "Space Types") */
   category?: string;
   /** Placeholder text */
   placeholder?: string;
