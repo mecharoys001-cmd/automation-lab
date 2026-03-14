@@ -42,7 +42,7 @@ function ReadinessIcon({ check }: { check: ValidationCheck }) {
   const Icon = StatusIcon[check.status];
   const tooltipLines = [check.label + ': ' + (check.summary || `${check.count}/${check.total}`)];
   if (check.details.length > 0) {
-    tooltipLines.push(...check.details);
+    tooltipLines.push(...check.details.map(d => `• ${d}`));
   }
 
   return (

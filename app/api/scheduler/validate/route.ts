@@ -91,8 +91,12 @@ export async function GET(request: NextRequest) {
         templateDetails.push('All templates fully configured');
         templateSummary = `${templates.length} active, all configured`;
       } else {
-        const issues = missingTime.length + missingGrades.length;
-        templateSummary = `${issues} of ${templates.length} need attention`;
+        // Count unique templates that have at least one issue
+        const problemTemplateIds = new Set([
+          ...missingTime.map((t: any) => t.id),
+          ...missingGrades.map((t: any) => t.id),
+        ]);
+        templateSummary = `${problemTemplateIds.size} of ${templates.length} need attention`;
       }
     }
 
@@ -138,7 +142,8 @@ export async function GET(request: NextRequest) {
 
       if (missingSkills > 0 || missingAvail > 0) {
         if (instructorStatus === 'ready') instructorStatus = 'warning';
-        instructorSummary = `${missingSkills + missingAvail} issue(s) across ${instructors.length}`;
+        const problemCount = Math.max(missingSkills, missingAvail);
+        instructorSummary = `${problemCount} of ${instructors.length} need attention`;
       } else {
         instructorSummary = `${instructors.length} active, fully configured`;
       }
@@ -178,7 +183,18 @@ export async function GET(request: NextRequest) {
         venueDetails.push('All venues fully configured');
         venueSummary = `${venues.length} configured`;
       } else {
-        venueSummary = `${missingCap + missingAvail} issue(s) across ${venues.length}`;
+        // Count unique venues that have at least one issue
+        const missingCapVenues = venues.filter(
+          (v: any) => !v.max_capacity || v.max_capacity <= 0
+        );
+        const missingAvailVenues = venues.filter(
+          (v: any) => !v.availability_json || Object.keys(v.availability_json).length === 0
+        );
+        const problemVenueIds = new Set([
+          ...missingCapVenues.map((v: any) => v.id),
+          ...missingAvailVenues.map((v: any) => v.id),
+        ]);
+        venueSummary = `${problemVenueIds.size} of ${venues.length} need attention`;
       }
     }
 

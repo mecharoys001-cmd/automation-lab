@@ -26,6 +26,67 @@ export async function PATCH(
       );
     }
 
+    // Validate venue conflict (double-booking prevention)
+    {
+      // Determine the effective venue/date/time for this update
+      const venueId = body.venue_id;
+      const hasTimeChange = body.date || body.start_time || body.end_time || body.venue_id;
+
+      if (hasTimeChange) {
+        // Fetch current session to merge with updates
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: currentSession } = await (supabase.from('sessions') as any)
+          .select('venue_id, date, start_time, end_time, status')
+          .eq('id', id)
+          .single();
+
+        if (currentSession) {
+          const effectiveVenueId = venueId ?? currentSession.venue_id;
+          const effectiveDate = body.date ?? currentSession.date;
+          const effectiveStartTime = body.start_time ?? currentSession.start_time;
+          const effectiveEndTime = body.end_time ?? currentSession.end_time;
+          const effectiveStatus = body.status ?? currentSession.status;
+
+          if (effectiveVenueId && effectiveDate && effectiveStartTime && effectiveEndTime && effectiveStatus !== 'canceled') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: venue } = await (supabase.from('venues') as any)
+              .select('name, max_concurrent_bookings')
+              .eq('id', effectiveVenueId)
+              .single();
+
+            if (venue) {
+              const maxConcurrent = venue.max_concurrent_bookings ?? 1;
+
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: conflicts, error: conflictError } = await (supabase.from('sessions') as any)
+                .select('id, name, start_time, end_time')
+                .eq('venue_id', effectiveVenueId)
+                .eq('date', effectiveDate)
+                .neq('status', 'canceled')
+                .neq('id', id) // exclude the session being updated
+                .lt('start_time', effectiveEndTime)
+                .gt('end_time', effectiveStartTime);
+
+              if (conflictError) {
+                return NextResponse.json(
+                  { error: `Failed to check venue conflicts: ${conflictError.message}` },
+                  { status: 500 }
+                );
+              }
+
+              if ((conflicts?.length ?? 0) >= maxConcurrent) {
+                const conflict = conflicts[0];
+                return NextResponse.json(
+                  { error: `Venue conflict: ${venue.name} is already booked from ${conflict.start_time} to ${conflict.end_time} (${conflict.name})` },
+                  { status: 409 }
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Validate instructor has required skills and availability for this session
     if (body.instructor_id) {
       // Fetch session details (date, times, template_id)

@@ -58,6 +58,8 @@ export interface ModalProps {
   disableBackdropClose?: boolean;
   /** Custom class for modal container */
   className?: string;
+  /** Ref to the scrollable body container (for IntersectionObserver, sticky warnings, etc.) */
+  bodyRef?: React.Ref<HTMLDivElement>;
 }
 
 export function Modal({
@@ -70,6 +72,7 @@ export function Modal({
   subtitle,
   disableBackdropClose = false,
   className = '',
+  bodyRef,
 }: ModalProps) {
   if (!open) return null;
 
@@ -113,7 +116,7 @@ export function Modal({
         </div>
 
         {/* ── Body (scrollable) ────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={bodyRef} className="flex-1 overflow-y-auto">
           {children}
         </div>
 

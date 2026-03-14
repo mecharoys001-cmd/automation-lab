@@ -5,6 +5,7 @@ import { useProgram } from '../ProgramContext';
 import type { SchoolCalendar, CalendarStatusType, Instructor } from '@/types/database';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
+import { Modal, ModalButton } from '../../components/ui/Modal';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
 import {
@@ -26,6 +27,11 @@ import {
   Loader2,
   Check,
   AlertTriangle,
+  Ban,
+  Clock,
+  UserX,
+  Eraser,
+  XCircle,
 } from 'lucide-react';
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -224,11 +230,15 @@ function MonthGrid({
   month,
   calendarMap,
   today,
+  selectedDates,
+  onDayClick,
 }: {
   year: number;
   month: number;
   calendarMap: Map<string, CalendarMapEntry[]>;
   today: Date;
+  selectedDates: Set<string>;
+  onDayClick: (dateStr: string, e: React.MouseEvent) => void;
 }) {
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);
@@ -314,6 +324,8 @@ function MonthGrid({
               ?? dayEntries[0]?.status_type
               ?? null;
 
+            const isSelected = selectedDates.has(dateStr);
+
             let cellBg = isWeekend ? 'bg-slate-50/50' : 'bg-white';
             if (primaryStatus) {
               cellBg = STATUS_COLORS[primaryStatus].cell;
@@ -322,8 +334,11 @@ function MonthGrid({
             return (
               <Tooltip key={day} text={tooltipText}>
                 <div
-                  className={`min-h-[52px] border-b border-r border-slate-100 px-1 py-0.5 transition-colors cursor-default ${cellBg} ${
-                    !primaryStatus ? 'hover:bg-slate-50' : ''
+                  onClick={(e) => onDayClick(dateStr, e)}
+                  className={`min-h-[52px] border-b border-r border-slate-100 px-1 py-0.5 transition-colors cursor-pointer select-none ${cellBg} ${
+                    isSelected
+                      ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/80'
+                      : !primaryStatus ? 'hover:bg-slate-50' : ''
                   }`}
                 >
                   {/* Day number */}
@@ -445,6 +460,21 @@ export default function CalendarPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  // ── Batch selection state ────────────────────────────────────
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  const lastClickedDateRef = useRef<string | null>(null);
+
+  // Batch action confirmation modal
+  const [batchModal, setBatchModal] = useState<{
+    action: CalendarStatusType | 'clear';
+    dates: string[];
+  } | null>(null);
+  const [batchTime, setBatchTime] = useState('13:00');
+  const [batchInstructorId, setBatchInstructorId] = useState('');
+  const [batchInstructors, setBatchInstructors] = useState<Instructor[]>([]);
+  const [batchApplying, setBatchApplying] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
 
   // Infinite scroll calendar
   const today = new Date();
@@ -833,6 +863,219 @@ export default function CalendarPage() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // ── Day selection handlers ──────────────────────────────────
+
+  /** Get all dates between two date strings inclusive, sorted ascending */
+  const getDateRange = useCallback((a: string, b: string): string[] => {
+    const start = new Date(a + 'T00:00:00');
+    const end = new Date(b + 'T00:00:00');
+    const [from, to] = start <= end ? [start, end] : [end, start];
+    const dates: string[] = [];
+    const cursor = new Date(from);
+    while (cursor <= to) {
+      const y = cursor.getFullYear();
+      const m = String(cursor.getMonth() + 1).padStart(2, '0');
+      const d = String(cursor.getDate()).padStart(2, '0');
+      dates.push(`${y}-${m}-${d}`);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
+  }, []);
+
+  const handleDayClick = useCallback((dateStr: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (e.shiftKey && lastClickedDateRef.current) {
+      // Shift+click: select range
+      const range = getDateRange(lastClickedDateRef.current, dateStr);
+      setSelectedDates((prev) => {
+        const next = new Set(prev);
+        for (const d of range) next.add(d);
+        return next;
+      });
+    } else if (e.metaKey || e.ctrlKey) {
+      // Cmd/Ctrl+click: toggle individual
+      setSelectedDates((prev) => {
+        const next = new Set(prev);
+        if (next.has(dateStr)) {
+          next.delete(dateStr);
+        } else {
+          next.add(dateStr);
+        }
+        return next;
+      });
+    } else {
+      // Plain click: toggle single (clear others)
+      setSelectedDates((prev) => {
+        if (prev.size === 1 && prev.has(dateStr)) {
+          return new Set();
+        }
+        return new Set([dateStr]);
+      });
+    }
+    lastClickedDateRef.current = dateStr;
+  }, [getDateRange]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedDates(new Set());
+    lastClickedDateRef.current = null;
+  }, []);
+
+  /** Select all visible days across all rendered months */
+  const selectAllVisible = useCallback(() => {
+    const allDates = new Set<string>();
+    for (const { year, month } of months) {
+      const days = getDaysInMonth(year, month);
+      for (let d = 1; d <= days; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        allDates.add(dateStr);
+      }
+    }
+    setSelectedDates(allDates);
+  }, [months]);
+
+  // ── Batch action handlers ──────────────────────────────────
+
+  const openBatchModal = useCallback(async (action: CalendarStatusType | 'clear') => {
+    const dates = Array.from(selectedDates).sort();
+    setBatchModal({ action, dates });
+    setBatchTime('13:00');
+    setBatchInstructorId('');
+    setBatchProgress(null);
+
+    // Fetch instructors if needed for staff exception
+    if (action === 'instructor_exception' && batchInstructors.length === 0) {
+      try {
+        const res = await fetch('/api/instructors?is_active=true');
+        if (res.ok) {
+          const data = await res.json();
+          setBatchInstructors(data.instructors ?? []);
+        }
+      } catch {
+        // Non-critical — user can still type an ID
+      }
+    }
+  }, [selectedDates, batchInstructors.length]);
+
+  const closeBatchModal = useCallback(() => {
+    setBatchModal(null);
+    setBatchApplying(false);
+    setBatchProgress(null);
+  }, []);
+
+  const applyBatchAction = useCallback(async () => {
+    if (!batchModal || !selectedProgramId) return;
+    const { action, dates } = batchModal;
+    setBatchApplying(true);
+
+    try {
+      if (action === 'clear') {
+        // Delete existing entries for selected dates
+        const entriesToDelete = entries.filter((e) => dates.includes(e.date));
+        const total = entriesToDelete.length;
+        if (total === 0) {
+          setToast({ message: 'No entries to clear on selected dates', type: 'error', id: Date.now() });
+          closeBatchModal();
+          return;
+        }
+        setBatchProgress({ done: 0, total });
+        let done = 0;
+        for (const entry of entriesToDelete) {
+          const res = await fetch(`/api/calendar/${entry.id}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error(`Failed to delete entry for ${entry.date}`);
+          done++;
+          if (total > 10) setBatchProgress({ done, total });
+        }
+        await fetchEntries();
+        setIsDirty(true);
+        setToast({ message: `${done} calendar entr${done !== 1 ? 'ies' : 'y'} cleared`, type: 'success', id: Date.now() });
+      } else {
+        // Create/update entries for selected dates
+        const total = dates.length;
+        setBatchProgress({ done: 0, total });
+        let done = 0;
+
+        for (const date of dates) {
+          // Check if entry already exists for this date with same status
+          const existing = entries.find((e) => e.date === date && e.status_type === action);
+          const body: Record<string, unknown> = {
+            program_id: selectedProgramId,
+            date,
+            description: null,
+            status_type: action,
+            early_dismissal_time: action === 'early_dismissal' ? batchTime || null : null,
+            target_instructor_id: action === 'instructor_exception' ? batchInstructorId || null : null,
+          };
+
+          if (existing) {
+            // Update existing
+            const res = await fetch(`/api/calendar/${existing.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error(`Failed to update entry for ${date}`);
+          } else {
+            // Create new
+            const res = await fetch('/api/calendar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error(`Failed to create entry for ${date}`);
+          }
+          done++;
+          if (total > 10) setBatchProgress({ done, total });
+        }
+        await fetchEntries();
+        setIsDirty(true);
+        setToast({ message: `${done} calendar entr${done !== 1 ? 'ies' : 'y'} updated`, type: 'success', id: Date.now() });
+      }
+
+      clearSelection();
+      closeBatchModal();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Batch operation failed';
+      setToast({ message: msg, type: 'error', id: Date.now() });
+      setBatchApplying(false);
+      setBatchProgress(null);
+    }
+  }, [batchModal, selectedProgramId, entries, batchTime, batchInstructorId, fetchEntries, clearSelection, closeBatchModal]);
+
+  // ── Keyboard shortcuts ─────────────────────────────────────
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Escape: clear selection
+      if (e.key === 'Escape' && selectedDates.size > 0) {
+        e.preventDefault();
+        clearSelection();
+      }
+      // Cmd/Ctrl+A: select all visible days (only when not in an input)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        selectAllVisible();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedDates.size, clearSelection, selectAllVisible]);
+
+  // ── Batch modal computed values ────────────────────────────
+
+  const batchExistingCount = useMemo(() => {
+    if (!batchModal) return 0;
+    return batchModal.dates.filter((d) => entries.some((e) => e.date === d)).length;
+  }, [batchModal, entries]);
+
+  const BATCH_ACTION_LABELS: Record<CalendarStatusType | 'clear', string> = {
+    no_school: 'No School',
+    early_dismissal: 'Early Dismissal',
+    instructor_exception: 'Staff Exception',
+    clear: 'Clear Status',
+  };
+
   // ── No program selected ──────────────────────────────────────
 
   if (!selectedProgramId) {
@@ -1152,6 +1395,62 @@ export default function CalendarPage() {
                 </Tooltip>
               </div>
 
+              {/* ── Batch actions toolbar ────────────────────── */}
+              {selectedDates.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                  <span className="text-sm font-semibold text-blue-700 mr-1">
+                    {selectedDates.size} day{selectedDates.size !== 1 ? 's' : ''} selected
+                  </span>
+                  <div className="w-px h-6 bg-blue-200 mx-1" />
+                  <Tooltip text="Mark selected days as No School — no events will be scheduled">
+                    <button
+                      onClick={() => openBatchModal('no_school')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      Mark as No School
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Mark selected days as Early Dismissal — events end earlier than usual">
+                    <button
+                      onClick={() => openBatchModal('early_dismissal')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-colors"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      Mark as Early Dismissal
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Mark selected days as Staff Exception — schedule exception for a specific staff member">
+                    <button
+                      onClick={() => openBatchModal('instructor_exception')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 transition-colors"
+                    >
+                      <UserX className="w-3.5 h-3.5" />
+                      Mark as Staff Exception
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Remove all status entries from selected days">
+                    <button
+                      onClick={() => openBatchModal('clear')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors"
+                    >
+                      <Eraser className="w-3.5 h-3.5" />
+                      Clear Status
+                    </button>
+                  </Tooltip>
+                  <div className="w-px h-6 bg-blue-200 mx-1" />
+                  <Tooltip text="Deselect all days">
+                    <button
+                      onClick={clearSelection}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      Deselect All
+                    </button>
+                  </Tooltip>
+                </div>
+              )}
+
               {/* Scrollable month grid */}
               <div
                 ref={scrollContainerRef}
@@ -1167,6 +1466,8 @@ export default function CalendarPage() {
                       month={month}
                       calendarMap={calendarMap}
                       today={today}
+                      selectedDates={selectedDates}
+                      onDayClick={handleDayClick}
                     />
                   </div>
                 ))}
@@ -1367,6 +1668,135 @@ export default function CalendarPage() {
           )}
         </section>
       </div>
+
+      {/* ── Batch Confirmation Modal ──────────────────────── */}
+      <Modal
+        open={!!batchModal}
+        onClose={closeBatchModal}
+        title={batchModal ? `Apply ${BATCH_ACTION_LABELS[batchModal.action]} to ${batchModal.dates.length} day${batchModal.dates.length !== 1 ? 's' : ''}?` : ''}
+        width="520px"
+        disableBackdropClose={batchApplying}
+        footer={
+          <>
+            <ModalButton variant="secondary" onClick={closeBatchModal} disabled={batchApplying}>
+              Cancel
+            </ModalButton>
+            <ModalButton
+              variant={batchModal?.action === 'clear' ? 'danger' : 'primary'}
+              onClick={applyBatchAction}
+              loading={batchApplying}
+              disabled={batchApplying || (batchModal?.action === 'instructor_exception' && !batchInstructorId)}
+            >
+              {batchApplying
+                ? batchProgress
+                  ? `Applying (${batchProgress.done}/${batchProgress.total})…`
+                  : 'Applying…'
+                : `Apply to ${batchModal?.dates.length ?? 0} selected day${(batchModal?.dates.length ?? 0) !== 1 ? 's' : ''}`}
+            </ModalButton>
+          </>
+        }
+      >
+        <div className="px-6 py-5 space-y-4">
+          {/* Warning for existing statuses */}
+          {batchExistingCount > 0 && batchModal?.action !== 'clear' && (
+            <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-700">
+                {batchExistingCount} of {batchModal?.dates.length} day{(batchModal?.dates.length ?? 0) !== 1 ? 's' : ''} already
+                {batchExistingCount === 1 ? ' has' : ' have'} a status. Existing entries will be updated.
+              </p>
+            </div>
+          )}
+
+          {/* Early dismissal time input */}
+          {batchModal?.action === 'early_dismissal' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Dismissal Time <span className="text-red-400 ml-0.5">*</span>
+              </label>
+              <p className="text-xs text-slate-400">This time will be applied to all selected days.</p>
+              <input
+                type="time"
+                value={batchTime}
+                onChange={(e) => setBatchTime(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          )}
+
+          {/* Instructor selection */}
+          {batchModal?.action === 'instructor_exception' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Instructor <span className="text-red-400 ml-0.5">*</span>
+              </label>
+              <p className="text-xs text-slate-400">Select the staff member for this exception.</p>
+              {batchInstructors.length > 0 ? (
+                <select
+                  value={batchInstructorId}
+                  onChange={(e) => setBatchInstructorId(e.target.value)}
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">Select instructor…</option>
+                  {batchInstructors.map((inst) => (
+                    <option key={inst.id} value={inst.id}>
+                      {inst.first_name} {inst.last_name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Instructor ID"
+                  value={batchInstructorId}
+                  onChange={(e) => setBatchInstructorId(e.target.value)}
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Dates list */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Affected Dates
+            </label>
+            <div className="max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
+              {batchModal?.dates.map((d) => {
+                const existing = entries.filter((e) => e.date === d);
+                return (
+                  <div
+                    key={d}
+                    className="flex items-center justify-between px-3 py-2 border-b border-slate-100 last:border-0 text-sm"
+                  >
+                    <span className="font-medium text-slate-700">{formatDate(d)}</span>
+                    {existing.length > 0 && (
+                      <span className="text-xs text-slate-400">
+                        {existing.map((e) => STATUS_LABELS[e.status_type]).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Progress bar for large batches */}
+          {batchApplying && batchProgress && batchProgress.total > 10 && (
+            <div className="space-y-1">
+              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round((batchProgress.done / batchProgress.total) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400 text-center">
+                {batchProgress.done} of {batchProgress.total} processed
+              </p>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* CSV Import Dialog */}
       <CsvImportDialog

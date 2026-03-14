@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Plus, Loader2, AlertTriangle, Filter,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TagSelector } from '../ui/TagSelector';
 import { Modal, ModalButton } from '../ui/Modal';
+import { useStickyWarnings, StickyWarningBanner } from '../ui/StickyWarnings';
 import type {
   Instructor, Venue, SchedulingMode,
 } from '@/types/database';
@@ -130,6 +131,10 @@ export function TemplateFormModal({
   const [sessionDate, setSessionDate] = useState('');
   const [sessionStartTime, setSessionStartTime] = useState('09:00');
 
+  // Sticky warnings
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const { hiddenIds, warningRef } = useStickyWarnings(bodyRef);
+
   // Reference data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -221,6 +226,55 @@ export function TemplateFormModal({
     return skillFiltered;
   }, [instructors, form.required_skills, showSessionFields, sessionDate, sessionStartTime, form.duration_minutes]);
 
+  /* ── Venue conflict checking (session fields only) ───── */
+
+  const [venueConflict, setVenueConflict] = useState<string | null>(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
+
+  useEffect(() => {
+    if (!open || !showSessionFields || !form.venue_id || !sessionDate || !sessionStartTime || form.duration_minutes <= 0) {
+      setVenueConflict(null);
+      return;
+    }
+
+    const [sH, sM] = sessionStartTime.split(':').map(Number);
+    const endMinutes = sH * 60 + sM + form.duration_minutes;
+    const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setCheckingConflict(true);
+      try {
+        const params = new URLSearchParams({
+          venue_id: form.venue_id,
+          date: sessionDate,
+          start_time: sessionStartTime,
+          end_time: endTime,
+        });
+        const res = await fetch(`/api/sessions/check-conflict?${params}`, { signal: controller.signal });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.conflict) {
+            setVenueConflict(
+              `Venue conflict: ${data.venue_name} is already booked from ${data.conflicting_session.start_time} to ${data.conflicting_session.end_time} (${data.conflicting_session.name})`
+            );
+          } else {
+            setVenueConflict(null);
+          }
+        }
+      } catch {
+        // Ignore abort errors
+      } finally {
+        setCheckingConflict(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, showSessionFields, form.venue_id, sessionDate, sessionStartTime, form.duration_minutes]);
+
   /* ── Submit ────────────────────────────────────────────── */
 
   const handleSubmit = async () => {
@@ -281,13 +335,14 @@ export function TemplateFormModal({
       onClose={onClose}
       title={modalTitle}
       width="600px"
+      bodyRef={bodyRef}
       footer={
         <>
           <ModalButton onClick={onClose}>Cancel</ModalButton>
           <ModalButton
             variant="primary"
             onClick={handleSubmit}
-            disabled={saving}
+            disabled={saving || !!venueConflict}
             loading={saving}
           >
             {saving ? (showSessionFields ? 'Creating...' : 'Saving...') : buttonLabel}
@@ -351,7 +406,7 @@ export function TemplateFormModal({
             ))}
           </select>
           {filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && (
-            <span className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
+            <span ref={warningRef('staff')} className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
               No staff available{form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}{showSessionFields && sessionDate ? ' at this date/time' : ''}.{' '}
               <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
@@ -381,6 +436,15 @@ export function TemplateFormModal({
               </option>
             ))}
           </select>
+          {venueConflict && (
+            <span ref={warningRef('venue')} className="text-[11px] text-red-600 mt-0.5 inline-flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 inline align-middle" />
+              {venueConflict}
+            </span>
+          )}
+          {checkingConflict && (
+            <span className="text-[11px] text-slate-400 mt-0.5">Checking availability...</span>
+          )}
         </FormField>
 
         {/* 5. Grade Group */}
@@ -776,6 +840,18 @@ export function TemplateFormModal({
             </div>
           </>
         )}
+
+        {/* Sticky warning banner for warnings scrolled out of view */}
+        <StickyWarningBanner
+          warnings={[
+            ...(filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && hiddenIds.has('staff')
+              ? [{ id: 'staff', label: 'Staff', message: `No staff available${form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}${showSessionFields && sessionDate ? ' at this date/time' : ''}` }]
+              : []),
+            ...(venueConflict && hiddenIds.has('venue')
+              ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
+              : []),
+          ]}
+        />
 
       </div>
     </Modal>

@@ -175,7 +175,7 @@ export function Tooltip({ text, position = 'top', className, style, children }: 
             fontSize: 12,
             fontWeight: 500,
             lineHeight: 1.4,
-            whiteSpace: 'nowrap',
+            whiteSpace: 'pre-line',
             pointerEvents: 'none',
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             opacity: placed ? 1 : 0,

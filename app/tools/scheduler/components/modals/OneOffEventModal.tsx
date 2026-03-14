@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Plus, CalendarPlus, Pencil, Trash2, XCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Loader2, Plus, CalendarPlus, Pencil, Trash2, XCircle, AlertTriangle } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { Modal, ModalButton } from '../ui/Modal';
+import { useStickyWarnings, StickyWarningBanner } from '../ui/StickyWarnings';
+import { availabilityCoversWindow, toTimeWindow, parseDate, dayIndexToName } from '@/lib/scheduler/utils';
+import type { AvailabilityJson } from '@/types/database';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,6 +18,7 @@ interface Instructor {
   last_name: string;
   is_active: boolean;
   skills: string[] | null;
+  availability_json: AvailabilityJson | null;
 }
 
 interface Venue {
@@ -169,6 +173,10 @@ export function OneOffEventModal({
   const [rotateInstructors, setRotateInstructors] = useState(false);
   const [rotationInstructorIds, setRotationInstructorIds] = useState<string[]>([]);
 
+  // Sticky warnings
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const { hiddenIds, warningRef } = useStickyWarnings(bodyRef);
+
   // Reference data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -261,6 +269,87 @@ export function OneOffEventModal({
     );
   }, []);
 
+  // Venue conflict checking
+  const [venueConflict, setVenueConflict] = useState<string | null>(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
+
+  useEffect(() => {
+    if (!open || !venueId || !date || !startTime || durationMinutes <= 0) {
+      setVenueConflict(null);
+      return;
+    }
+
+    // Compute end_time from start_time + duration
+    const [sH, sM] = startTime.split(':').map(Number);
+    const endMinutes = sH * 60 + sM + durationMinutes;
+    const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setCheckingConflict(true);
+      try {
+        const params = new URLSearchParams({
+          venue_id: venueId,
+          date,
+          start_time: startTime,
+          end_time: endTime,
+        });
+        if (editEvent?.id) params.set('exclude_id', editEvent.id);
+
+        const res = await fetch(`/api/sessions/check-conflict?${params}`, { signal: controller.signal });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.conflict) {
+            setVenueConflict(
+              `Venue conflict: ${data.venue_name} is already booked from ${data.conflicting_session.start_time} to ${data.conflicting_session.end_time} (${data.conflicting_session.name})`
+            );
+          } else {
+            setVenueConflict(null);
+          }
+        }
+      } catch {
+        // Ignore abort errors
+      } finally {
+        setCheckingConflict(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, venueId, date, startTime, durationMinutes, editEvent?.id]);
+
+  // Instructor availability checking
+  const instructorAvailabilityWarning = useMemo(() => {
+    if (!instructorId || !date || !startTime || durationMinutes <= 0) return null;
+
+    const instructor = instructors.find((i) => i.id === instructorId);
+    if (!instructor) return null;
+
+    const parsed = parseDate(date);
+    const dayOfWeek = parsed.getDay();
+
+    const [sH, sM] = startTime.split(':').map(Number);
+    const endMinutes = sH * 60 + sM + durationMinutes;
+    const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+    const sessionWindow = toTimeWindow(startTime, endTime);
+
+    if (availabilityCoversWindow(instructor.availability_json, dayOfWeek, sessionWindow)) {
+      return null;
+    }
+
+    // Build available time range string for the error message
+    const dayName = dayIndexToName(dayOfWeek);
+    const blocks = instructor.availability_json?.[dayName as keyof AvailabilityJson];
+    const availStr = blocks && blocks.length > 0
+      ? blocks.map((b) => `${b.start}–${b.end}`).join(', ')
+      : 'not available this day';
+
+    const name = `${instructor.first_name} ${instructor.last_name}`;
+    return `Cannot assign ${name} — unavailable at this time (available: ${availStr})`;
+  }, [instructorId, instructors, date, startTime, durationMinutes]);
+
   const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
@@ -328,6 +417,7 @@ export function OneOffEventModal({
       title={modalTitle}
       subtitle={modalSubtitle}
       width="520px"
+      bodyRef={bodyRef}
       footer={
         <>
           {/* Delete / Cancel Event — left side (edit mode only) */}
@@ -366,7 +456,7 @@ export function OneOffEventModal({
           <ModalButton
             variant="primary"
             onClick={handleSubmit}
-            disabled={!name.trim() || !venueId || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
+            disabled={!name.trim() || !venueId || !date || saving || !!venueConflict || !!instructorAvailabilityWarning || (recurrenceType === 'until_date' && !untilDate)}
             loading={saving}
           >
             {saving
@@ -439,6 +529,12 @@ export function OneOffEventModal({
                 </option>
               ))}
             </select>
+            {instructorAvailabilityWarning && (
+              <p ref={warningRef('instructor-availability')} className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                {instructorAvailabilityWarning}
+              </p>
+            )}
           </div>
         </div>
 
@@ -457,6 +553,15 @@ export function OneOffEventModal({
               </option>
             ))}
           </select>
+          {venueConflict && (
+            <p ref={warningRef('venue')} className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+              <span className="inline-block w-3 h-3 rounded-full bg-red-100 text-red-600 text-center text-[9px] font-bold leading-3">!</span>
+              {venueConflict}
+            </p>
+          )}
+          {checkingConflict && (
+            <p className="text-[11px] text-slate-400 mt-1">Checking availability...</p>
+          )}
         </div>
 
         {/* Grade Groups */}
@@ -654,6 +759,18 @@ export function OneOffEventModal({
             </div>
           )}
         </div>}
+
+        {/* Sticky warning banner for warnings scrolled out of view */}
+        <StickyWarningBanner
+          warnings={[
+            ...(venueConflict && hiddenIds.has('venue')
+              ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
+              : []),
+            ...(instructorAvailabilityWarning && hiddenIds.has('instructor-availability')
+              ? [{ id: 'instructor-availability', label: 'Staff', message: instructorAvailabilityWarning }]
+              : []),
+          ]}
+        />
       </div>
     </Modal>
   );

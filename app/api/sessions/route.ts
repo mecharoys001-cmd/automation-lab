@@ -161,33 +161,34 @@ export async function POST(request: NextRequest) {
     if (body.venue_id && body.date && body.start_time && body.end_time && body.status !== 'canceled') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: venue } = await (supabase.from('venues') as any)
-        .select('max_concurrent_bookings')
+        .select('name, max_concurrent_bookings')
         .eq('id', body.venue_id)
         .single();
 
       if (venue) {
         const maxConcurrent = venue.max_concurrent_bookings ?? 1;
 
-        // Count existing non-canceled sessions at this venue/date/time
+        // Find existing non-canceled sessions at this venue/date/time that overlap
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { count, error: countError } = await (supabase.from('sessions') as any)
-          .select('*', { count: 'exact', head: true })
+        const { data: conflicts, error: conflictError } = await (supabase.from('sessions') as any)
+          .select('id, name, start_time, end_time')
           .eq('venue_id', body.venue_id)
           .eq('date', body.date)
           .neq('status', 'canceled')
           .lt('start_time', body.end_time)
           .gt('end_time', body.start_time);
 
-        if (countError) {
+        if (conflictError) {
           return NextResponse.json(
-            { error: `Failed to check venue capacity: ${countError.message}` },
+            { error: `Failed to check venue capacity: ${conflictError.message}` },
             { status: 500 }
           );
         }
 
-        if ((count ?? 0) >= maxConcurrent) {
+        if ((conflicts?.length ?? 0) >= maxConcurrent) {
+          const conflict = conflicts[0];
           return NextResponse.json(
-            { error: `Venue has reached its maximum of ${maxConcurrent} concurrent booking(s) for this time slot` },
+            { error: `Venue conflict: ${venue.name} is already booked from ${conflict.start_time} to ${conflict.end_time} (${conflict.name})` },
             { status: 409 }
           );
         }
