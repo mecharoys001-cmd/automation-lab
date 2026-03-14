@@ -231,14 +231,18 @@ function MonthGrid({
   calendarMap,
   today,
   selectedDates,
-  onDayClick,
+  isDragging,
+  onDayMouseDown,
+  onDayMouseEnter,
 }: {
   year: number;
   month: number;
   calendarMap: Map<string, CalendarMapEntry[]>;
   today: Date;
   selectedDates: Set<string>;
-  onDayClick: (dateStr: string, e: React.MouseEvent) => void;
+  isDragging: boolean;
+  onDayMouseDown: (dateStr: string, e: React.MouseEvent) => void;
+  onDayMouseEnter: (dateStr: string) => void;
 }) {
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);
@@ -286,7 +290,7 @@ function MonthGrid({
         <div className="grid grid-cols-7">
           {/* Leading blanks */}
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`blank-s-${i}`} className="min-h-[52px] border-b border-r border-slate-50 bg-slate-25" />
+            <div key={`blank-s-${i}`} className="min-h-[52px] border-b border-r border-slate-50 bg-slate-50/30" />
           ))}
 
           {/* Day cells */}
@@ -334,7 +338,8 @@ function MonthGrid({
             return (
               <Tooltip key={day} text={tooltipText}>
                 <div
-                  onClick={(e) => onDayClick(dateStr, e)}
+                  onMouseDown={(e) => onDayMouseDown(dateStr, e)}
+                  onMouseEnter={() => onDayMouseEnter(dateStr)}
                   className={`min-h-[52px] border-b border-r border-slate-100 px-1 py-0.5 transition-colors cursor-pointer select-none ${cellBg} ${
                     isSelected
                       ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/80'
@@ -395,7 +400,7 @@ function MonthGrid({
 
           {/* Trailing blanks to complete the last row */}
           {Array.from({ length: trailingBlanks }).map((_, i) => (
-            <div key={`blank-e-${i}`} className="min-h-[52px] border-b border-r border-slate-50 bg-slate-25" />
+            <div key={`blank-e-${i}`} className="min-h-[52px] border-b border-r border-slate-50 bg-slate-50/30" />
           ))}
         </div>
       </div>
@@ -463,7 +468,8 @@ export default function CalendarPage() {
 
   // ── Batch selection state ────────────────────────────────────
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
-  const lastClickedDateRef = useRef<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
 
   // Batch action confirmation modal
   const [batchModal, setBatchModal] = useState<{
@@ -863,37 +869,15 @@ export default function CalendarPage() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // ── Day selection handlers ──────────────────────────────────
+  // ── Day selection handlers (drag-to-select) ────────────────
 
-  /** Get all dates between two date strings inclusive, sorted ascending */
-  const getDateRange = useCallback((a: string, b: string): string[] => {
-    const start = new Date(a + 'T00:00:00');
-    const end = new Date(b + 'T00:00:00');
-    const [from, to] = start <= end ? [start, end] : [end, start];
-    const dates: string[] = [];
-    const cursor = new Date(from);
-    while (cursor <= to) {
-      const y = cursor.getFullYear();
-      const m = String(cursor.getMonth() + 1).padStart(2, '0');
-      const d = String(cursor.getDate()).padStart(2, '0');
-      dates.push(`${y}-${m}-${d}`);
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return dates;
-  }, []);
-
-  const handleDayClick = useCallback((dateStr: string, e: React.MouseEvent) => {
+  const handleDayMouseDown = useCallback((dateStr: string, e: React.MouseEvent) => {
+    // Only handle left mouse button
+    if (e.button !== 0) return;
     e.preventDefault();
-    if (e.shiftKey && lastClickedDateRef.current) {
-      // Shift+click: select range
-      const range = getDateRange(lastClickedDateRef.current, dateStr);
-      setSelectedDates((prev) => {
-        const next = new Set(prev);
-        for (const d of range) next.add(d);
-        return next;
-      });
-    } else if (e.metaKey || e.ctrlKey) {
-      // Cmd/Ctrl+click: toggle individual
+
+    if (e.metaKey || e.ctrlKey) {
+      // Cmd/Ctrl+click: toggle individual without clearing others
       setSelectedDates((prev) => {
         const next = new Set(prev);
         if (next.has(dateStr)) {
@@ -904,16 +888,36 @@ export default function CalendarPage() {
         return next;
       });
     } else {
-      // Plain click: toggle single (clear others)
-      setSelectedDates((prev) => {
-        if (prev.size === 1 && prev.has(dateStr)) {
-          return new Set();
-        }
-        return new Set([dateStr]);
-      });
+      // Plain click / start drag: clear others and select this day
+      setSelectedDates(new Set([dateStr]));
     }
-    lastClickedDateRef.current = dateStr;
-  }, [getDateRange]);
+
+    // Start drag mode
+    isDraggingRef.current = true;
+    setIsDragging(true);
+  }, []);
+
+  const handleDayMouseEnter = useCallback((dateStr: string) => {
+    if (!isDraggingRef.current) return;
+    setSelectedDates((prev) => {
+      if (prev.has(dateStr)) return prev;
+      const next = new Set(prev);
+      next.add(dateStr);
+      return next;
+    });
+  }, []);
+
+  // End drag on mouseup anywhere
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+      }
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, []);
 
   const clearSelection = useCallback(() => {
     setSelectedDates(new Set());
@@ -1061,6 +1065,14 @@ export default function CalendarPage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [selectedDates.size, clearSelection, selectAllVisible]);
+
+  // Prevent text selection while dragging
+  useEffect(() => {
+    if (!isDragging) return;
+    const prevent = (e: Event) => e.preventDefault();
+    document.addEventListener('selectstart', prevent);
+    return () => document.removeEventListener('selectstart', prevent);
+  }, [isDragging]);
 
   // ── Batch modal computed values ────────────────────────────
 
@@ -1397,7 +1409,7 @@ export default function CalendarPage() {
 
               {/* ── Batch actions toolbar ────────────────────── */}
               {selectedDates.size > 0 && (
-                <div className="flex flex-wrap items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 sticky top-0 z-10 shadow-sm">
                   <span className="text-sm font-semibold text-blue-700 mr-1">
                     {selectedDates.size} day{selectedDates.size !== 1 ? 's' : ''} selected
                   </span>
@@ -1467,7 +1479,9 @@ export default function CalendarPage() {
                       calendarMap={calendarMap}
                       today={today}
                       selectedDates={selectedDates}
-                      onDayClick={handleDayClick}
+                      isDragging={isDragging}
+                      onDayMouseDown={handleDayMouseDown}
+                      onDayMouseEnter={handleDayMouseEnter}
                     />
                   </div>
                 ))}

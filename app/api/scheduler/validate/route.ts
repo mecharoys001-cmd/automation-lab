@@ -80,15 +80,13 @@ export async function GET(request: NextRequest) {
 
       if (missingTime.length > 0) {
         templateStatus = 'warning';
-        templateDetails.push(`${missingTime.length} template(s) missing start/end time`);
+        templateDetails.push(`${missingTime.length} missing start/end time`);
       }
       if (missingGrades.length > 0) {
-        // Time blocks can have empty grades, so only warn
-        templateDetails.push(`${missingGrades.length} template(s) without grade groups`);
+        templateDetails.push(`${missingGrades.length} without grade groups`);
         if (templateStatus === 'ready') templateStatus = 'warning';
       }
       if (templateDetails.length === 0) {
-        templateDetails.push('All templates fully configured');
         templateSummary = `${templates.length} active, all configured`;
       } else {
         // Count unique templates that have at least one issue
@@ -124,20 +122,16 @@ export async function GET(request: NextRequest) {
 
       if (withSkills.length === 0) {
         instructorStatus = 'warning';
-        instructorDetails.push('No instructors have skills configured');
+        instructorDetails.push('None have event types configured');
       } else if (missingSkills > 0) {
-        instructorDetails.push(`${missingSkills} of ${instructors.length} missing skills`);
-      } else {
-        instructorDetails.push(`All ${instructors.length} have skills`);
+        instructorDetails.push(`${missingSkills} missing event types`);
       }
 
       if (withAvailability.length === 0) {
         instructorStatus = 'warning';
-        instructorDetails.push('No instructors have availability set');
+        instructorDetails.push('None have availability set');
       } else if (missingAvail > 0) {
-        instructorDetails.push(`${missingAvail} of ${instructors.length} missing availability`);
-      } else {
-        instructorDetails.push(`All ${instructors.length} have availability`);
+        instructorDetails.push(`${missingAvail} missing availability`);
       }
 
       if (missingSkills > 0 || missingAvail > 0) {
@@ -155,7 +149,7 @@ export async function GET(request: NextRequest) {
         ]);
         instructorSummary = `${problemInstructorIds.size} of ${instructors.length} need attention`;
       } else {
-        instructorSummary = `${instructors.length} active, fully configured`;
+        instructorSummary = `${instructors.length} active, all configured`;
       }
     }
 
@@ -182,16 +176,15 @@ export async function GET(request: NextRequest) {
       const missingAvail = venues.length - withAvailability.length;
 
       if (missingCap > 0) {
-        venueDetails.push(`${missingCap} of ${venues.length} missing capacity`);
+        venueDetails.push(`${missingCap} missing capacity`);
         if (venueStatus === 'ready') venueStatus = 'warning';
       }
       if (missingAvail > 0) {
-        venueDetails.push(`${missingAvail} of ${venues.length} missing availability`);
+        venueDetails.push(`${missingAvail} missing availability`);
         if (venueStatus === 'ready') venueStatus = 'warning';
       }
       if (venueDetails.length === 0) {
-        venueDetails.push('All venues fully configured');
-        venueSummary = `${venues.length} configured`;
+        venueSummary = `${venues.length} active, all configured`;
       } else {
         // Count unique venues that have at least one issue
         const missingCapVenues = venues.filter(
