@@ -132,7 +132,7 @@ export default function TagsPage() {
 
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
-  const [quickAddCategory, setQuickAddCategory] = useState('General');
+  const [quickAddCategory, setQuickAddCategory] = useState('Event Type');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [quickAddSuccess, setQuickAddSuccess] = useState(false);
