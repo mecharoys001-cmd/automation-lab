@@ -498,10 +498,12 @@ export function WeekView({
       venueId = selectedVenues[laneIdx];
     }
 
+    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
     setHoverState({ dayIdx, venueId, time, cursorY });
   }, [onEmptySlotClick, dayStartHour, multiLane, selectedVenues]);
 
   const handleGridMouseLeave = useCallback(() => {
+    console.log('Hover leave');
     setHoverState(null);
   }, []);
 
@@ -957,6 +959,7 @@ export function WeekView({
                 ))}
 
                 {/* Hover lane highlight */}
+                {console.log('Render hover state', hoverState)}
                 {hoverState && hoverState.dayIdx === dayIdx && multiLane && hoverState.venueId && (() => {
                   const laneIdx = selectedVenues.indexOf(hoverState.venueId!);
                   const laneCount = selectedVenues.length;
