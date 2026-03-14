@@ -131,16 +131,18 @@ export function Modal({
 
         {/* ── Warnings (fixed, above footer) ─────────────────── */}
         {warnings && warnings.length > 0 && (
-          <div className="shrink-0 px-6 py-3 border-t border-amber-200 bg-amber-50/80 space-y-2">
+          <div className="shrink-0 border-t border-red-200 bg-red-50 space-y-0">
             {warnings.map((w) => (
               <div
                 key={w.id}
-                className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-white px-3 py-2.5 shadow-sm"
+                className="flex items-center gap-3 px-6 py-3 border-b border-red-100 last:border-b-0"
               >
-                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <span className="text-xs font-semibold text-amber-700">{w.label}</span>
-                  <p className="text-xs text-amber-600 mt-0.5 leading-relaxed">{w.message}</p>
+                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-semibold text-red-700">{w.label}</span>
+                  <p className="text-xs text-red-600 mt-0.5 leading-relaxed">{w.message}</p>
                 </div>
               </div>
             ))}
