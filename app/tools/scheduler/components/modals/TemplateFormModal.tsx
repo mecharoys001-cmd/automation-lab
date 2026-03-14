@@ -841,19 +841,19 @@ export function TemplateFormModal({
           </>
         )}
 
-        {/* Sticky warning banner for warnings scrolled out of view */}
-        <StickyWarningBanner
-          warnings={[
-            ...(filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && hiddenIds.has('staff')
-              ? [{ id: 'staff', label: 'Staff', message: `No staff available${form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}${showSessionFields && sessionDate ? ' at this date/time' : ''}` }]
-              : []),
-            ...(venueConflict && hiddenIds.has('venue')
-              ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
-              : []),
-          ]}
-        />
-
       </div>
+
+      {/* Sticky warning banner — must be a direct child of scroll container (bodyRef) */}
+      <StickyWarningBanner
+        warnings={[
+          ...(filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && hiddenIds.has('staff')
+            ? [{ id: 'staff', label: 'Staff', message: `No staff available${form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}${showSessionFields && sessionDate ? ' at this date/time' : ''}` }]
+            : []),
+          ...(venueConflict && hiddenIds.has('venue')
+            ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
+            : []),
+        ]}
+      />
     </Modal>
   );
 }

@@ -114,13 +114,13 @@ export function useStickyWarnings(scrollRef: React.RefObject<HTMLElement | null>
  * Renders a sticky banner at the bottom of a scrollable area showing
  * warnings that have been scrolled out of view.
  *
- * Place this as the LAST child inside the scroll container's content.
+ * Place this as a DIRECT child of the scroll container (not nested in a wrapper div).
  */
 export function StickyWarningBanner({ warnings }: { warnings: StickyWarning[] }) {
   if (warnings.length === 0) return null;
 
   return (
-    <div className="sticky bottom-0 z-10 mx-[-24px] bg-red-50 border-t border-red-200 px-5 py-2.5 space-y-1 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+    <div className="sticky bottom-0 z-10 bg-red-50 border-t border-red-200 px-5 py-2.5 space-y-1 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
       {warnings.map((w) => (
         <div key={w.id} className="flex items-start gap-1.5 text-[11px] text-red-600">
           <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />

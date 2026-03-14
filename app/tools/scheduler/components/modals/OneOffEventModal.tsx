@@ -760,18 +760,19 @@ export function OneOffEventModal({
           )}
         </div>}
 
-        {/* Sticky warning banner for warnings scrolled out of view */}
-        <StickyWarningBanner
-          warnings={[
-            ...(venueConflict && hiddenIds.has('venue')
-              ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
-              : []),
-            ...(instructorAvailabilityWarning && hiddenIds.has('instructor-availability')
-              ? [{ id: 'instructor-availability', label: 'Staff', message: instructorAvailabilityWarning }]
-              : []),
-          ]}
-        />
       </div>
+
+      {/* Sticky warning banner — must be a direct child of scroll container (bodyRef) */}
+      <StickyWarningBanner
+        warnings={[
+          ...(venueConflict && hiddenIds.has('venue')
+            ? [{ id: 'venue', label: 'Venue', message: venueConflict }]
+            : []),
+          ...(instructorAvailabilityWarning && hiddenIds.has('instructor-availability')
+            ? [{ id: 'instructor-availability', label: 'Staff', message: instructorAvailabilityWarning }]
+            : []),
+        ]}
+      />
     </Modal>
   );
 }
