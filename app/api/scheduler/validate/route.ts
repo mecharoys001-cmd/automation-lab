@@ -142,8 +142,18 @@ export async function GET(request: NextRequest) {
 
       if (missingSkills > 0 || missingAvail > 0) {
         if (instructorStatus === 'ready') instructorStatus = 'warning';
-        const problemCount = Math.max(missingSkills, missingAvail);
-        instructorSummary = `${problemCount} of ${instructors.length} need attention`;
+        // Count unique instructors that have at least one issue
+        const missingSkillsInstructors = instructors.filter(
+          (i: any) => !i.skills || i.skills.length === 0
+        );
+        const missingAvailInstructors = instructors.filter(
+          (i: any) => !i.availability_json || Object.keys(i.availability_json).length === 0
+        );
+        const problemInstructorIds = new Set([
+          ...missingSkillsInstructors.map((i: any) => i.id),
+          ...missingAvailInstructors.map((i: any) => i.id),
+        ]);
+        instructorSummary = `${problemInstructorIds.size} of ${instructors.length} need attention`;
       } else {
         instructorSummary = `${instructors.length} active, fully configured`;
       }
