@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { skillsMatch } from '@/lib/scheduler/utils';
+import { skillsMatch, availabilityCoversWindow, toTimeWindow, dayIndexToName, parseDate } from '@/lib/scheduler/utils';
 
 export async function PATCH(
   request: NextRequest,
@@ -12,14 +12,37 @@ export async function PATCH(
     const supabase = createServiceClient();
     const body = await request.json();
 
-    // Validate instructor has required skills for the session's template subject
+    // Validate required fields if being updated
+    if ('name' in body && (!body.name || !String(body.name).trim())) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      );
+    }
+    if ('venue_id' in body && !body.venue_id) {
+      return NextResponse.json(
+        { error: 'Venue is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate instructor has required skills and availability for this session
     if (body.instructor_id) {
+      // Fetch session details (date, times, template_id)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: session } = await (supabase.from('sessions') as any)
-        .select('template_id')
+        .select('template_id, date, start_time, end_time')
         .eq('id', id)
         .single();
 
+      // Fetch instructor details (skills + availability)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: instructor } = await (supabase.from('instructors') as any)
+        .select('first_name, last_name, skills, availability_json')
+        .eq('id', body.instructor_id)
+        .single();
+
+      // Skill validation
       if (session?.template_id) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: template } = await (supabase.from('session_templates') as any)
@@ -28,15 +51,38 @@ export async function PATCH(
           .single();
 
         if (template?.required_skills?.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: instructor } = await (supabase.from('instructors') as any)
-            .select('skills')
-            .eq('id', body.instructor_id)
-            .single();
-
           if (instructor && !skillsMatch(instructor.skills, template.required_skills)) {
             return NextResponse.json(
               { error: `Instructor does not teach the required subject(s): ${template.required_skills.join(', ')}. Assign an instructor with matching skills.` },
+              { status: 400 }
+            );
+          }
+        }
+      }
+
+      // Availability validation
+      if (instructor && session) {
+        // Use updated values from body if provided, otherwise use existing session values
+        const sessionDate = body.date ?? session.date;
+        const startTime = body.start_time ?? session.start_time;
+        const endTime = body.end_time ?? session.end_time;
+
+        if (sessionDate && startTime && endTime) {
+          const date = parseDate(sessionDate);
+          const dayOfWeek = date.getDay();
+          const sessionWindow = toTimeWindow(startTime, endTime);
+          const instructorName = `${instructor.first_name} ${instructor.last_name}`;
+
+          if (!availabilityCoversWindow(instructor.availability_json, dayOfWeek, sessionWindow)) {
+            // Build a helpful message showing when the instructor IS available
+            const dayName = dayIndexToName(dayOfWeek);
+            const blocks = instructor.availability_json?.[dayName as keyof typeof instructor.availability_json];
+            const availStr = blocks && blocks.length > 0
+              ? blocks.map((b: { start: string; end: string }) => `${b.start}–${b.end}`).join(', ')
+              : 'not available';
+
+            return NextResponse.json(
+              { error: `Cannot assign ${instructorName} — unavailable at this time (${dayName}: ${availStr})` },
               { status: 400 }
             );
           }

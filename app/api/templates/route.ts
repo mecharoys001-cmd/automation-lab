@@ -94,6 +94,20 @@ export async function POST(request: NextRequest) {
     if (!body.template_type) body.template_type = 'fully_defined';
     if (!body.rotation_mode) body.rotation_mode = 'consistent';
 
+    // Validate required fields: name and venue
+    if (!body.name || !String(body.name).trim()) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      );
+    }
+    if (!body.venue_id) {
+      return NextResponse.json(
+        { error: 'Venue is required' },
+        { status: 400 }
+      );
+    }
+
     // Validate scheduling mode fields
     const mode = body.scheduling_mode ?? 'ongoing';
     if (mode === 'date_range') {

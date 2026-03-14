@@ -143,6 +143,20 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
     const body = await request.json();
 
+    // Validate required fields: name and venue
+    if (!body.name || !String(body.name).trim()) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      );
+    }
+    if (!body.venue_id) {
+      return NextResponse.json(
+        { error: 'Venue is required' },
+        { status: 400 }
+      );
+    }
+
     // Validate concurrent booking capacity if venue is specified
     if (body.venue_id && body.date && body.start_time && body.end_time && body.status !== 'canceled') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

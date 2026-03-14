@@ -424,6 +424,7 @@ export default function CalendarPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<EntryForm>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [addDateError, setAddDateError] = useState(false);
 
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -693,7 +694,12 @@ export default function CalendarPage() {
   // ── Add entry ────────────────────────────────────────────────
 
   const handleAdd = async () => {
-    if (!selectedProgramId || !addForm.date) return;
+    if (!addForm.date) {
+      setAddDateError(true);
+      return;
+    }
+    setAddDateError(false);
+    if (!selectedProgramId) return;
     setSaving(true);
     try {
       const body: Record<string, unknown> = {
@@ -851,21 +857,35 @@ export default function CalendarPage() {
     onSave: () => void,
     onCancel: () => void,
     isSaving: boolean,
+    dateError?: boolean,
+    onDateErrorClear?: () => void,
   ) {
     return (
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Date */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Date <span className="text-red-400 ml-0.5">*</span>
+            </label>
             <Tooltip text="Select the calendar entry date">
               <input
                 type="date"
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                onChange={(e) => {
+                  setForm({ ...form, date: e.target.value });
+                  if (e.target.value && dateError && onDateErrorClear) onDateErrorClear();
+                }}
+                className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 transition-colors ${
+                  dateError
+                    ? 'border-red-300 focus:ring-red-500/30 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500/30 focus:border-blue-500'
+                }`}
               />
             </Tooltip>
+            {dateError && (
+              <p className="text-xs text-red-600 font-medium">Date is required</p>
+            )}
           </div>
 
           {/* Description */}
@@ -919,8 +939,8 @@ export default function CalendarPage() {
           <Button
             variant="primary"
             onClick={onSave}
-            disabled={isSaving || !form.date}
-            tooltip="Save school calendar date"
+            disabled={isSaving}
+            tooltip={!form.date ? 'Date is required before saving' : 'Save school calendar date'}
             icon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           >
             {isSaving ? 'Saving…' : 'Save'}
@@ -1006,6 +1026,7 @@ export default function CalendarPage() {
               onClick={() => {
                 setShowAddForm(!showAddForm);
                 setAddForm({ ...EMPTY_FORM });
+                setAddDateError(false);
               }}
             >
               {showAddForm ? 'Cancel' : 'Add Entry'}
@@ -1036,8 +1057,11 @@ export default function CalendarPage() {
               () => {
                 setShowAddForm(false);
                 setAddForm({ ...EMPTY_FORM });
+                setAddDateError(false);
               },
               saving,
+              addDateError,
+              () => setAddDateError(false),
             )}
           </div>
         )}

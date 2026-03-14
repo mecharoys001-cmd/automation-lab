@@ -261,8 +261,18 @@ export function OneOffEventModal({
     );
   }, []);
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const handleSubmit = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setFormError('Name is required');
+      return;
+    }
+    if (!venueId) {
+      setFormError('Venue is required');
+      return;
+    }
+    setFormError(null);
     setSaving(true);
     try {
       const recurrence: RecurrenceOptions | undefined =
@@ -356,7 +366,7 @@ export function OneOffEventModal({
           <ModalButton
             variant="primary"
             onClick={handleSubmit}
-            disabled={!name.trim() || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
+            disabled={!name.trim() || !venueId || !date || saving || (recurrenceType === 'until_date' && !untilDate)}
             loading={saving}
           >
             {saving
@@ -370,6 +380,13 @@ export function OneOffEventModal({
     >
       {/* Form body */}
       <div className="px-6 pb-4 pt-2 space-y-4">
+        {/* Error banner */}
+        {formError && (
+          <div className="px-3 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-medium">
+            {formError}
+          </div>
+        )}
+
         {/* Event Name */}
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -427,7 +444,7 @@ export function OneOffEventModal({
 
         {/* Venue */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue</label>
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue <span className="text-red-400">*</span></label>
           <select
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}

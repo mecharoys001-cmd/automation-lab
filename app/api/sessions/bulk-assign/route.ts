@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { availabilityCoversWindow, toTimeWindow, parseDate } from '@/lib/scheduler/utils';
 
 const MAX_BATCH_SIZE = 5000;
 
@@ -45,6 +46,33 @@ export async function POST(request: NextRequest) {
       const results = await Promise.allSettled(
         chunk.map(async (item: { id: string; instructor_id: string | null }) => {
           if (!item.id) throw new Error('Missing session id');
+
+          // Validate availability when assigning an instructor
+          if (item.instructor_id) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const [{ data: session }, { data: instructor }] = await Promise.all([
+              (supabase.from('sessions') as any)
+                .select('date, start_time, end_time')
+                .eq('id', item.id)
+                .single(),
+              (supabase.from('instructors') as any)
+                .select('first_name, last_name, availability_json')
+                .eq('id', item.instructor_id)
+                .single(),
+            ]);
+
+            if (session && instructor && session.date && session.start_time && session.end_time) {
+              const date = parseDate(session.date);
+              const dayOfWeek = date.getDay();
+              const sessionWindow = toTimeWindow(session.start_time, session.end_time);
+
+              if (!availabilityCoversWindow(instructor.availability_json, dayOfWeek, sessionWindow)) {
+                throw new Error(
+                  `Cannot assign ${instructor.first_name} ${instructor.last_name} — unavailable at this time`
+                );
+              }
+            }
+          }
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error } = await (supabase.from('sessions') as any)

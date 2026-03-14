@@ -39,6 +39,20 @@ export async function PATCH(
     const supabase = createServiceClient();
     const body = await request.json();
 
+    // Validate required fields if being updated
+    if ('name' in body && (!body.name || !String(body.name).trim())) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      );
+    }
+    if ('venue_id' in body && !body.venue_id) {
+      return NextResponse.json(
+        { error: 'Venue is required' },
+        { status: 400 }
+      );
+    }
+
     // Validate scheduling mode fields if being updated
     if (body.scheduling_mode) {
       const mode = body.scheduling_mode;

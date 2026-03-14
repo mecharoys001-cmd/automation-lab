@@ -565,7 +565,7 @@ function runSingleAttempt(
         }
 
         // --- Resolve venue ---
-        let venueId = effectiveTmpl.venue_id ?? program.default_venue_id;
+        let venueId: string | null = effectiveTmpl.venue_id ?? program.default_venue_id;
 
         // --- Auto-assign venue when none specified ---
         // Deterministic per template: hash the template ID to pick a consistent
@@ -722,7 +722,7 @@ function runSingleAttempt(
           program_id: programId,
           template_id: tmpl.id,
           instructor_id: matchedInstructor?.id ?? null,
-          venue_id: venueId,
+          venue_id: (venueId as string) ?? '',
           grade_groups: tmpl.template_type === 'time_block' && tmpl.grade_groups.length === 0
             ? []
             : tmpl.grade_groups,
@@ -730,7 +730,7 @@ function runSingleAttempt(
           start_time: startTime,
           end_time: endTime,
           duration_minutes: durationMinutes,
-          name: tmpl.name || (tmpl.required_skills?.length ? tmpl.required_skills[0] : null),
+          name: tmpl.name || (tmpl.required_skills?.length ? tmpl.required_skills[0] : 'Untitled'),
           status: 'draft',
           is_makeup: false,
           replaces_session_id: null,

@@ -134,7 +134,7 @@ export interface SessionTemplate {
   id: string;
   program_id: string;
   /** User-defined display name for the template */
-  name: string | null;
+  name: string;
   template_type: TemplateType;
   rotation_mode: RotationMode;
   instructor_id: string | null;
@@ -143,7 +143,7 @@ export interface SessionTemplate {
   start_time: string;
   end_time: string;
   duration_minutes: number;
-  venue_id: string | null;
+  venue_id: string;
   required_skills: string[] | null;
   /** Optional additional tags (any category) */
   additional_tags: string[] | null;
@@ -185,9 +185,9 @@ export interface Session {
   id: string;
   program_id: string;
   template_id: string | null;
-  name: string | null;
+  name: string;
   instructor_id: string | null;
-  venue_id: string | null;
+  venue_id: string;
   grade_groups: string[];
   date: string;
   start_time: string;

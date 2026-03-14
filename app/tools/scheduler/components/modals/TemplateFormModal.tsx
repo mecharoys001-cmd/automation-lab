@@ -10,7 +10,7 @@ import { Modal, ModalButton } from '../ui/Modal';
 import type {
   Instructor, Venue, SchedulingMode,
 } from '@/types/database';
-import { skillsMatch } from '@/lib/scheduler/utils';
+import { skillsMatch, availabilityCoversWindow, toTimeWindow, parseDate } from '@/lib/scheduler/utils';
 
 /* ── Constants ──────────────────────────────────────────────── */
 
@@ -198,16 +198,42 @@ export function TemplateFormModal({
 
   const filteredInstructors = useMemo(() => {
     const active = instructors.filter((i) => i.is_active);
-    return active.filter((inst) =>
+    const skillFiltered = active.filter((inst) =>
       skillsMatch(inst.skills, form.required_skills.length > 0 ? form.required_skills : null)
     );
-  }, [instructors, form.required_skills]);
+
+    // When editing a session with a known date/time, also filter by availability
+    if (showSessionFields && sessionDate && sessionStartTime) {
+      const date = parseDate(sessionDate);
+      const dayOfWeek = date.getDay();
+      const endMinutes =
+        (parseInt(sessionStartTime.split(':')[0], 10) * 60 +
+          parseInt(sessionStartTime.split(':')[1], 10)) +
+        form.duration_minutes;
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+      const sessionWindow = toTimeWindow(sessionStartTime, endTime);
+
+      return skillFiltered.filter((inst) =>
+        availabilityCoversWindow(inst.availability_json, dayOfWeek, sessionWindow)
+      );
+    }
+
+    return skillFiltered;
+  }, [instructors, form.required_skills, showSessionFields, sessionDate, sessionStartTime, form.duration_minutes]);
 
   /* ── Submit ────────────────────────────────────────────── */
 
   const handleSubmit = async () => {
     if (!programId) {
       setError('Select a program first');
+      return;
+    }
+    if (!form.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (!form.venue_id) {
+      setError('Venue is required');
       return;
     }
     if (form.duration_minutes <= 0) {
@@ -279,7 +305,7 @@ export function TemplateFormModal({
         )}
 
         {/* 1. Name */}
-        <FormField label="Name">
+        <FormField label="Name" required>
           <input
             type="text"
             value={form.name}
@@ -324,25 +350,25 @@ export function TemplateFormModal({
               </option>
             ))}
           </select>
-          {filteredInstructors.length === 0 && form.required_skills.length > 0 && (
+          {filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && (
             <span className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
-              No staff teach {form.required_skills.join(', ')}.{' '}
+              No staff available{form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}{showSessionFields && sessionDate ? ' at this date/time' : ''}.{' '}
               <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
                 Add on Staff &amp; Venues page
               </a>
             </span>
           )}
-          {form.required_skills.length > 0 && filteredInstructors.length > 0 && (
+          {filteredInstructors.length > 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && (
             <span className="text-[11px] text-slate-500 mt-0.5 inline-flex items-center gap-0.5">
               <Filter className="w-3 h-3 inline align-middle" />
-              Filtered by event type: {form.required_skills.join(', ')}
+              Filtered by{form.required_skills.length > 0 ? ` event type: ${form.required_skills.join(', ')}` : ''}{form.required_skills.length > 0 && showSessionFields && sessionDate ? ' &' : ''}{showSessionFields && sessionDate ? ' availability' : ''}
             </span>
           )}
         </FormField>
 
         {/* 4. Venue */}
-        <FormField label="Venue">
+        <FormField label="Venue" required>
           <select
             value={form.venue_id}
             onChange={(e) => updateForm({ venue_id: e.target.value })}
@@ -758,11 +784,12 @@ export function TemplateFormModal({
 
 /* ── Shared form components ─────────────────────────────────── */
 
-function FormField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function FormField({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
         {label}
+        {required && <span className="text-red-400 ml-0.5">*</span>}
         {hint && <span className="font-normal normal-case ml-1.5 text-slate-400">{hint}</span>}
       </label>
       {children}

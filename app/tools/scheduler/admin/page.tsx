@@ -424,6 +424,7 @@ function CalendarDashboard() {
   const [showOneOffModal, setShowOneOffModal] = useState(false);
   const [oneOffSlot, setOneOffSlot] = useState<{ date: string; time: string; venueId?: string } | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<EventTemplate | null>(null);
   // Portal container for Month/Year views (escapes flex hierarchy)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   // Track recently modified event IDs (eventId -> timestamp) for badge display
@@ -571,12 +572,15 @@ function CalendarDashboard() {
           end_time: to24h(newEndTime),
         }),
       })
-        .then((res) => {
-          if (!res.ok) throw new Error('Failed to save');
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Failed to save');
+          }
         })
-        .catch(() => {
+        .catch((err) => {
           setEvents(prevEvents);
-          showToast('Failed to move event — reverted', 'error');
+          showToast(err instanceof Error ? err.message : 'Failed to move event — reverted', 'error');
         });
     },
     [events, markRecentlyModified],
@@ -604,12 +608,15 @@ function CalendarDashboard() {
           end_time: to24h(newEndTime),
         }),
       })
-        .then((res) => {
-          if (!res.ok) throw new Error('Failed to save');
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Failed to save');
+          }
         })
-        .catch(() => {
+        .catch((err) => {
           setEvents(prevEvents);
-          showToast('Failed to resize event — reverted', 'error');
+          showToast(err instanceof Error ? err.message : 'Failed to resize event — reverted', 'error');
         });
     },
     [events, markRecentlyModified],
@@ -1225,13 +1232,19 @@ function CalendarDashboard() {
       return;
     }
 
-    // No date/time (clicked from sidebar without drag) — open the one-off modal
-    setOneOffSlot({
-      date: date ?? '',
-      time: time ?? '',
-    });
-    setSelectedTemplate(template);
-    setShowOneOffModal(true);
+    // No date/time (clicked from sidebar without drag) — fetch full template data and open edit modal
+    const fetchAndEditTemplate = async () => {
+      try {
+        const res = await fetch(`/api/templates/${template.id}`);
+        if (!res.ok) throw new Error('Failed to fetch template');
+        const { template: fullTemplate } = await res.json();
+        setEditingTemplate(fullTemplate);
+      } catch (err) {
+        showToast('Failed to load template', 'error');
+        console.error(err);
+      }
+    };
+    fetchAndEditTemplate();
   }, [selectedProgramId, showToast, fetchSessions, dbVenues]);
 
   return (
@@ -1629,6 +1642,85 @@ function CalendarDashboard() {
         title="Create Event Template"
         submitLabel="Create Template & Session"
       />
+
+      {/* Edit Template Modal (when clicking template in Event Library) */}
+      {editingTemplate && (
+        <TemplateFormModal
+          open={true}
+          onClose={() => setEditingTemplate(null)}
+          onSave={async (formData: TemplateFormData) => {
+            if (!selectedProgramId || !editingTemplate) return;
+
+            try {
+              // Update the template
+              const res = await fetch(`/api/templates/${editingTemplate.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: formData.name || null,
+                  required_skills: formData.required_skills,
+                  instructor_id: formData.instructor_id || null,
+                  venue_id: formData.venue_id || null,
+                  grade_groups: formData.grade_groups,
+                  duration_minutes: formData.duration_minutes,
+                  additional_tags: formData.additional_tags,
+                  week_cycle_length: formData.week_cycle_length,
+                  week_in_cycle: formData.week_in_cycle,
+                  is_active: formData.is_active,
+                  scheduling_mode: formData.scheduling_mode,
+                  starts_on: formData.starts_on || null,
+                  ends_on: formData.ends_on || null,
+                  duration_weeks: formData.duration_weeks,
+                  session_count: formData.session_count,
+                  within_weeks: formData.within_weeks,
+                  sessions_per_week: formData.sessions_per_week,
+                }),
+              });
+
+              if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || 'Failed to update template');
+              }
+
+              showToast('Template updated successfully', 'success');
+              setEditingTemplate(null);
+              
+              // Refresh templates list
+              const templatesRes = await fetch(`/api/templates?program_id=${selectedProgramId}`);
+              if (templatesRes.ok) {
+                const { templates } = await templatesRes.json();
+                setEventTemplates(templates || []);
+              }
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : 'Failed to update template', 'error');
+              throw err;
+            }
+          }}
+          initialData={{
+            name: (editingTemplate as any).name ?? '',
+            required_skills: (editingTemplate as any).required_skills ?? [],
+            instructor_id: (editingTemplate as any).instructor_id ?? '',
+            venue_id: (editingTemplate as any).venue_id ?? '',
+            grade_groups: (editingTemplate as any).grade_groups ?? [],
+            duration_minutes: (editingTemplate as any).duration_minutes ?? 60,
+            duration_custom: false,
+            additional_tags: (editingTemplate as any).additional_tags ?? [],
+            week_cycle_length: (editingTemplate as any).week_cycle_length ?? null,
+            week_in_cycle: (editingTemplate as any).week_in_cycle ?? null,
+            is_active: (editingTemplate as any).is_active ?? true,
+            scheduling_mode: (editingTemplate as any).scheduling_mode ?? 'ongoing',
+            starts_on: (editingTemplate as any).starts_on ?? '',
+            ends_on: (editingTemplate as any).ends_on ?? '',
+            duration_weeks: (editingTemplate as any).duration_weeks ?? null,
+            session_count: (editingTemplate as any).session_count ?? null,
+            within_weeks: (editingTemplate as any).within_weeks ?? null,
+            sessions_per_week: (editingTemplate as any).sessions_per_week ?? 1,
+          }}
+          programId={selectedProgramId}
+          title="Edit Event Template"
+          submitLabel="Save Changes"
+        />
+      )}
     </div>
   );
 }
