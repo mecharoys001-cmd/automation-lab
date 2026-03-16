@@ -1525,6 +1525,7 @@ function CalendarDashboard() {
           initialTime={panelState.event.time}
           initialVenueId={panelState.event.venueId}
           showSessionFields={true}
+          editingSessionId={panelState.event.id}
           title="Edit Event"
           submitLabel="Save Changes"
         />

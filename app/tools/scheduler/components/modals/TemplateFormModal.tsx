@@ -85,6 +85,8 @@ export interface TemplateFormModalProps {
   initialVenueId?: string;
   /** Show session date/time fields (for calendar usage) */
   showSessionFields?: boolean;
+  /** Session ID being edited — used to exclude self from venue conflict checks */
+  editingSessionId?: string;
 }
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -119,6 +121,7 @@ export function TemplateFormModal({
   initialTime,
   initialVenueId,
   showSessionFields = false,
+  editingSessionId,
 }: TemplateFormModalProps) {
   const isEditing = !!initialData;
 
@@ -246,6 +249,7 @@ export function TemplateFormModal({
           start_time: sessionStartTime,
           end_time: endTime,
         });
+        if (editingSessionId) params.set('exclude_id', editingSessionId);
         const res = await fetch(`/api/sessions/check-conflict?${params}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
@@ -268,7 +272,7 @@ export function TemplateFormModal({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [open, showSessionFields, form.venue_id, sessionDate, sessionStartTime, form.duration_minutes]);
+  }, [open, showSessionFields, form.venue_id, sessionDate, sessionStartTime, form.duration_minutes, editingSessionId]);
 
   /* ── Submit ────────────────────────────────────────────── */
 
