@@ -327,8 +327,9 @@ export default function RolesPage() {
     try {
       if (wasInstructor && !becomingInstructor) {
         // Delete instructor, create admin
-        await fetch(`/api/instructors/${user.id}`, { method: 'DELETE' });
-        await fetch('/api/admins', {
+        const delRes = await fetch(`/api/instructors/${user.id}`, { method: 'DELETE' });
+        if (!delRes.ok) throw new Error('Failed to remove instructor record');
+        const createRes = await fetch('/api/admins', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -337,11 +338,13 @@ export default function RolesPage() {
             role_level: appRoleToAdminLevel(editRole),
           }),
         });
+        if (!createRes.ok) throw new Error('Failed to create admin record');
       } else if (!wasInstructor && becomingInstructor) {
         // Delete admin, create instructor
-        await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
+        const delRes = await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
+        if (!delRes.ok) throw new Error('Failed to remove admin record');
         const nameParts = user.name.split(/\s+/);
-        await fetch('/api/instructors', {
+        const createRes = await fetch('/api/instructors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -351,19 +354,20 @@ export default function RolesPage() {
             is_active: true,
           }),
         });
+        if (!createRes.ok) throw new Error('Failed to create instructor record');
       } else {
-        // Same source, just update role level
-        // This only applies to admin → different admin role
-        await fetch('/api/admins?id=' + user.id, { method: 'DELETE' });
-        await fetch('/api/admins', {
-          method: 'POST',
+        // Same source, just update role level via PATCH
+        const res = await fetch('/api/admins?id=' + user.id, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            google_email: user.email,
-            display_name: user.name,
             role_level: appRoleToAdminLevel(editRole),
           }),
         });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Failed to update role');
+        }
       }
 
       await fetchAll();

@@ -361,11 +361,11 @@ export function EventPopover({
 
         {/* Edit – opens modal */}
         {pinned && !inCancelFlow && onOpenEditPanel && (
-          <Tooltip text="Edit class details">
+          <Tooltip text="Edit event details">
             <button
               onClick={() => { onOpenEditPanel(event); onClose(); }}
               className="p-1 rounded hover:bg-white/60 transition-colors cursor-pointer"
-              aria-label="Edit class"
+              aria-label="Edit event"
             >
               <Pencil className="w-3.5 h-3.5 text-slate-400" />
             </button>
@@ -411,7 +411,7 @@ export function EventPopover({
         <>
             {/* Time */}
             <div className="flex items-center gap-2">
-              <Tooltip text="Class time">
+              <Tooltip text="Event time">
                 <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </Tooltip>
               <div>
@@ -552,15 +552,15 @@ export function EventPopover({
 
             {pinned && isEditingNotes ? (
               <div className="space-y-2">
-                <Tooltip text="Type class notes here">
+                <Tooltip text="Type event notes here">
                   <textarea
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Add notes about this class..."
+                    placeholder="Add notes about this event..."
                     className="w-full px-3 py-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none bg-white"
                     rows={3}
                     autoFocus
-                    aria-label="Class notes"
+                    aria-label="Event notes"
                   />
                 </Tooltip>
                 <div className="flex gap-2">
@@ -641,9 +641,9 @@ export function EventPopover({
                 size="sm"
                 onClick={handleFinalCancel}
                 className="w-full"
-                tooltip="Cancel this session without replacement"
+                tooltip="Cancel this event without replacement"
               >
-                Just Cancel This Session
+                Just Cancel This Event
               </Button>
               {event.templateId && (
                 <Button
@@ -655,9 +655,9 @@ export function EventPopover({
                     onClose();
                   }}
                   className="w-full"
-                  tooltip="Cancel this and all future sessions with the same template"
+                  tooltip="Cancel this and all future events with the same template"
                 >
-                  Cancel All Future Sessions
+                  Cancel All Future Events
                 </Button>
               )}
             </div>
@@ -813,13 +813,13 @@ export function EventPopover({
       {/* ----------------------------------------------------------------- */}
       {!inCancelFlow && (
         <div className="flex items-center gap-2 px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 rounded-b-xl">
-          <Tooltip text="Cancel this session">
+          <Tooltip text="Cancel this event">
             <button
               onClick={handleCancelClick}
               className="text-[11px] font-medium text-red-500 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
-              aria-label="Cancel session"
+              aria-label="Cancel event"
             >
-              Cancel Session
+              Cancel Event
             </button>
           </Tooltip>
           <div className="flex-1" />
@@ -834,11 +834,11 @@ export function EventPopover({
               </button>
             </Tooltip>
           )}
-          <Tooltip text="Open full session details">
+          <Tooltip text="Open full event details">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetails?.(event); }}
               className="text-[11px] font-medium text-blue-500 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
-              aria-label="View session details"
+              aria-label="View event details"
             >
               View Details
             </button>

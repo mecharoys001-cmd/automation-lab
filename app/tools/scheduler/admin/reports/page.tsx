@@ -344,12 +344,12 @@ function HoursByTagTab({
               </Tooltip>
             </th>
             <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
-              <Tooltip text="Number of individual classes tagged with this category">
-                <span className="cursor-help">Classes</span>
+              <Tooltip text="Number of individual events tagged with this category">
+                <span className="cursor-help">Events</span>
               </Tooltip>
             </th>
             <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
-              <Tooltip text="Average length of each class in minutes">
+              <Tooltip text="Average length of each event in minutes">
                 <span className="cursor-help">Avg Duration</span>
               </Tooltip>
             </th>
@@ -374,7 +374,7 @@ function HoursByTagTab({
                 >
                   {/* Tag cell: emoji + name + proportional bar */}
                   <td className="px-5 py-3.5">
-                    <Tooltip text={`${tag.emoji} ${tag.name}: ${tag.totalHours} hours across ${tag.sessions} classes`}>
+                    <Tooltip text={`${tag.emoji} ${tag.name}: ${tag.totalHours} hours across ${tag.sessions} events`}>
                       <div className="flex flex-col gap-1.5">
                         <span className="text-sm font-medium text-slate-900">
                           {tag.emoji}&nbsp;&nbsp;{tag.name}
@@ -402,7 +402,7 @@ function HoursByTagTab({
 
                   {/* Sessions */}
                   <td className="px-5 py-3.5 text-right">
-                    <Tooltip text={`${tag.sessions} classes tagged as ${tag.name}`}>
+                    <Tooltip text={`${tag.sessions} events tagged as ${tag.name}`}>
                       <span className="text-sm text-slate-500 tabular-nums">
                         {tag.sessions}
                       </span>
@@ -609,7 +609,7 @@ export default function ReportsPage() {
       {/* ─── Quick Links ──────────────────────────────────── */}
       <div className="bg-gradient-to-r from-blue-50 to-violet-50 px-8 py-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <Tooltip text="View class counts by template with filtering and sorting">
+          <Tooltip text="View event counts by template with filtering and sorting">
             <a
               href="/tools/scheduler/admin/reports/sessions-by-template"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-[13px] font-medium text-blue-700"

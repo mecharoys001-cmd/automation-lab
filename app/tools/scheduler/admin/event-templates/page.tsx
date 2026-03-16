@@ -41,7 +41,7 @@ const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'starts_on', label: 'Starts On' },
   { csvHeader: 'ends_on', label: 'Ends On' },
   { csvHeader: 'duration_weeks', label: 'Duration Weeks' },
-  { csvHeader: 'session_count', label: 'Session Count' },
+  { csvHeader: 'session_count', label: 'Event Count' },
   { csvHeader: 'within_weeks', label: 'Within Weeks' },
   { csvHeader: 'week_cycle_length', label: 'Week Cycle Length' },
   { csvHeader: 'week_in_cycle', label: 'Week in Cycle' },
@@ -423,7 +423,7 @@ export default function EventTemplatesPage() {
               <Upload className="w-4 h-4" />
               Import CSV
             </Button>
-            <Button variant="primary" onClick={openCreateForm} tooltip="Create a new class template">
+            <Button variant="primary" onClick={openCreateForm} tooltip="Create a new event template">
               <Plus className="w-4 h-4" />
               New Event Template
             </Button>

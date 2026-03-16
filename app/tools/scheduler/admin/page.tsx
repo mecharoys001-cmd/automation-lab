@@ -866,7 +866,7 @@ function CalendarDashboard() {
       key: 'status',
       label: 'Status',
       icon: CircleDot,
-      tooltip: 'Filter by session status',
+      tooltip: 'Filter by event status',
       options: [
         { value: 'draft', label: 'Draft' },
         { value: 'published', label: 'Published' },
@@ -1360,7 +1360,7 @@ function CalendarDashboard() {
         {/* Auto-Generate Draft */}
         <Button
           variant="secondary"
-          tooltip="Generate draft classes from your weekly template"
+          tooltip="Generate draft events from your weekly template"
           icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-500 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-500" />}
           onClick={handleGenerateSchedule}
           disabled={isGenerating}
@@ -1648,7 +1648,7 @@ function CalendarDashboard() {
         programId={selectedProgramId}
         showSessionFields
         title="Create Event Template"
-        submitLabel="Create Template & Session"
+        submitLabel="Create Template & Event"
       />
 
       {/* Edit Template Modal (when clicking template in Event Library) */}

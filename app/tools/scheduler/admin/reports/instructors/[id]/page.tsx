@@ -60,7 +60,7 @@ function getDefaultDates(): { start: string; end: string } {
 /* ── Tab Config ────────────────────────────────────────────── */
 
 const TABS: { key: DetailTab; label: string; icon: typeof Clock; tooltip: string }[] = [
-  { key: 'weekly', label: 'Weekly Breakdown', icon: Calendar, tooltip: 'Hours and classes per week' },
+  { key: 'weekly', label: 'Weekly Breakdown', icon: Calendar, tooltip: 'Hours and events per week' },
   { key: 'tags', label: 'Hours by Tag', icon: Tag, tooltip: 'Time distribution across tags' },
 ];
 
@@ -127,10 +127,10 @@ export default function InstructorDetailPage() {
                   {data.total_hours}h total
                 </span>
               </Tooltip>
-              <Tooltip text="Total classes across the selected date range">
+              <Tooltip text="Total events across the selected date range">
                 <span className="flex items-center gap-1 cursor-help">
                   <Hash className="w-3.5 h-3.5" />
-                  {data.total_sessions} class{data.total_sessions !== 1 ? 'es' : ''}
+                  {data.total_sessions} event{data.total_sessions !== 1 ? 's' : ''}
                 </span>
               </Tooltip>
             </div>
@@ -208,19 +208,19 @@ export default function InstructorDetailPage() {
                 </div>
               </Tooltip>
 
-              <Tooltip text="Total classes for this staff member in the selected range">
+              <Tooltip text="Total events for this staff member in the selected range">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-emerald-100">
                     <Hash className="w-[22px] h-[22px] text-emerald-500" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-slate-500">Total Classes</span>
+                    <span className="text-xs font-medium text-slate-500">Total Events</span>
                     <span className="text-[28px] font-bold leading-none text-slate-900 tabular-nums">{data.total_sessions}</span>
                   </div>
                 </div>
               </Tooltip>
 
-              <Tooltip text="Number of weeks with at least one class">
+              <Tooltip text="Number of weeks with at least one event">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-amber-100">
                     <Calendar className="w-[22px] h-[22px] text-amber-500" />
@@ -232,7 +232,7 @@ export default function InstructorDetailPage() {
                 </div>
               </Tooltip>
 
-              <Tooltip text="Number of distinct tags across classes">
+              <Tooltip text="Number of distinct tags across events">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-[#EDE9FE]">
                     <Tag className="w-[22px] h-[22px] text-violet-500" />
@@ -321,7 +321,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
             return (
               <Tooltip
                 key={row.week}
-                text={`Week of ${formatWeekLabel(row.week)}: ${row.hours}h across ${row.session_count} class${row.session_count !== 1 ? 'es' : ''}`}
+                text={`Week of ${formatWeekLabel(row.week)}: ${row.hours}h across ${row.session_count} event${row.session_count !== 1 ? 's' : ''}`}
               >
                 <div className="grid grid-cols-[minmax(180px,1fr)_100px_100px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors">
                   <span className="text-[13px] font-medium text-slate-900">
@@ -392,7 +392,7 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
             return (
               <Tooltip
                 key={row.tag_name}
-                text={`${row.tag_name}: ${row.hours}h across ${row.session_count} class${row.session_count !== 1 ? 'es' : ''} (${percentage}% of total)`}
+                text={`${row.tag_name}: ${row.hours}h across ${row.session_count} event${row.session_count !== 1 ? 's' : ''} (${percentage}% of total)`}
               >
                 <div className="grid grid-cols-[minmax(160px,auto)_100px_100px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors">
                   <div>
