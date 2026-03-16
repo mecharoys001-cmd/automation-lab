@@ -210,7 +210,7 @@ export async function GET(request: NextRequest) {
       ready,
       checks: {
         templates: {
-          label: 'Templates',
+          label: 'Event Templates',
           status: templateStatus,
           count: templates.length,
           total: templates.length,
