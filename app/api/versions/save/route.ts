@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     const year = Number(yearParam);
+    const programId = searchParams.get('program_id');
 
     // Parse optional status from body
     let status: 'draft' | 'published' = 'draft';
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Build snapshot ───────────────────────────────────────
-    const snapshot = await buildSnapshot(supabase, year);
+    const snapshot = await buildSnapshot(supabase, year, programId);
 
     // ── Determine next version slot (1-5 rotation) ───────────
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function buildSnapshot(supabase: any, year: number): Promise<ScheduleSnapshot> {
+async function buildSnapshot(supabase: any, year: number, programId: string | null): Promise<ScheduleSnapshot> {
   // Determine date range for the year
   const startDate = `${year}-01-01`;
   const endDate = `${year}-12-31`;
@@ -126,10 +127,16 @@ async function buildSnapshot(supabase: any, year: number): Promise<ScheduleSnaps
       .lte('date', endDate),
     // Settings (single row)
     (supabase.from('settings') as any).select('*').limit(1).single(),
-    // Reference data — preserved on revert
-    (supabase.from('instructors') as any).select('*'),
-    (supabase.from('venues') as any).select('*'),
-    (supabase.from('tags') as any).select('*'),
+    // Reference data — preserved on revert (scoped to program if provided)
+    programId
+      ? (supabase.from('instructors') as any).select('*').eq('program_id', programId)
+      : (supabase.from('instructors') as any).select('*'),
+    programId
+      ? (supabase.from('venues') as any).select('*').eq('program_id', programId)
+      : (supabase.from('venues') as any).select('*'),
+    programId
+      ? (supabase.from('tags') as any).select('*').eq('program_id', programId)
+      : (supabase.from('tags') as any).select('*'),
   ]);
 
   const sessions = sessionsRes.data ?? [];

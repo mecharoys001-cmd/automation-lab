@@ -72,11 +72,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. Delete instructors (global — sessions/calendar already deleted above)
+    // 4. Delete instructors scoped to this program
     const { data: instrData, error: instrErr } = await sb
       .from('instructors')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000')
+      .eq('program_id', programId)
       .select('id');
 
     if (instrErr) {
@@ -86,11 +86,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 5. Delete venues (global — no program_id column)
+    // 5. Delete venues scoped to this program
     const { data: venueData, error: venueErr } = await sb
       .from('venues')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000')
+      .eq('program_id', programId)
       .select('id');
 
     if (venueErr) {
@@ -100,13 +100,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 6. Delete tags EXCEPT Subjects and Space Types (those are default categories)
+    // 6. Delete tags scoped to this program EXCEPT Subjects and Space Types (those are default categories)
     const PRESERVED_CATEGORIES = ['Subjects', 'Skills', 'Space Types', 'Spaces Type'];
     const { data: tagData, error: tagErr } = await sb
       .from('tags')
       .delete()
+      .eq('program_id', programId)
       .not('category', 'in', `(${PRESERVED_CATEGORIES.map(c => `"${c}"`).join(',')})`)
-      .neq('id', '00000000-0000-0000-0000-000000000000')
       .select('id');
 
     if (tagErr) {

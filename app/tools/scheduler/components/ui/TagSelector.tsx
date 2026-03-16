@@ -17,6 +17,8 @@ interface TagSelectorProps {
   value: string[];
   /** Callback when selection changes */
   onChange: (tags: string[]) => void;
+  /** Program ID to scope tags */
+  programId: string;
   /** Filter tags by category (e.g., "Event Type", "Space Types") */
   category?: string;
   /** Placeholder text */
@@ -30,6 +32,7 @@ interface TagSelectorProps {
 export function TagSelector({
   value,
   onChange,
+  programId,
   category,
   placeholder = 'Select tags...',
   className = '',
@@ -48,8 +51,9 @@ export function TagSelector({
   const [savingTag, setSavingTag] = useState(false);
 
   const fetchTags = useCallback(async () => {
+    if (!programId) return;
     try {
-      const res = await fetch('/api/tags');
+      const res = await fetch(`/api/tags?program_id=${programId}`);
       if (!res.ok) throw new Error('Failed to load tags');
       const json = await res.json();
       let tags = json.tags ?? [];
@@ -71,7 +75,7 @@ export function TagSelector({
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, [category, programId]);
 
   useEffect(() => {
     fetchTags();
@@ -88,6 +92,7 @@ export function TagSelector({
           name: newTagName.trim(),
           emoji: newTagEmoji.trim() || null,
           category: category || 'General',
+          program_id: programId,
         }),
       });
       if (!res.ok) throw new Error('Failed to create tag');

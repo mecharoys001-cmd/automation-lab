@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
     const [sessions, templates, instructors, venues, tags] = await Promise.all([
       sb.from('sessions').select('id', { count: 'exact', head: true }).eq('program_id', programId),
       sb.from('session_templates').select('id', { count: 'exact', head: true }).eq('program_id', programId),
-      sb.from('instructors').select('id', { count: 'exact', head: true }).neq('id', '00000000-0000-0000-0000-000000000000'),
+      sb.from('instructors').select('id', { count: 'exact', head: true }).eq('program_id', programId),
       sb.from('venues').select('id', { count: 'exact', head: true }).eq('program_id', programId),
-      sb.from('tags').select('id', { count: 'exact', head: true }).neq('id', '00000000-0000-0000-0000-000000000000'),
+      sb.from('tags').select('id', { count: 'exact', head: true }).eq('program_id', programId),
     ]);
 
     return NextResponse.json({

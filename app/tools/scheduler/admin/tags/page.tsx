@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload } from 'lucide-react';
+import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { EmojiPicker } from '../../components/ui/EmojiPicker';
@@ -119,6 +120,7 @@ function getDescriptionForTag(tag: Tag): string {
 }
 
 export default function TagsPage() {
+  const { selectedProgramId } = useProgram();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,7 +177,7 @@ export default function TagsPage() {
   const installDefaults = async () => {
     setInstallDefaultsLoading(true);
     try {
-      const res = await fetch('/api/seed/ensure-defaults', { method: 'POST' });
+      const res = await fetch(`/api/seed/ensure-defaults?program_id=${selectedProgramId}`, { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       await fetchTags();
@@ -191,7 +193,7 @@ export default function TagsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/tags');
+      const res = await fetch(`/api/tags?program_id=${selectedProgramId}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setTags(json.tags ?? []);
@@ -201,7 +203,7 @@ export default function TagsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     fetchTags();
@@ -274,11 +276,12 @@ export default function TagsPage() {
           const res = await fetch('/api/tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              name: tagName, 
-              emoji, 
-              description, 
-              category: quickAddCategory 
+            body: JSON.stringify({
+              name: tagName,
+              emoji,
+              description,
+              category: quickAddCategory,
+              program_id: selectedProgramId
             }),
           });
 
@@ -474,11 +477,12 @@ export default function TagsPage() {
           const res = await fetch('/api/tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              name: tagName, 
-              emoji, 
-              description, 
-              category 
+            body: JSON.stringify({
+              name: tagName,
+              emoji,
+              description,
+              category,
+              program_id: selectedProgramId
             }),
           });
 
@@ -922,7 +926,7 @@ export default function TagsPage() {
           const res = await fetch('/api/tags/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows: mapped }),
+            body: JSON.stringify({ rows: mapped, program_id: selectedProgramId }),
           });
           if (!res.ok) {
             const { error } = await res.json();

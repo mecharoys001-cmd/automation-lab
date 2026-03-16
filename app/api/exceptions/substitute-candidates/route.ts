@@ -49,10 +49,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch all active instructors
+    // Fetch all active instructors scoped to the session's program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawInstructors, error: instError } = await (supabase.from('instructors') as any)
       .select('id, first_name, last_name, skills, availability_json, is_active')
+      .eq('program_id', session.program_id)
       .eq('is_active', true)
       .order('last_name');
 

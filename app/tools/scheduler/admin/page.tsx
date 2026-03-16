@@ -753,8 +753,7 @@ function CalendarDashboard() {
       }
 
       // Fetch all venues from DB (includes empty venues with no events).
-      // Don't filter by program_id — venues are physical spaces shared across programs.
-      const venueRes = await fetch('/api/venues', { cache: 'no-store', signal });
+      const venueRes = await fetch(`/api/venues?program_id=${selectedProgramId}`, { cache: 'no-store', signal });
 
       if (venueRes.ok) {
         const venueBody = await venueRes.json();
@@ -816,9 +815,9 @@ function CalendarDashboard() {
   const fetchFilterOptions = useCallback(async () => {
     try {
       const [instRes, venueRes, tagRes] = await Promise.all([
-        fetch('/api/instructors'),
-        fetch('/api/venues'),
-        fetch('/api/tags'),
+        fetch(`/api/instructors?program_id=${selectedProgramId}`),
+        fetch(`/api/venues?program_id=${selectedProgramId}`),
+        fetch(`/api/tags?program_id=${selectedProgramId}`),
       ]);
       const [instData, venueData, tagData] = await Promise.all([
         instRes.json(),
@@ -833,7 +832,7 @@ function CalendarDashboard() {
     } catch (err) {
       console.error('[fetchFilterOptions]', err);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     fetchFilterOptions();

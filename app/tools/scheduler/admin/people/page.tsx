@@ -315,11 +315,12 @@ function VenueDetailModal({
 }) {
   const [editing, setEditing] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { selectedProgramId } = useProgram();
 
   /* ── Space types from tags API ─── */
   const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
   useEffect(() => {
-    fetch('/api/tags')
+    fetch(`/api/tags?program_id=${selectedProgramId}`)
       .then((r) => r.json())
       .then((d) => {
         const types = (d.tags ?? [])
@@ -328,7 +329,7 @@ function VenueDetailModal({
         setSpaceTypes(types);
       })
       .catch(() => {});
-  }, []);
+  }, [selectedProgramId]);
 
   /* ── Edit-mode state ─── */
   const [editName, setEditName] = useState(venue.name || '');
@@ -601,6 +602,7 @@ function VenueDetailModal({
               category="Event Type"
               value={venueSubjects}
               onChange={setVenueSubjects}
+              programId={selectedProgramId ?? ''}
               placeholder="All event types (no restriction)"
             />
           </div>
@@ -866,6 +868,7 @@ function VenueCreateModal({
   onSave: (data: VenueFormData) => void;
   onClose: () => void;
 }) {
+  const { selectedProgramId } = useProgram();
   const [form, setForm] = useState<VenueFormData>({ ...EMPTY_VENUE_FORM });
   const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
   const [loadingSpaceTypes, setLoadingSpaceTypes] = useState(true);
@@ -876,7 +879,7 @@ function VenueCreateModal({
   // Fetch space types from tags
   const fetchSpaceTypes = useCallback(() => {
     setLoadingSpaceTypes(true);
-    fetch('/api/tags')
+    fetch(`/api/tags?program_id=${selectedProgramId}`)
       .then((res) => res.json())
       .then((data) => {
         const types = (data.tags ?? [])
@@ -886,7 +889,7 @@ function VenueCreateModal({
       })
       .catch(() => setSpaceTypes([]))
       .finally(() => setLoadingSpaceTypes(false));
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     fetchSpaceTypes();
@@ -900,7 +903,7 @@ function VenueCreateModal({
       const res = await fetch('/api/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed, category: 'Space Types' }),
+        body: JSON.stringify({ name: trimmed, category: 'Space Types', program_id: selectedProgramId }),
       });
       if (!res.ok) {
         const { error } = await res.json();
@@ -1040,6 +1043,7 @@ function VenueCreateModal({
             category="Event Type"
             value={form.subjects}
             onChange={(val) => setField('subjects', val as unknown as VenueFormData['subjects'])}
+            programId={selectedProgramId ?? ''}
             placeholder="All event types (no restriction)"
           />
         </div>
@@ -1162,7 +1166,7 @@ export default function PeoplePage() {
   const fetchInstructors = useCallback(async () => {
     setLoadingAll(true);
     try {
-      const res = await fetch('/api/instructors');
+      const res = await fetch(`/api/instructors?program_id=${selectedProgramId}`);
       if (!res.ok) throw new Error(`${res.status}`);
       const { instructors } = (await res.json()) as { instructors: Instructor[] };
       setAllInstructors(instructors);
@@ -1171,12 +1175,12 @@ export default function PeoplePage() {
     } finally {
       setLoadingAll(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   const fetchVenues = useCallback(async () => {
     setLoadingVenues(true);
     try {
-      const res = await fetch('/api/venues');
+      const res = await fetch(`/api/venues?program_id=${selectedProgramId}`);
       if (!res.ok) throw new Error(`${res.status}`);
       const { venues: data } = (await res.json()) as { venues: Venue[] };
       setVenues(data);
@@ -1185,7 +1189,7 @@ export default function PeoplePage() {
     } finally {
       setLoadingVenues(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     fetchInstructors();
@@ -1312,6 +1316,7 @@ export default function PeoplePage() {
         skills: data.skills.length > 0 ? data.skills : null,
         availability_json: data.availability_json,
       };
+      if (isNew) body.program_id = selectedProgramId;
       const url = isNew ? '/api/instructors' : `/api/instructors/${editingInstructor!.id}`;
       const method = isNew ? 'POST' : 'PATCH';
       const res = await fetch(url, {
@@ -1339,7 +1344,7 @@ export default function PeoplePage() {
     } finally {
       setSavingInstructor(false);
     }
-  }, [editingInstructor, selectedInstructor]);
+  }, [editingInstructor, selectedInstructor, selectedProgramId]);
 
   const handleDeleteInstructor = useCallback(async () => {
     if (!editingInstructor) return;
@@ -1371,6 +1376,7 @@ export default function PeoplePage() {
         availability_json: data.availability_json,
         notes: data.notes.trim() || null,
         subjects: data.subjects.length > 0 ? data.subjects : null,
+        program_id: selectedProgramId,
       };
       const res = await fetch('/api/venues', {
         method: 'POST',
@@ -1390,7 +1396,7 @@ export default function PeoplePage() {
     } finally {
       setCreatingVenue(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   /* ── Derived state ─────────────────────────────────────── */
 
@@ -1880,7 +1886,7 @@ export default function PeoplePage() {
           const res = await fetch('/api/venues/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows: mapped }),
+            body: JSON.stringify({ rows: mapped, program_id: selectedProgramId }),
           });
           if (!res.ok) {
             const { error } = await res.json();
@@ -1918,7 +1924,7 @@ export default function PeoplePage() {
           const res = await fetch('/api/instructors/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows: mapped }),
+            body: JSON.stringify({ rows: mapped, program_id: selectedProgramId }),
           });
           if (!res.ok) {
             const { error } = await res.json();

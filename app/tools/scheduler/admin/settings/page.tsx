@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Program, Admin, RoleLevel } from '@/types/database';
+import { ImportFromProgramModal } from '../../components/modals/ImportFromProgramModal';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -122,6 +123,7 @@ export default function SettingsPage() {
   const [programForm, setProgramForm] = useState<ProgramFormData>(emptyProgramForm);
   const [programSaving, setProgramSaving] = useState(false);
   const [programError, setProgramError] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // ---- Admins state ----
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -327,7 +329,7 @@ export default function SettingsPage() {
     setSeedCounts(null);
     setSeedError(null);
     try {
-      const res = await fetch(`/api/seed?dataset=${dataset}`, { method: 'POST' });
+      const res = await fetch(`/api/seed?dataset=${dataset}&program_id=${selectedProgramId}`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error ?? 'Seed failed');
       setSeedCounts(data.counts ?? {});
@@ -464,12 +466,22 @@ export default function SettingsPage() {
             </div>
           </div>
           {!showProgramForm && (
-            <Tooltip text="Add a new scheduling program with date range">
-              <button onClick={startCreateProgram} className={btnPrimary}>
-                <Plus className="w-4 h-4" />
-                Create Program
-              </button>
-            </Tooltip>
+            <div className="flex gap-2">
+              {selectedProgramId && programs.length > 1 && (
+                <Tooltip text="Import staff, venues, and tags from another program">
+                  <button onClick={() => setShowImportModal(true)} className={btnPrimary}>
+                    <Database className="w-4 h-4" />
+                    Import from Program
+                  </button>
+                </Tooltip>
+              )}
+              <Tooltip text="Add a new scheduling program with date range">
+                <button onClick={startCreateProgram} className={btnPrimary}>
+                  <Plus className="w-4 h-4" />
+                  Create Program
+                </button>
+              </Tooltip>
+            </div>
           )}
         </div>
 
@@ -1198,6 +1210,16 @@ export default function SettingsPage() {
       {/* Toast notifications */}
       {toast && (
         <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
+      )}
+
+      {/* Import from program modal */}
+      {selectedProgramId && (
+        <ImportFromProgramModal
+          open={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          targetProgramId={selectedProgramId}
+          programs={programs}
+        />
       )}
     </div>
   );

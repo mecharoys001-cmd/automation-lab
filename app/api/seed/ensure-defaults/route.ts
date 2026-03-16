@@ -1,18 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { DEFAULT_SPACE_TYPES } from '../default-tags';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
+    const { searchParams } = new URL(request.url);
+    const programId = searchParams.get('program_id');
 
-    // Fetch existing Space Types tags
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
+    }
+
+    // Fetch existing Space Types tags for this program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing, error: fetchError } = await (supabase.from('tags') as any)
       .select('name, category')
-      .eq('category', 'Space Types');
+      .eq('category', 'Space Types')
+      .eq('program_id', programId);
 
     if (fetchError) {
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
@@ -32,6 +39,7 @@ export async function POST() {
       category: t.category ?? 'Space Types',
       description: t.description ?? null,
       emoji: t.emoji ?? null,
+      program_id: programId,
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

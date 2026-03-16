@@ -27,7 +27,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { rows: rawRows } = (await request.json()) as { rows: Record<string, any>[] };
+    const { rows: rawRows, program_id } = (await request.json()) as { rows: Record<string, any>[]; program_id?: string };
+
+    if (!program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     if (!Array.isArray(rawRows) || rawRows.length === 0) {
       return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
@@ -83,13 +87,15 @@ export async function POST(request: NextRequest) {
         blackout_dates: parseSemicolonList(r.blackout_dates),
         is_wheelchair_accessible: parseBool(r.is_wheelchair_accessible),
         subjects: parseSemicolonList(r.subjects),
+        program_id,
       };
     });
 
-    // Check for duplicate names against existing venues
+    // Check for duplicate names against existing venues in this program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase.from('venues') as any)
       .select('name')
+      .eq('program_id', program_id)
       .order('name');
 
     const existingNames = new Set(

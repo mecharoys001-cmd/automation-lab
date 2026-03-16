@@ -5,14 +5,20 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
+    const programId = searchParams.get('program_id');
     const isActive = searchParams.get('is_active');
     const skills = searchParams.get('skills');
     const search = searchParams.get('search');
     const email = searchParams.get('email');
 
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('instructors') as any)
       .select('*')
+      .eq('program_id', programId)
       .order('last_name')
       .order('first_name');
 
@@ -80,6 +86,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     const body = await request.json();
+
+    if (!body.program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('instructors') as any)

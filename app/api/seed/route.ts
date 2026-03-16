@@ -38,12 +38,6 @@ export async function POST(request: NextRequest) {
     await sb.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000').neq('is_default', true);
     await sb.from('venues').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // ── Venues ───────────────────────────────────────────────
-    const { data: venuesData } = await sb.from('venues').insert(dataset.venues).select();
-
-    const venueMap: Record<string, string> = {};
-    for (const v of venuesData ?? []) venueMap[v.name] = v.id;
-
     // ── Program ──────────────────────────────────────────────
     const { data: programData } = await sb.from('programs').insert({
       name: 'Symphonix 2025-2026',
@@ -55,6 +49,14 @@ export async function POST(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'Failed to create program' }, { status: 500 });
     }
+
+    // ── Venues ───────────────────────────────────────────────
+    const { data: venuesData } = await sb.from('venues').insert(
+      dataset.venues.map((v: Record<string, unknown>) => ({ ...v, program_id: programId }))
+    ).select();
+
+    const venueMap: Record<string, string> = {};
+    for (const v of venuesData ?? []) venueMap[v.name] = v.id;
 
     // ── Tags ─────────────────────────────────────────────────
     // Upsert default tags (these survive clear-all via is_default flag)
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
         name: t.name,
         color: t.color,
         is_default: true,
+        program_id: programId,
         ...(t.category && { category: t.category }),
         ...(t.description && { description: t.description }),
         ...(t.emoji && { emoji: t.emoji }),
@@ -80,6 +83,7 @@ export async function POST(request: NextRequest) {
         name: t.name,
         color: t.color,
         is_default: false,
+        program_id: programId,
         ...(t.category && { category: t.category }),
         ...(t.description && { description: t.description }),
         ...(t.emoji && { emoji: t.emoji }),
@@ -87,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Upsert defaults (skip duplicates that survived clear-all)
     const { data: defaultTagsData } = await sb.from('tags')
-      .upsert(defaultTagRows, { onConflict: 'name,category', ignoreDuplicates: false })
+      .upsert(defaultTagRows, { onConflict: 'name,program_id', ignoreDuplicates: false })
       .select();
 
     // Insert non-default tags fresh
@@ -134,7 +138,9 @@ export async function POST(request: NextRequest) {
     ]);
 
     // ── Instructors ──────────────────────────────────────────
-    const { data: instructorsData } = await sb.from('instructors').insert(dataset.instructors).select();
+    const { data: instructorsData } = await sb.from('instructors').insert(
+      dataset.instructors.map((i: Record<string, unknown>) => ({ ...i, program_id: programId }))
+    ).select();
 
     const instIds = (instructorsData ?? []).map((i: { id: string }) => i.id);
 

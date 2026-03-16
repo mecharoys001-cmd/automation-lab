@@ -214,10 +214,11 @@ export default function EventTemplatesPage() {
   }, [selectedProgramId]);
 
   const fetchLookups = useCallback(async () => {
+    if (!selectedProgramId) return;
     try {
       const [instRes, venueRes] = await Promise.all([
-        fetch(`/api/instructors?_t=${Date.now()}`),
-        fetch(`/api/venues?_t=${Date.now()}`),
+        fetch(`/api/instructors?program_id=${selectedProgramId}&_t=${Date.now()}`),
+        fetch(`/api/venues?program_id=${selectedProgramId}&_t=${Date.now()}`),
       ]);
       if (instRes.ok) {
         const d = await instRes.json();
@@ -230,7 +231,7 @@ export default function EventTemplatesPage() {
     } catch {
       // Non-critical, dropdowns will just be empty
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
   useEffect(() => { fetchLookups(); }, [fetchLookups]);

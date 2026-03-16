@@ -119,31 +119,41 @@ export default function IntakePage() {
   // Program existence check — form disabled until a program with time blocks exists
   const [hasProgram, setHasProgram] = useState(false);
   const [programLoading, setProgramLoading] = useState(true);
+  const [programId, setProgramId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch event types (tags with category "Event Type", fallback to "Subjects"/"Skills" for legacy data)
-    fetch('/api/tags')
-      .then((res) => res.json())
-      .then((data) => {
-        const tags: SubjectTag[] = (data.tags ?? []).filter(
-          (t: SubjectTag) => ['Skills', 'Subjects', 'Event Type'].includes(t.category)
-        );
-        setAvailableSubjects(tags);
-      })
-      .catch(() => setAvailableSubjects([]))
-      .finally(() => setSubjectsLoading(false));
-
-    // Check if at least one program exists (with start/end dates set)
+    // First fetch programs, then use the program ID to fetch tags
     fetch('/api/programs')
       .then((res) => res.json())
       .then((data) => {
         const programs = data.programs ?? [];
-        const valid = programs.some(
-          (p: { start_date?: string; end_date?: string }) => p.start_date && p.end_date
+        const validProgram = programs.find(
+          (p: { id: string; start_date?: string; end_date?: string }) => p.start_date && p.end_date
         );
-        setHasProgram(valid);
+        if (validProgram) {
+          setHasProgram(true);
+          setProgramId(validProgram.id);
+
+          // Fetch event types scoped to this program
+          fetch(`/api/tags?program_id=${validProgram.id}`)
+            .then((res) => res.json())
+            .then((tagData) => {
+              const tags: SubjectTag[] = (tagData.tags ?? []).filter(
+                (t: SubjectTag) => ['Skills', 'Subjects', 'Event Type'].includes(t.category)
+              );
+              setAvailableSubjects(tags);
+            })
+            .catch(() => setAvailableSubjects([]))
+            .finally(() => setSubjectsLoading(false));
+        } else {
+          setHasProgram(false);
+          setSubjectsLoading(false);
+        }
       })
-      .catch(() => setHasProgram(false))
+      .catch(() => {
+        setHasProgram(false);
+        setSubjectsLoading(false);
+      })
       .finally(() => setProgramLoading(false));
   }, []);
 
@@ -281,6 +291,7 @@ export default function IntakePage() {
         phone: form.phone.trim() || null,
         skills: Array.from(selectedSkills),
         availability_json: availability,
+        program_id: programId,
       };
 
       try {

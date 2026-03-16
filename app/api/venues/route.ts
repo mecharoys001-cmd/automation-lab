@@ -12,9 +12,11 @@ export async function GET(request: NextRequest) {
       .select('*')
       .order('name');
 
-    if (programId) {
-      query = query.eq('program_id', programId);
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
     }
+
+    query = query.eq('program_id', programId);
 
     const { data, error } = await query;
 
@@ -71,6 +73,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     const body = await request.json();
+
+    if (!body.program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('venues') as any)

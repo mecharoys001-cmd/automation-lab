@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('program_id', programId)
         .eq('is_active', true),
-      (supabase.from('instructors') as any).select('*').eq('is_active', true),
-      (supabase.from('venues') as any).select('*'),
+      (supabase.from('instructors') as any).select('*').eq('program_id', programId).eq('is_active', true),
+      (supabase.from('venues') as any).select('*').eq('program_id', programId),
     ]);
 
     if (programRes.error) {

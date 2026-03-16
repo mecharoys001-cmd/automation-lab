@@ -4,13 +4,20 @@ import { createServiceClient } from '@/lib/supabase-service';
 // Ensure this route is always dynamically evaluated (never cached)
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceClient();
+    const { searchParams } = new URL(request.url);
+    const programId = searchParams.get('program_id');
+
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('tags') as any)
       .select('*')
+      .eq('program_id', programId)
       .order('name');
 
     if (error) {
@@ -94,11 +101,14 @@ export async function POST(request: NextRequest) {
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
+    if (!body.program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     const hasDescription = body.description && typeof body.description === 'string' && body.description.trim();
     const hasEmoji = body.emoji && typeof body.emoji === 'string' && body.emoji.trim();
     const hasCategory = body.category && typeof body.category === 'string' && body.category.trim();
-    const insertData: { name: string; description?: string; emoji?: string; category?: string } = { name: body.name.trim() };
+    const insertData: { name: string; program_id: string; description?: string; emoji?: string; category?: string } = { name: body.name.trim(), program_id: body.program_id };
     if (hasDescription) {
       insertData.description = body.description.trim();
     }
@@ -112,7 +122,7 @@ export async function POST(request: NextRequest) {
     // Upsert: if a tag with this name exists, update its category/emoji/description
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let { data, error } = await (supabase.from('tags') as any)
-      .upsert(insertData, { onConflict: 'name', ignoreDuplicates: false })
+      .upsert(insertData, { onConflict: 'name,program_id', ignoreDuplicates: false })
       .select()
       .single();
 
@@ -122,7 +132,7 @@ export async function POST(request: NextRequest) {
       const { description: _d, emoji: _e, category: _c, ...insertBasic } = insertData;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const retry = await (supabase.from('tags') as any)
-        .upsert(insertBasic, { onConflict: 'name', ignoreDuplicates: false })
+        .upsert(insertBasic, { onConflict: 'name,program_id', ignoreDuplicates: false })
         .select()
         .single();
       data = retry.data;

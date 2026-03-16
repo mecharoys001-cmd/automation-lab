@@ -77,11 +77,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
     }
 
-    // Fetch venues and instructors for name-to-ID mapping
+    // Fetch venues and instructors for name-to-ID mapping (scoped to program)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [venuesRes, instructorsRes] = await Promise.all([
-      (supabase.from('venues') as any).select('id, name'),
-      (supabase.from('instructors') as any).select('id, first_name, last_name'),
+      (supabase.from('venues') as any).select('id, name').eq('program_id', program_id),
+      (supabase.from('instructors') as any).select('id, first_name, last_name').eq('program_id', program_id),
     ]);
 
     const venueMap = new Map<string, string>();

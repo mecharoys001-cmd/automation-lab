@@ -381,6 +381,7 @@ export function TemplateFormModal({
         <FormField label="Event Type">
           <TagSelector
             value={form.required_skills}
+            programId={programId ?? ''}
             onChange={(skills) => {
               updateForm({ required_skills: skills });
               // Clear instructor if they don't match the new event type
@@ -801,6 +802,7 @@ export function TemplateFormModal({
           <TagSelector
             value={form.additional_tags}
             onChange={(tags) => updateForm({ additional_tags: tags })}
+            programId={programId ?? ''}
             placeholder="Select optional tags..."
           />
         </FormField>

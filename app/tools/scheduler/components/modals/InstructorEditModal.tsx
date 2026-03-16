@@ -207,6 +207,7 @@ export function InstructorEditModal({
             <TagSelector
               value={form.skills}
               onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
+              programId={selectedProgramId ?? ''}
               category="Event Type"
               placeholder="Select staff event types..."
             />

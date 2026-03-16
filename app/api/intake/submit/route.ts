@@ -32,12 +32,20 @@ interface IntakeSubmitBody {
   phone?: string | null;
   skills: string[];
   availability_json: AvailabilityJson;
+  program_id: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: IntakeSubmitBody = await request.json();
-    const { first_name, last_name, email, phone, skills, availability_json } = body;
+    const { first_name, last_name, email, phone, skills, availability_json, program_id } = body;
+
+    if (!program_id) {
+      return NextResponse.json(
+        { success: false, error: 'Missing program_id' },
+        { status: 400 }
+      );
+    }
 
     // Validate required fields
     if (!first_name || typeof first_name !== 'string') {
@@ -108,6 +116,7 @@ export async function POST(request: NextRequest) {
           availability_json,
           is_active: true,
           updated_at: new Date().toISOString(),
+          program_id,
         },
         { onConflict: 'email' }
       )

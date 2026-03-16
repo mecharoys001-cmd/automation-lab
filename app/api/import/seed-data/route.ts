@@ -7,6 +7,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     const body = await request.json();
+    const programId = body.program_id;
+
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     const results: {
       venues?: { created: number; skipped: number };
@@ -20,11 +25,12 @@ export async function POST(request: NextRequest) {
       let venuesSkipped = 0;
 
       for (const venue of body.venues) {
-        // Check if venue already exists
+        // Check if venue already exists in this program
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: existing } = await (supabase.from('venues') as any)
           .select('id')
           .eq('name', venue.name)
+          .eq('program_id', programId)
           .single();
 
         if (existing) {
@@ -40,6 +46,7 @@ export async function POST(request: NextRequest) {
             space_type: venue.space_type,
             max_capacity: venue.max_capacity,
             is_virtual: venue.is_virtual ?? false,
+            program_id: programId,
           });
 
         if (error) {
@@ -59,11 +66,12 @@ export async function POST(request: NextRequest) {
       let tagsSkipped = 0;
 
       for (const tag of body.tags) {
-        // Check if tag already exists
+        // Check if tag already exists in this program
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: existing } = await (supabase.from('tags') as any)
           .select('id')
           .eq('name', tag.name)
+          .eq('program_id', programId)
           .single();
 
         if (existing) {
@@ -86,6 +94,7 @@ export async function POST(request: NextRequest) {
             emoji: tag.emoji,
             description: tag.description,
             category: tag.category,
+            program_id: programId,
           });
 
         if (error) {

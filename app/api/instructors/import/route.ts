@@ -17,7 +17,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { rows: rawRows } = (await request.json()) as { rows: Record<string, any>[] };
+    const { rows: rawRows, program_id } = (await request.json()) as { rows: Record<string, any>[]; program_id?: string };
+
+    if (!program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     if (!Array.isArray(rawRows) || rawRows.length === 0) {
       return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
       } catch { return null; }
     };
 
-    const rows: InstructorRow[] = rawRows.map((r) => ({
+    const rows: (InstructorRow & { program_id: string })[] = rawRows.map((r) => ({
       first_name: String(r.first_name ?? '').trim(),
       last_name: String(r.last_name ?? '').trim(),
       email: r.email ? String(r.email).trim().toLowerCase() : null,
@@ -49,12 +53,14 @@ export async function POST(request: NextRequest) {
       is_active: r.is_active != null && r.is_active !== '' ? parseBool(r.is_active) : true,
       on_call: r.on_call != null && r.on_call !== '' ? parseBool(r.on_call) : false,
       notes: r.notes ? String(r.notes).trim() : null,
+      program_id,
     }));
 
-    // Check for duplicate emails against existing instructors
+    // Check for duplicate emails against existing instructors in this program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase.from('instructors') as any)
       .select('email')
+      .eq('program_id', program_id)
       .not('email', 'is', null)
       .order('email');
 

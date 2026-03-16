@@ -15,27 +15,33 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { rows: rawRows } = (await request.json()) as { rows: Record<string, any>[] };
+    const { rows: rawRows, program_id } = (await request.json()) as { rows: Record<string, any>[]; program_id?: string };
+
+    if (!program_id) {
+      return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
+    }
 
     if (!Array.isArray(rawRows) || rawRows.length === 0) {
       return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
     }
 
-    const rows: TagRow[] = rawRows.map((r) => ({
+    const rows: (TagRow & { program_id: string })[] = rawRows.map((r) => ({
       name: String(r.name ?? '').trim(),
       color: r.color ? String(r.color).trim() : null,
       description: r.description ? String(r.description).trim() : null,
       category: r.category ? String(r.category).trim() : null,
       emoji: r.emoji ? String(r.emoji).trim() : null,
+      program_id,
     }));
 
     // Filter out rows with invalid color (if provided)
     const validRows = rows.filter((r) => !r.color || isValidHex(r.color));
 
-    // Check for duplicate names against existing tags (case-insensitive)
+    // Check for duplicate names against existing tags in this program (case-insensitive)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase.from('tags') as any)
       .select('name')
+      .eq('program_id', program_id)
       .order('name');
 
     const existingNames = new Set(
