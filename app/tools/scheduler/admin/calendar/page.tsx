@@ -1291,37 +1291,56 @@ export default function CalendarPage() {
               </Tooltip>
             </div>
             <div className="flex items-center gap-2">
-              <Tooltip text="Navigate to earlier months">
-                <button
-                  onClick={() =>
-                    setMonthRange((prev) => {
-                      const d = new Date(prev.startYear, prev.startMonth - 6, 1);
-                      return { startYear: d.getFullYear(), startMonth: d.getMonth(), count: prev.count + 6 };
-                    })
-                  }
-                  className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  aria-label="Load earlier months"
+              <Tooltip text="Jump to a specific month">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const [y, m] = e.target.value.split('-').map(Number);
+                    // Ensure the target month is in our rendered range
+                    const targetDate = new Date(y, m, 1);
+                    const rangeStart = new Date(monthRange.startYear, monthRange.startMonth, 1);
+                    const rangeEnd = new Date(monthRange.startYear, monthRange.startMonth + monthRange.count, 1);
+                    if (targetDate < rangeStart || targetDate >= rangeEnd) {
+                      // Expand range to include target month centered
+                      setMonthRange({
+                        startYear: new Date(y, m - 4, 1).getFullYear(),
+                        startMonth: new Date(y, m - 4, 1).getMonth(),
+                        count: 12,
+                      });
+                    }
+                    // Scroll to the month after a brief delay for DOM update
+                    setTimeout(() => {
+                      const el = document.getElementById(`month-${y}-${m}`);
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                  }}
+                  className="text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer appearance-none"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
+                  <option value="" disabled>Jump to month…</option>
+                  {(() => {
+                    const options = [];
+                    const now = new Date();
+                    for (let offset = -12; offset <= 12; offset++) {
+                      const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+                      const y = d.getFullYear();
+                      const m = d.getMonth();
+                      options.push(
+                        <option key={`${y}-${m}`} value={`${y}-${m}`}>
+                          {MONTH_NAMES[m]} {y}
+                        </option>
+                      );
+                    }
+                    return options;
+                  })()}
+                </select>
               </Tooltip>
               <Tooltip text="Scroll to today's date in the calendar">
                 <button
                   onClick={scrollToToday}
-                  className="text-[13px] font-medium text-blue-500 hover:text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors"
+                  className="text-[13px] font-medium text-blue-500 hover:text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
                 >
                   Today
-                </button>
-              </Tooltip>
-              <Tooltip text="Navigate to later months">
-                <button
-                  onClick={() =>
-                    setMonthRange((prev) => ({ ...prev, count: prev.count + 6 }))
-                  }
-                  className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  aria-label="Load later months"
-                >
-                  <ChevronRight className="w-4 h-4" />
                 </button>
               </Tooltip>
             </div>
