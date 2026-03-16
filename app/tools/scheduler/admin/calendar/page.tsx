@@ -1206,7 +1206,7 @@ export default function CalendarPage() {
               icon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               tooltip="Save calendar changes without publishing"
               onClick={handleSaveDraft}
-              disabled={!isDirty || isSaving || isPublishing || isGenerating}
+              disabled={!isDirty || isSaving || isPublishing}
             >
               {isSaving ? 'Saving…' : 'Save as Draft'}
             </Button>
@@ -1216,19 +1216,9 @@ export default function CalendarPage() {
               icon={isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               tooltip="Publish all changes to the live schedule"
               onClick={handlePublish}
-              disabled={isDirty || isPublishing || isSaving || isGenerating || entries.length === 0}
+              disabled={isDirty || isPublishing || isSaving || entries.length === 0}
             >
               {isPublishing ? 'Publishing…' : 'Publish Schedule'}
-            </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              icon={isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-              tooltip="Generate calendar from templates"
-              onClick={handleGenerateSchedule}
-              disabled={isGenerating || isSaving || isPublishing}
-            >
-              {isGenerating ? 'Generating…' : 'Generate Schedule'}
             </Button>
             <div className="w-px h-8 bg-slate-200" />
             <Button
@@ -1237,7 +1227,7 @@ export default function CalendarPage() {
               icon={<Upload className="w-4 h-4" />}
               tooltip="Import calendar entries from a CSV file"
               onClick={() => setImportOpen(true)}
-              disabled={isSaving || isPublishing || isGenerating}
+              disabled={isSaving || isPublishing}
             >
               Import CSV
             </Button>
