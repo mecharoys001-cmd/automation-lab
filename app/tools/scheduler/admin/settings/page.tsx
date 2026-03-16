@@ -506,7 +506,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className={labelClass}>Start Date</label>
-                <Tooltip text="First day classes can be scheduled" position="bottom">
+                <Tooltip text="First day events can be scheduled" position="bottom">
                   <input
                     type="date"
                     value={programForm.start_date}
@@ -517,7 +517,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className={labelClass}>End Date</label>
-                <Tooltip text="Last day classes can be scheduled" position="bottom">
+                <Tooltip text="Last day events can be scheduled" position="bottom">
                   <input
                     type="date"
                     value={programForm.end_date}
@@ -996,19 +996,19 @@ export default function SettingsPage() {
           {/* Clear Sessions Only */}
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
             <div className="flex-1 mr-4">
-              <p className="text-sm font-medium text-slate-900">Clear Classes Only</p>
+              <p className="text-sm font-medium text-slate-900">Clear All Events</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all generated classes for this program. Templates, staff, and venues are kept.
+                Removes all scheduled events for this program. Templates, staff, and venues are kept.
               </p>
             </div>
-            <Tooltip text="Delete all classes — keeps templates, staff &amp; venues intact">
+            <Tooltip text="Delete all scheduled events — keeps templates, staff &amp; venues intact">
               <button
                 onClick={() => openClearModal('sessions')}
                 disabled={!selectedProgramId || clearing}
                 className={`${btnDangerOutline} whitespace-nowrap`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear Classes
+                Clear All Events
               </button>
             </Tooltip>
           </div>
@@ -1018,10 +1018,10 @@ export default function SettingsPage() {
             <div className="flex-1 mr-4">
               <p className="text-sm font-medium text-slate-900">Clear All Data</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all classes, templates, venues, and tags for this program. Staff are preserved. Use this to fully reset after testing with mock data.
+                Removes all events, templates, venues, and tags for this program. Staff are preserved. Use this to fully reset after testing with mock data.
               </p>
             </div>
-            <Tooltip text="Delete ALL classes, templates, venues &amp; tags — staff are preserved">
+            <Tooltip text="Delete ALL events, templates, venues &amp; tags — staff are preserved">
               <button
                 onClick={() => openClearModal('all')}
                 disabled={!selectedProgramId || clearing}
@@ -1051,7 +1051,7 @@ export default function SettingsPage() {
                   <AlertTriangle className="w-5 h-5 text-red-500" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  {clearMode === 'all' ? 'Clear All Data' : 'Clear Sessions'}
+                  {clearMode === 'all' ? 'Clear All Data' : 'Clear All Events'}
                 </h3>
               </div>
               {!clearing && (
@@ -1068,7 +1068,7 @@ export default function SettingsPage() {
               {clearMode === 'sessions' ? (
                 <>
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    This will delete <strong>all sessions</strong> for this program. Templates, instructors, and venues will be kept. This action cannot be undone.
+                    This will delete <strong>all scheduled events</strong> for this program. Templates, staff, and venues will be kept. This action cannot be undone.
                   </p>
                   {clearProgress && (
                     <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-500">
@@ -1081,7 +1081,7 @@ export default function SettingsPage() {
                 /* Step 1: Type DELETE ALL DATA */
                 <div className="space-y-3">
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    This will permanently delete <strong>all sessions, templates, venues, and tags</strong> for this program. Instructors are preserved.
+                    This will permanently delete <strong>all events, templates, venues, and tags</strong> for this program. Staff are preserved.
                   </p>
                   <Tooltip text="Type DELETE ALL DATA exactly to continue">
                     <div>
@@ -1113,7 +1113,7 @@ export default function SettingsPage() {
                   ) : (
                     <div className="space-y-1.5">
                       {[
-                        { key: 'sessions', label: 'Classes' },
+                        { key: 'sessions', label: 'Events' },
                         { key: 'templates', label: 'Templates' },
                         { key: 'venues', label: 'Venues' },
                         { key: 'tags', label: 'Tags' },
@@ -1161,14 +1161,14 @@ export default function SettingsPage() {
               </Tooltip>
 
               {clearMode === 'sessions' ? (
-                <Tooltip text="Delete all classes for this program">
+                <Tooltip text="Delete all scheduled events for this program">
                   <button
                     onClick={handleClearData}
                     disabled={clearing}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
                   >
                     {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    {clearing ? 'Clearing...' : 'Yes, Clear Sessions'}
+                    {clearing ? 'Clearing...' : 'Yes, Clear All Events'}
                   </button>
                 </Tooltip>
               ) : clearStep === 1 ? (
