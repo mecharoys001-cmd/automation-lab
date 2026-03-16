@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { SUBJECT_COLORS, getSubjectColor } from '../../lib/subjectColors';
 import type { SubjectColor } from '../../lib/subjectColors';
+import { useProgram } from '../../admin/ProgramContext';
 
 interface EventTemplate {
   id: string;
@@ -20,6 +21,14 @@ interface SubjectStat {
   name: string;
   count: number;
   color: SubjectColor;
+  emoji: string | null;
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  emoji: string | null;
+  category: string;
 }
 
 function extractSubjects(template: EventTemplate): string[] {
@@ -41,6 +50,26 @@ function extractSubjects(template: EventTemplate): string[] {
 }
 
 export function SubjectDashboard({ templates, className = '' }: SubjectDashboardProps) {
+  const { selectedProgramId } = useProgram();
+  const [tags, setTags] = useState<Tag[]>([]);
+
+  // Fetch tags with emoji from the API
+  useEffect(() => {
+    if (!selectedProgramId) return;
+    const fetchTags = async () => {
+      try {
+        const res = await fetch(`/api/tags?program_id=${selectedProgramId}&category=Event Type`);
+        if (res.ok) {
+          const data = await res.json();
+          setTags(data.tags ?? []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch tags:', err);
+      }
+    };
+    fetchTags();
+  }, [selectedProgramId]);
+
   const stats = useMemo(() => {
     const counts = new Map<string, number>();
     for (const t of templates) {
@@ -62,16 +91,28 @@ export function SubjectDashboard({ templates, className = '' }: SubjectDashboard
       const title = known.charAt(0).toUpperCase() + known.slice(1);
       const count = counts.get(title);
       if (count) {
-        sorted.push({ name: title, count, color: getSubjectColor(title) });
+        const tag = tags.find((t) => t.name.toLowerCase() === title.toLowerCase());
+        sorted.push({ 
+          name: title, 
+          count, 
+          color: getSubjectColor(title),
+          emoji: tag?.emoji ?? null,
+        });
         counts.delete(title);
       }
     }
     // Remaining (unknown subjects)
     for (const [name, count] of Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-      sorted.push({ name, count, color: getSubjectColor(name) });
+      const tag = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+      sorted.push({ 
+        name, 
+        count, 
+        color: getSubjectColor(name),
+        emoji: tag?.emoji ?? null,
+      });
     }
     return sorted;
-  }, [templates]);
+  }, [templates, tags]);
 
   const totalTemplates = templates.length;
 
@@ -102,6 +143,8 @@ export function SubjectDashboard({ templates, className = '' }: SubjectDashboard
 
 function SubjectCard({ stat, total }: { stat: SubjectStat; total: number }) {
   const pct = total > 0 ? Math.round((stat.count / total) * 100) : 0;
+  // Use real emoji from database tag if available, otherwise fall back to color emoji
+  const displayEmoji = stat.emoji || stat.color.emoji;
 
   return (
     <div
@@ -111,7 +154,7 @@ function SubjectCard({ stat, total }: { stat: SubjectStat; total: number }) {
         borderLeft: `3px solid ${stat.color.accent}`,
       }}
     >
-      <span className="text-sm">{stat.color.emoji}</span>
+      <span className="text-sm">{displayEmoji}</span>
       <span className="text-xs font-medium text-slate-700">{stat.name}</span>
       <span
         className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded text-xs font-semibold tabular-nums"
