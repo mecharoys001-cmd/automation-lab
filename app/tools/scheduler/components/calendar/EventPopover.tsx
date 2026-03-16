@@ -454,6 +454,36 @@ export function EventPopover({
               </div>
             )}
 
+            {/* Duration */}
+            {event.durationMinutes != null && (
+              <div className="flex items-center gap-2">
+                <Tooltip text="Duration">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                </Tooltip>
+                <span className="text-[12px] text-slate-700">
+                  {event.durationMinutes >= 60
+                    ? `${Math.floor(event.durationMinutes / 60)}h${event.durationMinutes % 60 ? ` ${event.durationMinutes % 60}m` : ''}`
+                    : `${event.durationMinutes}m`}
+                </span>
+              </div>
+            )}
+
+            {/* Subjects / Skills */}
+            {event.subjects && event.subjects.length > 0 && (
+              <div className="flex items-start gap-2">
+                <Tooltip text="Subjects / Skills">
+                  <Tag className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                </Tooltip>
+                <div className="flex flex-wrap gap-1">
+                  {event.subjects.map((subj) => (
+                    <Pill key={subj} variant="tag" tooltip={subj}>
+                      {subj}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Type badge + status */}
             <div className="flex items-center gap-2">
               <Tooltip text={`Type: ${EVENT_TYPE_LABELS[event.type]}`}>
@@ -495,8 +525,8 @@ export function EventPopover({
             )}
         </>
 
-        {/* Notes Section (pinned only) */}
-        {pinned && (
+        {/* Notes Section (always visible; edit controls pinned-only) */}
+        {(noteText || pinned) && (
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -505,7 +535,7 @@ export function EventPopover({
                   Notes
                 </span>
               </div>
-              {!isEditingNotes && (
+              {pinned && !isEditingNotes && (
                 <Tooltip text="Edit notes">
                   <button
                     onClick={() => setIsEditingNotes(true)}
@@ -518,7 +548,7 @@ export function EventPopover({
               )}
             </div>
 
-            {isEditingNotes ? (
+            {pinned && isEditingNotes ? (
               <div className="space-y-2">
                 <Tooltip text="Type class notes here">
                   <textarea
