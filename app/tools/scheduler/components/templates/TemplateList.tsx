@@ -41,6 +41,8 @@ export interface TemplateListItem {
   venue?: string;
   /** Subject display name. For table mode. */
   subject?: string;
+  /** Emoji for the subject/event type. */
+  subjectEmoji?: string;
   /** Template type label (e.g. "Fully Defined"). For table mode. */
   typeLabel?: string;
   /** Cycle label (e.g. "Wk 1/2" or "Weekly"). For table mode. */
@@ -619,6 +621,7 @@ function TableView({
               </td>
               {/* Event Type */}
               <td style={{ padding: '12px 16px', fontSize: 14, color: '#334155' }}>
+                {t.subjectEmoji && <span className="mr-1">{t.subjectEmoji}</span>}
                 {t.subject || '\u2014'}
               </td>
               {/* Day */}

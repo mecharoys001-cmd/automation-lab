@@ -402,7 +402,7 @@ function CalendarDashboard() {
   const [filterOptions, setFilterOptions] = useState({
     instructors: [] as { id: string; first_name: string; last_name: string }[],
     venues: [] as { id: string; name: string }[],
-    tags: [] as { id: string; name: string; category: string | null }[],
+    tags: [] as { id: string; name: string; category: string | null; emoji?: string | null }[],
   });
   const [contextMenu, setContextMenu] = useState<{
     event: CalendarEvent;
@@ -909,6 +909,7 @@ function CalendarDashboard() {
       options: tags.map(t => ({
         value: t.name,
         label: t.name,
+        emoji: t.emoji || undefined,
       })),
     }));
 

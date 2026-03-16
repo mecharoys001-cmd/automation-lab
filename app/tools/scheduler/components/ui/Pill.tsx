@@ -12,6 +12,8 @@ interface PillProps {
   bgColor?: string;
   /** Hex color or Tailwind class for text */
   textColor?: string;
+  /** Optional emoji to display before children */
+  emoji?: string;
   tooltip?: string;
   className?: string;
   onClick?: () => void;
@@ -48,6 +50,7 @@ export function Pill({
   variant = 'skill',
   bgColor = 'bg-blue-100',
   textColor = 'text-blue-500',
+  emoji,
   tooltip,
   className = '',
   onClick,
@@ -72,6 +75,7 @@ export function Pill({
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
     >
+      {emoji && <span className="mr-1">{emoji}</span>}
       {children}
     </span>
   );

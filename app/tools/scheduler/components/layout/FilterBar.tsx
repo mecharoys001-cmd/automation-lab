@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   User,
   MapPin,
@@ -23,6 +23,7 @@ import type { LucideIcon } from 'lucide-react';
 export interface FilterOption {
   value: string;
   label: string;
+  emoji?: string;
 }
 
 export interface FilterConfig {
@@ -195,6 +196,7 @@ function FilterDropdown({
                   }`}>
                     {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>
+                  {option.emoji && <span className="text-base shrink-0">{option.emoji}</span>}
                   <span className="truncate">{option.label}</span>
                 </button>
               </Tooltip>
@@ -213,15 +215,18 @@ function FilterDropdown({
 function FilterPill({
   filterLabel,
   value,
+  emoji,
   onRemove,
 }: {
   filterLabel: string;
   value: string;
+  emoji?: string;
   onRemove: () => void;
 }) {
   return (
     <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 rounded-full px-2.5 py-0.5 text-[11px] font-medium">
       <span className="text-blue-400 mr-0.5">{filterLabel}:</span>
+      {emoji && <span>{emoji}</span>}
       {value}
       <Tooltip text={`Remove ${filterLabel}: ${value}`}>
         <button
@@ -292,6 +297,20 @@ export function FilterBar({
     filters.map((f) => [f.key, f.label]),
   );
 
+  // Build a lookup for option emojis: { filterKey: { optionValue: emoji } }
+  const emojiLookup = useMemo(() => {
+    const map: Record<string, Record<string, string>> = {};
+    for (const f of filters) {
+      for (const opt of f.options) {
+        if (opt.emoji) {
+          if (!map[f.key]) map[f.key] = {};
+          map[f.key][opt.value] = opt.emoji;
+        }
+      }
+    }
+    return map;
+  }, [filters]);
+
   return (
     <div className={`bg-white border-b border-slate-200 ${className}`}>
       {/* Filter buttons row */}
@@ -330,6 +349,7 @@ export function FilterBar({
                 key={`${key}-${value}`}
                 filterLabel={filterLabelMap[key] ?? key}
                 value={value}
+                emoji={emojiLookup[key]?.[value]}
                 onRemove={() => handleRemovePill(key, value)}
               />
             )),

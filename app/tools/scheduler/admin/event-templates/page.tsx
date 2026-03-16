@@ -16,6 +16,7 @@ import { useProgram } from '../ProgramContext';
 import type {
   SessionTemplate, Instructor, Venue,
 } from '@/types/database';
+import { getSubjectColor } from '../../lib/subjectColors';
 
 /* ── Constants ──────────────────────────────────────────────── */
 
@@ -368,7 +369,9 @@ export default function EventTemplatesPage() {
     const cycleLabel = t.week_cycle_length && t.week_cycle_length > 1
       ? `Every ${t.week_cycle_length} wks`
       : 'Weekly';
-    const subject = (t.required_skills ?? []).join(', ') || '\u2014';
+    const skills = t.required_skills ?? [];
+    const subject = skills.join(', ') || '\u2014';
+    const subjectEmoji = skills.length > 0 ? getSubjectColor(skills[0]).emoji : undefined;
     const displayName = t.name || subject || (t.grade_groups ?? []).join(', ') || 'Untitled';
     return {
       id: t.id,
@@ -379,9 +382,10 @@ export default function EventTemplatesPage() {
       instructor: getInstructorName(t.instructor_id),
       venue: getVenueName(t),
       subject,
+      subjectEmoji,
       typeLabel: 'Template',
       cycleLabel,
-      tags: [...(t.required_skills ?? []), ...(t.additional_tags ?? [])],
+      tags: [...skills, ...(t.additional_tags ?? [])],
       isActive: t.is_active,
     };
   });
