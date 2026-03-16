@@ -246,10 +246,6 @@ function MonthGrid({
 }) {
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);
-  // Calculate total cells needed for complete rows (always fill last row)
-  const totalCells = firstDay + daysInMonth;
-  const totalRows = Math.ceil(totalCells / 7);
-  const trailingBlanks = totalRows * 7 - totalCells;
 
   const isCurrentMonth =
     year === today.getFullYear() && month === today.getMonth();
@@ -270,119 +266,112 @@ function MonthGrid({
         )}
       </div>
 
-      <div className="px-2 py-1">
-        {/* Day-of-week headers */}
-        <div className="grid grid-cols-7">
-          {DAY_HEADERS.map((d, i) => (
-            <Tooltip key={d} text={DAY_FULL_NAMES[i]} style={{ gridColumn: 'auto' }}>
+      {/* Day Headers + Day Cells — single flat grid */}
+      <div className="grid grid-cols-7" style={{ width: '100%', minWidth: 0 }}>
+        {/* Day Headers — pinned to grid-row 1 */}
+        {DAY_HEADERS.map((d, idx) => (
+          <div
+            key={d}
+            style={{ gridRow: 1 }}
+            className={`px-1.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
+              idx === 0 || idx === 6 ? 'text-slate-400' : 'text-slate-500'
+            } ${idx < 6 ? 'border-r border-slate-200' : ''}`}
+          >
+            {d}
+          </div>
+        ))}
+        {/* Day Cells — 42-cell grid */}
+        {Array.from({ length: 42 }, (_, cellIndex) => {
+          const day = cellIndex - firstDay + 1;
+
+          // Empty cell before month starts or after month ends
+          if (day < 1 || day > daysInMonth) {
+            return <div key={cellIndex} className={`h-12 border-b border-slate-200 bg-slate-50/40 ${cellIndex % 7 < 6 ? 'border-r border-slate-200' : ''}`} />;
+          }
+
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dayEntries = calendarMap.get(dateStr) ?? [];
+          const dayOfWeek = cellIndex % 7;
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+          const isToday =
+            year === today.getFullYear() &&
+            month === today.getMonth() &&
+            day === today.getDate();
+
+          // Build tooltip text from events
+          let tooltipText = `${MONTH_NAMES[month]} ${day}, ${year}`;
+          if (dayEntries.length > 0) {
+            const eventLines = dayEntries.map((e) => {
+              let line = `${STATUS_LABELS[e.status_type]}`;
+              if (e.description) line += `: ${e.description}`;
+              if (e.status_type === 'early_dismissal' && e.early_dismissal_time) {
+                line += ` (${formatTime(e.early_dismissal_time)})`;
+              }
+              if (e.instructor) {
+                line += ` — ${e.instructor.first_name} ${e.instructor.last_name}`;
+              }
+              return line;
+            });
+            tooltipText += `\n${eventLines.join('\n')}`;
+          }
+
+          // Determine highest-priority status for cell background
+          const primaryStatus = dayEntries.find((e) => e.status_type === 'no_school')?.status_type
+            ?? dayEntries[0]?.status_type
+            ?? null;
+
+          const isSelected = selectedDates.has(dateStr);
+
+          return (
+            <Tooltip key={cellIndex} text={tooltipText} style={{ gridColumn: 'auto' }}>
               <div
-                className={`text-[10px] font-semibold uppercase tracking-wider text-center py-1 ${
-                  i === 0 || i === 6 ? 'text-slate-400' : 'text-slate-500'
-                }`}
+                onMouseDown={(e) => onDayMouseDown(dateStr, e)}
+                onMouseEnter={() => onDayMouseEnter(dateStr)}
+                className={`h-12 border-b border-slate-200 flex flex-col items-center justify-center transition-colors cursor-pointer select-none box-border ${
+                  dayOfWeek < 6 ? 'border-r border-slate-200' : ''
+                } ${
+                  isSelected
+                    ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
+                    : primaryStatus
+                    ? STATUS_COLORS[primaryStatus].cell
+                    : isToday
+                    ? 'bg-blue-50'
+                    : isWeekend
+                    ? 'bg-slate-50/60'
+                    : 'bg-white'
+                } ${!isSelected && !primaryStatus ? 'hover:bg-slate-100' : ''}`}
               >
-                {d}
+                {/* Day number */}
+                <span
+                  className={`text-xs font-medium leading-none inline-flex items-center justify-center w-6 h-6 rounded-full ${
+                    isToday
+                      ? 'bg-blue-500 text-white font-bold'
+                      : isSelected
+                      ? 'text-blue-800 font-semibold'
+                      : isWeekend
+                      ? 'text-slate-400'
+                      : 'text-slate-700'
+                  }`}
+                >
+                  {day}
+                </span>
+
+                {/* Status dots */}
+                {dayEntries.length > 0 && (
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {dayEntries.slice(0, 3).map((entry, idx) => (
+                      <span
+                        key={idx}
+                        className={`h-1.5 w-1.5 rounded-full ${STATUS_COLORS[entry.status_type].dot}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </Tooltip>
-          ))}
-        </div>
-
-        {/* Day cells grid */}
-        <div className="grid grid-cols-7 border-t border-l border-slate-200">
-          {/* Leading blanks */}
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`blank-s-${i}`} className="h-12 border-b border-r border-slate-200 bg-slate-50/40" />
-          ))}
-
-          {/* Day cells */}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1;
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayEntries = calendarMap.get(dateStr) ?? [];
-            const colIndex = (firstDay + i) % 7;
-            const isWeekend = colIndex === 0 || colIndex === 6;
-
-            const isToday =
-              year === today.getFullYear() &&
-              month === today.getMonth() &&
-              day === today.getDate();
-
-            // Build tooltip text from events
-            let tooltipText = `${MONTH_NAMES[month]} ${day}, ${year}`;
-            if (dayEntries.length > 0) {
-              const eventLines = dayEntries.map((e) => {
-                let line = `${STATUS_LABELS[e.status_type]}`;
-                if (e.description) line += `: ${e.description}`;
-                if (e.status_type === 'early_dismissal' && e.early_dismissal_time) {
-                  line += ` (${formatTime(e.early_dismissal_time)})`;
-                }
-                if (e.instructor) {
-                  line += ` — ${e.instructor.first_name} ${e.instructor.last_name}`;
-                }
-                return line;
-              });
-              tooltipText += `\n${eventLines.join('\n')}`;
-            }
-
-            // Determine highest-priority status for cell background
-            const primaryStatus = dayEntries.find((e) => e.status_type === 'no_school')?.status_type
-              ?? dayEntries[0]?.status_type
-              ?? null;
-
-            const isSelected = selectedDates.has(dateStr);
-
-            return (
-              <Tooltip key={day} text={tooltipText} style={{ gridColumn: 'auto' }}>
-                <div
-                  onMouseDown={(e) => onDayMouseDown(dateStr, e)}
-                  onMouseEnter={() => onDayMouseEnter(dateStr)}
-                  className={`h-12 border-b border-r border-slate-200 flex flex-col items-center justify-center transition-colors cursor-pointer select-none ${
-                    isSelected
-                      ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
-                      : primaryStatus
-                      ? STATUS_COLORS[primaryStatus].cell
-                      : isToday
-                      ? 'bg-blue-50'
-                      : isWeekend
-                      ? 'bg-slate-50/60'
-                      : 'bg-white'
-                  } ${!isSelected && !primaryStatus ? 'hover:bg-slate-100' : ''}`}
-                >
-                  {/* Day number */}
-                  <span
-                    className={`text-xs font-medium leading-none inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                      isToday
-                        ? 'bg-blue-500 text-white font-bold'
-                        : isSelected
-                        ? 'text-blue-800 font-semibold'
-                        : isWeekend
-                        ? 'text-slate-400'
-                        : 'text-slate-700'
-                    }`}
-                  >
-                    {day}
-                  </span>
-
-                  {/* Status dots */}
-                  {dayEntries.length > 0 && (
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      {dayEntries.slice(0, 3).map((entry, idx) => (
-                        <span
-                          key={idx}
-                          className={`h-1.5 w-1.5 rounded-full ${STATUS_COLORS[entry.status_type].dot}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Tooltip>
-            );
-          })}
-
-          {/* Trailing blanks to complete the last row */}
-          {Array.from({ length: trailingBlanks }).map((_, i) => (
-            <div key={`blank-e-${i}`} className="h-12 border-b border-r border-slate-200 bg-slate-50/40" />
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
