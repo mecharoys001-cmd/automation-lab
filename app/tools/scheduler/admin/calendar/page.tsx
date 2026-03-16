@@ -274,7 +274,7 @@ function MonthGrid({
         {/* Day-of-week headers */}
         <div className="grid grid-cols-7">
           {DAY_HEADERS.map((d, i) => (
-            <Tooltip key={d} text={DAY_FULL_NAMES[i]} style={{ display: 'block' }}>
+            <Tooltip key={d} text={DAY_FULL_NAMES[i]} style={{ gridColumn: 'auto' }}>
               <div
                 className={`text-[10px] font-semibold uppercase tracking-wider text-center py-1 ${
                   i === 0 || i === 6 ? 'text-slate-400' : 'text-slate-500'
@@ -331,7 +331,7 @@ function MonthGrid({
             const isSelected = selectedDates.has(dateStr);
 
             return (
-              <Tooltip key={day} text={tooltipText} style={{ display: 'block' }}>
+              <Tooltip key={day} text={tooltipText} style={{ gridColumn: 'auto' }}>
                 <div
                   onMouseDown={(e) => onDayMouseDown(dateStr, e)}
                   onMouseEnter={() => onDayMouseEnter(dateStr)}
