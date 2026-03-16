@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import {
   Plus,
@@ -162,6 +163,7 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 // ---------------------------------------------------------------------------
 
 export default function RolesPage() {
+  const { selectedProgramId } = useProgram();
   // ---- Data state ----
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -196,7 +198,7 @@ export default function RolesPage() {
     try {
       const [adminsRes, instructorsRes] = await Promise.all([
         fetch('/api/admins'),
-        fetch('/api/instructors'),
+        fetch(`/api/instructors?program_id=${selectedProgramId}`),
       ]);
       const adminsData = await adminsRes.json();
       const instructorsData = await instructorsRes.json();
@@ -208,10 +210,10 @@ export default function RolesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
-    fetchAll();
+    if (selectedProgramId) fetchAll();
   }, [fetchAll]);
 
   // =========================================================================
@@ -268,6 +270,7 @@ export default function RolesPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            program_id: selectedProgramId,
             first_name: firstName,
             last_name: lastName,
             email: form.email.trim().toLowerCase(),
@@ -353,13 +356,17 @@ export default function RolesPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            program_id: selectedProgramId,
             first_name: nameParts[0],
             last_name: nameParts.slice(1).join(' ') || '',
             email: user.email,
             is_active: true,
           }),
         });
-        if (!createRes.ok) throw new Error('Failed to create instructor record');
+        if (!createRes.ok) {
+          const errBody = await createRes.json().catch(() => ({}));
+          throw new Error(errBody.error || 'Failed to create instructor record');
+        }
       } else {
         // Same source, just update role level via PATCH
         const res = await fetch('/api/admins?id=' + user.id, {
