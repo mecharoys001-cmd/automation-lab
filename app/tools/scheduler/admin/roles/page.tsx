@@ -511,34 +511,16 @@ export default function RolesPage() {
                       <td className={`${tdClass} text-slate-500`}>{user.email || '—'}</td>
                       <td className={tdClass}>
                         {isEditing ? (
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={editRole}
-                              onChange={(e) => setEditRole(e.target.value as AppRole)}
-                              className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                            >
-                              <option value="master_admin">Master Admin</option>
-                              <option value="admin">Admin</option>
-                              <option value="editor">Editor</option>
-                              <option value="instructor">Staff</option>
-                            </select>
-                            <Tooltip text="Save role change">
-                              <button
-                                onClick={() => saveEdit(user)}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                              </button>
-                            </Tooltip>
-                            <Tooltip text="Cancel">
-                              <button
-                                onClick={cancelEdit}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </Tooltip>
-                          </div>
+                          <select
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value as AppRole)}
+                            className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                          >
+                            <option value="master_admin">Master Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="editor">Editor</option>
+                            <option value="instructor">Staff</option>
+                          </select>
                         ) : (
                           <Tooltip text={meta.description}>
                             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${meta.color}`}>
@@ -549,7 +531,28 @@ export default function RolesPage() {
                         )}
                       </td>
                       <td className={`${tdClass} text-right`}>
-                        {!isEditing && (
+                        {isEditing ? (
+                          <div className="inline-flex items-center gap-2">
+                            <Tooltip text="Save role change">
+                              <button
+                                onClick={() => saveEdit(user)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 px-3 py-1.5 text-xs font-medium transition-colors"
+                              >
+                                <Check className="w-3 h-3" />
+                                Save
+                              </button>
+                            </Tooltip>
+                            <Tooltip text="Cancel">
+                              <button
+                                onClick={cancelEdit}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                                Cancel
+                              </button>
+                            </Tooltip>
+                          </div>
+                        ) : (
                           <div className="inline-flex items-center gap-2">
                             <Tooltip text="Change this user's role">
                               <button
