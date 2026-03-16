@@ -163,11 +163,11 @@ export function TemplateFormModal({
 
   // Fetch reference data on open
   useEffect(() => {
-    if (!open) return;
+    if (!open || !programId) return;
     const load = async () => {
       const [instRes, venueRes] = await Promise.all([
-        fetch(`/api/instructors?_t=${Date.now()}`),
-        fetch(`/api/venues?_t=${Date.now()}`),
+        fetch(`/api/instructors?program_id=${programId}&_t=${Date.now()}`),
+        fetch(`/api/venues?program_id=${programId}&_t=${Date.now()}`),
       ]);
       if (instRes.ok) {
         const d = await instRes.json();
@@ -179,7 +179,7 @@ export function TemplateFormModal({
       }
     };
     load();
-  }, [open]);
+  }, [open, programId]);
 
   /* ── Form helpers ───────────────────────────────────────── */
 
