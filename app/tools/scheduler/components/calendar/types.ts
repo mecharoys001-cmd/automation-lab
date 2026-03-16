@@ -30,6 +30,7 @@ export interface CalendarEvent {
   status?: 'draft' | 'published' | 'canceled' | 'completed';
   subjects?: string[]; // e.g. ['strings'], from template.required_skills
   tags?: string[];
+  tagEmojis?: Record<string, string>; // tag name → emoji
   notes?: string;      // session notes
   templateId?: string; // session_template id for bulk operations
   // Raw IDs for edit mode

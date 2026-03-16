@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
         is_default: true,
         ...(t.category && { category: t.category }),
         ...(t.description && { description: t.description }),
+        ...(t.emoji && { emoji: t.emoji }),
       }));
 
     const nonDefaultTagRows = dataset.tags
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
         is_default: false,
         ...(t.category && { category: t.category }),
         ...(t.description && { description: t.description }),
+        ...(t.emoji && { emoji: t.emoji }),
       }));
 
     // Upsert defaults (skip duplicates that survived clear-all)

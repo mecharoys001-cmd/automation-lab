@@ -477,6 +477,7 @@ export function EventPopover({
                 <div className="flex flex-wrap gap-1">
                   {event.subjects.map((subj) => (
                     <Pill key={subj} variant="tag" tooltip={subj}>
+                      {event.tagEmojis?.[subj] && <span className="mr-1">{event.tagEmojis[subj]}</span>}
                       {subj}
                     </Pill>
                   ))}
@@ -517,6 +518,7 @@ export function EventPopover({
                 <div className="flex flex-wrap gap-1">
                   {event.tags.map((tag) => (
                     <Pill key={tag} variant="tag" tooltip={tag}>
+                      {event.tagEmojis?.[tag] && <span className="mr-1">{event.tagEmojis[tag]}</span>}
                       {tag}
                     </Pill>
                   ))}

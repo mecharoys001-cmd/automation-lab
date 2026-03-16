@@ -31,6 +31,7 @@ export async function POST() {
       color: t.color,
       category: t.category ?? 'Space Types',
       description: t.description ?? null,
+      emoji: t.emoji ?? null,
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

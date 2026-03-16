@@ -138,10 +138,16 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     ? `${session.instructor.first_name ?? ''} ${session.instructor.last_name ?? ''}`.trim() || 'Unassigned'
     : 'Unassigned';
 
-  // Tags: API returns tag objects with { id, name, ... }, convert to string[]
+  // Tags: API returns tag objects with { id, name, emoji?, ... }, convert to string[]
   const tagNames: string[] = Array.isArray(session.tags)
     ? session.tags.map((t: { name?: string }) => t.name).filter(Boolean)
     : [];
+  const tagEmojis: Record<string, string> = {};
+  if (Array.isArray(session.tags)) {
+    for (const t of session.tags) {
+      if (t.name && t.emoji) tagEmojis[t.name] = t.emoji;
+    }
+  }
 
   // Populate event types from template skills OR event type category tags
   const templateSubjects = Array.isArray(session.template?.required_skills) ? session.template.required_skills : [];
@@ -178,6 +184,7 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
     venue: session.venue?.name,
     subjects: allSubjects,
     tags: tagNames,
+    tagEmojis: Object.keys(tagEmojis).length > 0 ? tagEmojis : undefined,
     notes: session.notes ?? undefined,
     templateId: session.template_id ?? session.template?.id ?? undefined,
     // Raw IDs for edit mode

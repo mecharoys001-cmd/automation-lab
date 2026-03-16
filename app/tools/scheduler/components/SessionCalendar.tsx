@@ -185,7 +185,7 @@ export function sessionToCalendarEvent(session: {
   end_time: string;
   status: string;
   grade_groups: string[];
-  tags?: { id: string; name: string; color?: string | null; description?: string | null }[];
+  tags?: { id: string; name: string; color?: string | null; description?: string | null; emoji?: string | null }[];
   instructor?: { first_name: string; last_name: string } | null;
   venue?: { name: string; space_type: string } | null;
 }): EventInput {
