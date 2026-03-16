@@ -20,7 +20,8 @@ export async function GET() {
 
     console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
 
-    // Fetch session counts per tag
+    // Fetch session counts per tag from multiple sources:
+    // 1. session_tags junction table (additional tags)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessionTags } = await (supabase.from('session_tags') as any)
       .select('tag_id');
@@ -29,6 +30,50 @@ export async function GET() {
     if (sessionTags) {
       for (const row of sessionTags) {
         counts[row.tag_id] = (counts[row.tag_id] || 0) + 1;
+      }
+    }
+
+    // 2. Count tags used in template required_skills
+    // Fetch all templates with their IDs and required_skills
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: templates } = await (supabase.from('session_templates') as any)
+      .select('id, required_skills');
+
+    // Fetch all sessions to count by template
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sessions } = await (supabase.from('sessions') as any)
+      .select('template_id');
+
+    // Count sessions per template
+    const sessionsByTemplate: Record<string, number> = {};
+    if (sessions) {
+      for (const session of sessions) {
+        if (session.template_id) {
+          sessionsByTemplate[session.template_id] = (sessionsByTemplate[session.template_id] || 0) + 1;
+        }
+      }
+    }
+
+    // Map tag names to IDs
+    const tagsByName: Record<string, string> = {};
+    if (data) {
+      for (const tag of data) {
+        tagsByName[tag.name] = tag.id;
+      }
+    }
+
+    // Count tags from required_skills
+    if (templates) {
+      for (const template of templates) {
+        const sessionCount = sessionsByTemplate[template.id] || 0;
+        if (sessionCount > 0 && template.required_skills && Array.isArray(template.required_skills)) {
+          for (const skillName of template.required_skills) {
+            const tagId = tagsByName[skillName];
+            if (tagId) {
+              counts[tagId] = (counts[tagId] || 0) + sessionCount;
+            }
+          }
+        }
       }
     }
 
