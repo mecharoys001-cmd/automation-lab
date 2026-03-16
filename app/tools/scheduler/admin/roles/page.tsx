@@ -101,12 +101,14 @@ const tdClass = 'px-4 py-3 text-sm';
 /** Map DB admin role_level to our unified role */
 function adminRoleToAppRole(roleLevel: string): AppRole {
   if (roleLevel === 'master') return 'master_admin';
+  if (roleLevel === 'editor') return 'editor';
   return 'admin'; // 'standard' maps to admin
 }
 
 /** Map our unified role back to admin role_level for the API */
 function appRoleToAdminLevel(role: AppRole): string {
   if (role === 'master_admin') return 'master';
+  if (role === 'editor') return 'editor';
   return 'standard';
 }
 
@@ -316,13 +318,16 @@ export default function RolesPage() {
   }
 
   async function saveEdit(user: UnifiedUser) {
+    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
     if (editRole === user.role) {
+      console.log('[SAVE_EDIT] Roles match, cancelling edit');
       cancelEdit();
       return;
     }
 
     const wasInstructor = user.source === 'instructor';
     const becomingInstructor = editRole === 'instructor';
+    console.log('[SAVE_EDIT] wasInstructor:', wasInstructor, 'becomingInstructor:', becomingInstructor);
 
     try {
       if (wasInstructor && !becomingInstructor) {
