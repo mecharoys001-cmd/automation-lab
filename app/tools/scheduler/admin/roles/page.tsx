@@ -334,9 +334,7 @@ export default function RolesPage() {
 
     try {
       if (wasInstructor && !becomingInstructor) {
-        // Delete instructor, create admin
-        const delRes = await fetch(`/api/instructors/${user.id}`, { method: 'DELETE' });
-        if (!delRes.ok) throw new Error('Failed to remove instructor record');
+        // Create admin first, then delete instructor (safe order — no data loss on failure)
         const createRes = await fetch('/api/admins', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -347,10 +345,9 @@ export default function RolesPage() {
           }),
         });
         if (!createRes.ok) throw new Error('Failed to create admin record');
+        await fetch(`/api/instructors/${user.id}`, { method: 'DELETE' });
       } else if (!wasInstructor && becomingInstructor) {
-        // Delete admin, create instructor
-        const delRes = await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
-        if (!delRes.ok) throw new Error('Failed to remove admin record');
+        // Create instructor first, then delete admin (safe order — no data loss on failure)
         const nameParts = user.name.split(/\s+/);
         const createRes = await fetch('/api/instructors', {
           method: 'POST',
@@ -367,6 +364,7 @@ export default function RolesPage() {
           const errBody = await createRes.json().catch(() => ({}));
           throw new Error(errBody.error || 'Failed to create instructor record');
         }
+        await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
       } else {
         // Same source, just update role level via PATCH
         const res = await fetch('/api/admins?id=' + user.id, {
