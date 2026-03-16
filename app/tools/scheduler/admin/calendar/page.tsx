@@ -1375,9 +1375,9 @@ export default function CalendarPage() {
                 </Tooltip>
               </div>
 
-              {/* ── Batch actions toolbar ────────────────────── */}
+              {/* ── Batch actions toolbar (fixed at bottom so calendar doesn't shift) ── */}
               {selectedDates.size > 0 && (
-                <div className="flex flex-wrap items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 sticky top-0 z-10 shadow-sm">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 shadow-lg">
                   <span className="text-sm font-semibold text-blue-700 mr-1">
                     {selectedDates.size} day{selectedDates.size !== 1 ? 's' : ''} selected
                   </span>
