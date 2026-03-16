@@ -275,7 +275,7 @@ export default function SessionsByTemplatePage() {
 
           {/* Status Filter */}
           <div className="relative">
-            <Tooltip text="Filter by class status">
+            <Tooltip text="Filter by event status">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}

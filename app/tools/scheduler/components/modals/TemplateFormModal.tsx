@@ -478,7 +478,7 @@ export function TemplateFormModal({
         </FormField>
 
         {/* 6. Scheduling Mode */}
-        <FormField label="Scheduling Mode" hint="When classes are generated">
+        <FormField label="Scheduling Mode" hint="When events are generated">
           <div className="flex flex-col gap-2.5">
             {/* Ongoing */}
             <label className={`flex items-start gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${(form.week_cycle_length ?? 1) === 1 && form.scheduling_mode === 'ongoing' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
@@ -633,7 +633,7 @@ export function TemplateFormModal({
         </FormField>
 
         {/* 7. Session Duration */}
-        <FormField label="Class Duration">
+        <FormField label="Event Duration">
           <div className="flex gap-1.5 flex-wrap items-center">
             {DURATION_PRESETS.map((mins) => {
               const selected = !form.duration_custom && form.duration_minutes === mins;

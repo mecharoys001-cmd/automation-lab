@@ -71,7 +71,7 @@ const CALENDAR_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'description', label: 'Description' },
   { csvHeader: 'status_type', label: 'Status Type', required: true },
   { csvHeader: 'early_dismissal_time', label: 'Early Dismissal Time' },
-  { csvHeader: 'target_instructor_id', label: 'Target Instructor ID' },
+  { csvHeader: 'target_instructor_id', label: 'Target Staff ID' },
 ];
 
 const CALENDAR_CSV_EXAMPLE = `date,description,status_type,early_dismissal_time,target_instructor_id
@@ -1738,7 +1738,7 @@ export default function CalendarPage() {
               ) : (
                 <input
                   type="text"
-                  placeholder="Instructor ID"
+                  placeholder="Staff ID"
                   value={batchInstructorId}
                   onChange={(e) => setBatchInstructorId(e.target.value)}
                   className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
