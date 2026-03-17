@@ -275,8 +275,8 @@ export async function POST(request: NextRequest) {
           sessionRows.push({
             program_id,
             template_id: (placement as { template_id: string }).template_id,
-            instructor_id: instructorId,
-            venue_id: tpl.venue_id,
+            instructor_id: instructorId || null,
+            venue_id: tpl.venue_id || null,
             grade_groups: tpl.grade_groups ?? [],
             date: dateStr,
             start_time: startTime,
