@@ -77,9 +77,9 @@ export async function GET(request: NextRequest) {
     // Fetch sessions for this instructor (exclude canceled)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
-      .select('id, date, duration_minutes, status')
+      .select('id, date, duration_minutes, status, template:session_templates (id, required_skills)')
       .eq('instructor_id', instructorId)
-      .in('status', ['completed', 'published']);
+      .neq('status', 'canceled');
 
     if (startDate) query = query.gte('date', startDate);
     if (endDate) query = query.lte('date', endDate);
@@ -143,15 +143,31 @@ export async function GET(request: NextRequest) {
 
     // ----------------------------------------------------------
     // Aggregate: Hours by tag
+    // Includes both session_tags AND required_skills from templates
     // ----------------------------------------------------------
     const tagAgg = new Map<string, { minutes: number; count: number }>();
     for (const s of allSessions) {
+      const sessionTagNames = new Set<string>();
+
+      // 1. Tags from session_tags junction table
       const tags = tagMap.get(s.id) ?? [];
       for (const t of tags) {
-        const existing = tagAgg.get(t.tag_name) ?? { minutes: 0, count: 0 };
+        sessionTagNames.add(t.tag_name);
+      }
+
+      // 2. Event types from template required_skills
+      const template = s.template as unknown as { id: string; required_skills: string[] | null } | null;
+      const skills = template?.required_skills ?? [];
+      for (const skillName of skills) {
+        sessionTagNames.add(skillName);
+      }
+
+      // Aggregate all unique tags for this session
+      for (const tagName of sessionTagNames) {
+        const existing = tagAgg.get(tagName) ?? { minutes: 0, count: 0 };
         existing.minutes += s.duration_minutes;
         existing.count += 1;
-        tagAgg.set(t.tag_name, existing);
+        tagAgg.set(tagName, existing);
       }
     }
     const hoursByTag = Array.from(tagAgg.entries())
