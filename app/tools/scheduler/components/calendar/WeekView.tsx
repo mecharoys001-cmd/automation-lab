@@ -155,6 +155,9 @@ function WeekEventBlock({
   onContextMenu,
   onResizeEnd,
   enableDrag,
+  onDragStartNotify,
+  onDragEndNotify,
+  isDragging,
 }: {
   event: CalendarEvent;
   dayStartHour: number;
@@ -164,6 +167,9 @@ function WeekEventBlock({
   onContextMenu?: (event: CalendarEvent, position: { x: number; y: number }) => void;
   onResizeEnd?: (eventId: string, newEndTime: string) => void;
   enableDrag?: boolean;
+  onDragStartNotify?: (eventId: string, grabOffsetHours: number, duration: number, title: string, color: string) => void;
+  onDragEndNotify?: () => void;
+  isDragging?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const subjectColor = event.subjects?.[0] ? getSubjectColor(event.subjects[0]) : null;
@@ -192,6 +198,15 @@ function WeekEventBlock({
       JSON.stringify({ eventId: event.id, grabOffsetHours, duration }),
     );
     e.dataTransfer.effectAllowed = 'move';
+    // Use a transparent drag image so we show our own ghost preview
+    const emptyImg = document.createElement('img');
+    emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(emptyImg, 0, 0);
+    onDragStartNotify?.(event.id, grabOffsetHours, duration, event.title, colors.accent);
+  };
+
+  const handleDragEnd = () => {
+    onDragEndNotify?.();
   };
 
   // Resize via mouse drag on bottom edge
@@ -231,12 +246,15 @@ function WeekEventBlock({
         data-event-block
         draggable={!!enableDrag}
         onDragStart={enableDrag ? handleDragStart : undefined}
+        onDragEnd={enableDrag ? handleDragEnd : undefined}
         className={`absolute left-1 right-1 rounded-md cursor-pointer overflow-hidden group transition-all ${isCompact ? 'px-1.5 py-0.5 flex items-center gap-1' : 'px-2 py-1'} hover:right-auto hover:min-w-full hover:z-[10] hover:shadow-lg hover:pr-4`}
+        data-dragging={isDragging ? 'true' : undefined}
         style={{
           top: `${top}px`,
           height: `${Math.max(height, 22)}px`,
           backgroundColor: colors.bg,
           borderLeft: `3px solid ${colors.accent}`,
+          opacity: isDragging ? 0.3 : undefined,
         }}
         onClick={(e) => { e.stopPropagation(); ref.current && onClick(event, ref.current); }}
         onContextMenu={handleContextMenu}
@@ -462,8 +480,10 @@ export function WeekView({
   const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
   const [eventDetails, setEventDetails] = useState<Record<string, unknown> | null>(null);
   const [dragOverCol, setDragOverCol] = useState<number | null>(null);
-  const [dropPreview, setDropPreview] = useState<{ dayIdx: number; hour: number; venueId?: string; durationHours: number; templateName?: string; color?: string } | null>(null);
+  const [dropPreview, setDropPreview] = useState<{ dayIdx: number; hour: number; venueId?: string; durationHours: number; templateName?: string; eventTitle?: string; color?: string } | null>(null);
   const draggingTemplateRef = useRef<EventTemplate | null>(null);
+  const draggingEventRef = useRef<{ eventId: string; grabOffsetHours: number; duration: number; title: string; color: string } | null>(null);
+  const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Hover state for click-to-create: lane highlight + time tooltip
@@ -674,12 +694,27 @@ export function WeekView({
     }
   }, [onTemplateSelect, dayStartHour, weekDateKeys, selectedVenues]);
 
+  // Callbacks for event block drag notifications
+  const handleEventDragStart = useCallback((eventId: string, grabOffsetHours: number, duration: number, title: string, color: string) => {
+    draggingEventRef.current = { eventId, grabOffsetHours, duration, title, color };
+    setDraggingEventId(eventId);
+  }, []);
+
+  const handleEventDragEnd = useCallback(() => {
+    draggingEventRef.current = null;
+    setDraggingEventId(null);
+    setDropPreview(null);
+    setDragOverCol(null);
+  }, []);
+
   // Clear drop preview when drag ends (e.g. cancelled with Esc)
   useEffect(() => {
     const handleDragEnd = () => {
       setDropPreview(null);
       setDragOverCol(null);
       draggingTemplateRef.current = null;
+      draggingEventRef.current = null;
+      setDraggingEventId(null);
     };
     window.addEventListener('dragend', handleDragEnd);
     return () => window.removeEventListener('dragend', handleDragEnd);
@@ -865,9 +900,10 @@ export function WeekView({
                         e.dataTransfer.dropEffect = isTemplate ? 'copy' : 'move';
                         setDragOverCol(dayIdx);
 
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const dropY = e.clientY - rect.top;
+
                         if (isTemplate) {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const dropY = e.clientY - rect.top;
                           const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
                           const snapped = snapTo15Min(rawHour);
                           const tpl = draggingTemplateRef.current;
@@ -891,6 +927,28 @@ export function WeekView({
                             templateName: tpl?.name || subject || undefined,
                             color: subjectColor?.accent,
                           });
+                        } else if (draggingEventRef.current) {
+                          // Event drag preview – same math as the drop handler
+                          const evData = draggingEventRef.current;
+                          const rawHour = dayStartHour + dropY / HOUR_HEIGHT - evData.grabOffsetHours;
+                          const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
+
+                          let venueId: string | undefined;
+                          if (multiLane && selectedVenues.length > 1) {
+                            const mouseX = e.clientX - rect.left;
+                            const laneWidth = rect.width / selectedVenues.length;
+                            const laneIdx = Math.min(Math.floor(mouseX / laneWidth), selectedVenues.length - 1);
+                            venueId = selectedVenues[laneIdx];
+                          }
+
+                          setDropPreview({
+                            dayIdx,
+                            hour: snappedStart,
+                            venueId,
+                            durationHours: evData.duration,
+                            eventTitle: evData.title,
+                            color: evData.color,
+                          });
                         }
                       }
                     : undefined
@@ -903,6 +961,8 @@ export function WeekView({
                         setDragOverCol(null);
                         setDropPreview(null);
                         draggingTemplateRef.current = null;
+                        draggingEventRef.current = null;
+                        setDraggingEventId(null);
 
                         // Try template drop first
                         if (handleTemplateDrop(e, dayIdx)) return;
@@ -1042,6 +1102,9 @@ export function WeekView({
                               onContextMenu={onEventContextMenu}
                               onResizeEnd={onEventResize}
                               enableDrag={!!onEventDrop}
+                              onDragStartNotify={handleEventDragStart}
+                              onDragEndNotify={handleEventDragEnd}
+                              isDragging={draggingEventId === event.id}
                             />
                           ))}
                         </div>
@@ -1061,6 +1124,9 @@ export function WeekView({
                             onContextMenu={onEventContextMenu}
                             onResizeEnd={onEventResize}
                             enableDrag={!!onEventDrop}
+                            onDragStartNotify={handleEventDragStart}
+                            onDragEndNotify={handleEventDragEnd}
+                            isDragging={draggingEventId === event.id}
                           />
                         </div>
                       ))}
@@ -1068,21 +1134,29 @@ export function WeekView({
                     {dropPreview && dropPreview.dayIdx === dayIdx && (() => {
                       const laneIdx = dropPreview.venueId ? selectedVenues.indexOf(dropPreview.venueId) : -1;
                       const laneCount = selectedVenues.length;
+                      const isEventDrag = !!dropPreview.eventTitle;
+                      const ghostColor = dropPreview.color || '#22C55E';
                       return (
                         <div
-                          className='absolute rounded-md border-2 border-dashed pointer-events-none z-[5] transition-all duration-75'
+                          className={`absolute rounded-md border-2 pointer-events-none z-[5] transition-all duration-75 ${isEventDrag ? '' : 'border-dashed'}`}
                           style={{
                             top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
                             height: dropPreview.durationHours * HOUR_HEIGHT,
                             left: laneIdx >= 0 ? `${(laneIdx / laneCount) * 100}%` : '4px',
                             width: laneIdx >= 0 ? `${(1 / laneCount) * 100}%` : 'calc(100% - 8px)',
-                            borderColor: dropPreview.color || '#22C55E',
-                            backgroundColor: (dropPreview.color || '#22C55E') + '15',
+                            borderColor: ghostColor,
+                            backgroundColor: ghostColor + (isEventDrag ? '25' : '15'),
+                            borderLeft: isEventDrag ? `3px solid ${ghostColor}` : undefined,
                           }}
                         >
                           <div className='px-1.5 py-1'>
-                            <p className='text-[11px] font-bold' style={{ color: dropPreview.color || '#22C55E' }}>
-                              {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(dropPreview.hour + dropPreview.durationHours)}
+                            {isEventDrag && (
+                              <p className='text-[11px] font-bold truncate' style={{ color: ghostColor }}>
+                                {dropPreview.eventTitle}
+                              </p>
+                            )}
+                            <p className={`text-[11px] font-bold ${isEventDrag ? 'text-[10px]' : ''}`} style={{ color: ghostColor }}>
+                              {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(snapTo15Min(dropPreview.hour + dropPreview.durationHours))}
                             </p>
                             {dropPreview.templateName && (
                               <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
@@ -1106,29 +1180,42 @@ export function WeekView({
                         onContextMenu={onEventContextMenu}
                         onResizeEnd={onEventResize}
                         enableDrag={!!onEventDrop}
+                        onDragStartNotify={handleEventDragStart}
+                        onDragEndNotify={handleEventDragEnd}
+                        isDragging={draggingEventId === event.id}
                       />
                     ))}
                     {/* Drop preview ghost (single column) */}
-                    {dropPreview && dropPreview.dayIdx === dayIdx && (
-                      <div
-                        className='absolute left-1 right-1 rounded-md border-2 border-dashed pointer-events-none z-[5] transition-all duration-75'
-                        style={{
-                          top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
-                          height: dropPreview.durationHours * HOUR_HEIGHT,
-                          borderColor: dropPreview.color || '#22C55E',
-                          backgroundColor: (dropPreview.color || '#22C55E') + '15',
-                        }}
-                      >
-                        <div className='px-1.5 py-1'>
-                          <p className='text-[11px] font-bold' style={{ color: dropPreview.color || '#22C55E' }}>
-                            {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(dropPreview.hour + dropPreview.durationHours)}
-                          </p>
-                          {dropPreview.templateName && (
-                            <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
-                          )}
+                    {dropPreview && dropPreview.dayIdx === dayIdx && (() => {
+                      const isEventDrag = !!dropPreview.eventTitle;
+                      const ghostColor = dropPreview.color || '#22C55E';
+                      return (
+                        <div
+                          className={`absolute left-1 right-1 rounded-md border-2 pointer-events-none z-[5] transition-all duration-75 ${isEventDrag ? '' : 'border-dashed'}`}
+                          style={{
+                            top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
+                            height: dropPreview.durationHours * HOUR_HEIGHT,
+                            borderColor: ghostColor,
+                            backgroundColor: ghostColor + (isEventDrag ? '25' : '15'),
+                            borderLeft: isEventDrag ? `3px solid ${ghostColor}` : undefined,
+                          }}
+                        >
+                          <div className='px-1.5 py-1'>
+                            {isEventDrag && (
+                              <p className='text-[11px] font-bold truncate' style={{ color: ghostColor }}>
+                                {dropPreview.eventTitle}
+                              </p>
+                            )}
+                            <p className={`text-[11px] font-bold ${isEventDrag ? 'text-[10px]' : ''}`} style={{ color: ghostColor }}>
+                              {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(snapTo15Min(dropPreview.hour + dropPreview.durationHours))}
+                            </p>
+                            {dropPreview.templateName && (
+                              <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
               </div>

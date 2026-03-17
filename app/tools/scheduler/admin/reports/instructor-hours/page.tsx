@@ -152,11 +152,19 @@ export default function InstructorHoursPage() {
       .catch(() => {});
   }, [programId, startDate, endDate]);
 
-  // Build instructor rows from API data or use fallback
+  // Fetch ALL instructors for this program (so 0-hour staff appear too)
+  const [allStaff, setAllStaff] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  useEffect(() => {
+    if (!programId) return;
+    fetch(`/api/instructors?program_id=${programId}&is_active=true`)
+      .then(r => r.json())
+      .then(data => setAllStaff(data.instructors ?? []))
+      .catch(() => {});
+  }, [programId]);
+
+  // Build instructor rows from API data — always dynamic, never fallback
   const instructors = useMemo((): InstructorRow[] => {
-    if (!reportData || reportData.hours_by_instructor.length === 0) {
-      return FALLBACK_INSTRUCTORS;
-    }
+    if (!reportData) return [];
 
     const weeks = computeWeeksBetween(startDate, endDate);
 
@@ -175,7 +183,7 @@ export default function InstructorHoursPage() {
       }
     }
 
-    return reportData.hours_by_instructor
+    const rows = reportData.hours_by_instructor
       .sort((a, b) => b.total_hours - a.total_hours)
       .map((h, idx) => {
         const monthlyMap = monthlyByInstructor.get(h.name);
@@ -206,7 +214,23 @@ export default function InstructorHoursPage() {
           monthly: months,
         };
       });
-  }, [reportData, startDate, endDate]);
+
+    // Add staff with 0 hours (not in the report data)
+    const reportedIds = new Set(reportData.hours_by_instructor.map(h => h.instructor_id));
+    const zeroHourStaff: InstructorRow[] = allStaff
+      .filter(s => !reportedIds.has(s.id))
+      .map((s, idx) => ({
+        id: s.id,
+        name: `${s.first_name} ${s.last_name}`,
+        totalHours: 0,
+        avgPerWeek: 0,
+        status: 'Active' as const,
+        avatarColor: AVATAR_COLORS[(rows.length + idx) % AVATAR_COLORS.length],
+        monthly: [],
+      }));
+
+    return [...rows, ...zeroHourStaff];
+  }, [reportData, startDate, endDate, allStaff]);
 
   const exportCSV = () => {
     const params = new URLSearchParams();

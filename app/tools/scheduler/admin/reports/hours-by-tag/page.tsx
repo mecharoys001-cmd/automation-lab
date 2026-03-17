@@ -90,11 +90,9 @@ export default function HoursByTagPage() {
       .catch(() => {});
   }, [programId, startDate, endDate]);
 
-  // Build tag rows from API data or use fallback
+  // Build tag rows from API data — always dynamic, never fallback
   const tags = useMemo((): TagRow[] => {
-    if (!reportData || reportData.hours_by_tag.length === 0) {
-      return FALLBACK_TAGS;
-    }
+    if (!reportData) return [];
 
     // Compute sessions count and total duration per tag from session details
     const tagStats = new Map<string, { count: number; totalMinutes: number }>();
