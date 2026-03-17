@@ -172,7 +172,7 @@ function WeekEventBlock({
   onContextMenu?: (event: CalendarEvent, position: { x: number; y: number }) => void;
   onResizeEnd?: (eventId: string, newEndTime: string) => void;
   enableDrag?: boolean;
-  onDragStartNotify?: (eventId: string, grabOffsetHours: number, duration: number, title: string, color: string) => void;
+  onDragStartNotify?: (eventId: string, grabOffsetHours: number, duration: number, title: string, color: string, templateId?: string, venueId?: string) => void;
   onDragEndNotify?: () => void;
   isDragging?: boolean;
 }) {
@@ -218,7 +218,7 @@ function WeekEventBlock({
     const emptyImg = document.createElement('img');
     emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(emptyImg, 0, 0);
-    onDragStartNotify?.(event.id, grabOffsetHours, duration, event.title, colors.accent);
+    onDragStartNotify?.(event.id, grabOffsetHours, duration, event.title, colors.accent, event.templateId, event.venueId);
   };
 
   const handleDragEnd = () => {
@@ -498,7 +498,7 @@ export function WeekView({
   const [dragOverCol, setDragOverCol] = useState<number | null>(null);
   const [dropPreview, setDropPreview] = useState<{ dayIdx: number; hour: number; venueId?: string; durationHours: number; templateName?: string; eventTitle?: string; color?: string } | null>(null);
   const draggingTemplateRef = useRef<EventTemplate | null>(null);
-  const draggingEventRef = useRef<{ eventId: string; grabOffsetHours: number; duration: number; title: string; color: string } | null>(null);
+  const draggingEventRef = useRef<{ eventId: string; grabOffsetHours: number; duration: number; title: string; color: string; templateId?: string; venueId?: string } | null>(null);
   const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
@@ -711,8 +711,8 @@ export function WeekView({
   }, [onTemplateSelect, dayStartHour, weekDateKeys, selectedVenues]);
 
   // Callbacks for event block drag notifications
-  const handleEventDragStart = useCallback((eventId: string, grabOffsetHours: number, duration: number, title: string, color: string) => {
-    draggingEventRef.current = { eventId, grabOffsetHours, duration, title, color };
+  const handleEventDragStart = useCallback((eventId: string, grabOffsetHours: number, duration: number, title: string, color: string, templateId?: string, venueId?: string) => {
+    draggingEventRef.current = { eventId, grabOffsetHours, duration, title, color, templateId, venueId };
     setDraggingEventId(eventId);
   }, []);
 
@@ -949,8 +949,17 @@ export function WeekView({
                           const rawHour = dayStartHour + dropY / HOUR_HEIGHT - evData.grabOffsetHours;
                           const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
 
+                          // Check if event's template has a fixed venue
+                          const evTemplate = evData.templateId && templates
+                            ? templates.find((t) => t.id === evData.templateId)
+                            : undefined;
+                          const hasFixedVenue = !!evTemplate?.venue_id;
+
                           let venueId: string | undefined;
-                          if (multiLane && selectedVenues.length > 1) {
+                          if (hasFixedVenue) {
+                            // Keep original venue — don't follow cursor lane
+                            venueId = evData.venueId;
+                          } else if (multiLane && selectedVenues.length > 1) {
                             const mouseX = e.clientX - rect.left;
                             const laneWidth = rect.width / selectedVenues.length;
                             const laneIdx = Math.min(Math.floor(mouseX / laneWidth), selectedVenues.length - 1);
@@ -999,9 +1008,19 @@ export function WeekView({
                           const snappedEnd = snapTo15Min(snappedStart + duration);
                           const newDate = weekDateKeys[dayIdx];
 
+                          // Check if event's template has a fixed venue
+                          const droppedEvent = events.find((ev) => ev.id === eventId);
+                          const dropTemplate = droppedEvent?.templateId && templates
+                            ? templates.find((t) => t.id === droppedEvent.templateId)
+                            : undefined;
+                          const dropHasFixedVenue = !!dropTemplate?.venue_id;
+
                           // Calculate venue lane from horizontal drop position (same logic as onDragOver)
                           let droppedVenueId: string | undefined;
-                          if (multiLane && selectedVenues.length > 1) {
+                          if (dropHasFixedVenue) {
+                            // Template has fixed venue — don't override
+                            droppedVenueId = undefined;
+                          } else if (multiLane && selectedVenues.length > 1) {
                             const dropX = e.clientX - rect.left;
                             const laneWidth = rect.width / selectedVenues.length;
                             const laneIdx = Math.min(Math.floor(dropX / laneWidth), selectedVenues.length - 1);

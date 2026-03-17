@@ -699,37 +699,46 @@ function CalendarDashboard() {
       const [eh, em] = newEndTime.split(':').map(Number);
       const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
 
+      // If the event's template has a fixed venue, don't override it via drag-drop
+      const droppedEvent = events.find((ev) => ev.id === eventId);
+      const template = droppedEvent?.templateId
+        ? eventTemplates.find((t) => t.id === droppedEvent.templateId)
+        : undefined;
+      const effectiveVenueId = template?.venue_id ? undefined : venueId;
+
       console.log('[handleEventDrop] Called with:', {
         eventId,
         newDate,
         newTime,
         newEndTime,
         venueId,
+        effectiveVenueId,
+        templateVenueId: template?.venue_id,
         displayTime,
         displayEndTime,
         durationMinutes,
       });
 
-      // Optimistic update (include venueId if provided)
+      // Optimistic update (include venueId only if template allows it)
       setEvents((prev) =>
         prev.map((ev) => {
           if (ev.id !== eventId) return ev;
           const updated = { ...ev, date: newDate, time: displayTime, endTime: displayEndTime, durationMinutes };
-          if (venueId) { updated.venueId = venueId; updated.venue = venueId; }
+          if (effectiveVenueId) { updated.venueId = effectiveVenueId; updated.venue = effectiveVenueId; }
           console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
           return updated;
         }),
       );
       markRecentlyModified(eventId);
 
-      // Build PATCH body (include venue_id if provided)
+      // Build PATCH body (include venue_id only if template allows it)
       const patchBody: Record<string, unknown> = {
         date: newDate,
         start_time: to24h(displayTime),
         end_time: to24h(displayEndTime),
         duration_minutes: durationMinutes,
       };
-      if (venueId) patchBody.venue_id = venueId;
+      if (effectiveVenueId) patchBody.venue_id = effectiveVenueId;
 
       console.log('[handleEventDrop] PATCH body:', patchBody);
 
@@ -753,7 +762,7 @@ function CalendarDashboard() {
           showToast(err instanceof Error ? err.message : 'Failed to move event — reverted', 'error');
         });
     },
-    [events, markRecentlyModified],
+    [events, eventTemplates, markRecentlyModified],
   );
 
   // Event resize: optimistic update + immediate persist
