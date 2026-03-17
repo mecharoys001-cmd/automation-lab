@@ -724,7 +724,7 @@ function CalendarDashboard() {
         prev.map((ev) => {
           if (ev.id !== eventId) return ev;
           const updated = { ...ev, date: newDate, time: displayTime, endTime: displayEndTime, durationMinutes };
-          if (effectiveVenueId) { updated.venueId = effectiveVenueId; updated.venue = effectiveVenueId; }
+          if (effectiveVenueId) { updated.venueId = effectiveVenueId; updated.venue = dbVenues.find((v) => v.id === effectiveVenueId)?.name ?? effectiveVenueId; }
           console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
           return updated;
         }),
@@ -762,7 +762,7 @@ function CalendarDashboard() {
           showToast(err instanceof Error ? err.message : 'Failed to move event — reverted', 'error');
         });
     },
-    [events, eventTemplates, markRecentlyModified],
+    [events, eventTemplates, markRecentlyModified, dbVenues],
   );
 
   // Event resize: optimistic update + immediate persist
@@ -1365,11 +1365,9 @@ function CalendarDashboard() {
       const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}:00`;
 
       // Use venue from drop lane, fall back to template default.
-      // venueId from WeekView is the venue *name* (lanes use names); resolve to UUID.
       let resolvedVenueId: string | null = template.venue_id ?? null;
       if (venueId) {
-        const match = dbVenues.find((v) => v.name === venueId || v.id === venueId);
-        resolvedVenueId = match?.id ?? null;
+        resolvedVenueId = venueId;
       }
 
       try {
@@ -1839,7 +1837,7 @@ function CalendarDashboard() {
         }}
         initialDate={oneOffSlot?.date}
         initialTime={oneOffSlot?.time}
-        initialVenueId={oneOffSlot?.venueId ? dbVenues.find(v => v.name === oneOffSlot.venueId)?.id : undefined}
+        initialVenueId={oneOffSlot?.venueId}
         programId={selectedProgramId}
         showSessionFields
         title="Create Event Template"

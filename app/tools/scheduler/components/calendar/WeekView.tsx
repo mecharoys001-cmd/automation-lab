@@ -473,12 +473,12 @@ export function WeekView({
   // Use DB venues if provided, otherwise derive from event data
   const allVenues: VenueOption[] = useMemo(() => {
     if (venuesProp && venuesProp.length > 0) {
-      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
+      return venuesProp.map((v) => ({ id: v.id, name: v.name }));
     }
     const seen = new Map<string, string>();
     for (const event of events) {
-      if (event.venue && !seen.has(event.venue)) {
-        seen.set(event.venue, event.venue);
+      if (event.venueId && !seen.has(event.venueId)) {
+        seen.set(event.venueId, event.venue || event.venueId);
       }
     }
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
@@ -875,7 +875,7 @@ export function WeekView({
 
             // Filter events to only selected venues (or show all if no venue data)
             const filteredEvents = multiLane
-              ? dayEvents.filter((e) => !e.venue || selectedVenues.includes(e.venue))
+              ? dayEvents.filter((e) => !e.venueId || selectedVenues.includes(e.venueId))
               : dayEvents;
 
             return (
@@ -1146,7 +1146,7 @@ export function WeekView({
                   <div className="absolute inset-0 flex">
                     {selectedVenues.map((venueId, laneIdx) => {
                       const laneEvents = filteredEvents.filter(
-                        (e) => e.venue === venueId,
+                        (e) => e.venueId === venueId,
                       );
                       return (
                         <div
@@ -1179,7 +1179,7 @@ export function WeekView({
                     })}
                     {/* Venue-less events: overlay spanning all lanes */}
                     {filteredEvents
-                      .filter((e) => !e.venue)
+                      .filter((e) => !e.venueId)
                       .map((event) => (
                         <div key={event.id} className="absolute inset-x-0 z-[3] pointer-events-auto px-0.5">
                           <WeekEventBlock
