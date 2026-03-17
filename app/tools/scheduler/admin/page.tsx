@@ -17,6 +17,7 @@ import {
   CircleDot,
   GraduationCap,
   Tag,
+  Printer,
 } from 'lucide-react';
 import { showToast } from '../lib/toast';
 import { Button } from '../components/ui/Button';
@@ -328,12 +329,126 @@ function ClearEventsModal({
 }
 
 // ---------------------------------------------------------------------------
+// Print / PDF view
+// ---------------------------------------------------------------------------
+
+function openPrintView(
+  events: CalendarEvent[],
+  title: string,
+  subtitle: string,
+  filterNote?: string
+) {
+  // Sort events by date, then time
+  const sorted = [...events].sort((a, b) =>
+    (a.date ?? '').localeCompare(b.date ?? '') || (a.time ?? '').localeCompare(b.time ?? '')
+  );
+
+  // Group by date
+  const grouped: Record<string, CalendarEvent[]> = {};
+  for (const evt of sorted) {
+    const d = evt.date ?? 'Unknown';
+    (grouped[d] ??= []).push(evt);
+  }
+
+  const PRINT_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Build HTML
+  let html = `<!DOCTYPE html><html><head><title>${title} — Export</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 24px; color: #1e293b; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+  .filter-note { font-size: 12px; color: #b45309; background: #fef3c7; padding: 4px 8px; border-radius: 4px; margin-bottom: 12px; display: inline-block; }
+  .date-header { font-size: 14px; font-weight: 600; margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12px; }
+  th { text-align: left; padding: 4px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 11px; text-transform: uppercase; color: #64748b; }
+  td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
+  tr:last-child td { border-bottom: none; }
+  .generated { font-size: 10px; color: #94a3b8; margin-top: 24px; }
+  @media print { body { margin: 12px; } }
+</style></head><body>`;
+
+  html += `<h1>${title}</h1>`;
+  html += `<div class="subtitle">${subtitle}</div>`;
+  if (filterNote) html += `<div class="filter-note">⚠ ${filterNote}</div>`;
+
+  html += `<div style="font-size:12px;color:#64748b;margin-bottom:12px;">${sorted.length} event${sorted.length !== 1 ? 's' : ''}</div>`;
+
+  for (const [date, dateEvents] of Object.entries(grouped)) {
+    const dayName = date !== 'Unknown' ? PRINT_DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : '';
+    html += `<div class="date-header">${dayName}, ${date}</div>`;
+    html += `<table><thead><tr>
+      <th>Time</th><th>Event</th><th>Event Type</th><th>Staff</th><th>Venue</th><th>Grade</th><th>Status</th>
+    </tr></thead><tbody>`;
+
+    for (const evt of dateEvents) {
+      html += `<tr>
+        <td>${evt.time ?? ''}–${evt.endTime ?? ''}</td>
+        <td>${evt.sessionName ?? evt.title ?? ''}</td>
+        <td>${(evt.subjects ?? []).join(', ')}</td>
+        <td>${evt.instructor ?? ''}</td>
+        <td>${evt.venue ?? ''}</td>
+        <td>${(evt.gradeGroups ?? []).join(', ')}</td>
+        <td>${evt.status ?? ''}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
+  }
+
+  html += `<div class="generated">Generated ${new Date().toLocaleString()}</div>`;
+  html += `</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => win.print(), 500);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// View date-range helper
+// ---------------------------------------------------------------------------
+
+/** Returns start/end date strings (YYYY-MM-DD) for the current calendar view */
+function getCurrentViewDateRange(
+  view: CalendarView,
+  anchor: Date,
+  program?: { start_date?: string; end_date?: string } | null
+): { start: string; end: string; label: string } {
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+  switch (view) {
+    case 'day':
+      return { start: fmt(anchor), end: fmt(anchor), label: 'Day' };
+    case 'week': {
+      const mon = new Date(anchor);
+      mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); // Monday
+      const sun = new Date(mon);
+      sun.setDate(sun.getDate() + 6);
+      return { start: fmt(mon), end: fmt(sun), label: 'Week' };
+    }
+    case 'month': {
+      const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+      const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+      return { start: fmt(first), end: fmt(last), label: 'Month' };
+    }
+    case 'year':
+      return {
+        start: program?.start_date ?? fmt(new Date(anchor.getFullYear(), 0, 1)),
+        end: program?.end_date ?? fmt(new Date(anchor.getFullYear(), 11, 31)),
+        label: 'Year',
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // CSV Export helpers
 // ---------------------------------------------------------------------------
 
 const CSV_COLUMNS = [
-  'Date', 'Day', 'Start Time', 'End Time', 'Event Name',
-  'Staff', 'Venue', 'Grade Groups', 'Status', 'Tags',
+  'Date', 'Day of Week', 'Start Time', 'End Time', 'Duration (min)', 'Event Name',
+  'Event Type', 'Staff', 'Venue', 'Grade Group', 'Status', 'Notes',
 ] as const;
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -353,10 +468,12 @@ function eventToCsvRow(event: CalendarEvent): string {
     dayOfWeek,
     event.time ?? '',
     event.endTime ?? '',
-    event.title,
+    String(event.durationMinutes ?? ''),
+    event.sessionName ?? event.title,
+    (event.subjects ?? []).join('; '),
     event.instructor ?? '',
     event.venue ?? '',
-    event.subtitle ?? '',
+    (event.gradeGroups ?? []).join('; '),
     event.status ?? '',
     (event.tags ?? []).join('; '),
   ];
@@ -497,10 +614,24 @@ function CalendarDashboard() {
 
   // Filter events based on active selections
   const filteredEvents = useMemo(() => {
-    const hasActiveFilters = Object.values(activeFilters).some((v) => v.length > 0);
-    if (!hasActiveFilters) return events;
+    const anyActive = Object.values(activeFilters).some((v) => v.length > 0);
+    if (!anyActive) return events;
     return events.filter((event) => eventMatchesFilters(event, activeFilters));
   }, [activeFilters, events]);
+
+  const activeFilterSummary = useMemo(() => {
+    const parts: string[] = [];
+    for (const [key, values] of Object.entries(activeFilters)) {
+      if (values && values.length > 0) {
+        // Capitalize the filter key name
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        parts.push(`${label} (${values.length})`);
+      }
+    }
+    return parts;
+  }, [activeFilters]);
+
+  const hasActiveFilters = activeFilterSummary.length > 0;
 
   // Navigate to day view when a day cell is clicked in month view
   const handleDayClick = useCallback((date: Date) => {
@@ -1141,40 +1272,36 @@ function CalendarDashboard() {
     }
   }, [selectedProgramId, fetchSessions]);
 
-  // Export helpers — filter events by date range, generate CSV, trigger download
-  const handleExportWeekly = useCallback(() => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const start = monday.toISOString().slice(0, 10);
-    const end = sunday.toISOString().slice(0, 10);
-    const weekEvents = events.filter((ev) => ev.date && ev.date >= start && ev.date <= end);
-    const count = exportEventsCsv(weekEvents, 'weekly');
-    showToast(`Exported ${count} event${count !== 1 ? 's' : ''}`);
-    setShowExportMenu(false);
-  }, [events]);
+  // Export helpers — get events for current view range, CSV download, PDF print
+  const getViewEvents = useCallback((scope: 'current' | 'full') => {
+    if (scope === 'full') return filteredEvents;
+    const range = getCurrentViewDateRange(currentView, selectedDate, selectedProgram);
+    return filteredEvents.filter(e => e.date && e.date >= range.start && e.date <= range.end);
+  }, [filteredEvents, currentView, selectedDate, selectedProgram]);
 
-  const handleExportMonthly = useCallback(() => {
-    const now = new Date();
-    const yearStr = String(now.getFullYear());
-    const monthStr = String(now.getMonth() + 1).padStart(2, '0');
-    const start = `${yearStr}-${monthStr}-01`;
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const end = `${yearStr}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
-    const monthEvents = events.filter((ev) => ev.date && ev.date >= start && ev.date <= end);
-    const count = exportEventsCsv(monthEvents, 'monthly');
-    showToast(`Exported ${count} event${count !== 1 ? 's' : ''}`);
+  const handleExportCsv = useCallback((scope: 'current' | 'full') => {
+    const evts = getViewEvents(scope);
+    const range = getCurrentViewDateRange(currentView, selectedDate, selectedProgram);
+    const tag = scope === 'full' ? 'full-year' : range.label.toLowerCase();
+    const count = exportEventsCsv(evts, tag);
+    showToast(`Exported ${count} event${count !== 1 ? 's' : ''} as CSV`);
     setShowExportMenu(false);
-  }, [events]);
+  }, [getViewEvents, currentView, selectedDate, selectedProgram]);
 
-  const handleExportYearly = useCallback(() => {
-    const count = exportEventsCsv(events, 'yearly');
-    showToast(`Exported ${count} event${count !== 1 ? 's' : ''}`);
+  const handleExportPdf = useCallback((scope: 'current' | 'full') => {
+    const evts = getViewEvents(scope);
+    const range = getCurrentViewDateRange(currentView, selectedDate, selectedProgram);
+    const title = selectedProgram?.name ?? 'Schedule';
+    const subtitle = scope === 'full'
+      ? 'Full Program Year'
+      : `${range.label} View: ${range.start} to ${range.end}`;
+    const filterNote = hasActiveFilters
+      ? `Filtered by: ${activeFilterSummary.join(', ')}`
+      : undefined;
+
+    openPrintView(evts, title, subtitle, filterNote);
     setShowExportMenu(false);
-  }, [events]);
+  }, [getViewEvents, currentView, selectedDate, selectedProgram, hasActiveFilters, activeFilterSummary]);
 
   // One-off event: open modal when an empty time slot is clicked
   const handleEmptySlotClick = useCallback((date: string, time: string, venueId?: string) => {
@@ -1294,7 +1421,7 @@ function CalendarDashboard() {
 
         {/* Export Calendar */}
         <div className="relative">
-          <Tooltip text="Export schedule as CSV">
+          <Tooltip text="Export schedule as CSV or PDF">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
               className={`inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-lg border transition-colors cursor-pointer ${
@@ -1314,32 +1441,57 @@ function CalendarDashboard() {
               {/* Click-away backdrop */}
               <div className="fixed inset-0 z-30" onClick={() => setShowExportMenu(false)} />
 
-              <div className="absolute right-0 top-full mt-1 w-60 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-40">
-                <Tooltip text="Download this week's events as CSV">
+              <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-40">
+                {/* Filter warning banner */}
+                {hasActiveFilters && (
+                  <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-[12px] text-amber-800">
+                    <div className="font-medium">⚠ Filtered: {activeFilterSummary.join(', ')}</div>
+                    <div className="text-amber-600">Export includes filtered events only</div>
+                  </div>
+                )}
+
+                {/* CSV section */}
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">CSV</div>
+                <Tooltip text={`Download ${currentView} view events as CSV`}>
                   <button
-                    onClick={handleExportWeekly}
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                    onClick={() => handleExportCsv('current')}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
                     <Download className="w-3.5 h-3.5 text-slate-400" />
-                    Export Weekly Schedule (CSV)
+                    Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
                   </button>
                 </Tooltip>
-                <Tooltip text="Download this month's events as CSV">
+                <Tooltip text="Download all events for the full program year as CSV">
                   <button
-                    onClick={handleExportMonthly}
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                    onClick={() => handleExportCsv('full')}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
                     <Download className="w-3.5 h-3.5 text-slate-400" />
-                    Export Monthly Schedule (CSV)
+                    Full Program Year
                   </button>
                 </Tooltip>
-                <Tooltip text="Download all events for the program year as CSV">
+
+                {/* Divider */}
+                <div className="border-t border-slate-100 my-1" />
+
+                {/* PDF / Print section */}
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">PDF / Print</div>
+                <Tooltip text={`Open ${currentView} view as printable PDF`}>
                   <button
-                    onClick={handleExportYearly}
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                    onClick={() => handleExportPdf('current')}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
-                    <Download className="w-3.5 h-3.5 text-slate-400" />
-                    Export Yearly Schedule (CSV)
+                    <Printer className="w-3.5 h-3.5 text-slate-400" />
+                    Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
+                  </button>
+                </Tooltip>
+                <Tooltip text="Open full program year as printable PDF">
+                  <button
+                    onClick={() => handleExportPdf('full')}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-slate-400" />
+                    Full Program Year
                   </button>
                 </Tooltip>
               </div>
