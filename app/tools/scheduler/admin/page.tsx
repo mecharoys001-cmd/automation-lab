@@ -976,6 +976,8 @@ function CalendarDashboard() {
 
   // Fetch dynamic filter options from API
   const fetchFilterOptions = useCallback(async () => {
+    if (!selectedProgramId) return;
+    
     try {
       const [instRes, venueRes, tagRes] = await Promise.all([
         fetch(`/api/instructors?program_id=${selectedProgramId}`),
