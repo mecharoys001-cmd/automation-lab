@@ -54,8 +54,8 @@ export interface WeekViewProps {
   onEditNotes?: (eventId: string, notes: string) => void;
   /** Called when user wants to open the full edit panel for an event */
   onOpenEditPanel?: (event: CalendarEvent) => void;
-  /** Called when an event is dragged to a new date/time */
-  onEventDrop?: (eventId: string, newDate: string, newTime: string, newEndTime: string) => void;
+  /** Called when an event is dragged to a new date/time/venue */
+  onEventDrop?: (eventId: string, newDate: string, newTime: string, newEndTime: string, venueId?: string) => void;
   /** Called when an event is resized (bottom edge dragged) */
   onEventResize?: (eventId: string, newEndTime: string) => void;
   /** Called when an empty time slot is clicked (for creating one-off events) */
@@ -103,13 +103,18 @@ function formatDateKey(date: Date): string {
 /** Parse "9:00 AM" → decimal hour (9.0), "1:30 PM" → 13.5 */
 function parseTimeToHour(time: string): number {
   const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return 8;
+  if (!match) {
+    console.warn('[parseTimeToHour] NO MATCH for input:', JSON.stringify(time), '→ defaulting to 8');
+    return 8;
+  }
   let hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
   const period = match[3].toUpperCase();
   if (period === 'PM' && hours !== 12) hours += 12;
   if (period === 'AM' && hours === 12) hours = 0;
-  return hours + minutes / 60;
+  const result = hours + minutes / 60;
+  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+  return result;
 }
 
 function formatHourLabel(hour: number): string {
@@ -193,9 +198,20 @@ function WeekEventBlock({
     if (!ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const grabOffsetHours = (e.clientY - rect.top) / HOUR_HEIGHT;
+    const dragData = { eventId: event.id, grabOffsetHours, duration };
+    console.log('[DRAG START]', {
+      ...dragData,
+      eventTitle: event.title,
+      eventTime: event.time,
+      eventEndTime: event.endTime,
+      eventVenueId: event.venueId,
+      startHour,
+      rectTop: rect.top,
+      clientY: e.clientY,
+    });
     e.dataTransfer.setData(
       'application/x-calendar-event',
-      JSON.stringify({ eventId: event.id, grabOffsetHours, duration }),
+      JSON.stringify(dragData),
     );
     e.dataTransfer.effectAllowed = 'move';
     // Use a transparent drag image so we show our own ghost preview
@@ -982,14 +998,46 @@ export function WeekView({
                           const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
                           const snappedEnd = snapTo15Min(snappedStart + duration);
                           const newDate = weekDateKeys[dayIdx];
+
+                          // Calculate venue lane from horizontal drop position (same logic as onDragOver)
+                          let droppedVenueId: string | undefined;
+                          if (multiLane && selectedVenues.length > 1) {
+                            const dropX = e.clientX - rect.left;
+                            const laneWidth = rect.width / selectedVenues.length;
+                            const laneIdx = Math.min(Math.floor(dropX / laneWidth), selectedVenues.length - 1);
+                            droppedVenueId = selectedVenues[laneIdx];
+                          } else if (selectedVenues.length === 1) {
+                            droppedVenueId = selectedVenues[0];
+                          }
+
+                          console.log('[DROP] Event drop:', {
+                            eventId,
+                            dayIdx,
+                            newDate,
+                            dropY,
+                            rawHour,
+                            snappedStart,
+                            snappedEnd,
+                            formattedStart: formatDecimalTo24h(snappedStart),
+                            formattedEnd: formatDecimalTo24h(snappedEnd),
+                            grabOffsetHours,
+                            duration,
+                            dayStartHour,
+                            HOUR_HEIGHT,
+                            droppedVenueId,
+                            multiLane,
+                            selectedVenues,
+                          });
+
                           onEventDrop(
                             eventId,
                             newDate,
                             formatDecimalTo24h(snappedStart),
                             formatDecimalTo24h(snappedEnd),
+                            droppedVenueId,
                           );
-                        } catch {
-                          // ignore malformed data
+                        } catch (err) {
+                          console.error('[DROP] Error processing event drop:', err);
                         }
                       }
                     : undefined

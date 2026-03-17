@@ -686,37 +686,69 @@ function CalendarDashboard() {
 
   // Drag-and-drop: optimistic update + immediate persist
   const handleEventDrop = useCallback(
-    (eventId: string, newDate: string, newTime: string, newEndTime: string) => {
+    (eventId: string, newDate: string, newTime: string, newEndTime: string, venueId?: string) => {
       const prevEvents = events;
 
-      // Optimistic update
+      // WeekView passes 24-hour format ("09:00:00") but CalendarEvent.time
+      // must be display format ("9:00 AM") for parseTimeToHour positioning.
+      const displayTime = formatTimeDisplay(newTime);
+      const displayEndTime = formatTimeDisplay(newEndTime);
+
+      // Compute duration_minutes from the 24h times
+      const [sh, sm] = newTime.split(':').map(Number);
+      const [eh, em] = newEndTime.split(':').map(Number);
+      const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+
+      console.log('[handleEventDrop] Called with:', {
+        eventId,
+        newDate,
+        newTime,
+        newEndTime,
+        venueId,
+        displayTime,
+        displayEndTime,
+        durationMinutes,
+      });
+
+      // Optimistic update (include venueId if provided)
       setEvents((prev) =>
-        prev.map((ev) =>
-          ev.id === eventId
-            ? { ...ev, date: newDate, time: newTime, endTime: newEndTime }
-            : ev,
-        ),
+        prev.map((ev) => {
+          if (ev.id !== eventId) return ev;
+          const updated = { ...ev, date: newDate, time: displayTime, endTime: displayEndTime, durationMinutes };
+          if (venueId) updated.venueId = venueId;
+          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+          return updated;
+        }),
       );
       markRecentlyModified(eventId);
+
+      // Build PATCH body (include venue_id if provided)
+      const patchBody: Record<string, unknown> = {
+        date: newDate,
+        start_time: to24h(displayTime),
+        end_time: to24h(displayEndTime),
+        duration_minutes: durationMinutes,
+      };
+      if (venueId) patchBody.venue_id = venueId;
+
+      console.log('[handleEventDrop] PATCH body:', patchBody);
 
       // Persist immediately
       fetch(`/api/sessions/${eventId}`, {
         method: 'PATCH',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: newDate,
-          start_time: to24h(newTime),
-          end_time: to24h(newEndTime),
-        }),
+        body: JSON.stringify(patchBody),
       })
         .then(async (res) => {
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error || 'Failed to save');
           }
+          console.log('[handleEventDrop] PATCH success for', eventId);
         })
         .catch((err) => {
+          console.error('[handleEventDrop] PATCH failed, reverting:', err);
           setEvents(prevEvents);
           showToast(err instanceof Error ? err.message : 'Failed to move event — reverted', 'error');
         });
