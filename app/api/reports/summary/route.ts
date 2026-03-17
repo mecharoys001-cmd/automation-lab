@@ -147,15 +147,34 @@ export async function GET(request: NextRequest) {
 
     // ----------------------------------------------------------
     // Aggregate: Hours by Tag
+    // Includes BOTH session_tags (additional tags) AND
+    // required_skills from templates (event types like Math, Science, etc.)
     // ----------------------------------------------------------
     const tagMinutes = new Map<string, { tag_name: string; total: number }>();
     for (const s of allSessions) {
       if (s.status === 'canceled') continue;
+
+      // 1. Tags from session_tags junction table
       const tags = tagMap.get(s.id) ?? [];
       for (const t of tags) {
         const existing = tagMinutes.get(t.tag_id) ?? { tag_name: t.tag_name, total: 0 };
         existing.total += s.duration_minutes;
         tagMinutes.set(t.tag_id, existing);
+      }
+
+      // 2. Event types from template required_skills (these are tag names, not IDs)
+      const template = s.template as unknown as { id: string; required_skills: string[] | null } | null;
+      const skills = template?.required_skills ?? [];
+      for (const skillName of skills) {
+        // Use "skill:<name>" as key to avoid collision with tag IDs
+        const key = `skill:${skillName}`;
+        // Don't double-count if this skill is already in session_tags
+        const alreadyCounted = tags.some(t => t.tag_name === skillName);
+        if (alreadyCounted) continue;
+
+        const existing = tagMinutes.get(key) ?? { tag_name: skillName, total: 0 };
+        existing.total += s.duration_minutes;
+        tagMinutes.set(key, existing);
       }
     }
     const hoursByTag: HoursByTag[] = Array.from(tagMinutes.entries())
@@ -204,7 +223,12 @@ export async function GET(request: NextRequest) {
         needs_resolution: s.needs_resolution,
         instructor_name: inst ? `${inst.first_name} ${inst.last_name}` : 'Unassigned',
         venue_name: venue ? `${venue.name} - ${venue.space_type}` : 'No Venue',
-        tags: tags.map((t) => t.tag_name),
+        tags: [
+          // Event types from template required_skills
+          ...((s.template as any)?.required_skills ?? []),
+          // Additional tags from session_tags (exclude duplicates)
+          ...tags.map((t) => t.tag_name).filter(name => !((s.template as any)?.required_skills ?? []).includes(name)),
+        ],
         notes: s.notes,
       };
     });
