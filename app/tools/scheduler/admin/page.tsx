@@ -715,7 +715,7 @@ function CalendarDashboard() {
         prev.map((ev) => {
           if (ev.id !== eventId) return ev;
           const updated = { ...ev, date: newDate, time: displayTime, endTime: displayEndTime, durationMinutes };
-          if (venueId) updated.venueId = venueId;
+          if (venueId) { updated.venueId = venueId; updated.venue = venueId; }
           console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
           return updated;
         }),
