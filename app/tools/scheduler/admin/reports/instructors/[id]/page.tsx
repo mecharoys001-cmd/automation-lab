@@ -322,6 +322,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
               <Tooltip
                 key={row.week}
                 text={`Week of ${formatWeekLabel(row.week)}: ${row.hours}h across ${row.session_count} event${row.session_count !== 1 ? 's' : ''}`}
+                style={{ display: 'block' }}
               >
                 <div className="grid grid-cols-[minmax(180px,1fr)_100px_100px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors">
                   <span className="text-[13px] font-medium text-slate-900">
@@ -393,6 +394,7 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
               <Tooltip
                 key={row.tag_name}
                 text={`${row.tag_name}: ${row.hours}h across ${row.session_count} event${row.session_count !== 1 ? 's' : ''} (${percentage}% of total)`}
+                style={{ display: 'block' }}
               >
                 <div className="grid grid-cols-[minmax(160px,auto)_100px_100px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors">
                   <div>
