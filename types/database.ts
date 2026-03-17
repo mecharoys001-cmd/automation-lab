@@ -143,7 +143,7 @@ export interface SessionTemplate {
   start_time: string;
   end_time: string;
   duration_minutes: number;
-  venue_id: string;
+  venue_id: string | null;
   required_skills: string[] | null;
   /** Optional additional tags (any category) */
   additional_tags: string[] | null;
@@ -188,7 +188,7 @@ export interface Session {
   template_id: string | null;
   name: string;
   instructor_id: string | null;
-  venue_id: string;
+  venue_id: string | null;
   grade_groups: string[];
   date: string;
   start_time: string;

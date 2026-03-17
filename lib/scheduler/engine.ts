@@ -722,7 +722,7 @@ function runSingleAttempt(
           program_id: programId,
           template_id: tmpl.id,
           instructor_id: matchedInstructor?.id ?? null,
-          venue_id: (venueId as string) ?? '',
+          venue_id: venueId ?? null,
           grade_groups: tmpl.template_type === 'time_block' && tmpl.grade_groups.length === 0
             ? []
             : tmpl.grade_groups,
