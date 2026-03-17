@@ -840,7 +840,7 @@ export function WeekView({
                         laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                       }`}
                     >
-                      {venueId}
+                      {allVenues.find((v) => v.id === venueId)?.name ?? venueId}
                     </div>
                   ))}
                 </div>
