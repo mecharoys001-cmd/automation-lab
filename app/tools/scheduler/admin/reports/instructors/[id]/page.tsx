@@ -368,7 +368,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                 {/* Expanded session list */}
                 {isExpanded && row.sessions && row.sessions.length > 0 && (
                   <div className="bg-slate-50/50 border-t border-slate-100 px-5 py-2">
-                    <div className="grid grid-cols-[1fr_120px_100px_120px] gap-1 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 pl-6">
+                    <div className="grid grid-cols-4 gap-4 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 pl-6">
                       <span>Event</span>
                       <span>Date</span>
                       <span>Time</span>
@@ -377,7 +377,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                     {row.sessions.map((s, idx) => {
                       const dayName = s.date ? DAY_NAMES_SHORT[new Date(s.date + 'T00:00:00').getDay()] : '';
                       return (
-                        <div key={idx} className="grid grid-cols-[1fr_120px_100px_120px] gap-1 py-1.5 pl-6 text-[12px] text-slate-600 border-t border-slate-100/50 first:border-t-0">
+                        <div key={idx} className="grid grid-cols-4 gap-4 py-1.5 pl-6 text-[12px] text-slate-600 border-t border-slate-100/50 first:border-t-0">
                           <span className="font-medium text-slate-800">{s.name}</span>
                           <span>{dayName} {s.date}</span>
                           <span>{s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}</span>
