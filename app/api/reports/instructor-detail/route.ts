@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     // Fetch sessions for this instructor (exclude canceled)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
-      .select('id, date, duration_minutes, status, template:session_templates (id, required_skills)')
+      .select('id, name, date, start_time, end_time, duration_minutes, status, venue:venues (id, name), template:session_templates (id, required_skills)')
       .eq('instructor_id', instructorId)
       .neq('status', 'canceled');
 
@@ -125,12 +125,20 @@ export async function GET(request: NextRequest) {
     // ----------------------------------------------------------
     // Aggregate: Weekly breakdown (week = Monday of ISO week)
     // ----------------------------------------------------------
-    const weeklyMap = new Map<string, { minutes: number; count: number }>();
+    const weeklyMap = new Map<string, { minutes: number; count: number; sessions: { name: string; date: string; start_time: string; end_time: string; venue: string }[] }>();
     for (const s of allSessions) {
       const week = getWeekStart(s.date);
-      const existing = weeklyMap.get(week) ?? { minutes: 0, count: 0 };
+      const existing = weeklyMap.get(week) ?? { minutes: 0, count: 0, sessions: [] };
       existing.minutes += s.duration_minutes;
       existing.count += 1;
+      const venue = s.venue as unknown as { name: string } | null;
+      existing.sessions.push({
+        name: s.name ?? 'Untitled',
+        date: s.date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        venue: venue?.name ?? '',
+      });
       weeklyMap.set(week, existing);
     }
     const weeklyBreakdown = Array.from(weeklyMap.entries())
@@ -138,6 +146,7 @@ export async function GET(request: NextRequest) {
         week,
         hours: Math.round((data.minutes / 60) * 100) / 100,
         session_count: data.count,
+        sessions: data.sessions.sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time)),
       }))
       .sort((a, b) => a.week.localeCompare(b.week));
 

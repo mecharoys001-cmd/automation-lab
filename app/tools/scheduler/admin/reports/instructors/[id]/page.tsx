@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Calendar, Clock, Tag, Hash, Loader2, AlertCircle,
+  ArrowLeft, Calendar, Clock, Tag, Hash, Loader2, AlertCircle, ChevronRight,
 } from 'lucide-react';
 import { Tooltip } from '../../../../components/ui/Tooltip';
 import { Button } from '../../../../components/ui/Button';
@@ -11,10 +11,19 @@ import { Pill } from '../../../../components/ui/Pill';
 
 /* ── Types ─────────────────────────────────────────────────── */
 
+interface SessionDetail {
+  name: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  venue: string;
+}
+
 interface WeeklyBreakdown {
   week: string;
   hours: number;
   session_count: number;
+  sessions: SessionDetail[];
 }
 
 interface HoursByTag {
@@ -289,6 +298,17 @@ export default function InstructorDetailPage() {
 
 function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
   const maxHours = rows.length > 0 ? Math.max(...rows.map((r) => r.hours)) : 1;
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
+
+  const toggleWeek = (week: string) => {
+    setExpandedWeeks(prev => {
+      const next = new Set(prev);
+      if (next.has(week)) next.delete(week); else next.add(week);
+      return next;
+    });
+  };
+
+  const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div className="bg-white rounded-xl border border-slate-200">
@@ -302,10 +322,11 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-[minmax(180px,1fr)_100px_100px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="grid grid-cols-[24px_minmax(160px,1fr)_80px_80px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <span />
         <span>Week Starting</span>
         <span className="text-right">Hours</span>
-        <span className="text-right">Classes</span>
+        <span className="text-right">Events</span>
         <span className="pl-4">Distribution</span>
       </div>
 
@@ -318,13 +339,14 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
         <div className="divide-y divide-slate-100">
           {rows.map((row) => {
             const pct = (row.hours / maxHours) * 100;
+            const isExpanded = expandedWeeks.has(row.week);
             return (
-              <Tooltip
-                key={row.week}
-                text={`Week of ${formatWeekLabel(row.week)}: ${row.hours}h across ${row.session_count} event${row.session_count !== 1 ? 's' : ''}`}
-                style={{ display: 'block' }}
-              >
-                <div className="grid grid-cols-[minmax(180px,1fr)_100px_100px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors">
+              <div key={row.week} style={{ display: 'block' }}>
+                <div
+                  className="grid grid-cols-[24px_minmax(160px,1fr)_80px_80px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                  onClick={() => toggleWeek(row.week)}
+                >
+                  <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   <span className="text-[13px] font-medium text-slate-900">
                     {formatWeekLabel(row.week)}
                   </span>
@@ -343,7 +365,29 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                     </div>
                   </div>
                 </div>
-              </Tooltip>
+                {/* Expanded session list */}
+                {isExpanded && row.sessions && row.sessions.length > 0 && (
+                  <div className="bg-slate-50/50 border-t border-slate-100 px-5 py-2">
+                    <div className="grid grid-cols-[1fr_120px_100px_120px] gap-1 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 pl-6">
+                      <span>Event</span>
+                      <span>Date</span>
+                      <span>Time</span>
+                      <span>Venue</span>
+                    </div>
+                    {row.sessions.map((s, idx) => {
+                      const dayName = s.date ? DAY_NAMES_SHORT[new Date(s.date + 'T00:00:00').getDay()] : '';
+                      return (
+                        <div key={idx} className="grid grid-cols-[1fr_120px_100px_120px] gap-1 py-1.5 pl-6 text-[12px] text-slate-600 border-t border-slate-100/50 first:border-t-0">
+                          <span className="font-medium text-slate-800">{s.name}</span>
+                          <span>{dayName} {s.date}</span>
+                          <span>{s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}</span>
+                          <span className="text-slate-500">{s.venue}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
