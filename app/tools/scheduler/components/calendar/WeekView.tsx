@@ -386,15 +386,29 @@ function TemplateSidebar({
           ) : (
             templates.map((template) => {
               const subject = template.required_skills?.[0];
-              const displayName = template.name || subject || 'Untitled';
-              const subtitle = subject && template.name ? subject : null;
+              const hasName = !!template.name;
+              const displayName = hasName ? template.name : (subject || '(No name \u2013 edit to add)');
+              const subtitle = subject && hasName ? subject : null;
               const instructorName = template.instructor
                 ? `${template.instructor.first_name} ${template.instructor.last_name}`.trim()
                 : null;
+              const venueName = template.venue?.name || null;
               const subjectColor = subject ? getSubjectColor(subject) : null;
+
+              // Build tooltip lines
+              const tipLines: string[] = ['Event Template'];
+              if (template.name) tipLines.push(`Name: ${template.name}`);
+              if (subject) tipLines.push(`Subject: ${subject}`);
+              if (instructorName) tipLines.push(`Instructor: ${instructorName}`);
+              if (venueName) tipLines.push(`Venue: ${venueName}`);
+              if (template.duration_minutes > 0) tipLines.push(`Duration: ${template.duration_minutes} min`);
+              if (template.grade_groups?.length) tipLines.push(`Grades: ${template.grade_groups.join(', ')}`);
+              if (!hasName) tipLines.push('\nClick to edit and add a name');
+              const tooltipText = tipLines.join('\n');
+
               return (
+                <Tooltip key={template.id} text={tooltipText} position="right">
                 <div
-                  key={template.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, template)}
                   onClick={() => onTemplateClick(template)}
@@ -407,7 +421,7 @@ function TemplateSidebar({
                 >
                   <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0 group-hover:text-blue-400" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-medium text-slate-700 truncate leading-snug">
+                    <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-400 italic'}`}>
                       {displayName}
                     </p>
                     {subtitle && (
@@ -419,12 +433,16 @@ function TemplateSidebar({
                       {instructorName && (
                         <span className="text-[10px] text-slate-400 truncate">{instructorName}</span>
                       )}
+                      {venueName && (
+                        <span className="text-[10px] text-slate-400 truncate">{venueName}</span>
+                      )}
                       {template.duration_minutes > 0 && (
                         <span className="text-[10px] text-slate-400">{template.duration_minutes}m</span>
                       )}
                     </div>
                   </div>
                 </div>
+                </Tooltip>
               );
             })
           )}
