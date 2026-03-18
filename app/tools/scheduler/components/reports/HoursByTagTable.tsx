@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { Tag, ChevronRight } from 'lucide-react';
 import { ProgressBar } from '../ui/ProgressBar';
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -37,8 +39,21 @@ export function HoursByTagTable({ tags }: HoursByTagTableProps) {
 
       {/* Rows */}
       {tags.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-slate-400">
-          No tag data available for this date range.
+        <div className="px-5 py-12 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <Tag className="w-8 h-8 text-slate-300" />
+            <div>
+              <p className="text-sm font-medium text-slate-500">No tag data available</p>
+              <p className="text-sm text-slate-400 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
+            </div>
+            <Link
+              href="/tools/scheduler/admin/tags"
+              className="inline-flex items-center gap-1.5 mt-1 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors"
+            >
+              Go to Tags
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       ) : (
         <div>

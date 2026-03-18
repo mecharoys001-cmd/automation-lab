@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useProgram } from '../ProgramContext';
 import {
   Calendar, Download, ChevronDown, ChevronRight,
-  Clock, Tag, FileText,
+  Clock, Tag, FileText, Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { ProgressBar } from '../../components/ui/ProgressBar';
@@ -163,8 +164,21 @@ function InstructorHoursTab({
         <tbody>
           {instructors.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-400">
-                No staff hours available.
+              <td colSpan={5} className="px-5 py-12 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <Users className="w-8 h-8 text-slate-300" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">No staff hours available</p>
+                    <p className="text-sm text-slate-400 mt-1">Add staff members and assign them to events to start tracking hours.</p>
+                  </div>
+                  <Link
+                    href="/tools/scheduler/admin/people"
+                    className="inline-flex items-center gap-1.5 mt-1 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors"
+                  >
+                    Go to Staff &amp; Venues
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </td>
             </tr>
           ) : (
@@ -358,8 +372,21 @@ function HoursByTagTab({
         <tbody>
           {tags.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-400">
-                No tag data available.
+              <td colSpan={4} className="px-5 py-12 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <Tag className="w-8 h-8 text-slate-300" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">No tag data available</p>
+                    <p className="text-sm text-slate-400 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
+                  </div>
+                  <Link
+                    href="/tools/scheduler/admin/tags"
+                    className="inline-flex items-center gap-1.5 mt-1 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors"
+                  >
+                    Go to Tags
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </td>
             </tr>
           ) : (
