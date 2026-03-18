@@ -1900,6 +1900,7 @@ export default function PeoplePage() {
           return result;
         }}
         exampleCsv={VENUE_CSV_EXAMPLE}
+        templateFilename="venues.csv"
       />
 
       {/* ── Instructor CSV Import Dialog ──────────────────── */}
@@ -1938,6 +1939,7 @@ export default function PeoplePage() {
           return result;
         }}
         exampleCsv={INSTRUCTOR_CSV_EXAMPLE}
+        templateFilename="staff.csv"
       />
 
       {/* ── Toast notifications ───────────────────────────── */}

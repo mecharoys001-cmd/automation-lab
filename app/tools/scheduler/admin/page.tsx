@@ -1449,7 +1449,7 @@ function CalendarDashboard() {
       {/* ================================================================= */}
       {/* TOP BAR                                                            */}
       {/* ================================================================= */}
-      <div className="flex items-center gap-4 bg-white px-6 py-4 border-b border-slate-200 shrink-0">
+      <div className="flex flex-wrap items-center gap-4 bg-white px-6 py-4 border-b border-slate-200 shrink-0">
         {/* Program Selector */}
         <Tooltip text="Switch active program">
           <button className="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
@@ -1469,8 +1469,8 @@ function CalendarDashboard() {
           Today
         </Button>
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Spacer - grows to push action buttons right, shrinks to 0 when toolbar wraps */}
+        <div className="flex-1 basis-0 min-w-0" />
 
         {/* Recently modified indicator (fades after 5s) */}
         {modifiedCount > 0 && (
@@ -1557,20 +1557,24 @@ function CalendarDashboard() {
                     Full Program Year
                   </button>
                 </Tooltip>
+                {/* Divider */}
+                <div className="border-t border-slate-100 my-1" />
+
+                {/* Danger zone */}
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-red-400 uppercase tracking-wider">Danger Zone</div>
+                <Tooltip text="Permanently delete ALL scheduled events for this program">
+                  <button
+                    onClick={() => { setShowExportMenu(false); setShowClearModal(true); }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    Clear All Events…
+                  </button>
+                </Tooltip>
               </div>
             </>
           )}
         </div>
-
-        {/* Clear Events */}
-        <Button
-          variant="danger"
-          tooltip="Delete all scheduled events for this program"
-          icon={<Trash2 className="w-3.5 h-3.5" />}
-          onClick={() => setShowClearModal(true)}
-        >
-          Clear Events
-        </Button>
 
         {/* Auto-Generate Draft */}
         <Button

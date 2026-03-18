@@ -940,6 +940,7 @@ export default function TagsPage() {
           return result;
         }}
         exampleCsv={TAG_CSV_EXAMPLE}
+        templateFilename="tags.csv"
       />
     </div>
   );

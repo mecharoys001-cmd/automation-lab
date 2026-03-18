@@ -30,6 +30,8 @@ export interface CsvImportDialogProps {
   onImport: (rows: CsvRow[]) => Promise<{ imported: number; skipped: number }>;
   /** Example CSV content for the download template button */
   exampleCsv?: string;
+  /** Filename for the downloaded template (e.g., 'venues.csv', 'staff.csv') */
+  templateFilename?: string;
 }
 
 export function CsvImportDialog({
@@ -40,6 +42,7 @@ export function CsvImportDialog({
   validateRow,
   onImport,
   exampleCsv,
+  templateFilename = 'template.csv',
 }: CsvImportDialogProps) {
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -151,10 +154,10 @@ export function CsvImportDialog({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'template.csv';
+    a.download = templateFilename;
     a.click();
     URL.revokeObjectURL(url);
-  }, [exampleCsv]);
+  }, [exampleCsv, templateFilename]);
 
   if (!open) return null;
 

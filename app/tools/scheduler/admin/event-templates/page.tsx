@@ -551,6 +551,7 @@ export default function EventTemplatesPage() {
           return result;
         }}
         exampleCsv={TEMPLATE_CSV_EXAMPLE}
+        templateFilename="event-templates.csv"
       />
 
       {/* Toast */}

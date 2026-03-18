@@ -1182,7 +1182,7 @@ export default function CalendarPage() {
     <div className="h-full overflow-y-auto">
       <div className="max-w-[1200px] mx-auto px-6 lg:px-8 py-8 space-y-8">
         {/* ── Page Header ─────────────────────────────────────── */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</h1>
@@ -1199,7 +1199,7 @@ export default function CalendarPage() {
               </Tooltip>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
               size="md"
@@ -1822,6 +1822,7 @@ export default function CalendarPage() {
           return result;
         }}
         exampleCsv={CALENDAR_CSV_EXAMPLE}
+        templateFilename="school-calendar.csv"
       />
 
       {/* Toast notifications */}
