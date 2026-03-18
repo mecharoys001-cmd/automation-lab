@@ -285,10 +285,7 @@ export function TemplateFormModal({
       setError('Name is required');
       return;
     }
-    if (!form.venue_id) {
-      setError('Venue is required');
-      return;
-    }
+    // venue_id is optional — the generator can auto-assign based on availability
     if (form.duration_minutes <= 0) {
       setError('Duration must be greater than 0');
       return;
@@ -430,13 +427,13 @@ export function TemplateFormModal({
         </FormField>
 
         {/* 4. Venue */}
-        <FormField label="Venue" required>
+        <FormField label="Venue" hint="Leave empty to auto-assign based on availability">
           <select
             value={form.venue_id}
             onChange={(e) => updateForm({ venue_id: e.target.value })}
             className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors appearance-none"
           >
-            <option value="">— None —</option>
+            <option value="">— Auto-assign —</option>
             {venues.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}{(v as any).max_capacity ? ` (cap: ${(v as any).max_capacity})` : ''}
