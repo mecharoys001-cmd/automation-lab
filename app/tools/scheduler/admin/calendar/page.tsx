@@ -838,6 +838,18 @@ export default function CalendarPage() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // ── Auto-scroll to current month on mount ────────────────────
+  const hasAutoScrolled = useRef(false);
+  useEffect(() => {
+    if (hasAutoScrolled.current || loading) return;
+    const el = document.getElementById(`month-${today.getFullYear()}-${today.getMonth()}`);
+    if (el) {
+      // Use instant scroll on initial load so user sees current month immediately
+      el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      hasAutoScrolled.current = true;
+    }
+  }, [loading, today]);
+
   // ── Day selection handlers (drag-to-select) ────────────────
 
   const handleDayMouseDown = useCallback((dateStr: string, e: React.MouseEvent) => {
@@ -1214,11 +1226,11 @@ export default function CalendarPage() {
               variant="primary"
               size="md"
               icon={isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              tooltip="Publish all changes to the live schedule"
+              tooltip="Save a published version of the school calendar"
               onClick={handlePublish}
               disabled={isDirty || isPublishing || isSaving || entries.length === 0}
             >
-              {isPublishing ? 'Publishing…' : 'Publish Schedule'}
+              {isPublishing ? 'Publishing…' : 'Publish Calendar'}
             </Button>
             <div className="w-px h-8 bg-slate-200" />
             <Button
@@ -1368,12 +1380,6 @@ export default function CalendarPage() {
                   <span className="flex items-center gap-1.5 cursor-help">
                     <span className="h-3 w-3 rounded-sm bg-blue-100 border border-blue-200" />
                     Staff Exception
-                  </span>
-                </Tooltip>
-                <Tooltip text="Today's date is highlighted with a blue circle">
-                  <span className="flex items-center gap-1.5 cursor-help">
-                    <span className="h-3 w-3 rounded-full bg-blue-500" />
-                    Today
                   </span>
                 </Tooltip>
                 <Tooltip text="Weekend days are subtly shaded">
