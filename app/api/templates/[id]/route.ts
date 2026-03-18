@@ -96,7 +96,8 @@ export async function PATCH(
         .eq('id', id)
         .single();
 
-      const finalInstructorId = instructorId ?? existing?.instructor_id;
+      // If instructor_id was explicitly sent (even as null), use it; otherwise fall back to existing
+      const finalInstructorId = instructorId !== undefined ? instructorId : existing?.instructor_id;
       const finalSkills = requiredSkills ?? existing?.required_skills;
 
       if (finalInstructorId && finalSkills?.length > 0) {
