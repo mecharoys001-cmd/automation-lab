@@ -46,12 +46,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    if ('venue_id' in body && !body.venue_id) {
-      return NextResponse.json(
-        { error: 'Venue is required' },
-        { status: 400 }
-      );
-    }
+    // venue_id is optional — generator can auto-assign
 
     // Validate scheduling mode fields if being updated
     if (body.scheduling_mode) {

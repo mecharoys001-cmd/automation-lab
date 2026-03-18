@@ -101,12 +101,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (!body.venue_id) {
-      return NextResponse.json(
-        { error: 'Venue is required' },
-        { status: 400 }
-      );
-    }
+    // venue_id is optional — generator can auto-assign
 
     // Validate scheduling mode fields
     const mode = body.scheduling_mode ?? 'ongoing';
