@@ -1,16 +1,25 @@
 /**
  * POST /api/versions/:id/revert
  *
- * Smart revert: replace scheduling data from a version snapshot,
- * preserve reference data (instructors, venues, tags).
+ * Full revert: replace ALL scheduling data from a version snapshot,
+ * including instructors, venues, and tags.
  *
- * Steps:
- *   1. Load snapshot from schedule_versions
- *   2. DELETE all sessions, session_tags, session_templates, school_calendar for that year
- *   3. INSERT sessions/templates/calendar from snapshot
- *   4. UPDATE settings from snapshot
- *   5. PRESERVE instructors, venues, tags (don't touch)
- *   6. If snapshot status=published, set all restored sessions to published
+ * Delete order (respecting FK constraints):
+ *   1. session_tags (depends on sessions + tags)
+ *   2. sessions (depends on instructors, venues, templates)
+ *   3. session_templates
+ *   4. school_calendar
+ *   5. instructors, venues, tags
+ *
+ * Insert order (satisfying FK constraints):
+ *   1. instructors, venues, tags (no dependencies)
+ *   2. session_templates
+ *   3. sessions (depends on instructors, venues, templates)
+ *   4. session_tags (depends on sessions + tags)
+ *   5. school_calendar
+ *
+ *   6. UPDATE settings from snapshot
+ *   7. If snapshot status=published, set all restored sessions to published
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -45,9 +54,9 @@ export async function POST(
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
-    // ── 2. DELETE current scheduling data for this year ──────
+    // ── 2. DELETE current data (FK-safe order) ───────────────
 
-    // Get session IDs for this year (needed to delete session_tags)
+    // 2a. Delete session_tags (depends on sessions + tags)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: currentSessions } = await (supabase.from('sessions') as any)
       .select('id')
@@ -56,7 +65,6 @@ export async function POST(
 
     const currentSessionIds = (currentSessions ?? []).map((s: { id: string }) => s.id);
 
-    // Delete session_tags for these sessions
     if (currentSessionIds.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from('session_tags') as any)
@@ -64,29 +72,76 @@ export async function POST(
         .in('session_id', currentSessionIds);
     }
 
-    // Delete sessions for this year
+    // 2b. Delete sessions (depends on instructors, venues, templates)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('sessions') as any)
       .delete()
       .gte('date', startDate)
       .lte('date', endDate);
 
-    // Delete all session_templates (not year-scoped)
+    // 2c. Delete session_templates
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('session_templates') as any)
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000'); // delete all rows
 
-    // Delete school_calendar entries for this year
+    // 2d. Delete school_calendar
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('school_calendar') as any)
       .delete()
       .gte('date', startDate)
       .lte('date', endDate);
 
-    // ── 3. INSERT data from snapshot ─────────────────────────
+    // 2e. Delete instructors, venues, tags (no dependents remain)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('instructors') as any)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // Restore session_templates first (sessions reference template_id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('venues') as any)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('tags') as any)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // ── 3. INSERT data from snapshot (FK-safe order) ─────────
+
+    // 3a. Restore instructors, venues, tags (no dependencies)
+    if (snapshot.instructors?.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: instrErr } = await (supabase.from('instructors') as any)
+        .insert(snapshot.instructors);
+
+      if (instrErr) {
+        console.error('Revert: instructors insert error:', instrErr.message);
+      }
+    }
+
+    if (snapshot.venues?.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: venueErr } = await (supabase.from('venues') as any)
+        .insert(snapshot.venues);
+
+      if (venueErr) {
+        console.error('Revert: venues insert error:', venueErr.message);
+      }
+    }
+
+    if (snapshot.tags?.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: tagErr } = await (supabase.from('tags') as any)
+        .insert(snapshot.tags);
+
+      if (tagErr) {
+        console.error('Revert: tags insert error:', tagErr.message);
+      }
+    }
+
+    // 3b. Restore session_templates (sessions reference template_id)
     if (snapshot.session_templates?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: tmplErr } = await (supabase.from('session_templates') as any)
@@ -97,7 +152,7 @@ export async function POST(
       }
     }
 
-    // Restore sessions
+    // 3c. Restore sessions (depends on instructors, venues, templates)
     if (snapshot.sessions?.length > 0) {
       const sessions = snapshot.sessions.map((s) => ({
         ...s,
@@ -117,7 +172,7 @@ export async function POST(
       }
     }
 
-    // Restore session_tags
+    // 3d. Restore session_tags (depends on sessions + tags)
     if (snapshot.session_tags?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: stErr } = await (supabase.from('session_tags') as any)
@@ -128,7 +183,7 @@ export async function POST(
       }
     }
 
-    // Restore school_calendar
+    // 3e. Restore school_calendar
     if (snapshot.school_calendar?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: calErr } = await (supabase.from('school_calendar') as any)
@@ -159,14 +214,14 @@ export async function POST(
       }
     }
 
-    // ── 5. instructors, venues, tags are PRESERVED ───────────
-    //    (we intentionally don't touch them)
-
     return NextResponse.json({
       success: true,
       message: `Reverted to version ${version.version_number} from ${version.created_at}`,
       sessionsRestored: snapshot.sessions?.length ?? 0,
       templatesRestored: snapshot.session_templates?.length ?? 0,
+      instructorsRestored: snapshot.instructors?.length ?? 0,
+      venuesRestored: snapshot.venues?.length ?? 0,
+      tagsRestored: snapshot.tags?.length ?? 0,
     });
   } catch (err) {
     console.error('Version revert error:', err);
