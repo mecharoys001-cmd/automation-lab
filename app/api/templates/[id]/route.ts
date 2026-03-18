@@ -81,7 +81,11 @@ export async function PATCH(
       }
     }
 
-    // Validate instructor has required skills for this template's subject
+    // Normalize empty strings to null
+    if (body.instructor_id === '') body.instructor_id = null;
+    if (body.venue_id === '') body.venue_id = null;
+
+    // Validate staff has required skills for this template's subject
     const instructorId = body.instructor_id;
     const requiredSkills = body.required_skills;
     if (instructorId !== undefined || requiredSkills !== undefined) {
@@ -104,7 +108,7 @@ export async function PATCH(
 
         if (instructor && !skillsMatch(instructor.skills, finalSkills)) {
           return NextResponse.json(
-            { error: `Instructor does not teach the required subject(s): ${finalSkills.join(', ')}. Assign an instructor with matching skills or update the instructor's skills.` },
+            { error: `Staff member does not teach the required subject(s): ${finalSkills.join(', ')}. Assign a staff member with matching skills or update their skills.` },
             { status: 400 }
           );
         }

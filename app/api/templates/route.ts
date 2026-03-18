@@ -134,7 +134,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate instructor has required skills for this template's subject
+    // Normalize empty strings to null
+    if (body.instructor_id === '') body.instructor_id = null;
+    if (body.venue_id === '') body.venue_id = null;
+
+    // Validate staff has required skills for this template's subject
     if (body.instructor_id && body.required_skills?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: instructor } = await (supabase.from('instructors') as any)
@@ -144,7 +148,7 @@ export async function POST(request: NextRequest) {
 
       if (instructor && !skillsMatch(instructor.skills, body.required_skills)) {
         return NextResponse.json(
-          { error: `Instructor does not teach the required subject(s): ${body.required_skills.join(', ')}. Assign an instructor with matching skills or update the instructor's skills.` },
+          { error: `Staff member does not teach the required subject(s): ${body.required_skills.join(', ')}. Assign a staff member with matching skills or update their skills.` },
           { status: 400 }
         );
       }

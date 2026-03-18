@@ -114,7 +114,7 @@ export async function PATCH(
         if (template?.required_skills?.length > 0) {
           if (instructor && !skillsMatch(instructor.skills, template.required_skills)) {
             return NextResponse.json(
-              { error: `Instructor does not teach the required subject(s): ${template.required_skills.join(', ')}. Assign an instructor with matching skills.` },
+              { error: `Staff member does not teach the required subject(s): ${template.required_skills.join(', ')}. Assign a staff member with matching skills.` },
               { status: 400 }
             );
           }
