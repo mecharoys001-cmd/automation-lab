@@ -33,6 +33,12 @@ export interface SchedulerInput {
   /** When true, run scheduling logic without clearing drafts or inserting sessions.
    *  Returns what WOULD be generated. */
   preview?: boolean;
+  /** Earliest time for auto-scheduled sessions (HH:MM format, default '07:00').
+   *  Only affects templates without an explicit start_time. */
+  day_start_time?: string;
+  /** Latest end time for auto-scheduled sessions (HH:MM format, default '18:00').
+   *  Only affects templates without an explicit start_time. */
+  day_end_time?: string;
 }
 
 /** What the engine returns after generating sessions */

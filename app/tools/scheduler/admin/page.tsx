@@ -42,6 +42,7 @@ import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
 import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
+import { Modal, ModalButton } from '../components/ui/Modal';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -544,6 +545,10 @@ function CalendarDashboard() {
   const [showResultModal, setShowResultModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isConfirmingGenerate, setIsConfirmingGenerate] = useState(false);
+  // Generate settings modal
+  const [showGenerateSettings, setShowGenerateSettings] = useState(false);
+  const [dayStartTime, setDayStartTime] = useState('07:00');
+  const [dayEndTime, setDayEndTime] = useState('18:00');
   // One-off event creation modal
   const [showOneOffModal, setShowOneOffModal] = useState(false);
   const [oneOffSlot, setOneOffSlot] = useState<{ date: string; time: string; venueId?: string } | null>(null);
@@ -1188,17 +1193,29 @@ function CalendarDashboard() {
     }
   }, [fetchSessions, closePanel]);
 
-  // Auto-generate draft schedule — first shows preview, then confirms
-  const handleGenerateSchedule = useCallback(async () => {
+  // Auto-generate draft schedule — first shows settings modal, then preview, then confirms
+  const handleGenerateSchedule = useCallback(() => {
     if (!selectedProgramId) {
       showToast('Select a program first.', 'error');
       return;
     }
+    setShowGenerateSettings(true);
+  }, [selectedProgramId]);
+
+  // Run preview after settings are confirmed
+  const handleRunPreview = useCallback(async () => {
+    if (!selectedProgramId) return;
+    setShowGenerateSettings(false);
     setIsGenerating(true);
     try {
       const anchor = selectedDate;
       const year = anchor.getFullYear();
-      const payload = { program_id: selectedProgramId, year };
+      const payload = {
+        program_id: selectedProgramId,
+        year,
+        day_start_time: dayStartTime,
+        day_end_time: dayEndTime,
+      };
 
       // Run preview first (no DB mutations)
       const res = await fetch('/api/scheduler/generate?preview=true', {
@@ -1227,7 +1244,7 @@ function CalendarDashboard() {
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedProgramId, selectedDate]);
+  }, [selectedProgramId, selectedDate, dayStartTime, dayEndTime]);
 
   // Confirm generation after preview
   const handleConfirmGenerate = useCallback(async () => {
@@ -1236,7 +1253,12 @@ function CalendarDashboard() {
     try {
       const anchor = selectedDate;
       const year = anchor.getFullYear();
-      const payload = { program_id: selectedProgramId, year };
+      const payload = {
+        program_id: selectedProgramId,
+        year,
+        day_start_time: dayStartTime,
+        day_end_time: dayEndTime,
+      };
 
       // Run for real (clears drafts + inserts sessions)
       const res = await fetch('/api/scheduler/generate', {
@@ -1269,7 +1291,7 @@ function CalendarDashboard() {
     } finally {
       setIsConfirmingGenerate(false);
     }
-  }, [selectedProgramId, selectedDate, fetchSessions]);
+  }, [selectedProgramId, selectedDate, fetchSessions, dayStartTime, dayEndTime]);
 
   // Clear all events for the current program
   const handleClearEvents = useCallback(async () => {
@@ -1723,6 +1745,67 @@ function CalendarDashboard() {
           submitLabel="Save Changes"
         />
       )}
+
+      {/* Generate Settings Modal */}
+      <Modal
+        open={showGenerateSettings}
+        onClose={() => setShowGenerateSettings(false)}
+        title="Generate Schedule"
+        subtitle="Configure time boundaries for auto-scheduled sessions"
+        width="440px"
+        footer={
+          <>
+            <ModalButton onClick={() => setShowGenerateSettings(false)}>
+              Cancel
+            </ModalButton>
+            <ModalButton
+              variant="primary"
+              onClick={handleRunPreview}
+              icon={<Sparkles className="w-4 h-4" />}
+            >
+              Preview Schedule
+            </ModalButton>
+          </>
+        }
+      >
+        <div className="p-6 space-y-5">
+          <div className="space-y-4">
+            <div>
+              <Tooltip text="The earliest time the scheduler will place auto-timed sessions. Templates with an explicit start time are not affected.">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5 cursor-help border-b border-dashed border-slate-300 w-fit">
+                  Day Start Time
+                </label>
+              </Tooltip>
+              <input
+                type="time"
+                value={dayStartTime}
+                onChange={(e) => setDayStartTime(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-slate-500 mt-1">Earliest start time for auto-scheduled sessions</p>
+            </div>
+            <div>
+              <Tooltip text="The latest time the scheduler will allow auto-timed sessions to end. Templates with an explicit start time are not affected.">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5 cursor-help border-b border-dashed border-slate-300 w-fit">
+                  Day End Time
+                </label>
+              </Tooltip>
+              <input
+                type="time"
+                value={dayEndTime}
+                onChange={(e) => setDayEndTime(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-slate-500 mt-1">Latest end time for auto-scheduled sessions</p>
+            </div>
+          </div>
+          <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3">
+            <p className="text-xs text-slate-500">
+              <span className="font-medium text-slate-600">Note:</span> These settings only affect templates without an explicit start time. Templates placed on the Schedule Builder or with fixed times are not changed.
+            </p>
+          </div>
+        </div>
+      </Modal>
 
       {/* Clear Events Confirmation Modal */}
       <ClearEventsModal

@@ -282,6 +282,8 @@ function runSingleAttempt(
   rangeStartDate: string,
   rangeEndDate: string,
   bufferSettings: BufferSettings,
+  dayStartMinutes: number,
+  dayEndMinutes: number,
 ): AttemptResult {
   // Fresh state for this attempt
   const calendarMap = buildCalendarMap(calendar);
@@ -439,9 +441,9 @@ function runSingleAttempt(
 
           // Find the earliest available slot where at least one instructor is free
           let foundSlot = false;
-          if (!dayNextSlot.has(dayKey)) dayNextSlot.set(dayKey, 7 * 60); // Start scanning from 7 AM
+          if (!dayNextSlot.has(dayKey)) dayNextSlot.set(dayKey, dayStartMinutes); // Start scanning from day start
 
-          for (let scanStart = dayNextSlot.get(dayKey)!; scanStart + durationMinutes <= 18 * 60; scanStart += 15) {
+          for (let scanStart = dayNextSlot.get(dayKey)!; scanStart + durationMinutes <= dayEndMinutes; scanStart += 15) {
             const scanEnd = scanStart + durationMinutes;
             const scanStartStr = `${String(Math.floor(scanStart / 60)).padStart(2, '0')}:${String(scanStart % 60).padStart(2, '0')}`;
             const scanEndStr = `${String(Math.floor(scanEnd / 60)).padStart(2, '0')}:${String(scanEnd % 60).padStart(2, '0')}`;
@@ -806,7 +808,11 @@ export async function runScheduler(
   supabase: SupabaseClient<Database>,
   input: SchedulerInput
 ): Promise<SchedulerResult> {
-  const { program_id, year: yearOverride, preview = false } = input;
+  const { program_id, year: yearOverride, preview = false, day_start_time, day_end_time } = input;
+
+  // Parse configurable day boundaries (default: 07:00–18:00)
+  const dayStartMinutes = timeToMinutes(day_start_time ?? '07:00');
+  const dayEndMinutes = timeToMinutes(day_end_time ?? '18:00');
 
   // ----------------------------------------------------------
   // 1. Load all required data
@@ -913,6 +919,8 @@ export async function runScheduler(
       rangeStartDate,
       rangeEndDate,
       bufferSettings,
+      dayStartMinutes,
+      dayEndMinutes,
     );
 
     const score = scoreAttempt(result);

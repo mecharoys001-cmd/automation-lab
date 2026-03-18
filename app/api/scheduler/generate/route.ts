@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { program_id, year } = body;
+    const { program_id, year, day_start_time, day_end_time } = body;
 
     if (!program_id || typeof program_id !== 'string') {
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Run the scheduler engine
     const yearNum = year && !isNaN(Number(year)) ? Number(year) : undefined;
-    const result = await runScheduler(supabase, { program_id, year: yearNum, preview });
+    const result = await runScheduler(supabase, { program_id, year: yearNum, preview, day_start_time, day_end_time });
 
     // When preview mode, include a preview summary with totals by venue and week
     if (preview && result.success) {
