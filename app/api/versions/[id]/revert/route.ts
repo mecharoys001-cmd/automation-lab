@@ -86,6 +86,17 @@ export async function POST(
 
     // ── 3. INSERT data from snapshot ─────────────────────────
 
+    // Restore session_templates first (sessions reference template_id)
+    if (snapshot.session_templates?.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: tmplErr } = await (supabase.from('session_templates') as any)
+        .insert(snapshot.session_templates);
+
+      if (tmplErr) {
+        console.error('Revert: session_templates insert error:', tmplErr.message);
+      }
+    }
+
     // Restore sessions
     if (snapshot.sessions?.length > 0) {
       const sessions = snapshot.sessions.map((s) => ({
@@ -114,17 +125,6 @@ export async function POST(
 
       if (stErr) {
         console.error('Revert: session_tags insert error:', stErr.message);
-      }
-    }
-
-    // Restore session_templates
-    if (snapshot.session_templates?.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: tmplErr } = await (supabase.from('session_templates') as any)
-        .insert(snapshot.session_templates);
-
-      if (tmplErr) {
-        console.error('Revert: session_templates insert error:', tmplErr.message);
       }
     }
 
