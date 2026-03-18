@@ -88,7 +88,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           title: 'Set up venues',
           description: 'Define classrooms, stages, and teaching spaces',
           icon: MapPin,
-          link: '/tools/scheduler/admin/venues',
+          link: '/tools/scheduler/admin/people',
           completed: hasVenues,
         },
         {
@@ -105,7 +105,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           title: 'Create your first event',
           description: 'Click any time slot on the calendar to add an event',
           icon: Zap,
-          link: '/tools/scheduler/admin/calendar',
+          link: '/tools/scheduler/admin',
           completed: hasSessions,
         },
       ];
@@ -157,6 +157,19 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
   const isComplete = completedCount === totalCount;
 
   if (loading) {
+    // Respect minimized state during loading to avoid flashing the full panel
+    if (minimized) {
+      return (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            disabled
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-full px-4 py-2.5 shadow-lg opacity-75"
+          >
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="fixed bottom-6 right-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-[380px]">
         <div className="flex items-center justify-center py-8">
