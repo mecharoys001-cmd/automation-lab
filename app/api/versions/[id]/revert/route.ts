@@ -153,22 +153,47 @@ export async function POST(
     }
 
     // 3c. Restore sessions (depends on instructors, venues, templates)
+    let sessionsSkipped = 0;
     if (snapshot.sessions?.length > 0) {
-      const sessions = snapshot.sessions.map((s) => ({
-        ...s,
-        status: isPublished ? 'published' : s.status,
-      }));
+      // Validate template_id references exist in restored templates
+      const restoredTemplateIds = new Set(
+        (snapshot.session_templates ?? []).map((t: { id: string }) => t.id)
+      );
+      const validSessions = snapshot.sessions.filter((s) => {
+        if (s.template_id && !restoredTemplateIds.has(s.template_id)) {
+          return false;
+        }
+        return true;
+      });
+      sessionsSkipped = snapshot.sessions.length - validSessions.length;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: sessErr } = await (supabase.from('sessions') as any)
-        .insert(sessions);
-
-      if (sessErr) {
-        console.error('Revert: sessions insert error:', sessErr.message);
-        return NextResponse.json(
-          { error: `Failed to restore sessions: ${sessErr.message}` },
-          { status: 500 }
+      if (sessionsSkipped > 0) {
+        const orphanedIds = snapshot.sessions
+          .filter((s) => s.template_id && !restoredTemplateIds.has(s.template_id))
+          .map((s) => s.template_id);
+        const uniqueIds = [...new Set(orphanedIds)];
+        console.warn(
+          `Revert: skipped ${sessionsSkipped} session(s) referencing missing template_id(s): ${uniqueIds.join(', ')}`
         );
+      }
+
+      if (validSessions.length > 0) {
+        const sessions = validSessions.map((s) => ({
+          ...s,
+          status: isPublished ? 'published' : s.status,
+        }));
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: sessErr } = await (supabase.from('sessions') as any)
+          .insert(sessions);
+
+        if (sessErr) {
+          console.error('Revert: sessions insert error:', sessErr.message);
+          return NextResponse.json(
+            { error: `Failed to restore sessions: ${sessErr.message}` },
+            { status: 500 }
+          );
+        }
       }
     }
 
@@ -216,8 +241,10 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Reverted to version ${version.version_number} from ${version.created_at}`,
-      sessionsRestored: snapshot.sessions?.length ?? 0,
+      message: `Reverted to version ${version.version_number} from ${version.created_at}` +
+        (sessionsSkipped > 0 ? ` (${sessionsSkipped} session(s) skipped due to missing templates)` : ''),
+      sessionsRestored: (snapshot.sessions?.length ?? 0) - sessionsSkipped,
+      sessionsSkipped,
       templatesRestored: snapshot.session_templates?.length ?? 0,
       instructorsRestored: snapshot.instructors?.length ?? 0,
       venuesRestored: snapshot.venues?.length ?? 0,
