@@ -100,8 +100,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 6. Delete tags scoped to this program EXCEPT Subjects and Space Types (those are default categories)
-    const PRESERVED_CATEGORIES = ['Subjects', 'Skills', 'Space Types', 'Spaces Type'];
+    // 6. Delete tags scoped to this program EXCEPT Event Types and Space Types (those are default categories)
+    const PRESERVED_CATEGORIES = ['Event Types', 'Space Types'];
     const { data: tagData, error: tagErr } = await sb
       .from('tags')
       .delete()
