@@ -54,6 +54,10 @@ export async function POST(
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
+    // Old snapshots lack instructors/venues/tags fields — skip those
+    // tables to avoid breaking FK constraints on existing data.
+    const hasEntityData = 'instructors' in snapshot && 'venues' in snapshot && 'tags' in snapshot;
+
     // ── 2. DELETE current data (FK-safe order) ───────────────
 
     // 2a. Delete session_tags (depends on sessions + tags)
@@ -92,52 +96,56 @@ export async function POST(
       .gte('date', startDate)
       .lte('date', endDate);
 
-    // 2e. Delete instructors, venues, tags (no dependents remain)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('instructors') as any)
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    // 2e. Delete instructors, venues, tags (only if snapshot has them)
+    if (hasEntityData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('instructors') as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('venues') as any)
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('venues') as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('tags') as any)
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('tags') as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+    }
 
     // ── 3. INSERT data from snapshot (FK-safe order) ─────────
 
-    // 3a. Restore instructors, venues, tags (no dependencies)
-    if (snapshot.instructors?.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: instrErr } = await (supabase.from('instructors') as any)
-        .insert(snapshot.instructors);
+    // 3a. Restore instructors, venues, tags (only if snapshot has them)
+    if (hasEntityData) {
+      if (snapshot.instructors?.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: instrErr } = await (supabase.from('instructors') as any)
+          .insert(snapshot.instructors);
 
-      if (instrErr) {
-        console.error('Revert: instructors insert error:', instrErr.message);
+        if (instrErr) {
+          console.error('Revert: instructors insert error:', instrErr.message);
+        }
       }
-    }
 
-    if (snapshot.venues?.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: venueErr } = await (supabase.from('venues') as any)
-        .insert(snapshot.venues);
+      if (snapshot.venues?.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: venueErr } = await (supabase.from('venues') as any)
+          .insert(snapshot.venues);
 
-      if (venueErr) {
-        console.error('Revert: venues insert error:', venueErr.message);
+        if (venueErr) {
+          console.error('Revert: venues insert error:', venueErr.message);
+        }
       }
-    }
 
-    if (snapshot.tags?.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: tagErr } = await (supabase.from('tags') as any)
-        .insert(snapshot.tags);
+      if (snapshot.tags?.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: tagErr } = await (supabase.from('tags') as any)
+          .insert(snapshot.tags);
 
-      if (tagErr) {
-        console.error('Revert: tags insert error:', tagErr.message);
+        if (tagErr) {
+          console.error('Revert: tags insert error:', tagErr.message);
+        }
       }
     }
 
@@ -248,16 +256,25 @@ export async function POST(
       }
     }
 
+    const warnings: string[] = [];
+    if (sessionsSkipped > 0) {
+      warnings.push(`${sessionsSkipped} session(s) skipped due to missing templates`);
+    }
+    if (!hasEntityData) {
+      warnings.push('old snapshot format — instructors/venues/tags left as-is');
+    }
+
     return NextResponse.json({
       success: true,
       message: `Reverted to version ${version.version_number} from ${version.created_at}` +
-        (sessionsSkipped > 0 ? ` (${sessionsSkipped} session(s) skipped due to missing templates)` : ''),
+        (warnings.length > 0 ? ` (${warnings.join('; ')})` : ''),
       sessionsRestored: (snapshot.sessions?.length ?? 0) - sessionsSkipped,
       sessionsSkipped,
       templatesRestored: snapshot.session_templates?.length ?? 0,
-      instructorsRestored: snapshot.instructors?.length ?? 0,
-      venuesRestored: snapshot.venues?.length ?? 0,
-      tagsRestored: snapshot.tags?.length ?? 0,
+      instructorsRestored: hasEntityData ? (snapshot.instructors?.length ?? 0) : 0,
+      venuesRestored: hasEntityData ? (snapshot.venues?.length ?? 0) : 0,
+      tagsRestored: hasEntityData ? (snapshot.tags?.length ?? 0) : 0,
+      oldSnapshotFormat: !hasEntityData,
     });
   } catch (err) {
     console.error('Version revert error:', err);
