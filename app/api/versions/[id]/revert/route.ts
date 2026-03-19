@@ -149,16 +149,25 @@ export async function POST(
 
       if (tmplErr) {
         console.error('Revert: session_templates insert error:', tmplErr.message);
+        return NextResponse.json(
+          { error: `Failed to restore session templates: ${tmplErr.message}` },
+          { status: 500 }
+        );
       }
     }
+
+    // Query the database for actually-inserted template IDs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: dbTemplates } = await (supabase.from('session_templates') as any)
+      .select('id');
+    const restoredTemplateIds = new Set(
+      (dbTemplates ?? []).map((t: { id: string }) => t.id)
+    );
 
     // 3c. Restore sessions (depends on instructors, venues, templates)
     let sessionsSkipped = 0;
     if (snapshot.sessions?.length > 0) {
-      // Validate template_id references exist in restored templates
-      const restoredTemplateIds = new Set(
-        (snapshot.session_templates ?? []).map((t: { id: string }) => t.id)
-      );
+      // Validate template_id references exist in actually-restored templates
       const validSessions = snapshot.sessions.filter((s) => {
         if (s.template_id && !restoredTemplateIds.has(s.template_id)) {
           return false;
