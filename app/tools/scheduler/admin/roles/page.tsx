@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
+import { createClient } from '@/lib/supabase/client';
 import {
   Plus,
   Pencil,
@@ -65,7 +66,7 @@ const ROLE_META: Record<AppRole, { label: string; description: string; color: st
   },
   editor: {
     label: 'Editor',
-    description: 'Edit schedules and classes within existing programs',
+    description: 'Edit schedules and sessions within existing programs',
     color: 'bg-amber-100 text-amber-600',
     icon: Shield,
   },
@@ -124,10 +125,29 @@ function normalizeAdmins(admins: Admin[]): UnifiedUser[] {
   }));
 }
 
+/** Title-case a word: 'ROY' → 'Roy', 'da' stays 'da' if short */
+function titleCase(s: string): string {
+  if (!s) return s;
+  // If all-caps and longer than 1 char, title-case it
+  if (s.length > 1 && s === s.toUpperCase()) {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  }
+  return s;
+}
+
+function formatInstructorName(firstName?: string | null, lastName?: string | null): string {
+  const f = firstName?.trim() ? titleCase(firstName.trim()) : '';
+  const l = lastName?.trim() ? titleCase(lastName.trim()) : '';
+  if (f && l) return `${f} ${l}`;
+  if (f) return f;
+  if (l) return l;
+  return '';
+}
+
 function normalizeInstructors(instructors: Instructor[]): UnifiedUser[] {
   return instructors.map((i) => ({
     id: i.id,
-    name: `${i.first_name} ${i.last_name}`.trim(),
+    name: formatInstructorName(i.first_name, i.last_name) || i.email || 'Unknown',
     email: i.email || '',
     role: 'instructor' as AppRole,
     source: 'instructor' as const,
@@ -169,8 +189,9 @@ export default function RolesPage() {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ---- Search ----
+  // ---- Search & filter ----
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<AppRole | null>(null);
 
   // ---- Add user modal ----
   const [showAddModal, setShowAddModal] = useState(false);
@@ -188,6 +209,16 @@ export default function RolesPage() {
 
   // ---- Toast ----
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  // ---- Current user ----
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) setCurrentUserEmail(user.email.toLowerCase());
+    });
+  }, []);
 
   // =========================================================================
   // Fetch
@@ -221,7 +252,10 @@ export default function RolesPage() {
   // =========================================================================
 
   const users = useMemo(() => {
-    const all = [...normalizeAdmins(admins), ...normalizeInstructors(instructors)];
+    let all = [...normalizeAdmins(admins), ...normalizeInstructors(instructors)];
+    if (roleFilter) {
+      all = all.filter((u) => u.role === roleFilter);
+    }
     if (!search.trim()) return all;
     const q = search.toLowerCase();
     return all.filter(
@@ -230,7 +264,7 @@ export default function RolesPage() {
         u.email.toLowerCase().includes(q) ||
         ROLE_META[u.role].label.toLowerCase().includes(q)
     );
-  }, [admins, instructors, search]);
+  }, [admins, instructors, search, roleFilter]);
 
   // =========================================================================
   // Add user
@@ -441,9 +475,17 @@ export default function RolesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {(Object.entries(ROLE_META) as [AppRole, typeof ROLE_META[AppRole]][]).map(([role, meta]) => {
           const Icon = meta.icon;
+          const isActive = roleFilter === role;
           return (
-            <Tooltip key={role} text={meta.description}>
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 flex items-center gap-2.5">
+            <Tooltip key={role} text={isActive ? 'Click to clear filter' : `Filter by ${meta.label}`}>
+              <button
+                onClick={() => setRoleFilter(isActive ? null : role)}
+                className={`w-full rounded-lg border px-3 py-2.5 flex items-center gap-2.5 cursor-pointer transition-colors text-left ${
+                  isActive
+                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100'
+                }`}
+              >
                 <div className={`flex items-center justify-center w-7 h-7 rounded-md ${meta.color.split(' ')[0]}`}>
                   <Icon className={`w-3.5 h-3.5 ${meta.color.split(' ')[1]}`} />
                 </div>
@@ -451,7 +493,7 @@ export default function RolesPage() {
                   <p className="text-xs font-semibold text-slate-900">{meta.label}</p>
                   <p className="text-[11px] text-slate-400 leading-tight">{meta.description}</p>
                 </div>
-              </div>
+              </button>
             </Tooltip>
           );
         })}
@@ -463,7 +505,7 @@ export default function RolesPage() {
           <div>
             <h2 className={sectionTitleClass}>All Users</h2>
             <p className={sectionDescClass}>
-              {users.length} user{users.length !== 1 ? 's' : ''} total
+              {users.length} user{users.length !== 1 ? 's' : ''}{roleFilter ? ` with ${ROLE_META[roleFilter].label} role` : ' total'}
             </p>
           </div>
           <div className="relative w-64">
@@ -514,10 +556,18 @@ export default function RolesPage() {
                   const meta = ROLE_META[user.role];
                   const Icon = meta.icon;
                   const isEditing = editingId === user.id;
+                  const isSelf = !!(currentUserEmail && user.email && user.email.toLowerCase() === currentUserEmail);
 
                   return (
                     <tr key={`${user.source}-${user.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className={`${tdClass} text-slate-900 font-medium`}>{user.name}</td>
+                      <td className={`${tdClass} text-slate-900 font-medium`}>
+                        {user.name}
+                        {isSelf && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 text-blue-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                            You
+                          </span>
+                        )}
+                      </td>
                       <td className={`${tdClass} text-slate-500`}>{user.email || '—'}</td>
                       <td className={tdClass}>
                         {isEditing ? (
@@ -573,10 +623,11 @@ export default function RolesPage() {
                                 Edit
                               </button>
                             </Tooltip>
-                            <Tooltip text="Remove this user's access">
+                            <Tooltip text={isSelf ? "You can't remove yourself" : "Remove this user's access"}>
                               <button
-                                onClick={() => setRemoveUser(user)}
-                                className={btnDanger}
+                                onClick={() => !isSelf && setRemoveUser(user)}
+                                disabled={isSelf}
+                                className={`${btnDanger} ${isSelf ? 'opacity-40 cursor-not-allowed' : ''}`}
                               >
                                 <Trash2 className="w-3 h-3" />
                                 Remove
