@@ -32,6 +32,12 @@ export interface FilterConfig {
   icon: LucideIcon;
   tooltip: string;
   options: FilterOption[];
+  /** Message shown when options array is empty */
+  emptyMessage?: string;
+  /** Link target for the empty state (e.g. setup page) */
+  emptyHref?: string;
+  /** Label for the empty state link */
+  emptyLinkLabel?: string;
 }
 
 export type ActiveFilters = Record<string, string[]>;
@@ -62,6 +68,7 @@ interface TagData {
 // ---------------------------------------------------------------------------
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  'Event Types': GraduationCap,
   'Event Type': GraduationCap,
   Administrative: Tag,
   General: Tag,
@@ -130,8 +137,16 @@ function FilterDropdown({
       {open && (
         <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 max-h-64 overflow-y-auto">
           {filter.options.length === 0 ? (
-            <div className="px-3 py-2 text-[13px] text-slate-400 text-center">
-              No options available
+            <div className="px-3 py-3 text-[13px] text-slate-400 text-center">
+              <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
+              {filter.emptyHref && (
+                <a
+                  href={filter.emptyHref}
+                  className="inline-block mt-1.5 text-blue-500 hover:text-blue-600 underline underline-offset-2"
+                >
+                  {filter.emptyLinkLabel || 'Set up now'}
+                </a>
+              )}
             </div>
           ) : (
             filter.options.map((option) => {

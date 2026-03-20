@@ -10,14 +10,13 @@ import {
   User as UserIcon,
   Sparkles,
   Loader2,
-  Trash2,
-  AlertTriangle,
   Download,
   MapPin,
   CircleDot,
   GraduationCap,
   Tag,
   Printer,
+  MoreHorizontal,
 } from 'lucide-react';
 import { showToast } from '../lib/toast';
 import { Button } from '../components/ui/Button';
@@ -38,6 +37,8 @@ import type { CalendarEvent, EventType } from '../components/calendar/types';
 import { useEventEditPanel } from '../components/calendar/useEventEditPanel';
 import { TemplateFormModal } from '../components/modals/TemplateFormModal';
 import type { TemplateFormData } from '../components/modals/TemplateFormModal';
+import { OneOffEventModal } from '../components/modals/OneOffEventModal';
+import type { OneOffEventFormData } from '../components/modals/OneOffEventModal';
 import { useProgram } from './ProgramContext';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
@@ -230,104 +231,6 @@ function eventMatchesFilters(event: CalendarEvent, filters: ActiveFilters): bool
 // Sub-components
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Clear Events Confirmation Modal
-// ---------------------------------------------------------------------------
-
-function ClearEventsModal({
-  open,
-  onClose,
-  onConfirm,
-  isClearing,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  isClearing: boolean;
-}) {
-  const [confirmText, setConfirmText] = useState('');
-  const isConfirmed = confirmText === 'DELETE';
-
-  // Reset input when modal opens/closes
-  useEffect(() => {
-    if (!open) setConfirmText('');
-  }, [open]);
-
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      {/* Modal panel */}
-      <div className="relative z-[70] w-[440px] bg-white rounded-2xl shadow-[0_8px_32px_#00000033] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 pt-6 pb-2">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-50">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-          </div>
-          <div>
-            <h3 className="text-[15px] font-semibold text-slate-900">Clear All Events</h3>
-            <p className="text-[12px] text-slate-500">This action is irreversible</p>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-4 space-y-4">
-          <p className="text-[13px] text-slate-700 leading-relaxed">
-            ⚠️ This will permanently delete <span className="font-semibold">ALL</span> scheduled
-            events for this program. This cannot be undone.
-          </p>
-
-          <div>
-            <label className="block text-[12px] font-medium text-slate-500 mb-1.5">
-              Type <span className="font-mono font-semibold text-red-500">DELETE</span> to confirm
-            </label>
-            <Tooltip text="Type DELETE to confirm permanent deletion">
-              <input
-                type="text"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="DELETE"
-                autoFocus
-                className="w-full h-10 px-3 border border-slate-200 rounded-lg text-[13px] text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-300"
-              />
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-2">
-          <Tooltip text="Cancel and go back">
-            <button
-              onClick={onClose}
-              disabled={isClearing}
-              className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </Tooltip>
-
-          <Tooltip text={isConfirmed ? 'Delete all events permanently' : 'Type DELETE to enable this button'}>
-            <button
-              onClick={onConfirm}
-              disabled={!isConfirmed || isClearing}
-              className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isClearing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="w-3.5 h-3.5" />
-              )}
-              {isClearing ? 'Clearing...' : 'Clear Events'}
-            </button>
-          </Tooltip>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Print / PDF view
@@ -537,9 +440,8 @@ function CalendarDashboard() {
   const [eventTemplates, setEventTemplates] = useState<EventTemplate[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showClearModal, setShowClearModal] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [schedulerResult, setSchedulerResult] = useState<any>(null);
   const [showResultModal, setShowResultModal] = useState(false);
@@ -1028,6 +930,9 @@ function CalendarDashboard() {
         value: `${i.first_name} ${i.last_name}`.trim(),
         label: `${i.first_name} ${i.last_name}`.trim(),
       })),
+      emptyMessage: 'No staff configured yet',
+      emptyHref: '/tools/scheduler/admin/people',
+      emptyLinkLabel: 'Go to Staff & Venues',
     };
 
     const venueFilter: FilterConfig = {
@@ -1039,6 +944,9 @@ function CalendarDashboard() {
         value: v.name,
         label: v.name,
       })),
+      emptyMessage: 'No venues configured yet',
+      emptyHref: '/tools/scheduler/admin/people',
+      emptyLinkLabel: 'Go to Staff & Venues',
     };
 
     const statusFilter: FilterConfig = {
@@ -1069,6 +977,9 @@ function CalendarDashboard() {
         value: g,
         label: g,
       })),
+      emptyMessage: 'No grades in scheduled events',
+      emptyHref: '/tools/scheduler/admin/event-templates',
+      emptyLinkLabel: 'Go to Event Templates',
     };
 
     // Tag filters — one filter per category
@@ -1089,6 +1000,9 @@ function CalendarDashboard() {
         label: t.name,
         emoji: t.emoji || undefined,
       })),
+      emptyMessage: `No ${category.toLowerCase()} tags configured yet`,
+      emptyHref: '/tools/scheduler/admin/tags',
+      emptyLinkLabel: 'Go to Tags',
     }));
 
     return [staffFilter, venueFilter, statusFilter, gradeFilter, ...tagFilters];
@@ -1293,50 +1207,6 @@ function CalendarDashboard() {
     }
   }, [selectedProgramId, selectedDate, fetchSessions, dayStartTime, dayEndTime]);
 
-  // Clear all events for the current program
-  const handleClearEvents = useCallback(async () => {
-    setIsClearing(true);
-    try {
-      const url = `/api/sessions/bulk?program_id=${encodeURIComponent(selectedProgramId ?? '')}`;
-      let totalDeleted = 0;
-
-      // Fire parallel delete requests — each clears one day's drafts.
-      // Run 10 concurrent requests for speed. Stop when any returns done=true.
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const PARALLEL = 10;
-        const results = await Promise.all(
-          Array.from({ length: PARALLEL }, () =>
-            fetch(url, { method: 'DELETE', cache: 'no-store' })
-              .then((r) => r.json())
-              .catch(() => ({ done: false, deleted: 0, error: true }))
-          )
-        );
-
-        let allDone = false;
-        for (const body of results) {
-          totalDeleted += body.deleted ?? 0;
-          if (body.done) allDone = true;
-        }
-
-        if (allDone) break;
-      }
-
-      setEvents([]);
-      setShowClearModal(false);
-      showToast(`All events cleared (${totalDeleted} deleted)`);
-      await fetchSessions();
-    } catch (err) {
-      console.error('[handleClearEvents]', err);
-      showToast(
-        err instanceof Error ? err.message : 'Failed to clear events',
-        'error',
-      );
-    } finally {
-      setIsClearing(false);
-    }
-  }, [selectedProgramId, fetchSessions]);
-
   // Export helpers — get events for current view range, CSV download, PDF print
   const getViewEvents = useCallback((scope: 'current' | 'full') => {
     if (scope === 'full') return filteredEvents;
@@ -1464,11 +1334,6 @@ function CalendarDashboard() {
         {/* View Toggle */}
         <ViewToggle value={currentView} onChange={setCurrentView} />
 
-        {/* Today button (outline) */}
-        <Button variant="todayOutline" tooltip="Jump to today's date">
-          Today
-        </Button>
-
         {/* Spacer - grows to push action buttons right, shrinks to 0 when toolbar wraps */}
         <div className="flex-1 basis-0 min-w-0" />
 
@@ -1482,8 +1347,8 @@ function CalendarDashboard() {
           </Tooltip>
         )}
 
-        {/* Export Calendar */}
-        <div className="relative">
+        {/* Export Calendar — hidden below lg, shown in overflow menu instead */}
+        <div className="relative hidden lg:block">
           <Tooltip text="Export schedule as CSV or PDF">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
@@ -1557,20 +1422,75 @@ function CalendarDashboard() {
                     Full Program Year
                   </button>
                 </Tooltip>
-                {/* Divider */}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Overflow menu — visible only below lg breakpoint */}
+        <div className="relative lg:hidden">
+          <Tooltip text="More actions">
+            <button
+              onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+              className={`inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-colors cursor-pointer ${
+                showOverflowMenu
+                  ? 'bg-blue-50 text-blue-600 border-blue-200'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </Tooltip>
+
+          {showOverflowMenu && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setShowOverflowMenu(false)} />
+
+              <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-40">
+                {/* Filter warning banner */}
+                {hasActiveFilters && (
+                  <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-[12px] text-amber-800">
+                    <div className="font-medium">⚠ Filtered: {activeFilterSummary.join(', ')}</div>
+                    <div className="text-amber-600">Export includes filtered events only</div>
+                  </div>
+                )}
+
+                {/* CSV section */}
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Export CSV</div>
+                <button
+                  onClick={() => { handleExportCsv('current'); setShowOverflowMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                  Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
+                </button>
+                <button
+                  onClick={() => { handleExportCsv('full'); setShowOverflowMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                  Full Program Year
+                </button>
+
                 <div className="border-t border-slate-100 my-1" />
 
-                {/* Danger zone */}
-                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-red-400 uppercase tracking-wider">Danger Zone</div>
-                <Tooltip text="Permanently delete ALL scheduled events for this program">
-                  <button
-                    onClick={() => { setShowExportMenu(false); setShowClearModal(true); }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                    Clear All Events…
-                  </button>
-                </Tooltip>
+                {/* PDF / Print section */}
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Print / PDF</div>
+                <button
+                  onClick={() => { handleExportPdf('current'); setShowOverflowMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
+                </button>
+                <button
+                  onClick={() => { handleExportPdf('full'); setShowOverflowMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  Full Program Year
+                </button>
+
               </div>
             </>
           )}
@@ -1587,16 +1507,16 @@ function CalendarDashboard() {
           {isGenerating ? 'Previewing...' : 'Generate Schedule'}
         </Button>
 
-        {/* Publish Schedule + Readiness */}
+        {/* Publish Sessions + Readiness */}
         <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
           <ReadinessWidget programId={selectedProgramId} />
           <Button
             variant="primary"
-            tooltip="Publish the current schedule to staff"
+            tooltip="Change all draft sessions to published"
             onClick={handlePublishSchedule}
             disabled={isPublishing}
           >
-            {isPublishing ? 'Publishing...' : 'Publish Schedule'}
+            {isPublishing ? 'Publishing...' : 'Publish Sessions'}
           </Button>
         </div>
       </div>
@@ -1658,7 +1578,7 @@ function CalendarDashboard() {
             currentDate={selectedDate}
             onDateChange={setSelectedDate}
             onBackToMonth={() => setCurrentView('month')}
-            conflicts={1}
+            conflicts={0}
             onOpenEditPanel={openPanel}
             onEmptySlotClick={handleEmptySlotClick}
           />
@@ -1811,13 +1731,6 @@ function CalendarDashboard() {
         </div>
       </Modal>
 
-      {/* Clear Events Confirmation Modal */}
-      <ClearEventsModal
-        open={showClearModal}
-        onClose={() => setShowClearModal(false)}
-        onConfirm={handleClearEvents}
-        isClearing={isClearing}
-      />
 
       {/* Scheduler Preview / Results Modal */}
       {schedulerResult && (
@@ -1835,100 +1748,55 @@ function CalendarDashboard() {
         />
       )}
 
-      {/* Create Template + Session Modal */}
-      <TemplateFormModal
+      {/* Create Event Modal (from clicking an empty time slot) */}
+      <OneOffEventModal
         open={showOneOffModal}
         onClose={() => { setShowOneOffModal(false); setSelectedTemplate(null); }}
-        onSave={async (formData: TemplateFormData) => {
+        onSubmit={async (formData: OneOffEventFormData) => {
           if (!selectedProgramId) throw new Error('Select a program first');
 
-          // Step 1: Create the template
-          const templateBody = {
+          const startTime = formData.start_time.length === 5
+            ? `${formData.start_time}:00`
+            : formData.start_time;
+          const startMinutes = parseInt(startTime.split(':')[0], 10) * 60 + parseInt(startTime.split(':')[1], 10);
+          const endMinutes = startMinutes + formData.duration_minutes;
+          const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}:00`;
+
+          const sessionBody = {
             program_id: selectedProgramId,
-            name: formData.name || null,
-            template_type: 'fully_defined' as const,
-            rotation_mode: 'consistent' as const,
-            day_of_week: null,
-            grade_groups: formData.grade_groups,
-            start_time: null,
-            end_time: null,
-            duration_minutes: formData.duration_minutes,
+            template_id: null,
             instructor_id: formData.instructor_id || null,
             venue_id: formData.venue_id || null,
-            required_skills: formData.required_skills.length > 0 ? formData.required_skills : null,
-            additional_tags: formData.additional_tags.length > 0 ? formData.additional_tags : null,
-            is_active: formData.is_active,
-            week_cycle_length: formData.week_cycle_length,
-            week_in_cycle: formData.week_in_cycle,
-            scheduling_mode: formData.scheduling_mode,
-            starts_on: formData.starts_on || null,
-            ends_on: formData.ends_on || null,
-            duration_weeks: formData.duration_weeks,
-            session_count: formData.session_count,
-            within_weeks: formData.within_weeks,
-            sessions_per_week: formData.sessions_per_week,
+            grade_groups: formData.grade_groups,
+            date: formData.date,
+            start_time: startTime,
+            end_time: endTime,
+            duration_minutes: formData.duration_minutes,
+            status: 'draft',
+            is_makeup: false,
+            name: formData.name || null,
+            subject_tag_id: formData.subject_tag_id || null,
+            recurrence: formData.recurrence,
+            rotation_instructor_ids: formData.rotation_instructor_ids,
           };
 
-          const templateRes = await fetch('/api/templates', {
+          const res = await fetch('/api/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(templateBody),
+            body: JSON.stringify(sessionBody),
           });
 
-          if (!templateRes.ok) {
-            const body = await templateRes.json().catch(() => ({}));
-            throw new Error(body.error || 'Failed to create template');
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Failed to create event');
           }
 
-          const { template } = await templateRes.json();
-
-          // Step 2: Create a session at the clicked slot
-          const sessionDateVal = (formData as any).sessionDate;
-          const sessionStartTimeVal = (formData as any).sessionStartTime || '09:00';
-          if (sessionDateVal) {
-            const [hStr, mStr] = sessionStartTimeVal.split(':');
-            const startMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
-            const endMinutes = startMinutes + formData.duration_minutes;
-            const endH = String(Math.floor(endMinutes / 60)).padStart(2, '0');
-            const endM = String(endMinutes % 60).padStart(2, '0');
-            const endTime = `${endH}:${endM}`;
-
-            const sessionBody = {
-              program_id: selectedProgramId,
-              template_id: template.id,
-              instructor_id: formData.instructor_id || null,
-              venue_id: formData.venue_id || null,
-              grade_groups: formData.grade_groups,
-              date: sessionDateVal,
-              start_time: `${sessionStartTimeVal}:00`,
-              end_time: `${endTime}:00`,
-              duration_minutes: formData.duration_minutes,
-              status: 'draft',
-              is_makeup: false,
-              name: formData.name || null,
-            };
-
-            const sessionRes = await fetch('/api/sessions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(sessionBody),
-            });
-
-            if (!sessionRes.ok) {
-              const body = await sessionRes.json().catch(() => ({}));
-              throw new Error(body.error || 'Failed to create session');
-            }
-          }
-
+          showToast(`Event "${formData.name || 'Event'}" created on ${formData.date}`, 'success');
           await fetchSessions();
         }}
         initialDate={oneOffSlot?.date}
         initialTime={oneOffSlot?.time}
-        initialVenueId={oneOffSlot?.venueId}
         programId={selectedProgramId}
-        showSessionFields
-        title="Create Event Template"
-        submitLabel="Create Template & Event"
       />
 
       {/* Edit Template Modal (when clicking template in Event Library) */}

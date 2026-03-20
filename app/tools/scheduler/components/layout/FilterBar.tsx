@@ -32,6 +32,12 @@ export interface FilterConfig {
   icon: LucideIcon;
   tooltip: string;
   options: FilterOption[];
+  /** Message shown when options array is empty */
+  emptyMessage?: string;
+  /** Link target for the empty state (e.g. setup page) */
+  emptyHref?: string;
+  /** Label for the empty state link */
+  emptyLinkLabel?: string;
 }
 
 export type ActiveFilters = Record<string, string[]>;
@@ -177,31 +183,45 @@ function FilterDropdown({
       {/* Dropdown panel */}
       {open && (
         <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 max-h-64 overflow-y-auto">
-          {filter.options.map((option) => {
-            const isSelected = selected.includes(option.value);
-            return (
-              <Tooltip key={option.value} text={`${isSelected ? 'Remove' : 'Add'} ${filter.label}: ${option.label}`} position="right">
-                <button
-                  onClick={() => onToggle(filter.key, option.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-slate-700 hover:bg-slate-50'
-                  }`}
+          {filter.options.length === 0 ? (
+            <div className="px-3 py-3 text-[13px] text-slate-400 text-center">
+              <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
+              {filter.emptyHref && (
+                <a
+                  href={filter.emptyHref}
+                  className="inline-block mt-1.5 text-blue-500 hover:text-blue-600 underline underline-offset-2"
                 >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                    isSelected
-                      ? 'bg-blue-500 border-blue-500'
-                      : 'border-slate-300'
-                  }`}>
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  {option.emoji && <span className="text-base shrink-0">{option.emoji}</span>}
-                  <span className="truncate">{option.label}</span>
-                </button>
-              </Tooltip>
-            );
-          })}
+                  {filter.emptyLinkLabel || 'Set up now'}
+                </a>
+              )}
+            </div>
+          ) : (
+            filter.options.map((option) => {
+              const isSelected = selected.includes(option.value);
+              return (
+                <Tooltip key={option.value} text={`${isSelected ? 'Remove' : 'Add'} ${filter.label}: ${option.label}`} position="right">
+                  <button
+                    onClick={() => onToggle(filter.key, option.value)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      isSelected
+                        ? 'bg-blue-500 border-blue-500'
+                        : 'border-slate-300'
+                    }`}>
+                      {isSelected && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    {option.emoji && <span className="text-base shrink-0">{option.emoji}</span>}
+                    <span className="truncate">{option.label}</span>
+                  </button>
+                </Tooltip>
+              );
+            })
+          )}
         </div>
       )}
     </div>
