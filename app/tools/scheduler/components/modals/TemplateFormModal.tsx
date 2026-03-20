@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Plus, Loader2, AlertTriangle, Filter,
 } from 'lucide-react';
@@ -128,6 +128,8 @@ export function TemplateFormModal({
   const [form, setForm] = useState<TemplateFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Session fields (only used when showSessionFields is true)
   const [sessionDate, setSessionDate] = useState('');
@@ -158,6 +160,7 @@ export function TemplateFormModal({
       setSessionStartTime(initialTime ? displayTimeTo24h(initialTime) : '09:00');
       setSaving(false);
       setError(null);
+      setNameError(null);
     }
   }, [open, initialData, initialDate, initialTime, initialVenueId]);
 
@@ -282,7 +285,9 @@ export function TemplateFormModal({
       return;
     }
     if (!form.name.trim()) {
+      setNameError('Name is required');
       setError('Name is required');
+      nameInputRef.current?.focus();
       return;
     }
     // venue_id is optional — the generator can auto-assign based on availability
@@ -321,8 +326,8 @@ export function TemplateFormModal({
   const modalTitle = title ?? (isEditing ? 'Edit Event Template' : 'New Event Template');
   const buttonLabel = submitLabel ?? (
     showSessionFields
-      ? (saving ? 'Creating...' : 'Create Template & Session')
-      : (saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Event Template')
+      ? (saving ? 'Creating...' : 'Create Event')
+      : (saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Template')
   );
 
   return (
@@ -363,14 +368,23 @@ export function TemplateFormModal({
         )}
 
         {/* 1. Name */}
-        <FormField label="Name" required>
+        <FormField label="Name" required error={nameError}>
           <input
+            ref={nameInputRef}
             type="text"
             value={form.name}
-            onChange={(e) => updateForm({ name: e.target.value })}
+            onChange={(e) => {
+              updateForm({ name: e.target.value });
+              if (nameError) setNameError(null);
+              if (error === 'Name is required') setError(null);
+            }}
             placeholder="e.g., Weekly Strings K-2"
             autoFocus
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+            className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors ${
+              nameError
+                ? 'border-red-400 focus:border-red-400 focus:ring-1 focus:ring-red-400'
+                : 'border-slate-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400'
+            }`}
           />
         </FormField>
 
@@ -583,8 +597,8 @@ export function TemplateFormModal({
                 className="mt-0.5 accent-blue-500"
               />
               <div className="flex-1">
-                <span className="text-sm font-medium text-slate-700">Class Count</span>
-                <div className="text-xs text-slate-400 mt-0.5">Create a fixed number of classes, optionally within a time window</div>
+                <span className="text-sm font-medium text-slate-700">Session Count</span>
+                <div className="text-xs text-slate-400 mt-0.5">Create a fixed number of sessions, optionally within a time window</div>
                 {form.scheduling_mode === 'session_count' && (
                   <div className="flex flex-col gap-2 mt-2">
                     <div>
@@ -598,7 +612,7 @@ export function TemplateFormModal({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-slate-500 block mb-0.5">Number of Classes</label>
+                        <label className="text-[11px] text-slate-500 block mb-0.5">Number of Sessions</label>
                         <input
                           type="number"
                           min={1}
@@ -854,7 +868,7 @@ export function TemplateFormModal({
 
 /* ── Shared form components ─────────────────────────────────── */
 
-function FormField({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
+function FormField({ label, hint, required, error, children }: { label: string; hint?: string; required?: boolean; error?: string | null; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -863,6 +877,9 @@ function FormField({ label, hint, required, children }: { label: string; hint?: 
         {hint && <span className="font-normal normal-case ml-1.5 text-slate-400">{hint}</span>}
       </label>
       {children}
+      {error && (
+        <span className="text-xs text-red-500 font-medium">{error}</span>
+      )}
     </div>
   );
 }
