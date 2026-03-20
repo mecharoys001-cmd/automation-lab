@@ -1320,17 +1320,6 @@ function CalendarDashboard() {
       {/* TOP BAR                                                            */}
       {/* ================================================================= */}
       <div className="flex flex-wrap items-center gap-4 bg-white px-6 py-4 border-b border-slate-200 shrink-0">
-        {/* Program Selector */}
-        <Tooltip text="Switch active program">
-          <button className="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-            <CalendarIcon className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-semibold text-slate-900">
-              {selectedProgram?.name ?? 'Fall 2026 Program'}
-            </span>
-            <ChevronDown className="w-4 h-4 text-slate-500" />
-          </button>
-        </Tooltip>
-
         {/* View Toggle */}
         <ViewToggle value={currentView} onChange={setCurrentView} />
 
