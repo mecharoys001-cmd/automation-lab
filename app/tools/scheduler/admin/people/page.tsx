@@ -61,7 +61,13 @@ const VENUE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'is_virtual', label: 'Is Virtual' },
   { csvHeader: 'amenities', label: 'Amenities' },
   { csvHeader: 'description', label: 'Description' },
-  { csvHeader: 'availability_json', label: 'Availability JSON' },
+  { csvHeader: 'monday', label: 'Monday' },
+  { csvHeader: 'tuesday', label: 'Tuesday' },
+  { csvHeader: 'wednesday', label: 'Wednesday' },
+  { csvHeader: 'thursday', label: 'Thursday' },
+  { csvHeader: 'friday', label: 'Friday' },
+  { csvHeader: 'saturday', label: 'Saturday' },
+  { csvHeader: 'sunday', label: 'Sunday' },
   { csvHeader: 'notes', label: 'Notes' },
   { csvHeader: 'min_booking_duration_minutes', label: 'Min Booking (min)' },
   { csvHeader: 'max_booking_duration_minutes', label: 'Max Booking (min)' },
@@ -75,10 +81,10 @@ const VENUE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'subjects', label: 'Event Type' },
 ];
 
-const VENUE_CSV_EXAMPLE = `name,space_type,max_capacity,address,is_virtual,amenities,description,availability_json,notes,min_booking_duration_minutes,max_booking_duration_minutes,buffer_minutes,advance_booking_days,cancellation_window_hours,cost_per_hour,max_concurrent_bookings,blackout_dates,is_wheelchair_accessible,subjects
-Classroom 101,classroom,30,123 Main St,false,Whiteboard;Projector;Piano,Main teaching room,,Ground floor room,30,120,15,14,24,25.00,1,2026-12-25;2026-01-01,true,Piano;Guitar
-Virtual Room A,virtual,50,,true,Screen Share;Breakout Rooms,Online meeting space,,,15,60,5,7,12,,2,,,Voice;Theory
-Stage,performance,100,456 Arts Blvd,false,Sound System;Lighting;Stage,Performance venue,,Requires advance setup,60,240,30,30,48,75.00,1,2026-12-24;2026-12-25,true,Choir;Orchestra`;
+const VENUE_CSV_EXAMPLE = `name,space_type,max_capacity,address,is_virtual,amenities,description,monday,tuesday,wednesday,thursday,friday,saturday,sunday,notes,min_booking_duration_minutes,max_booking_duration_minutes,buffer_minutes,advance_booking_days,cancellation_window_hours,cost_per_hour,max_concurrent_bookings,blackout_dates,is_wheelchair_accessible,subjects
+Classroom 101,classroom,30,123 Main St,false,Whiteboard;Projector;Piano,Main teaching room,08:00-18:00,08:00-18:00,08:00-18:00,08:00-18:00,08:00-18:00,,,Ground floor room,30,120,15,14,24,25.00,1,2026-12-25;2026-01-01,true,Piano;Guitar
+Virtual Room A,virtual,50,,true,Screen Share;Breakout Rooms,Online meeting space,09:00-12:00;13:00-17:00,09:00-12:00;13:00-17:00,09:00-12:00;13:00-17:00,09:00-12:00;13:00-17:00,09:00-12:00;13:00-17:00,,,Online room,15,60,5,7,12,,2,,,Voice;Theory
+Stage,performance,100,456 Arts Blvd,false,Sound System;Lighting;Stage,Performance venue,,,,,,,10:00-22:00,Requires advance setup,60,240,30,30,48,75.00,1,2026-12-24;2026-12-25,true,Choir;Orchestra`;
 
 const isNonNegInt = (v: string): boolean => /^\d+$/.test(v.trim());
 const isNonNegNum = (v: string): boolean => /^\d+(\.\d+)?$/.test(v.trim());
@@ -105,9 +111,17 @@ function validateVenueCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   if (row.cost_per_hour?.trim() && !isNonNegNum(row.cost_per_hour)) {
     errors.push({ row: rowIndex, column: 'cost_per_hour', message: 'Must be a number' });
   }
-  if (row.availability_json?.trim()) {
-    try { JSON.parse(row.availability_json); } catch {
-      errors.push({ row: rowIndex, column: 'availability_json', message: 'Invalid JSON' });
+  const timeRangePattern = /^\d{2}:\d{2}-\d{2}:\d{2}$/;
+  const dayColumns = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+  for (const day of dayColumns) {
+    const val = row[day]?.trim();
+    if (val) {
+      const ranges = val.split(';').map((s: string) => s.trim()).filter(Boolean);
+      for (const range of ranges) {
+        if (!timeRangePattern.test(range)) {
+          errors.push({ row: rowIndex, column: day, message: `Invalid time range "${range}". Use HH:MM-HH:MM format` });
+        }
+      }
     }
   }
   return errors;

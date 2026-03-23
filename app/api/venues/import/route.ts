@@ -58,15 +58,25 @@ export async function POST(request: NextRequest) {
       return items.length > 0 ? items : null;
     };
 
-    const rows: VenueRow[] = rawRows.map((r) => {
-      let availJson: Record<string, unknown> | null = null;
-      if (r.availability_json) {
-        try {
-          availJson = typeof r.availability_json === 'string'
-            ? JSON.parse(r.availability_json)
-            : r.availability_json;
-        } catch { /* ignore invalid JSON */ }
+    const DAY_COLUMNS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+
+    const parseDayAvailability = (r: Record<string, unknown>): Record<string, { start: string; end: string }[]> | null => {
+      const result: Record<string, { start: string; end: string }[]> = {};
+      for (const day of DAY_COLUMNS) {
+        const val = r[day];
+        if (val == null || String(val).trim() === '') continue;
+        const ranges = String(val).split(';').map((s) => s.trim()).filter(Boolean);
+        const blocks: { start: string; end: string }[] = [];
+        for (const range of ranges) {
+          const [start, end] = range.split('-');
+          if (start && end) blocks.push({ start, end });
+        }
+        if (blocks.length > 0) result[day] = blocks;
       }
+      return Object.keys(result).length > 0 ? result : null;
+    };
+
+    const rows: VenueRow[] = rawRows.map((r) => {
       return {
         name: String(r.name ?? '').trim(),
         space_type: r.space_type || 'other',
@@ -75,7 +85,7 @@ export async function POST(request: NextRequest) {
         is_virtual: parseBool(r.is_virtual),
         amenities: parseSemicolonList(r.amenities),
         description: r.description || null,
-        availability_json: availJson,
+        availability_json: parseDayAvailability(r),
         notes: r.notes || null,
         min_booking_duration_minutes: parseIntOrNull(r.min_booking_duration_minutes),
         max_booking_duration_minutes: parseIntOrNull(r.max_booking_duration_minutes),
