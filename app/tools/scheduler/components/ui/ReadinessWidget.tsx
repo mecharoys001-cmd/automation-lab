@@ -220,7 +220,7 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
       </button>
 
       {expanded && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg z-50 p-3 space-y-2">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-80 max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg z-50 p-4 space-y-3">
           <div className="text-xs font-semibold text-slate-800 px-1">
             Publish Readiness
           </div>
