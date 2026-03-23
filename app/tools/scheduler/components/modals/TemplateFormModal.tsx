@@ -814,6 +814,7 @@ export function TemplateFormModal({
             value={form.additional_tags}
             onChange={(tags) => updateForm({ additional_tags: tags })}
             programId={programId ?? ''}
+            excludeCategories={['Space Types']}
             placeholder="Select optional tags..."
           />
         </FormField>

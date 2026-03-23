@@ -23,6 +23,8 @@ interface TagSelectorProps {
   category?: string;
   /** Placeholder text */
   placeholder?: string;
+  /** Exclude tags belonging to these categories */
+  excludeCategories?: string[];
   /** Additional CSS classes */
   className?: string;
   /** Disabled state */
@@ -35,6 +37,7 @@ export function TagSelector({
   programId,
   category,
   placeholder = 'Select tags...',
+  excludeCategories,
   className = '',
   disabled = false,
 }: TagSelectorProps) {
@@ -69,13 +72,17 @@ export function TagSelector({
         tags = tags.filter((t: Tag) => normalizeCategory(t.category) === normalizeCategory(category));
       }
 
+      if (excludeCategories?.length) {
+        tags = tags.filter((t: Tag) => !excludeCategories.includes(t.category));
+      }
+
       setAllTags(tags);
     } catch (err) {
       console.error('TagSelector: Failed to fetch tags:', err);
     } finally {
       setLoading(false);
     }
-  }, [category, programId]);
+  }, [category, excludeCategories, programId]);
 
   useEffect(() => {
     fetchTags();
