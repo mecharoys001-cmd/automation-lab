@@ -24,11 +24,11 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Insert Event Type tags
 INSERT INTO tags (name, emoji, category, description) VALUES
-  ('Field Trip', '🎭', 'Event Type', 'Off-site musical excursions'),
-  ('Guest Artist', '⭐', 'Event Type', 'Special guest performances'),
-  ('Showcase', '🌟', 'Event Type', 'Student performance events'),
-  ('Workshop', '🛠️', 'Event Type', 'Skill-building workshops'),
-  ('Rehearsal', '🎹', 'Event Type', 'Practice and preparation sessions')
+  ('Field Trip', '🎭', 'Event Types', 'Off-site musical excursions'),
+  ('Guest Artist', '⭐', 'Event Types', 'Special guest performances'),
+  ('Showcase', '🌟', 'Event Types', 'Student performance events'),
+  ('Workshop', '🛠️', 'Event Types', 'Skill-building workshops'),
+  ('Rehearsal', '🎹', 'Event Types', 'Practice and preparation sessions')
 ON CONFLICT (name) DO NOTHING;
 
 -- Insert Administrative tags

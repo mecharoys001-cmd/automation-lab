@@ -138,6 +138,24 @@ export async function POST(request: NextRequest) {
     if (body.instructor_id === '') body.instructor_id = null;
     if (body.venue_id === '') body.venue_id = null;
 
+    // Prevent creating an Active template that is incomplete
+    if (body.is_active === true) {
+      const missing: string[] = [];
+      if (!body.name || !String(body.name).trim()) missing.push('Name');
+      if (body.day_of_week == null) missing.push('Day of Week');
+      if (!body.instructor_id) missing.push('Staff');
+      if (!body.venue_id) missing.push('Venue');
+      if (!body.grade_groups?.length) missing.push('Grade Groups');
+      if (!body.required_skills?.length) missing.push('Subject / Event Type');
+
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `Cannot activate template — missing required fields: ${missing.join(', ')}` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Validate staff has required skills for this template's subject
     if (body.instructor_id && body.required_skills?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

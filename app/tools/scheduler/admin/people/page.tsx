@@ -272,35 +272,6 @@ function AvailabilityGrid({ availability }: { availability: AvailabilityJson | n
   );
 }
 
-/* ── Share Availability Banner ─────────────────────────────── */
-
-function ShareAvailabilityBanner() {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    const url = `${window.location.origin}/tools/scheduler/intake`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <div className="flex items-center gap-2 px-3.5 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-      <span>📋 Share the availability form with your staff</span>
-      <Tooltip text={copied ? 'Copied!' : 'Copy availability form link'}>
-        <button
-          onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
-        >
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? 'Copied!' : 'Copy Link'}
-        </button>
-      </Tooltip>
-    </div>
-  );
-}
-
 /* ── Venue Detail / Edit Modal ─────────────────────────────── */
 
 function VenueDetailModal({
@@ -810,11 +781,11 @@ function InstructorDetailModal({
       {/* Sessions */}
       <div className="px-6 py-3 space-y-2.5">
         <h3 className="text-sm font-semibold text-slate-900">
-          {loadingSessions ? 'Loading classes\u2026' : `${sessionCount ?? 0} Active Classes`}
+          {loadingSessions ? 'Loading sessions\u2026' : `${sessionCount ?? 0} Active Sessions`}
         </h3>
         {!loadingSessions && sessions.slice(0, 3).map((s) => (
           <div key={s.id} className="flex items-center bg-slate-100 rounded-lg h-9 px-3 gap-2">
-            <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Class'}</span>
+            <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Session'}</span>
             <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
               {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
               {s.start_time?.slice(0, 5)}
@@ -826,7 +797,7 @@ function InstructorDetailModal({
           </div>
         ))}
         {!loadingSessions && sessions.length === 0 && (
-          <p className="text-sm text-slate-400">No classes assigned yet.</p>
+          <p className="text-sm text-slate-400">No sessions assigned yet.</p>
         )}
       </div>
     </Modal>
@@ -1160,6 +1131,7 @@ export default function PeoplePage() {
   const [venueImportOpen, setVenueImportOpen] = useState(false);
   const [instructorImportOpen, setInstructorImportOpen] = useState(false);
   const [creatingVenue, setCreatingVenue] = useState(false);
+  const [venueSearch, setVenueSearch] = useState('');
 
   /* ── Fetching ──────────────────────────────────────────── */
 
@@ -1400,6 +1372,16 @@ export default function PeoplePage() {
 
   /* ── Derived state ─────────────────────────────────────── */
 
+  const filteredVenues = venues.filter((v) => {
+    if (venueSearch.trim()) {
+      const q = venueSearch.toLowerCase();
+      const name = (v.name ?? '').toLowerCase();
+      const spaceType = (v.space_type ?? '').toLowerCase();
+      return name.includes(q) || spaceType.includes(q);
+    }
+    return true;
+  });
+
   const filtered = allInstructors.filter((inst) => {
     if (filterStatus === 'active' && !inst.is_active) return false;
     if (filterStatus === 'inactive' && inst.is_active) return false;
@@ -1522,9 +1504,6 @@ export default function PeoplePage() {
               Add Staff
             </Button>
           </div>
-
-          {/* Share Availability Form Banner */}
-          <ShareAvailabilityBanner />
 
           {loadingAll ? (
             <CardGridSkeleton />
@@ -1702,17 +1681,32 @@ export default function PeoplePage() {
 
         {/* ── Venues Section ──────────────────────────────── */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <MapPin className="w-5 h-5 text-blue-500" />
             <h2 className="text-lg font-semibold text-slate-900">Venues</h2>
             <Badge
               variant="count"
               color="blue"
-              tooltip={`${venues.length} venue${venues.length !== 1 ? 's' : ''}`}
+              tooltip={`${filteredVenues.length} venue${filteredVenues.length !== 1 ? 's' : ''}`}
             >
-              ({venues.length})
+              ({filteredVenues.length})
             </Badge>
             <div className="flex-1" />
+
+            {/* Search Bar */}
+            <Tooltip text="Search by venue name or space type">
+              <div className="flex items-center w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
+                <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search venues..."
+                  value={venueSearch}
+                  onChange={(e) => setVenueSearch(e.target.value)}
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                />
+              </div>
+            </Tooltip>
+
             <Button
               variant="ghost"
               icon={<Upload className="w-4 h-4" />}
@@ -1733,13 +1727,15 @@ export default function PeoplePage() {
 
           {loadingVenues ? (
             <CardGridSkeleton count={3} />
-          ) : venues.length === 0 ? (
+          ) : filteredVenues.length === 0 ? (
             <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
-              No venues found.
+              {venues.length === 0
+                ? 'No venues found.'
+                : 'No venues match your search.'}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {venues.map((venue) => (
+              {filteredVenues.map((venue) => (
                 <div
                   key={venue.id}
                   onClick={() => setSelectedVenue(venue)}

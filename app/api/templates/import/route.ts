@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         grade_groups: grades,
         required_skills: subjects.length > 0 ? subjects : null,
         additional_tags: additionalTags.length > 0 ? additionalTags : null,
-        is_active: true,
+        is_active: false,
         scheduling_mode: schedulingMode,
         starts_on: startsOn,
         ends_on: endsOn,

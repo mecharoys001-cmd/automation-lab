@@ -1378,7 +1378,7 @@ function findBestInstructor(
       // Find WHICH session is blocking them for better diagnostics
       const blockingSession = findBlockingSession(instructor.id, date, sessionWindow, existingSessions, generatedSessions);
       const blockingDetail = blockingSession
-        ? `teaching ${blockingSession.grade_groups?.join('/') || 'class'} ${blockingSession.start_time.slice(0, 5)}-${blockingSession.end_time.slice(0, 5)}`
+        ? `teaching ${blockingSession.grade_groups?.join('/') || 'session'} ${blockingSession.start_time.slice(0, 5)}-${blockingSession.end_time.slice(0, 5)}`
         : 'already booked';
       qualifiedRejections.push({ name, reason: blockingDetail });
       continue;

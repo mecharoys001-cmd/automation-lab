@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, AlertTriangle, Loader2, History, Save, Send, RotateCcw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Modal, ModalButton } from '../../components/ui/Modal';
 import { Tooltip } from '../../components/ui/Tooltip';
 
 // ── Toast ────────────────────────────────────────────────────
@@ -193,6 +194,13 @@ export default function VersionsPage() {
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
+  // The most recently created version is the "current" one (latest snapshot of the schedule)
+  const currentVersionId = versions.length > 0
+    ? versions.reduce((latest, v) =>
+        new Date(v.created_at).getTime() > new Date(latest.created_at).getTime() ? v : latest
+      ).id
+    : null;
+
   return (
     <div
       className="overflow-y-auto h-full"
@@ -203,7 +211,7 @@ export default function VersionsPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              Version History
+              Versions
             </h1>
             <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
               Save, publish, and revert schedule versions (5 per year)
@@ -303,6 +311,9 @@ export default function VersionsPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
+                  ...(v.id === currentVersionId
+                    ? { borderLeft: '3px solid #3B82F6' }
+                    : {}),
                 }}
               >
                 {/* Version number badge */}
@@ -339,21 +350,39 @@ export default function VersionsPage() {
                   </span>
                 </div>
 
-                {/* Status badge */}
-                <span
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    backgroundColor: v.status === 'published' ? '#DCFCE7' : '#F1F5F9',
-                    color: v.status === 'published' ? '#16A34A' : '#64748B',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  {v.status}
-                </span>
+                {/* Status badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      backgroundColor: v.status === 'published' ? '#DCFCE7' : '#F1F5F9',
+                      color: v.status === 'published' ? '#16A34A' : '#64748B',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    {v.status}
+                  </span>
+                  {v.id === currentVersionId && (
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        backgroundColor: '#DBEAFE',
+                        color: '#2563EB',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      Current
+                    </span>
+                  )}
+                </div>
 
                 {/* Revert button */}
                 <Tooltip text="Revert schedule to this version">
@@ -390,79 +419,52 @@ export default function VersionsPage() {
       {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
 
       {/* Revert Confirmation Modal */}
-      {confirmRevert && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setConfirmRevert(null)}
-          />
-          <div
-            style={{
-              position: 'relative',
-              borderRadius: 12,
-              backgroundColor: '#FFFFFF',
-              padding: 24,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-              maxWidth: 440,
-              width: '100%',
-              margin: '0 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-            }}
-          >
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              Revert to Version {confirmRevert.version_number}?
-            </h2>
-            <p style={{ fontSize: 14, color: '#64748B', margin: 0, lineHeight: 1.5 }}>
-              This will replace all sessions, templates, and calendar exceptions with the version
-              from <strong>{formatDate(confirmRevert.created_at)}</strong>. Instructors, venues, and
-              tags will not be affected.
-            </p>
-            <div
-              style={{
-                borderRadius: 8,
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                padding: '8px 12px',
-                fontSize: 13,
-                color: '#D97706',
-              }}
-            >
-              This action cannot be undone. Consider saving a draft first.
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 4 }}>
-              <Button
-                variant="secondary"
-                onClick={() => setConfirmRevert(null)}
-                tooltip="Cancel revert"
-              >
+      <Modal
+        open={!!confirmRevert}
+        onClose={() => setConfirmRevert(null)}
+        title={`Revert to Version ${confirmRevert?.version_number}?`}
+        subtitle={confirmRevert ? `Saved ${formatDate(confirmRevert.created_at)} \u2022 ${confirmRevert.status}` : ''}
+        width={480}
+        footer={
+          confirmRevert ? (
+            <>
+              <ModalButton variant="secondary" onClick={() => setConfirmRevert(null)}>
                 Cancel
-              </Button>
-              <Button
+              </ModalButton>
+              <ModalButton
                 variant="danger"
+                loading={revertingId === confirmRevert.id}
+                icon={<RotateCcw className="w-3.5 h-3.5" />}
                 onClick={() => handleRevert(confirmRevert)}
-                disabled={revertingId === confirmRevert.id}
-                tooltip="Confirm revert"
-                style={{
-                  backgroundColor: '#EF4444',
-                  color: '#FFFFFF',
-                  borderColor: '#EF4444',
-                }}
-                icon={
-                  revertingId === confirmRevert.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  )
-                }
               >
-                {revertingId === confirmRevert.id ? 'Reverting...' : 'Revert'}
-              </Button>
+                {revertingId === confirmRevert.id ? 'Reverting\u2026' : 'Revert Schedule'}
+              </ModalButton>
+            </>
+          ) : undefined
+        }
+      >
+        <div className="px-6 py-5 space-y-4">
+          {/* What will happen */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800 mb-1.5">What will happen</h3>
+            <ul className="text-sm text-slate-600 space-y-1 list-disc pl-4">
+              <li>All current sessions, templates, and calendar exceptions will be <strong>deleted</strong></li>
+              <li>They will be replaced with data from Version {confirmRevert?.version_number}</li>
+              <li>Staff, venues, and tags are <strong>not affected</strong></li>
+            </ul>
+          </div>
+
+          {/* Warning: not reversible */}
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <strong>This cannot be undone.</strong> The current schedule data will be permanently
+              overwritten. No new version is created automatically &mdash; if you want to preserve
+              your current schedule, save a draft first using the &ldquo;Save Draft&rdquo; button.
             </div>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -17,6 +17,8 @@ import {
   Save,
   Loader2,
   X,
+  ChevronDown,
+  ShieldAlert,
 } from 'lucide-react';
 import type { Program, Admin, RoleLevel } from '@/types/database';
 import { ImportFromProgramModal } from '../../components/modals/ImportFromProgramModal';
@@ -141,6 +143,9 @@ export default function SettingsPage() {
   const [seeding, setSeeding] = useState(false);
   const [seedCounts, setSeedCounts] = useState<SeedCounts | null>(null);
   const [seedError, setSeedError] = useState<string | null>(null);
+  const [seedModalOpen, setSeedModalOpen] = useState(false);
+  const [seedModalDataset, setSeedModalDataset] = useState<'small' | 'medium' | 'full'>('medium');
+  const [seedConfirmText, setSeedConfirmText] = useState('');
 
   // ---- Clear data state ----
   const [clearModalOpen, setClearModalOpen] = useState(false);
@@ -150,6 +155,7 @@ export default function SettingsPage() {
   const [clearStep, setClearStep] = useState<1 | 2 | 3>(1);
   const [clearConfirmText, setClearConfirmText] = useState('');
   const [clearCounts, setClearCounts] = useState<Record<string, number> | null>(null);
+  const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
   const [loadingCounts, setLoadingCounts] = useState(false);
 
   // =========================================================================
@@ -319,17 +325,26 @@ export default function SettingsPage() {
   // Seed handler
   // =========================================================================
 
-  async function handleSeed(dataset: 'small' | 'medium' | 'full' = 'medium') {
-    const datasetName = 
-      dataset === 'small' ? 'SMALL (2 staff, 5 templates)' :
-      dataset === 'medium' ? 'MEDIUM (10 staff, 36 templates)' :
-      'FULL (50 staff, 200+ templates)';
-    if (!confirm(`This will clear ALL existing data and reload with ${datasetName} mock data. Continue?`)) return;
+  function openSeedModal(dataset: 'small' | 'medium' | 'full') {
+    setSeedModalDataset(dataset);
+    setSeedConfirmText('');
+    setSeedModalOpen(true);
+  }
+
+  const seedDatasetLabel =
+    seedModalDataset === 'small' ? 'SMALL (2 staff, 5 templates)' :
+    seedModalDataset === 'medium' ? 'MEDIUM (10 staff, 36 templates)' :
+    'FULL (50 staff, 200+ templates)';
+
+  const seedConfirmPhrase = 'REPLACE ALL DATA';
+
+  async function handleSeedConfirmed() {
+    setSeedModalOpen(false);
     setSeeding(true);
     setSeedCounts(null);
     setSeedError(null);
     try {
-      const res = await fetch(`/api/seed?dataset=${dataset}&program_id=${selectedProgramId}`, { method: 'POST' });
+      const res = await fetch(`/api/seed?dataset=${seedModalDataset}&program_id=${selectedProgramId}`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error ?? 'Seed failed');
       setSeedCounts(data.counts ?? {});
@@ -826,9 +841,30 @@ export default function SettingsPage() {
       </section>
 
       {/* ================================================================= */}
-      {/* SECTION 5 — Data Management                                       */}
+      {/* DANGER ZONE — Collapsible section for destructive actions         */}
       {/* ================================================================= */}
-      <section className={cardBodyClass}>
+      <section className="rounded-lg border-2 border-red-300 bg-white shadow-sm overflow-hidden">
+        <button
+          onClick={() => setDangerZoneOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-5 py-4 bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-100">
+              <ShieldAlert className="w-[18px] h-[18px] text-red-600" />
+            </div>
+            <div className="text-left">
+              <h2 className="text-base font-semibold text-red-700">Danger Zone</h2>
+              <p className="text-[12px] text-red-500">Destructive actions — seed data, clear sessions, reset program data</p>
+            </div>
+          </div>
+          <ChevronDown className={`w-5 h-5 text-red-400 transition-transform duration-200 ${dangerZoneOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {dangerZoneOpen && (
+        <div className="p-5 space-y-6 border-t-2 border-red-200">
+
+      {/* Data Management */}
+      <div>
         <div className="flex items-center gap-2.5 mb-5">
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-orange-50">
             <Database className="w-[18px] h-[18px] text-orange-500" />
@@ -849,7 +885,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <Tooltip text="Load small dataset (2 staff, 1 venue, 5 templates) for focused testing">
             <button
-              onClick={() => handleSeed('small')}
+              onClick={() => openSeedModal('small')}
               disabled={seeding}
               className={`${btnPrimary} ${seeding ? '' : 'bg-orange-500 hover:bg-orange-600'}`}
             >
@@ -882,7 +918,7 @@ export default function SettingsPage() {
 
           <Tooltip text="Load medium dataset (10 staff, 4 venues, 36 templates) for integration testing">
             <button
-              onClick={() => handleSeed('medium')}
+              onClick={() => openSeedModal('medium')}
               disabled={seeding}
               className={`${btnPrimary} ${seeding ? '' : 'bg-orange-500 hover:bg-orange-600'}`}
             >
@@ -915,7 +951,7 @@ export default function SettingsPage() {
 
           <Tooltip text="Load MASSIVE dataset (50 staff, 16 venues, 200+ templates, 30+ event types) for stress/load testing">
             <button
-              onClick={() => handleSeed('full')}
+              onClick={() => openSeedModal('full')}
               disabled={seeding}
               className={`${btnPrimary} ${seeding ? '' : 'bg-red-600 hover:bg-red-700'}`}
             >
@@ -969,12 +1005,83 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
-      </section>
+      </div>
 
       {/* ================================================================= */}
-      {/* SECTION 6 — Clear Data (Danger Zone)                              */}
+      {/* Confirmation modal for seed / stress test                         */}
       {/* ================================================================= */}
-      <section className="rounded-lg border border-red-200 bg-white shadow-sm p-5">
+      {seedModalOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setSeedModalOpen(false)}>
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-100">
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-900">
+                  Load {seedModalDataset === 'full' ? 'Stress Test' : seedModalDataset.charAt(0).toUpperCase() + seedModalDataset.slice(1)} Dataset
+                </h3>
+              </div>
+              <Tooltip text="Close dialog">
+                <button onClick={() => setSeedModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </Tooltip>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-3">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-[13px] text-red-700">
+                  This will <strong>permanently delete all existing data</strong> and replace it with the <strong>{seedDatasetLabel}</strong> mock dataset. This action cannot be undone.
+                </p>
+              </div>
+              <Tooltip text={`Type ${seedConfirmPhrase} exactly to continue`}>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                    Type <span className="font-mono font-bold text-red-500">{seedConfirmPhrase}</span> to continue
+                  </label>
+                  <input
+                    type="text"
+                    value={seedConfirmText}
+                    onChange={(e) => setSeedConfirmText(e.target.value)}
+                    placeholder={seedConfirmPhrase}
+                    className={inputClass}
+                    autoFocus
+                  />
+                </div>
+              </Tooltip>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 px-5 pb-5">
+              <Tooltip text="Cancel and close">
+                <button onClick={() => setSeedModalOpen(false)} className={btnSecondary}>
+                  Cancel
+                </button>
+              </Tooltip>
+              <Tooltip text={seedConfirmText === seedConfirmPhrase ? 'Proceed to replace all data with mock data' : `Type ${seedConfirmPhrase} to enable this button`}>
+                <button
+                  onClick={handleSeedConfirmed}
+                  disabled={seedConfirmText !== seedConfirmPhrase}
+                  className={`${btnDanger} ${seedConfirmText !== seedConfirmPhrase ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  Replace All Data
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Data */}
+      <div>
         <div className="flex items-center gap-2.5 mb-5">
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-50">
             <Trash2 className="w-[18px] h-[18px] text-red-500" />
@@ -996,19 +1103,19 @@ export default function SettingsPage() {
           {/* Clear Sessions Only */}
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
             <div className="flex-1 mr-4">
-              <p className="text-sm font-medium text-slate-900">Clear All Events</p>
+              <p className="text-sm font-medium text-slate-900">Clear Sessions Only</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all scheduled events for this program. Templates, staff, and venues are kept.
+                Removes all scheduled sessions for this program. Templates, staff, and venues are kept.
               </p>
             </div>
-            <Tooltip text="Delete all scheduled events — keeps templates, staff &amp; venues intact">
+            <Tooltip text="Delete all scheduled sessions — keeps templates, staff &amp; venues intact">
               <button
                 onClick={() => openClearModal('sessions')}
                 disabled={!selectedProgramId || clearing}
                 className={`${btnDangerOutline} whitespace-nowrap`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear All Events
+                Clear Sessions
               </button>
             </Tooltip>
           </div>
@@ -1018,10 +1125,10 @@ export default function SettingsPage() {
             <div className="flex-1 mr-4">
               <p className="text-sm font-medium text-slate-900">Clear All Data</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Removes all events, templates, venues, and tags for this program. Staff are preserved. Use this to fully reset after testing with mock data.
+                Removes all sessions, templates, venues, and tags for this program. Staff are preserved. Use this to fully reset after testing with mock data.
               </p>
             </div>
-            <Tooltip text="Delete ALL events, templates, venues &amp; tags — staff are preserved">
+            <Tooltip text="Delete ALL sessions, templates, venues &amp; tags — staff are preserved">
               <button
                 onClick={() => openClearModal('all')}
                 disabled={!selectedProgramId || clearing}
@@ -1033,6 +1140,10 @@ export default function SettingsPage() {
             </Tooltip>
           </div>
         </div>
+      </div>
+
+        </div>
+        )}
       </section>
 
       {/* ================================================================= */}
@@ -1051,7 +1162,7 @@ export default function SettingsPage() {
                   <AlertTriangle className="w-5 h-5 text-red-500" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  {clearMode === 'all' ? 'Clear All Data' : 'Clear All Events'}
+                  {clearMode === 'all' ? 'Clear All Data' : 'Clear Sessions'}
                 </h3>
               </div>
               {!clearing && (
@@ -1066,22 +1177,37 @@ export default function SettingsPage() {
             {/* Body */}
             <div className="px-5 py-4">
               {clearMode === 'sessions' ? (
-                <>
+                <div className="space-y-3">
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    This will delete <strong>all scheduled events</strong> for this program. Templates, staff, and venues will be kept. This action cannot be undone.
+                    This will delete <strong>all scheduled sessions</strong> for this program. Templates, staff, and venues will be kept. This action cannot be undone.
                   </p>
+                  <Tooltip text="Type DELETE ALL SESSIONS exactly to continue">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Type <span className="font-mono font-bold text-red-500">DELETE ALL SESSIONS</span> to continue
+                      </label>
+                      <input
+                        type="text"
+                        value={clearConfirmText}
+                        onChange={(e) => setClearConfirmText(e.target.value)}
+                        placeholder="DELETE ALL SESSIONS"
+                        className={inputClass}
+                        autoFocus
+                      />
+                    </div>
+                  </Tooltip>
                   {clearProgress && (
                     <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-500">
                       <Loader2 className="w-4 h-4 animate-spin text-red-500" />
                       {clearProgress}
                     </div>
                   )}
-                </>
+                </div>
               ) : clearStep === 1 ? (
                 /* Step 1: Type DELETE ALL DATA */
                 <div className="space-y-3">
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    This will permanently delete <strong>all events, templates, venues, and tags</strong> for this program. Staff are preserved.
+                    This will permanently delete <strong>all sessions, templates, venues, and tags</strong> for this program. Staff are preserved.
                   </p>
                   <Tooltip text="Type DELETE ALL DATA exactly to continue">
                     <div>
@@ -1113,7 +1239,7 @@ export default function SettingsPage() {
                   ) : (
                     <div className="space-y-1.5">
                       {[
-                        { key: 'sessions', label: 'Events' },
+                        { key: 'sessions', label: 'Sessions' },
                         { key: 'templates', label: 'Templates' },
                         { key: 'venues', label: 'Venues' },
                         { key: 'tags', label: 'Tags' },
@@ -1161,14 +1287,14 @@ export default function SettingsPage() {
               </Tooltip>
 
               {clearMode === 'sessions' ? (
-                <Tooltip text="Delete all scheduled events for this program">
+                <Tooltip text={clearConfirmText === 'DELETE ALL SESSIONS' ? 'Delete all scheduled sessions for this program' : 'Type DELETE ALL SESSIONS to enable this button'}>
                   <button
                     onClick={handleClearData}
-                    disabled={clearing}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                    disabled={clearing || clearConfirmText !== 'DELETE ALL SESSIONS'}
+                    className={`inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50 ${clearConfirmText !== 'DELETE ALL SESSIONS' ? 'cursor-not-allowed' : ''}`}
                   >
                     {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    {clearing ? 'Clearing...' : 'Yes, Clear All Events'}
+                    {clearing ? 'Clearing...' : 'Yes, Clear Sessions'}
                   </button>
                 </Tooltip>
               ) : clearStep === 1 ? (

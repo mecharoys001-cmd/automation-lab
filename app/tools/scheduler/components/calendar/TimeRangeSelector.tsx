@@ -76,7 +76,7 @@ export function TimeRangeSelector({
         <select
           value={startHour}
           onChange={(e) => handleStartChange(Number(e.target.value))}
-          className="text-[12px] font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 cursor-pointer"
+          className="text-[12px] font-medium text-slate-600 bg-white border border-slate-200 rounded-lg pl-2 pr-6 py-1 min-w-[72px] focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 cursor-pointer"
         >
           {HOUR_OPTIONS.map((h) => (
             <option key={h} value={h}>
@@ -92,7 +92,7 @@ export function TimeRangeSelector({
         <select
           value={endHour}
           onChange={(e) => handleEndChange(Number(e.target.value))}
-          className="text-[12px] font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 cursor-pointer"
+          className="text-[12px] font-medium text-slate-600 bg-white border border-slate-200 rounded-lg pl-2 pr-6 py-1 min-w-[72px] focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 cursor-pointer"
         >
           {HOUR_OPTIONS.map((h) => (
             <option key={h} value={h}>
@@ -101,10 +101,6 @@ export function TimeRangeSelector({
           ))}
         </select>
       </Tooltip>
-
-      <span className="text-[11px] font-medium text-slate-500 ml-0.5">
-        {formatHourLabel(startHour)} – {formatHourLabel(endHour)}
-      </span>
 
       {/* Error toast */}
       {toastMessage && (

@@ -85,6 +85,34 @@ export async function PATCH(
     if (body.instructor_id === '') body.instructor_id = null;
     if (body.venue_id === '') body.venue_id = null;
 
+    // Prevent activating incomplete templates
+    if (body.is_active === true) {
+      // Fetch the existing template to merge with incoming changes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: current } = await (supabase.from('session_templates') as any)
+        .select('name, day_of_week, instructor_id, venue_id, grade_groups, required_skills')
+        .eq('id', id)
+        .single();
+
+      if (current) {
+        const merged = { ...current, ...body };
+        const missing: string[] = [];
+        if (!merged.name || !String(merged.name).trim()) missing.push('Name');
+        if (merged.day_of_week == null) missing.push('Day of Week');
+        if (!merged.instructor_id) missing.push('Staff');
+        if (!merged.venue_id) missing.push('Venue');
+        if (!merged.grade_groups?.length) missing.push('Grade Groups');
+        if (!merged.required_skills?.length) missing.push('Subject / Event Type');
+
+        if (missing.length > 0) {
+          return NextResponse.json(
+            { error: `Cannot activate template — missing required fields: ${missing.join(', ')}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Validate staff has required skills for this template's subject
     const instructorId = body.instructor_id;
     const requiredSkills = body.required_skills;

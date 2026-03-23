@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, GripVertical, Music } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, GripVertical, Music, CalendarDays } from 'lucide-react';
+import Link from 'next/link';
 import { Tooltip } from '../ui/Tooltip';
 import { Button } from '../ui/Button';
 import type { CalendarEvent } from './types';
@@ -822,7 +823,28 @@ export function WeekView({
       )}
 
       {/* ------- Unified Grid (sticky headers + time gutter + day columns) ------- */}
-      <div className="flex-1 overflow-y-auto bg-white" style={{ minWidth: 0 }}>
+      <div className="flex-1 overflow-y-auto bg-white relative" style={{ minWidth: 0 }}>
+        {events.length === 0 && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <div className="flex flex-col items-center gap-3 pointer-events-auto">
+              <CalendarDays className="w-8 h-8 text-slate-300" />
+              <div className="text-center">
+                <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
+                <p className="text-sm text-slate-400 mt-1">Set up templates and staff to start generating your schedule.</p>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 mt-1">
+                <Link href="/tools/scheduler/admin/event-templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
+                  Set up Event Templates
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+                <Link href="/tools/scheduler/admin/people" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
+                  Add Staff &amp; Venues
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
         <div
           className="grid"
           style={{

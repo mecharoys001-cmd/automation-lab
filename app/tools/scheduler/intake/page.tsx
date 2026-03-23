@@ -139,7 +139,7 @@ export default function IntakePage() {
             .then((res) => res.json())
             .then((tagData) => {
               const tags: SubjectTag[] = (tagData.tags ?? []).filter(
-                (t: SubjectTag) => ['Skills', 'Subjects', 'Event Type'].includes(t.category)
+                (t: SubjectTag) => ['Skills', 'Subjects', 'Event Type', 'Event Types'].includes(t.category)
               );
               setAvailableSubjects(tags);
             })

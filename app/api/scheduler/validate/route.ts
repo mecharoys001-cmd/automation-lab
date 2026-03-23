@@ -80,10 +80,10 @@ export async function GET(request: NextRequest) {
 
       if (missingTime.length > 0) {
         templateStatus = 'warning';
-        templateDetails.push(`${missingTime.length} missing start/end time`);
+        templateDetails.push(`${missingTime.length} ${missingTime.length === 1 ? 'template is' : 'templates are'} missing start/end time`);
       }
       if (missingGrades.length > 0) {
-        templateDetails.push(`${missingGrades.length} without grade groups`);
+        templateDetails.push(`${missingGrades.length} ${missingGrades.length === 1 ? 'template has' : 'templates have'} no grade groups assigned`);
         if (templateStatus === 'ready') templateStatus = 'warning';
       }
       if (templateDetails.length === 0) {
@@ -124,14 +124,14 @@ export async function GET(request: NextRequest) {
         instructorStatus = 'warning';
         instructorDetails.push('None have event types configured');
       } else if (missingSkills > 0) {
-        instructorDetails.push(`${missingSkills} missing event types`);
+        instructorDetails.push(`${missingSkills} ${missingSkills === 1 ? 'instructor is' : 'instructors are'} missing event types`);
       }
 
       if (withAvailability.length === 0) {
         instructorStatus = 'warning';
         instructorDetails.push('None have availability set');
       } else if (missingAvail > 0) {
-        instructorDetails.push(`${missingAvail} missing availability`);
+        instructorDetails.push(`${missingAvail} ${missingAvail === 1 ? 'instructor is' : 'instructors are'} missing availability`);
       }
 
       if (missingSkills > 0 || missingAvail > 0) {
@@ -176,11 +176,11 @@ export async function GET(request: NextRequest) {
       const missingAvail = venues.length - withAvailability.length;
 
       if (missingCap > 0) {
-        venueDetails.push(`${missingCap} missing capacity`);
+        venueDetails.push(`${missingCap} of ${venues.length} missing capacity`);
         if (venueStatus === 'ready') venueStatus = 'warning';
       }
       if (missingAvail > 0) {
-        venueDetails.push(`${missingAvail} missing availability`);
+        venueDetails.push(`${missingAvail} of ${venues.length} missing availability`);
         if (venueStatus === 'ready') venueStatus = 'warning';
       }
       if (venueDetails.length === 0) {
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
           ...missingCapVenues.map((v: any) => v.id),
           ...missingAvailVenues.map((v: any) => v.id),
         ]);
-        venueSummary = `${problemVenueIds.size} of ${venues.length} need attention`;
+        venueSummary = `${problemVenueIds.size} of ${venues.length} ${problemVenueIds.size === 1 ? 'venue needs' : 'venues need'} attention`;
       }
     }
 

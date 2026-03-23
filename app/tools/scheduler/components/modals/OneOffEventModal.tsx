@@ -118,6 +118,10 @@ const GRADE_OPTIONS = [
 
 /** Convert "9:00 AM" → "09:00" */
 function displayTimeTo24h(time12: string): string {
+  // Already 24h format (e.g. "09:00" or "09:00:00")
+  const match24 = time12.match(/^(\d{2}):(\d{2})(:\d{2})?$/);
+  if (match24) return `${match24[1]}:${match24[2]}`;
+  // 12h format (e.g. "9:00 AM")
   const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (!match) return '09:00';
   let h = parseInt(match[1], 10);
@@ -391,19 +395,19 @@ export function OneOffEventModal({
 
   if (!open) return null;
 
-  // Filter event type tags (category = 'Event Type' or legacy 'Subjects')
+  // Filter event type tags (category = 'Event Types' or legacy 'Event Type'/'Subjects')
   const subjectTags = tags.filter(
-    (t) => t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject',
+    (t) => t.category?.toLowerCase() === 'event types' || t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject',
   );
   // If no event type tags exist, show all tags as fallback
   const displayTags = subjectTags.length > 0 ? subjectTags : tags;
 
-  const modalTitle = editEvent ? 'Edit Event' : initialTemplate ? 'Schedule Event' : 'Create One-Off Event';
+  const modalTitle = editEvent ? 'Edit Event' : initialTemplate ? 'Schedule Event' : 'Add Event';
   const modalSubtitle = editEvent
     ? 'Update event details'
     : initialTemplate
       ? `${initialTemplate.name || initialTemplate.required_skills?.[0] || 'Event'} — ${initialTemplate.duration_minutes ?? 45}m`
-      : 'Assemblies, guest performances, make-up classes';
+      : 'Schedule a new event on the calendar';
 
   return (
     <Modal

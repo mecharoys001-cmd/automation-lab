@@ -103,14 +103,14 @@ function validateTagCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   return errors;
 }
 
-function getEmojiForTag(name: string): string {
+function getEmojiForTag(name: string): string | null {
   const lower = name.toLowerCase();
   for (const entry of TAG_EMOJI_MAP) {
     if (entry.patterns.some((p) => lower.includes(p))) {
       return entry.emoji;
     }
   }
-  return '🎵';
+  return null;
 }
 
 function getDescriptionForTag(tag: Tag): string {
@@ -134,7 +134,7 @@ export default function TagsPage() {
 
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
-  const [quickAddCategory, setQuickAddCategory] = useState('Event Type');
+  const [quickAddCategory, setQuickAddCategory] = useState('Event Types');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [quickAddSuccess, setQuickAddSuccess] = useState(false);
@@ -181,7 +181,7 @@ export default function TagsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       await fetchTags();
-      showToast(json.added > 0 ? `Installed ${json.added} default Space Type tag(s)` : 'All defaults already installed', 'success');
+      showToast(json.added > 0 ? `Installed ${json.added} default venue tag(s)` : 'All defaults already installed', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to install defaults', 'error');
     } finally {
@@ -228,10 +228,11 @@ export default function TagsPage() {
     }
   }, [customCategories]);
 
-  // Normalize category names — consolidate singular/plural variants (e.g. "Subject"/"Subjects")
+  // Normalize category names — consolidate singular/plural variants
   const normalizeCategory = (cat: string): string => {
     const lower = cat.toLowerCase().trim();
-    if (lower === 'subject' || lower === 'subjects') return 'Event Type';
+    if (lower === 'subject' || lower === 'subjects') return 'Event Types';
+    if (lower === 'event type') return 'Event Types';
     return cat;
   };
 
@@ -273,16 +274,18 @@ export default function TagsPage() {
           const emoji = getEmojiForTag(tagName);
           const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
 
+          const payload: Record<string, string> = {
+            name: tagName,
+            description,
+            category: quickAddCategory,
+            program_id: selectedProgramId!,
+          };
+          if (emoji) payload.emoji = emoji;
+
           const res = await fetch('/api/tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: tagName,
-              emoji,
-              description,
-              category: quickAddCategory,
-              program_id: selectedProgramId
-            }),
+            body: JSON.stringify(payload),
           });
 
           if (!res.ok) {
@@ -303,8 +306,8 @@ export default function TagsPage() {
       if (successCount > 0 && failedTags.length === 0) {
         setQuickAddSuccess(true);
         showToast(
-          successCount === 1 
-            ? `Tag "${tagNames[0]}" created` 
+          successCount === 1
+            ? `Tag "${tagNames[0]}" created`
             : `${successCount} tags created`,
           'success'
         );
@@ -474,16 +477,18 @@ export default function TagsPage() {
           const emoji = getEmojiForTag(tagName);
           const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
 
+          const payload: Record<string, string> = {
+            name: tagName,
+            description,
+            category,
+            program_id: selectedProgramId!,
+          };
+          if (emoji) payload.emoji = emoji;
+
           const res = await fetch('/api/tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: tagName,
-              emoji,
-              description,
-              category,
-              program_id: selectedProgramId
-            }),
+            body: JSON.stringify(payload),
           });
 
           if (!res.ok) {
@@ -606,14 +611,16 @@ export default function TagsPage() {
               Import CSV
             </Button>
             {spaceTypeCount < 7 && (
-              <Button
-                variant="secondary"
-                onClick={installDefaults}
-                disabled={installDefaultsLoading}
-                icon={installDefaultsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              >
-                {installDefaultsLoading ? 'Installing...' : 'Install Space Type Defaults'}
-              </Button>
+              <Tooltip text="Add pre-made venue type tags (e.g. Classroom, Auditorium, Gym)">
+                <Button
+                  variant="secondary"
+                  onClick={installDefaults}
+                  disabled={installDefaultsLoading}
+                  icon={installDefaultsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                >
+                  {installDefaultsLoading ? 'Installing...' : 'Install Default Venue Tags'}
+                </Button>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -784,8 +791,17 @@ export default function TagsPage() {
                   <>
                     {categoryTags.length === 0 ? (
                       <div className="px-5 py-6 text-center border-t border-slate-100">
-                        <p className="text-sm text-slate-400">No tags in this category yet.</p>
-                        <p className="text-xs text-slate-400 mt-1">Click the + button above to add a tag to "{category}"</p>
+                        <p className="text-sm text-slate-400 mb-3">No tags in this category yet.</p>
+                        <button
+                          onClick={() => {
+                            setCategoryQuickAdd(category);
+                            setCategoryQuickAddValue('');
+                          }}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add your first {category} tag
+                        </button>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
@@ -852,13 +868,6 @@ export default function TagsPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
-                                  {sessionCount > 0 && (
-                                    <Tooltip text={`Used in ${sessionCount} event${sessionCount === 1 ? '' : 's'}`}>
-                                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
-                                        {sessionCount}
-                                      </span>
-                                    </Tooltip>
-                                  )}
                                 </div>
                                 {getDescriptionForTag(tag) && (
                                   <p className="text-xs text-slate-500 mt-0.5">{getDescriptionForTag(tag)}</p>

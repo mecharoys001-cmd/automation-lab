@@ -9,7 +9,20 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('venues') as any)
-      .select('*')
+      .select(`
+        *,
+        venue_tags (
+          tag_id,
+          tags (
+            id,
+            name,
+            emoji,
+            color,
+            category,
+            description
+          )
+        )
+      `)
       .order('name');
 
     if (!programId) {

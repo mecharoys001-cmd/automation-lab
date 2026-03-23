@@ -196,6 +196,9 @@ export default function EventTemplatesPage() {
   // CSV import
   const [importOpen, setImportOpen] = useState(false);
 
+  // Tag filter from SubjectDashboard clicks
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
   /* ── Fetch data ─────────────────────────────────────────── */
 
   const fetchTemplates = useCallback(async () => {
@@ -391,6 +394,13 @@ export default function EventTemplatesPage() {
     };
   });
 
+  // Filter by selected tag from SubjectDashboard
+  const filteredListItems = selectedTag
+    ? templateListItems.filter((item) =>
+        (item.tags ?? []).some((t) => t.toLowerCase() === selectedTag.toLowerCase())
+      )
+    : templateListItems;
+
   /* ── Guard: no program selected ──────────────────────────── */
 
   if (!selectedProgramId) {
@@ -430,13 +440,17 @@ export default function EventTemplatesPage() {
           </div>
         </div>
 
-        {/* Subject Dashboard */}
-        <SubjectDashboard templates={templates} />
+        {/* Subject Dashboard — click a tag to filter */}
+        <SubjectDashboard
+          templates={templates}
+          selectedTag={selectedTag}
+          onTagClick={(tag) => setSelectedTag((prev) => prev === tag ? null : tag)}
+        />
 
         {/* Template Table */}
         <TemplateList
           mode="table"
-          templates={templateListItems}
+          templates={filteredListItems}
           loading={loading}
           onEdit={(id) => {
             const t = templates.find((t) => t.id === id);

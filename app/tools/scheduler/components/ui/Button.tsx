@@ -3,7 +3,7 @@
 import { forwardRef } from 'react';
 import { Tooltip } from './Tooltip';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'filter' | 'today' | 'todayOutline';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'filter' | 'today';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,7 +21,6 @@ const variantStyles: Record<ButtonVariant, string> = {
   ghost:        'bg-transparent text-blue-500 hover:text-blue-600 border border-transparent',
   filter:       'bg-transparent text-slate-500 border border-slate-200 hover:bg-slate-50',
   today:        'bg-blue-500 text-white hover:bg-blue-600 border border-transparent',
-  todayOutline: 'bg-transparent text-slate-500 border border-slate-200 hover:bg-slate-50',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -33,7 +32,6 @@ const sizeStyles: Record<ButtonSize, string> = {
 const variantSizeOverrides: Partial<Record<ButtonVariant, string>> = {
   filter:       'px-2.5 py-1.5 text-[13px] rounded-md gap-1.5',
   today:        'px-3 py-1.5 text-[13px] rounded-md gap-1.5',
-  todayOutline: 'px-3 py-1.5 text-[13px] rounded-md gap-1.5',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

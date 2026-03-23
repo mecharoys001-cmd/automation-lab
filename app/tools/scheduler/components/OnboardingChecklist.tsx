@@ -160,7 +160,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     // Respect minimized state during loading to avoid flashing the full panel
     if (minimized) {
       return (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-6 left-6 z-50">
           <button
             disabled
             className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-full px-4 py-2.5 shadow-lg opacity-75"
@@ -171,7 +171,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       );
     }
     return (
-      <div className="fixed bottom-6 right-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-[380px]">
+      <div className="fixed bottom-6 left-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-[380px]">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         </div>
@@ -182,7 +182,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
   // Minimized view — small floating pill
   if (minimized) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 left-6 z-50">
         <Tooltip text="Expand Getting Started checklist">
           <button
             onClick={handleRestore}
@@ -197,7 +197,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-[380px] overflow-hidden">
+    <div className="fixed bottom-6 left-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-[380px] overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-violet-500 px-5 py-4">
         <div className="flex items-start justify-between mb-3">

@@ -142,6 +142,8 @@ export function AvailabilityEditor({
         </button>
       </div>
 
+      <p className="text-[11px] text-slate-400">Click or drag cells to mark available times. Green = available.</p>
+
       {/* Grid */}
       <div className="overflow-x-auto">
         <div className="min-w-[400px] select-none">
@@ -179,7 +181,7 @@ export function AvailabilityEditor({
                       onMouseDown={() => handleMouseDown(d.key, hour)}
                       onMouseEnter={() => handleMouseEnter(d.key, hour)}
                       className={`h-6 border-t border-l border-slate-200 cursor-pointer transition-colors ${
-                        active ? 'bg-emerald-500/40 hover:bg-emerald-500/60' : 'bg-white hover:bg-emerald-100'
+                        active ? 'bg-emerald-500/40 hover:bg-emerald-500/60' : 'bg-slate-50 hover:bg-emerald-100'
                       }`}
                     />
                   );
@@ -189,7 +191,6 @@ export function AvailabilityEditor({
           </div>
         </div>
       </div>
-      <p className="text-[11px] text-slate-400">Click or drag to set available hours. Green = available.</p>
     </div>
   );
 }

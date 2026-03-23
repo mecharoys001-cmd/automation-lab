@@ -15,6 +15,10 @@ interface SubjectDashboardProps {
   /** All event templates to summarise */
   templates: EventTemplate[];
   className?: string;
+  /** Called when a tag card is clicked. Receives the tag name. */
+  onTagClick?: (tagName: string) => void;
+  /** Currently selected/active tag name (for highlight). */
+  selectedTag?: string | null;
 }
 
 interface SubjectStat {
@@ -49,7 +53,7 @@ function extractSubjects(template: EventTemplate): string[] {
   return subjects;
 }
 
-export function SubjectDashboard({ templates, className = '' }: SubjectDashboardProps) {
+export function SubjectDashboard({ templates, className = '', onTagClick, selectedTag }: SubjectDashboardProps) {
   const { selectedProgramId } = useProgram();
   const [tags, setTags] = useState<Tag[]>([]);
 
@@ -132,7 +136,13 @@ export function SubjectDashboard({ templates, className = '' }: SubjectDashboard
           </div>
           <div className="flex flex-wrap gap-2">
             {stats.map((stat) => (
-              <SubjectCard key={stat.name} stat={stat} total={totalTemplates} />
+              <SubjectCard
+                key={stat.name}
+                stat={stat}
+                total={totalTemplates}
+                selected={selectedTag === stat.name}
+                onClick={onTagClick ? () => onTagClick(stat.name) : undefined}
+              />
             ))}
           </div>
         </div>
@@ -141,21 +151,36 @@ export function SubjectDashboard({ templates, className = '' }: SubjectDashboard
   );
 }
 
-function SubjectCard({ stat, total }: { stat: SubjectStat; total: number }) {
+function SubjectCard({ stat, total, selected, onClick }: {
+  stat: SubjectStat;
+  total: number;
+  selected?: boolean;
+  onClick?: () => void;
+}) {
   const pct = total > 0 ? Math.round((stat.count / total) * 100) : 0;
   // Use real emoji from database tag if available, otherwise fall back to color emoji
   const displayEmoji = stat.emoji || stat.color.emoji;
+  const isClickable = !!onClick;
 
   return (
-    <div
-      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-all hover:shadow-sm"
+    <button
+      type="button"
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+      className={[
+        'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-all border-0',
+        isClickable ? 'cursor-pointer hover:shadow-md active:scale-[0.97]' : '',
+        selected ? 'shadow-md' : 'hover:shadow-sm',
+      ].join(' ')}
       style={{
-        backgroundColor: stat.color.eventBg,
+        backgroundColor: selected ? `${stat.color.accent}30` : stat.color.eventBg,
         borderLeft: `3px solid ${stat.color.accent}`,
+        outline: selected ? `2px solid ${stat.color.accent}` : 'none',
+        outlineOffset: selected ? '0px' : undefined,
       }}
     >
       <span className="text-sm">{displayEmoji}</span>
-      <span className="text-xs font-medium text-slate-700">{stat.name}</span>
+      <span className={`text-xs font-medium ${selected ? 'text-slate-900' : 'text-slate-700'}`}>{stat.name}</span>
       <span
         className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded text-xs font-semibold tabular-nums"
         style={{
@@ -165,6 +190,6 @@ function SubjectCard({ stat, total }: { stat: SubjectStat; total: number }) {
       >
         {stat.count}
       </span>
-    </div>
+    </button>
   );
 }

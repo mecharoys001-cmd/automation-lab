@@ -47,6 +47,10 @@ interface FilterBarProps {
   activeFilters: ActiveFilters;
   onFiltersChange: (filters: ActiveFilters) => void;
   className?: string;
+  /** Total events before filtering (shows "X of Y" indicator) */
+  totalCount?: number;
+  /** Events after filtering */
+  filteredCount?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,7 +186,7 @@ function FilterDropdown({
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[200] max-h-64 overflow-y-auto">
           {filter.options.length === 0 ? (
             <div className="px-3 py-3 text-[13px] text-slate-400 text-center">
               <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
@@ -269,6 +273,8 @@ export function FilterBar({
   activeFilters,
   onFiltersChange,
   className = '',
+  totalCount,
+  filteredCount,
 }: FilterBarProps) {
   const activeCount = Object.values(activeFilters).reduce(
     (sum, vals) => sum + vals.length,
@@ -332,7 +338,7 @@ export function FilterBar({
   }, [filters]);
 
   return (
-    <div className={`bg-white border-b border-slate-200 ${className}`}>
+    <div className={`bg-white border-b border-slate-200 relative z-[100] ${className}`}>
       {/* Filter buttons row */}
       <div className="flex items-center gap-2.5 px-6 py-2.5">
         {filters.map((filter) => (
@@ -345,18 +351,25 @@ export function FilterBar({
         ))}
 
         {activeCount > 0 && (
-          <Tooltip text="Remove all active filters">
-            <button
-              onClick={handleClearAll}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Clear Filters</span>
-              <Badge variant="count" color="blue" className="ml-0.5">
-                {activeCount}
-              </Badge>
-            </button>
-          </Tooltip>
+          <>
+            <Tooltip text="Remove all active filters">
+              <button
+                onClick={handleClearAll}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Clear Filters</span>
+                <Badge variant="count" color="blue" className="ml-0.5">
+                  {activeCount}
+                </Badge>
+              </button>
+            </Tooltip>
+            {totalCount != null && filteredCount != null && (
+              <span className="text-[12px] text-slate-400 ml-1">
+                Showing {filteredCount} of {totalCount} session{totalCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </>
         )}
       </div>
 

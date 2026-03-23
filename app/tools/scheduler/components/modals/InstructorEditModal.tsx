@@ -144,7 +144,7 @@ export function InstructorEditModal({
       <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5">
         {/* First Name */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">First Name</label>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">First Name<span className="text-red-400 ml-0.5">*</span></label>
           <Tooltip text="Staff member's first name" className="w-full">
             <input
               type="text"
@@ -159,7 +159,7 @@ export function InstructorEditModal({
 
         {/* Last Name */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Last Name</label>
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Last Name<span className="text-red-400 ml-0.5">*</span></label>
           <Tooltip text="Staff member's last name" className="w-full">
             <input
               type="text"
@@ -236,7 +236,7 @@ export function InstructorEditModal({
               <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>
-                  Program runs {selectedProgram.start_date} to {selectedProgram.end_date}
+                  Program runs {new Date(selectedProgram.start_date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} to {new Date(selectedProgram.end_date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
             </Tooltip>

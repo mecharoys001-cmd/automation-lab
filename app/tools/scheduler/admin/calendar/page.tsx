@@ -500,6 +500,11 @@ export default function CalendarPage() {
     fetchEntries();
   }, [fetchEntries]);
 
+  // Reset cached instructors when program changes so they're re-fetched
+  useEffect(() => {
+    setBatchInstructors([]);
+  }, [selectedProgramId]);
+
   // ── Warn on navigate-away when there are unsaved changes ────
   useEffect(() => {
     if (!isDirty) return;
@@ -592,8 +597,8 @@ export default function CalendarPage() {
       const count = body.total_generated ?? 0;
       setToast({
         message: count > 0
-          ? `${count} draft class${count !== 1 ? 'es' : ''} generated for ${year}`
-          : 'No new classes generated — templates may already be scheduled.',
+          ? `${count} draft session${count !== 1 ? 's' : ''} generated for ${year}`
+          : 'No new sessions generated — templates may already be scheduled.',
         type: 'success',
         id: Date.now(),
       });
@@ -927,9 +932,9 @@ export default function CalendarPage() {
     setBatchProgress(null);
 
     // Fetch instructors if needed for staff exception
-    if (action === 'instructor_exception' && batchInstructors.length === 0) {
+    if (action === 'instructor_exception' && batchInstructors.length === 0 && selectedProgramId) {
       try {
-        const res = await fetch('/api/instructors?is_active=true');
+        const res = await fetch(`/api/instructors?program_id=${selectedProgramId}&is_active=true`);
         if (res.ok) {
           const data = await res.json();
           setBatchInstructors(data.instructors ?? []);
@@ -938,7 +943,7 @@ export default function CalendarPage() {
         // Non-critical — user can still type an ID
       }
     }
-  }, [selectedDates, batchInstructors.length]);
+  }, [selectedDates, batchInstructors.length, selectedProgramId]);
 
   const closeBatchModal = useCallback(() => {
     setBatchModal(null);
@@ -1728,28 +1733,20 @@ export default function CalendarPage() {
                 Instructor <span className="text-red-400 ml-0.5">*</span>
               </label>
               <p className="text-xs text-slate-400">Select the staff member for this exception.</p>
-              {batchInstructors.length > 0 ? (
-                <select
-                  value={batchInstructorId}
-                  onChange={(e) => setBatchInstructorId(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-                >
-                  <option value="">Select instructor…</option>
-                  {batchInstructors.map((inst) => (
-                    <option key={inst.id} value={inst.id}>
-                      {inst.first_name} {inst.last_name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="Staff ID"
-                  value={batchInstructorId}
-                  onChange={(e) => setBatchInstructorId(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
-                />
-              )}
+              <select
+                value={batchInstructorId}
+                onChange={(e) => setBatchInstructorId(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              >
+                <option value="">
+                  {batchInstructors.length === 0 ? 'Loading instructors…' : 'Select instructor…'}
+                </option>
+                {batchInstructors.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.first_name} {inst.last_name}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

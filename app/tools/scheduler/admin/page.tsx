@@ -209,19 +209,22 @@ function eventMatchesFilters(event: CalendarEvent, filters: ActiveFilters): bool
   for (const [key, values] of Object.entries(filters)) {
     if (values.length === 0) continue;
 
+    // Case-insensitive comparison helper
+    const lowerValues = values.map((v) => v.toLowerCase().trim());
+
     if (key === 'instructor') {
-      if (!values.includes(event.instructor)) return false;
+      if (!lowerValues.includes(event.instructor.toLowerCase().trim())) return false;
     } else if (key === 'venue') {
-      if (!event.venue || !values.includes(event.venue)) return false;
+      if (!event.venue || !lowerValues.includes(event.venue.toLowerCase().trim())) return false;
     } else if (key === 'status') {
-      if (!event.status || !values.includes(event.status)) return false;
+      if (!event.status || !lowerValues.includes(event.status.toLowerCase().trim())) return false;
     } else if (key === 'grade') {
-      if (!event.gradeLevel || !values.includes(event.gradeLevel)) return false;
+      if (!event.gradeLevel || !lowerValues.includes(event.gradeLevel.toLowerCase().trim())) return false;
     } else if (key === 'eventType') {
-      if (!values.includes(event.type)) return false;
+      if (!lowerValues.includes(event.type.toLowerCase().trim())) return false;
     } else if (key === 'tags' || key.startsWith('tag_')) {
       // Tag category filter: check if event has ANY of the selected tags
-      if (!event.tags || !event.tags.some((t) => values.includes(t))) return false;
+      if (!event.tags || !event.tags.some((t) => lowerValues.includes(t.toLowerCase().trim()))) return false;
     }
   }
   return true;
@@ -496,7 +499,13 @@ function CalendarDashboard() {
   const selectedProgram = programs.find((p) => p.id === selectedProgramId);
 
   // Initialize filters from URL search params (e.g. ?tag=Percussion from People page)
+  // Only apply once on mount to avoid resetting user-selected filters when
+  // searchParams identity changes on re-render.
+  const initialFiltersApplied = useRef(false);
   useEffect(() => {
+    if (initialFiltersApplied.current) return;
+    initialFiltersApplied.current = true;
+
     const initial: ActiveFilters = {};
 
     const tag = searchParams.get('tag');
@@ -1517,6 +1526,8 @@ function CalendarDashboard() {
         filters={dynamicFilters}
         activeFilters={activeFilters}
         onFiltersChange={setActiveFilters}
+        totalCount={events.length}
+        filteredCount={filteredEvents.length}
       />
 
       {/* ================================================================= */}

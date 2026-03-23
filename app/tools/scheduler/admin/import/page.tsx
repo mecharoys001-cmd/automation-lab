@@ -89,7 +89,7 @@ export default function ImportPage() {
         {/* Page Header */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-            Import Seed Data
+            Import Data
           </h1>
           <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
             Load Symphonix schedule data from the 2025-2026 program CSV
@@ -145,7 +145,7 @@ export default function ImportPage() {
                 ) : (
                   <>
                     <Upload className="w-4 h-4" />
-                    Import Seed Data
+                    Import Data
                   </>
                 )}
               </Button>

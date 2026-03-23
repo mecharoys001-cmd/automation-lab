@@ -417,7 +417,7 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
       <div className="grid grid-cols-[minmax(160px,auto)_100px_100px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
         <span>Tag</span>
         <span className="text-right">Hours</span>
-        <span className="text-right">Classes</span>
+        <span className="text-right">Sessions</span>
         <span className="pl-4">Distribution</span>
       </div>
 

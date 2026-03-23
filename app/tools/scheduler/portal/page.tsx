@@ -252,15 +252,15 @@ export default function InstructorPortalPage() {
                 </div>
                 <p className="text-sm font-medium">
                   {viewFilter === 'upcoming'
-                    ? 'No upcoming classes'
+                    ? 'No upcoming sessions'
                     : viewFilter === 'past'
-                      ? 'No past classes'
-                      : 'No classes found'}
+                      ? 'No past sessions'
+                      : 'No sessions found'}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {viewFilter === 'upcoming'
-                    ? "You don't have any published classes scheduled yet."
-                    : 'No classes match this filter.'}
+                    ? "You don't have any published sessions scheduled yet."
+                    : 'No sessions match this filter.'}
                 </p>
               </div>
             ) : (

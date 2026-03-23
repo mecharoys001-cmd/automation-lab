@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProgram } from '../ProgramContext';
 import {
-  Calendar, Download, ChevronDown, ChevronRight,
+  Calendar, Download, ChevronDown, ChevronRight, ArrowRight,
   Clock, Tag, FileText, Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -438,7 +438,7 @@ function HoursByTagTab({
 
                   {/* Avg Duration */}
                   <td className="px-5 py-3.5 text-right">
-                    <Tooltip text={`Average class duration: ${tag.avgDuration} minutes`}>
+                    <Tooltip text={`Average session duration: ${tag.avgDuration} minutes`}>
                       <span className="text-sm text-slate-500 tabular-nums">
                         {tag.avgDuration} min
                       </span>
@@ -637,14 +637,14 @@ export default function ReportsPage() {
       <div className="bg-gradient-to-r from-blue-50 to-violet-50 px-8 py-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
           <Tooltip text="View event counts by template with filtering and sorting">
-            <a
+            <Link
               href="/tools/scheduler/admin/reports/sessions-by-template"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-[13px] font-medium text-blue-700"
             >
               <FileText className="w-4 h-4" />
-              Classes by Template
-              <ChevronRight className="w-3.5 h-3.5" />
-            </a>
+              View Sessions by Template
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </Tooltip>
         </div>
       </div>

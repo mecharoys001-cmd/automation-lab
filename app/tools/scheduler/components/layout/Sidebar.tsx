@@ -100,17 +100,19 @@ export function Sidebar({
       className={`w-[240px] flex flex-col justify-between bg-slate-800 py-6 px-4 flex-shrink-0 ${className}`}
     >
       {/* Top section: Logo + Nav */}
-      <div>
+      <div className="min-h-0 flex flex-col">
         {/* Header */}
-        {header ?? (
-          <div className="flex items-center gap-2.5 pb-6">
-            <CalendarDays className="w-7 h-7 text-blue-500 flex-shrink-0" />
-            <span className="text-xl font-bold text-white">Symphonix</span>
-          </div>
-        )}
+        <div className="flex-shrink-0">
+          {header ?? (
+            <div className="flex items-center gap-2.5 pb-6">
+              <CalendarDays className="w-7 h-7 text-blue-500 flex-shrink-0" />
+              <span className="text-xl font-bold text-white">Symphonix</span>
+            </div>
+          )}
+        </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1 overflow-y-auto min-h-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -122,7 +124,7 @@ export function Sidebar({
                   className={`flex items-center gap-2.5 w-full rounded-lg px-3 py-2.5 transition-colors ${
                     active
                       ? 'bg-slate-700 text-white font-semibold'
-                      : 'text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium'
+                      : 'text-slate-100 hover:bg-slate-700/50 hover:text-white font-medium'
                   }`}
                 >
                   <Icon
@@ -137,7 +139,7 @@ export function Sidebar({
       </div>
 
       {/* Bottom section: User profile */}
-      <div className="border-t border-slate-700 pt-4">
+      <div className="border-t border-slate-700 pt-4 flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <Avatar initials={user.initials} size="md" bgColor="bg-blue-500" />
           <div className="min-w-0 flex-1">

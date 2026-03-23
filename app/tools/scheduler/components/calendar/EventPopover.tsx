@@ -594,7 +594,7 @@ export function EventPopover({
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
               <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-[12px] font-semibold text-amber-900">Are you sure you want to cancel this class?</p>
+                <p className="text-[12px] font-semibold text-amber-900">Are you sure you want to cancel this event?</p>
                 <p className="text-[11px] text-amber-700 mt-0.5">
                   You can choose to replace the staff or the entire event afterward.
                 </p>
@@ -604,7 +604,7 @@ export function EventPopover({
               <Button variant="danger" size="sm" onClick={handleConfirmCancel} className="flex-1" tooltip="Confirm cancellation">
                 Yes, Cancel
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)} className="flex-1" tooltip="Keep the class">
+              <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)} className="flex-1" tooltip="Keep the event">
                 No, Keep It
               </Button>
             </div>
@@ -614,7 +614,7 @@ export function EventPopover({
         {/* Replace Options */}
         {showReplaceOptions && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <p className="text-[12px] font-semibold text-slate-700">Replace staff or class?</p>
+            <p className="text-[12px] font-semibold text-slate-700">Replace staff or event?</p>
             <div className="space-y-1.5">
               <Button
                 variant="secondary"
@@ -632,9 +632,9 @@ export function EventPopover({
                 onClick={handleShowTemplates}
                 icon={<RefreshCw className="w-3.5 h-3.5" />}
                 className="w-full justify-start"
-                tooltip="Replace with a different class"
+                tooltip="Replace with a different event"
               >
-                Replace Entire Class
+                Replace Entire Event
               </Button>
               <Button
                 variant="danger"
@@ -667,16 +667,16 @@ export function EventPopover({
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-amber-500" />
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
-                  Similar classes (different staff)
+                  Similar events (different staff)
                 </span>
               </div>
               {loadingSimilar ? (
                 <div className="flex items-center justify-center py-3 gap-2">
                   <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                  <span className="text-[11px] text-slate-400">Finding similar classes...</span>
+                  <span className="text-[11px] text-slate-400">Finding similar events...</span>
                 </div>
               ) : similarEvents.length === 0 ? (
-                <p className="text-[11px] text-slate-400 py-1">No similar classes found.</p>
+                <p className="text-[11px] text-slate-400 py-1">No similar events found.</p>
               ) : (
                 <div className="space-y-1">
                   {similarEvents.map((se) => (
@@ -757,7 +757,7 @@ export function EventPopover({
         {showTemplates && (
           <div className="space-y-2.5 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-slate-700">Select Replacement Class</p>
+              <p className="text-[12px] font-semibold text-slate-700">Select Replacement Event</p>
               <Tooltip text="Back to options">
                 <button
                   onClick={handleBackToReplaceOptions}

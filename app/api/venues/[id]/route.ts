@@ -11,7 +11,20 @@ export async function GET(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('venues') as any)
-      .select('*')
+      .select(`
+        *,
+        venue_tags (
+          tag_id,
+          tags (
+            id,
+            name,
+            emoji,
+            color,
+            category,
+            description
+          )
+        )
+      `)
       .eq('id', id)
       .single();
 

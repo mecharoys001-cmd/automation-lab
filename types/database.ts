@@ -177,7 +177,7 @@ export interface Tag {
   color: string | null;
   emoji: string | null;
   description: string | null;
-  category: string; // Tag category (e.g., "Instrument", "Grade Level", "Event Type")
+  category: string; // Tag category (e.g., "Instrument", "Grade Level", "Event Types")
   created_at: string;
 }
 
@@ -207,6 +207,12 @@ export interface Session {
 /** 3.9 session_tags — Junction table (many-to-many) */
 export interface SessionTag {
   session_id: string;
+  tag_id: string;
+}
+
+/** 3.9b venue_tags — Junction table (many-to-many) */
+export interface VenueTag {
+  venue_id: string;
   tag_id: string;
 }
 
@@ -280,6 +286,8 @@ export type SessionInsert = Omit<Session, 'id' | 'created_at' | 'updated_at'> & 
 };
 
 export type SessionTagInsert = SessionTag;
+
+export type VenueTagInsert = VenueTag;
 
 export type NotificationLogInsert = Omit<NotificationLog, 'id' | 'created_at'> & {
   id?: string;
