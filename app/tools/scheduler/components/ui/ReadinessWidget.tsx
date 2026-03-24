@@ -136,6 +136,8 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const router = useRouter();
 
   const fetchValidation = useCallback(async () => {
@@ -204,9 +206,6 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
     : `${issueChecks.length} issues — click for details`;
 
   const SummaryIcon = StatusIcon[overallStatus];
-
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   const handleToggle = () => {
     if (!expanded && buttonRef.current) {
