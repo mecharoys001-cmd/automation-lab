@@ -210,10 +210,21 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
   const handleToggle = () => {
     if (!expanded && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + 12,
-        left: rect.left + rect.width / 2 - 160, // center the 320px (w-80) panel
-      });
+      const panelWidth = 320; // w-80
+      const margin = 12; // minimum distance from any window edge
+
+      // Center horizontally on button, then clamp to viewport
+      let left = rect.left + rect.width / 2 - panelWidth / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - panelWidth - margin));
+
+      // Position below button, but flip above if not enough space below
+      let top = rect.bottom + margin;
+      const estimatedPanelHeight = 300;
+      if (top + estimatedPanelHeight > window.innerHeight - margin) {
+        top = Math.max(margin, rect.top - estimatedPanelHeight - margin);
+      }
+
+      setDropdownPos({ top, left });
     }
     setExpanded(!expanded);
   };
