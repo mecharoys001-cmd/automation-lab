@@ -235,9 +235,9 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
 
       {expanded && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setExpanded(false)} />
+          <div className="fixed inset-0 z-[99]" onClick={() => setExpanded(false)} />
           <div
-            className="fixed z-50 w-80 max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg p-4 space-y-3"
+            className="fixed z-[100] w-80 max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl p-4 space-y-3"
             style={{ top: dropdownPos.top, left: Math.max(8, dropdownPos.left) }}
           >
             <div className="text-xs font-semibold text-slate-800 px-1">
