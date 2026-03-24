@@ -1,57 +1,52 @@
+#!/usr/bin/env node
 /**
- * Check for unfixed bugs in Airtable
- * Returns bugs that are NOT marked as "ROY Fix"
+ * Check Airtable for unfixed bugs
  */
 
 import { getUnresolvedIssues } from '../lib/airtable';
 
-async function checkUnfixedBugs() {
-  try {
-    const allIssues = await getUnresolvedIssues();
-    
-    // Filter for issues that haven't been marked as "ROY Fix" yet
-    const unfixedBugs = allIssues.filter(issue => !issue.royFix);
-    
-    console.log(`Total unresolved issues: ${allIssues.length}`);
-    console.log(`Unfixed bugs (not yet marked ROY Fix): ${unfixedBugs.length}`);
-    console.log('');
-    
-    if (unfixedBugs.length > 0) {
-      console.log('Unfixed bugs by priority:');
-      const byPriority = {
-        High: unfixedBugs.filter(b => b.priority === 'High'),
-        Medium: unfixedBugs.filter(b => b.priority === 'Medium'),
-        Low: unfixedBugs.filter(b => b.priority === 'Low'),
-      };
-      
-      console.log(`  High: ${byPriority.High.length}`);
-      console.log(`  Medium: ${byPriority.Medium.length}`);
-      console.log(`  Low: ${byPriority.Low.length}`);
-      console.log('');
-      
-      // Show the highest priority bug
-      const nextBug = unfixedBugs[0]; // Already sorted by priority
-      console.log('NEXT BUG TO FIX:');
-      console.log(`  ID: ${nextBug.id}`);
-      console.log(`  Priority: ${nextBug.priority}`);
-      console.log(`  Page: ${nextBug.page || 'N/A'}`);
-      console.log(`  Modal: ${nextBug.modalName || 'N/A'}`);
-      console.log(`  Feedback: ${nextBug.feedback}`);
-      if (nextBug.screenshot && nextBug.screenshot.length > 0) {
-        console.log(`  Screenshot: ${nextBug.screenshot[0]}`);
-      }
-      
-      // Output as JSON for easy parsing
-      console.log('');
-      console.log('JSON:');
-      console.log(JSON.stringify(nextBug, null, 2));
-    } else {
-      console.log('✅ No unfixed bugs remaining!');
+async function main() {
+  console.log('🔍 Checking Airtable for unfixed bugs...\n');
+  
+  const issues = await getUnresolvedIssues();
+  const unfixed = issues.filter(i => !i.royFix);
+  
+  console.log(`📊 Summary:`);
+  console.log(`  Total unresolved: ${issues.length}`);
+  console.log(`  Unfixed (ROY Fix = false): ${unfixed.length}`);
+  console.log(`  Fixed but awaiting verification: ${issues.length - unfixed.length}\n`);
+  
+  if (unfixed.length === 0) {
+    console.log('✅ No unfixed bugs! All issues have been addressed.\n');
+    process.exit(0);
+  }
+  
+  // Show highest priority unfixed bug
+  const highPriority = unfixed.filter(i => i.priority === 'High');
+  const mediumPriority = unfixed.filter(i => i.priority === 'Medium');
+  const lowPriority = unfixed.filter(i => i.priority === 'Low');
+  
+  console.log(`🔴 High Priority: ${highPriority.length}`);
+  console.log(`🟡 Medium Priority: ${mediumPriority.length}`);
+  console.log(`🟢 Low Priority: ${lowPriority.length}\n`);
+  
+  const nextBug = highPriority[0] || mediumPriority[0] || lowPriority[0];
+  
+  if (nextBug) {
+    console.log('📋 NEXT BUG TO FIX:\n');
+    console.log(`  ID: ${nextBug.id}`);
+    console.log(`  Priority: ${nextBug.priority || 'Not set'}`);
+    console.log(`  Page: ${nextBug.page || 'Not specified'}`);
+    console.log(`  Modal: ${nextBug.modalName || 'N/A'}`);
+    console.log(`  Feedback: ${nextBug.feedback}\n`);
+    if (nextBug.screenshot && nextBug.screenshot.length > 0) {
+      console.log(`  Screenshots: ${nextBug.screenshot.length} attached\n`);
     }
-  } catch (error) {
-    console.error('Error checking bugs:', error);
-    process.exit(1);
+    
+    // Output as JSON for parsing
+    console.log('---JSON---');
+    console.log(JSON.stringify(nextBug, null, 2));
   }
 }
 
-checkUnfixedBugs();
+main().catch(console.error);

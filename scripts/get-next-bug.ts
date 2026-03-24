@@ -1,43 +1,38 @@
-#!/usr/bin/env tsx
 /**
- * Get the next unfixed bug from Airtable
+ * Get the next unfixed bug (highest priority first)
  */
-
 import { getUnresolvedIssues } from '../lib/airtable';
 
 async function main() {
-  console.log('🔍 Fetching unresolved issues...\n');
+  console.log('🔍 Finding next unfixed bug...\n');
   
   const issues = await getUnresolvedIssues();
   
-  // Find first unfixed issue (prioritize High > Medium > Low)
-  const unfixed = issues.find(i => !i.royFix);
+  // Find first issue that doesn't have ROY fix
+  const nextBug = issues.find(issue => !issue.royFix);
   
-  if (!unfixed) {
-    console.log('✅ No unfixed bugs remaining! All issues have been fixed by ROY.\n');
-    console.log('Remaining issues are awaiting verification.\n');
-    return;
+  if (!nextBug) {
+    console.log('✅ No unfixed bugs remaining!');
+    process.exit(0);
   }
   
-  console.log('🐛 NEXT BUG TO FIX:\n');
-  console.log(`ID: ${unfixed.id}`);
-  console.log(`Priority: ${unfixed.priority || 'Not set'}`);
-  console.log(`Page: ${unfixed.page || 'Not specified'}`);
-  if (unfixed.modalName) {
-    console.log(`Modal: ${unfixed.modalName}`);
-  }
-  console.log(`\nFeedback:\n${unfixed.feedback}\n`);
-  if (unfixed.screenshot && unfixed.screenshot.length > 0) {
-    console.log(`Screenshots: ${unfixed.screenshot.length} attached`);
-    unfixed.screenshot.forEach((url, i) => {
+  console.log('🐛 Next Bug to Fix:\n');
+  console.log(`ID: ${nextBug.id}`);
+  console.log(`Priority: ${nextBug.priority || 'Not Set'}`);
+  console.log(`Page: ${nextBug.page || 'Not specified'}`);
+  console.log(`Modal: ${nextBug.modalName || 'N/A'}`);
+  console.log(`\nFeedback:\n${nextBug.feedback}`);
+  
+  if (nextBug.screenshot && nextBug.screenshot.length > 0) {
+    console.log(`\nScreenshots: ${nextBug.screenshot.length} attached`);
+    nextBug.screenshot.forEach((url, i) => {
       console.log(`  ${i + 1}. ${url}`);
     });
   }
-  console.log('\n---\n');
   
-  // Count remaining
-  const remaining = issues.filter(i => !i.royFix).length;
-  console.log(`📊 Total unfixed bugs remaining: ${remaining}\n`);
+  console.log('\n---');
+  console.log(`Total unresolved: ${issues.length}`);
+  console.log(`Unfixed: ${issues.filter(i => !i.royFix).length}`);
 }
 
 main().catch(console.error);
