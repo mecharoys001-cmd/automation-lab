@@ -205,11 +205,26 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
 
   const SummaryIcon = StatusIcon[overallStatus];
 
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  const handleToggle = () => {
+    if (!expanded && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 12,
+        left: rect.left + rect.width / 2 - 160, // center the 320px (w-80) panel
+      });
+    }
+    setExpanded(!expanded);
+  };
+
   return (
     <div className="relative" ref={panelRef}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleToggle}
         className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors
           ${STATUS_TEXT_CLASS[overallStatus]} hover:bg-slate-100 cursor-pointer`}
         aria-expanded={expanded}
@@ -220,17 +235,23 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
       </button>
 
       {expanded && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-80 max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg z-50 p-4 space-y-3">
-          <div className="text-xs font-semibold text-slate-800 px-1">
-            Publish Readiness
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setExpanded(false)} />
+          <div
+            className="fixed z-50 w-80 max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg p-4 space-y-3"
+            style={{ top: dropdownPos.top, left: Math.max(8, dropdownPos.left) }}
+          >
+            <div className="text-xs font-semibold text-slate-800 px-1">
+              Publish Readiness
+            </div>
+            {issueChecks.map(check => (
+              <CheckSection key={check.label} check={check} onNavigate={(path) => { setExpanded(false); router.push(path); }} />
+            ))}
+            <p className="text-[10px] text-slate-400 px-1">
+              Resolve these before publishing. Click the blue links to fix each issue.
+            </p>
           </div>
-          {issueChecks.map(check => (
-            <CheckSection key={check.label} check={check} onNavigate={(path) => { setExpanded(false); router.push(path); }} />
-          ))}
-          <p className="text-[10px] text-slate-400 px-1">
-            Resolve these before publishing. Click the blue links to fix each issue.
-          </p>
-        </div>
+        </>
       )}
     </div>
   );
