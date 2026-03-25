@@ -195,13 +195,13 @@ export function TagSelector({
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-[9990]"
             onClick={() => setShowDropdown(false)}
           />
           
           {/* Dropdown Menu */}
           <div
-            className="fixed z-[80] max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg"
+            className="fixed z-[9991] max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg"
             style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
           >
             {allTags.length === 0 && !showAddForm ? (
