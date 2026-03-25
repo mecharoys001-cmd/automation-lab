@@ -68,12 +68,6 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
 
-        // Clip to page bounds
-        pdf.saveGraphicsState();
-        // @ts-expect-error - jsPDF rect clip
-        pdf.rect(margin, margin, contentWidth, pageContentHeight, null);
-        pdf.clip();
-
         pdf.addImage(
           imgData,
           "PNG",
@@ -83,7 +77,10 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
           scaledHeight
         );
 
-        pdf.restoreGraphicsState();
+        // White-out overflow at top and bottom to prevent bleed
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pdfWidth, margin, "F");
+        pdf.rect(0, pdfHeight - margin, pdfWidth, margin, "F");
       }
 
       const dateSlug = `${data.dateRange.start} to ${data.dateRange.end}`.replace(/[^a-zA-Z0-9]/g, "_");
