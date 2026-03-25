@@ -209,10 +209,11 @@ export function ImportFromProgramModal({
         <div className="space-y-5">
           {/* Source program */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            <label htmlFor="import-source-program" className="block text-xs font-semibold text-slate-600 mb-1.5">
               Source Program
             </label>
             <select
+              id="import-source-program"
               value={sourceProgramId}
               onChange={(e) => setSourceProgramId(e.target.value)}
               className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"

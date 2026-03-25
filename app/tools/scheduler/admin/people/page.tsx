@@ -436,8 +436,10 @@ function VenueDetailModal({
       {/* Editable name when in edit mode */}
       {editing && (
         <div className="px-6 py-3">
+          <label htmlFor="venue-edit-name" className="sr-only">Venue name</label>
           <Tooltip text="Venue name">
             <input
+              id="venue-edit-name"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               className="text-[22px] font-bold text-slate-900 bg-transparent border-b-2 border-blue-400 outline-none w-full max-w-[400px]"
@@ -556,10 +558,11 @@ function VenueDetailModal({
 
           {/* Space Type */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Space Type</label>
+            <label htmlFor="venue-edit-space-type" className="block text-xs font-semibold text-slate-600 mb-1.5">Space Type</label>
             <Tooltip text="Select the space type for this venue">
               <div className="relative">
                 <select
+                  id="venue-edit-space-type"
                   value={roomType}
                   onChange={(e) => setRoomType(e.target.value)}
                   className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 cursor-pointer transition-colors"
@@ -613,10 +616,11 @@ function VenueDetailModal({
 
           {/* Setup / Teardown Buffer */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Setup / Teardown Buffer</label>
+            <label htmlFor="venue-edit-buffer" className="block text-xs font-semibold text-slate-600 mb-1.5">Setup / Teardown Buffer</label>
             <Tooltip text="Minutes needed before and after events for setup and cleanup">
               <div className="flex items-center gap-2">
                 <input
+                  id="venue-edit-buffer"
                   type="number"
                   min="0"
                   value={bufferMinutes}
@@ -631,9 +635,10 @@ function VenueDetailModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
+            <label htmlFor="venue-edit-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
             <Tooltip text="Additional notes or special instructions for this venue">
               <textarea
+                id="venue-edit-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add notes about this venue…"
@@ -962,7 +967,7 @@ function VenueCreateModal({
         {/* Space Type (from tags) */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="text-xs font-semibold text-slate-600">Space Type</label>
+            <label htmlFor="venue-form-space-type" className="text-xs font-semibold text-slate-600">Space Type</label>
             <Tooltip text="Add a new space type">
               <button
                 type="button"
@@ -987,6 +992,8 @@ function VenueCreateModal({
             <div className="flex items-center gap-1.5 mb-1.5">
               <input
                 type="text"
+                id="venue-form-new-space-type"
+                aria-label="New space type name"
                 value={newSpaceTypeName}
                 onChange={(e) => setNewSpaceTypeName(e.target.value)}
                 placeholder="New space type name"
@@ -1008,6 +1015,7 @@ function VenueCreateModal({
           )}
           <div className="relative">
             <select
+              id="venue-form-space-type"
               value={form.space_type}
               onChange={(e) => setField('space_type', e.target.value)}
               disabled={loadingSpaceTypes}
@@ -1041,9 +1049,10 @@ function VenueCreateModal({
 
         {/* Max Capacity */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Max Capacity</label>
+          <label htmlFor="venue-form-capacity" className="block text-xs font-semibold text-slate-600 mb-1.5">Max Capacity</label>
           <Tooltip text="Maximum number of people this venue can hold (leave blank for unlimited)" className="w-full">
             <input
+              id="venue-form-capacity"
               type="number"
               min={0}
               value={form.max_capacity}
@@ -1071,10 +1080,11 @@ function VenueCreateModal({
 
         {/* Setup / Teardown Buffer */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Setup/Teardown Buffer</label>
+          <label htmlFor="venue-form-buffer" className="block text-xs font-semibold text-slate-600 mb-1.5">Setup/Teardown Buffer</label>
           <Tooltip text="Minutes needed before and after events for setup and teardown" className="w-full">
             <div className="flex items-center gap-2">
               <input
+                id="venue-form-buffer"
                 type="number"
                 min={0}
                 value={form.buffer_minutes}
@@ -1098,9 +1108,10 @@ function VenueCreateModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
+          <label htmlFor="venue-form-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
           <Tooltip text="Internal notes about this venue" className="w-full">
             <textarea
+              id="venue-form-notes"
               value={form.notes}
               onChange={(e) => setField('notes', e.target.value)}
               placeholder="Add notes about this venue…"
@@ -1496,6 +1507,7 @@ export default function PeoplePage() {
             <Tooltip text="Filter by staff status">
               <div className="relative flex items-center border border-slate-200 rounded-lg">
                 <select
+                  aria-label="Filter by staff status"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
                   className="appearance-none bg-transparent px-3 py-1.5 pr-8 text-[13px] font-medium text-slate-600 outline-none cursor-pointer"

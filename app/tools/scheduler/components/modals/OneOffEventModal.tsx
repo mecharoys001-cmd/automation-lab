@@ -503,8 +503,9 @@ export function OneOffEventModal({
         {/* Event Type Tag + Instructor row */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Event Type</label>
+            <label htmlFor="oneoff-event-type" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Event Type</label>
             <select
+              id="oneoff-event-type"
               value={subjectTagId}
               onChange={(e) => setSubjectTagId(e.target.value)}
               className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer ${
@@ -524,8 +525,9 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Staff</label>
+            <label htmlFor="oneoff-staff" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Staff</label>
             <select
+              id="oneoff-staff"
               value={instructorId}
               onChange={(e) => setInstructorId(e.target.value)}
               className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer"
@@ -548,8 +550,9 @@ export function OneOffEventModal({
 
         {/* Venue */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Venue <span className="text-red-700">*</span></label>
+          <label htmlFor="oneoff-venue" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Venue <span className="text-red-700">*</span></label>
           <select
+            id="oneoff-venue"
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
             aria-required="true"
@@ -603,8 +606,9 @@ export function OneOffEventModal({
         {/* Date + Time + Duration row */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Date</label>
+            <label htmlFor="oneoff-date" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Date</label>
             <input
+              id="oneoff-date"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -613,8 +617,9 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Start Time</label>
+            <label htmlFor="oneoff-start-time" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Start Time</label>
             <input
+              id="oneoff-start-time"
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
@@ -623,8 +628,9 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Duration (min)</label>
+            <label htmlFor="oneoff-duration" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Duration (min)</label>
             <input
+              id="oneoff-duration"
               type="number"
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(Math.max(5, parseInt(e.target.value) || 0))}
@@ -665,8 +671,9 @@ export function OneOffEventModal({
           {/* Conditional fields */}
           {recurrenceType === 'every_x_weeks' && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-slate-600">Every</span>
+              <label htmlFor="oneoff-interval-weeks" className="text-xs text-slate-600">Every</label>
               <input
+                id="oneoff-interval-weeks"
                 type="number"
                 value={intervalWeeks}
                 onChange={(e) => setIntervalWeeks(Math.max(2, parseInt(e.target.value) || 2))}
@@ -680,8 +687,9 @@ export function OneOffEventModal({
 
           {recurrenceType === 'for_x_sessions' && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-slate-600">Repeat for</span>
+              <label htmlFor="oneoff-session-count" className="text-xs text-slate-600">Repeat for</label>
               <input
+                id="oneoff-session-count"
                 type="number"
                 value={sessionCount}
                 onChange={(e) => setSessionCount(Math.max(2, parseInt(e.target.value) || 2))}
@@ -695,8 +703,9 @@ export function OneOffEventModal({
 
           {recurrenceType === 'until_date' && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-slate-600">Repeat until</span>
+              <label htmlFor="oneoff-until-date" className="text-xs text-slate-600">Repeat until</label>
               <input
+                id="oneoff-until-date"
                 type="date"
                 value={untilDate}
                 onChange={(e) => setUntilDate(e.target.value)}
