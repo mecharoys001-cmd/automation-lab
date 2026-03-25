@@ -14,6 +14,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
+    if (body.phone) {
+      const phone = String(body.phone).trim();
+      if (!/^[0-9\s\-()+]+$/.test(phone) || !/[0-9]/.test(phone)) {
+        return NextResponse.json({ error: 'Invalid phone format' }, { status: 400 });
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('instructors') as any)
       .update(body)

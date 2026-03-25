@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Instructor, Session, Venue, Program } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
-import { createClient } from '@/lib/supabase/client';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -75,8 +74,7 @@ export default function InstructorPortalPage() {
   const [viewFilter, setViewFilter] = useState<ViewFilter>('upcoming');
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch('/api/auth/signout', { method: 'POST' });
     router.push('/tools/scheduler/portal/login');
   }
 
@@ -89,17 +87,17 @@ export default function InstructorPortalPage() {
     setError('');
 
     try {
-      // Get logged-in user's email from Supabase auth
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
+      // Get logged-in user's email via server API (cookies are httpOnly)
+      const authRes = await fetch('/api/auth/me');
+      const authData = authRes.ok ? await authRes.json() : null;
+      if (!authData?.email) {
         setError('Unable to identify your account. Please log in again.');
         setLoading(false);
         return;
       }
 
       // Look up instructor by email
-      const instrRes = await fetch(`/api/instructors?email=${encodeURIComponent(user.email)}`);
+      const instrRes = await fetch(`/api/instructors?email=${encodeURIComponent(authData.email)}`);
       if (!instrRes.ok) {
         setError('Something went wrong. Please try again.');
         setLoading(false);

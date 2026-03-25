@@ -40,11 +40,18 @@ export interface InstructorEditModalProps {
   onSave: (data: InstructorFormData) => void;
   onDelete: (() => void) | null;
   onClose: () => void;
+  existingInstructors?: { id: string; first_name: string; last_name: string }[];
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
 const isValidEmail = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const isValidPhone = (v: string): boolean => {
+  const trimmed = v.trim();
+  if (!/^[0-9\s\-()+.]+$/.test(trimmed)) return false;
+  const digits = trimmed.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;
+};
 
 /* ── Component ─────────────────────────────────────────────── */
 
@@ -55,6 +62,7 @@ export function InstructorEditModal({
   onSave,
   onDelete,
   onClose,
+  existingInstructors = [],
 }: InstructorEditModalProps) {
   const { programs, selectedProgramId } = useProgram();
   const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
@@ -75,15 +83,30 @@ export function InstructorEditModal({
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+
+  // Duplicate name warning (non-blocking)
+  const duplicateName = isNew && form.first_name.trim() && form.last_name.trim()
+    ? existingInstructors.some(
+        (i) =>
+          i.first_name.toLowerCase() === form.first_name.trim().toLowerCase() &&
+          i.last_name.toLowerCase() === form.last_name.trim().toLowerCase()
+      )
+    : false;
 
   function setField<K extends keyof InstructorFormData>(key: K, value: InstructorFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === 'email') setEmailError('');
+    if (key === 'phone') setPhoneError('');
   }
 
   const validateAndSave = () => {
     if (form.email.trim() && !isValidEmail(form.email)) {
       setEmailError('Please enter a valid email address');
+      return;
+    }
+    if (form.phone.trim() && !isValidPhone(form.phone)) {
+      setPhoneError('Enter a valid phone number (7–15 digits, may include spaces, dashes, parentheses, dots, and +)');
       return;
     }
     onSave(form);
@@ -146,7 +169,7 @@ export function InstructorEditModal({
           <ModalButton
             variant="primary"
             onClick={validateAndSave}
-            disabled={saving || !form.first_name.trim() || !form.last_name.trim() || !!emailError}
+            disabled={saving || !form.first_name.trim() || !form.last_name.trim() || !!emailError || !!phoneError}
             loading={saving}
             icon={!saving ? <Save className="w-3.5 h-3.5" /> : undefined}
           >
@@ -158,7 +181,7 @@ export function InstructorEditModal({
       <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5">
         {/* First Name */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">First Name<span className="text-red-400 ml-0.5">*</span></label>
+          <label className="block text-sm font-semibold text-slate-500 mb-1.5">First Name<span className="text-red-400 ml-0.5">*</span></label>
           <Tooltip text="Staff member's first name" className="w-full">
             <input
               type="text"
@@ -166,6 +189,7 @@ export function InstructorEditModal({
               aria-required="true"
               value={form.first_name}
               onChange={(e) => setField('first_name', e.target.value)}
+              maxLength={100}
               placeholder="e.g. Sarah"
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
@@ -174,7 +198,7 @@ export function InstructorEditModal({
 
         {/* Last Name */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Last Name<span className="text-red-400 ml-0.5">*</span></label>
+          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Last Name<span className="text-red-400 ml-0.5">*</span></label>
           <Tooltip text="Staff member's last name" className="w-full">
             <input
               type="text"
@@ -182,39 +206,51 @@ export function InstructorEditModal({
               aria-required="true"
               value={form.last_name}
               onChange={(e) => setField('last_name', e.target.value)}
+              maxLength={100}
               placeholder="e.g. Johnson"
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
 
+        {/* Duplicate name warning */}
+        {duplicateName && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>A staff member with this name already exists. You can still save if this is intentional.</span>
+          </div>
+        )}
+
         {/* Email */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Email</label>
+          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Email</label>
           <Tooltip text="Contact email for this staff member" className="w-full">
             <input
               type="email"
               value={form.email}
               onChange={(e) => setField('email', e.target.value)}
+              maxLength={255}
               placeholder="sarah@example.com"
               className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${emailError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
-          {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+          {emailError && <p role="alert" className="text-xs text-red-500 mt-1">{emailError}</p>}
         </div>
 
         {/* Phone */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone</label>
+          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Phone</label>
           <Tooltip text="Contact phone number" className="w-full">
             <input
               type="tel"
               value={form.phone}
               onChange={(e) => setField('phone', e.target.value)}
+              maxLength={30}
               placeholder="(555) 123-4567"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${phoneError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
+          {phoneError && <p role="alert" className="text-xs text-red-500 mt-1">{phoneError}</p>}
         </div>
 
         {/* Event Type */}
@@ -233,11 +269,12 @@ export function InstructorEditModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Notes</label>
           <Tooltip text="Internal notes about this staff member" className="w-full">
             <textarea
               value={form.notes}
               onChange={(e) => setField('notes', e.target.value)}
+              maxLength={500}
               placeholder="Add notes about this staff member…"
               rows={3}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
@@ -267,7 +304,7 @@ export function InstructorEditModal({
         {/* Active Toggle — only shown when editing, not creating */}
         {!isNew && (
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Status</label>
+          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Status</label>
           <Tooltip text={form.is_active ? 'Staff member is active and can be scheduled' : 'Staff member is inactive and will not appear in scheduling'}>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input

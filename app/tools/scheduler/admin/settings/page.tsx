@@ -67,7 +67,7 @@ const cardClass =
 const cardBodyClass = `${cardClass} p-5`;
 const sectionTitleClass = 'text-base font-semibold text-slate-900';
 const sectionDescClass = 'text-[13px] text-slate-500 mt-0.5';
-const labelClass = 'block text-xs font-medium text-slate-500 mb-1';
+const labelClass = 'block text-sm font-medium text-slate-500 mb-1';
 const inputClass =
   'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
@@ -139,6 +139,10 @@ export default function SettingsPage() {
   const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
   const deletingRef = useRef(false);
 
+  // ---- Current user state (for RBAC + self-removal guard) ----
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [currentUserRoleLevel, setCurrentUserRoleLevel] = useState<RoleLevel | null>(null);
+
   // ---- Global save / dirty tracking ----
   const [toast, setToast] = useState<ToastState | null>(null);
 
@@ -181,6 +185,17 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchAdmins();
   }, [fetchAdmins]);
+
+  // Fetch current user's email and role level
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.google_email) setCurrentUserEmail(data.google_email);
+        if (data.role_level) setCurrentUserRoleLevel(data.role_level);
+      })
+      .catch(() => {});
+  }, []);
 
   // =========================================================================
   // Program handlers
@@ -319,7 +334,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`/api/admins?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete admin');
-      await fetchAdmins();
+      setAdmins((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : 'Failed to remove admin');
     } finally {
@@ -527,6 +542,7 @@ export default function SettingsPage() {
                     aria-required="true"
                     value={programForm.name}
                     onChange={(e) => setProgramForm((f) => ({ ...f, name: e.target.value }))}
+                    maxLength={100}
                     className={inputClass}
                     placeholder="e.g. Spring 2026"
                   />
@@ -560,7 +576,7 @@ export default function SettingsPage() {
               </div>
             </div>
             {programError && (
-              <p className="text-xs text-red-500 font-medium">{programError}</p>
+              <p role="alert" className="text-xs text-red-500 font-medium">{programError}</p>
             )}
             <div className="flex gap-2">
               <Tooltip text={editingProgramId ? 'Save changes to this program' : 'Create this program'}>
@@ -624,6 +640,7 @@ export default function SettingsPage() {
                         <Tooltip text="Edit program name and dates">
                           <button
                             onClick={() => startEditProgram(p)}
+                            aria-label={`Edit ${p.name}`}
                             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
                           >
                             <Pencil className="w-3 h-3" />
@@ -633,6 +650,7 @@ export default function SettingsPage() {
                         <Tooltip text="Permanently delete this program">
                           <button
                             onClick={() => deleteProgram(p.id)}
+                            aria-label={`Delete ${p.name}`}
                             className={btnDangerOutline}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -688,6 +706,7 @@ export default function SettingsPage() {
                     aria-required="true"
                     value={adminForm.google_email}
                     onChange={(e) => setAdminForm((f) => ({ ...f, google_email: e.target.value }))}
+                    maxLength={255}
                     className={inputClass}
                     placeholder="admin@example.com"
                   />
@@ -701,27 +720,31 @@ export default function SettingsPage() {
                     type="text"
                     value={adminForm.display_name}
                     onChange={(e) => setAdminForm((f) => ({ ...f, display_name: e.target.value }))}
+                    maxLength={100}
                     className={inputClass}
                     placeholder="Jane Doe"
                   />
                 </Tooltip>
               </div>
               <div>
-                <label className={labelClass}>Role</label>
+                <label htmlFor="scheduler-admin-role" className={labelClass}>Role</label>
                 <Tooltip text="Master admins can manage other admins and settings" position="bottom">
                   <select
+                    id="scheduler-admin-role"
                     value={adminForm.role_level}
                     onChange={(e) => setAdminForm((f) => ({ ...f, role_level: e.target.value as RoleLevel }))}
                     className={inputClass}
                   >
                     <option value="standard">Standard</option>
-                    <option value="master">Master</option>
+                    {currentUserRoleLevel === 'master' && (
+                      <option value="master">Master</option>
+                    )}
                   </select>
                 </Tooltip>
               </div>
             </div>
             {adminError && (
-              <p className="text-xs text-red-500 font-medium">{adminError}</p>
+              <p role="alert" className="text-xs text-red-500 font-medium">{adminError}</p>
             )}
             <div className="flex gap-2">
               <Tooltip text="Save this admin and grant access">
@@ -777,16 +800,29 @@ export default function SettingsPage() {
                       </span>
                     </td>
                     <td className={`${tdClass} text-right`}>
-                      <Tooltip text="Remove this admin's access">
-                        <button
-                          onClick={() => deleteAdmin(admin.id)}
-                          disabled={deletingAdminId === admin.id}
-                          className={btnDanger}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          {deletingAdminId === admin.id ? 'Removing...' : 'Remove'}
-                        </button>
-                      </Tooltip>
+                      {currentUserEmail && admin.google_email === currentUserEmail ? (
+                        <Tooltip text="You cannot remove yourself">
+                          <button
+                            disabled
+                            className={`${btnDanger} cursor-not-allowed`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Remove
+                          </button>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip text="Remove this admin's access">
+                          <button
+                            onClick={() => deleteAdmin(admin.id)}
+                            disabled={!!deletingAdminId}
+                            aria-label={`Remove ${admin.display_name || admin.google_email}`}
+                            className={btnDanger}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            {deletingAdminId === admin.id ? 'Removing...' : 'Remove'}
+                          </button>
+                        </Tooltip>
+                      )}
                     </td>
                   </tr>
                 ))}

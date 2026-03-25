@@ -720,7 +720,7 @@ function InstructorDetailModal({
               {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Make Inactive' : 'Activate'}
             </button>
           </Tooltip>
-          <Button variant="secondary" tooltip="Edit staff member profile" onClick={onEdit}>Edit</Button>
+          <Button variant="secondary" tooltip="Edit staff member profile" onClick={onEdit} aria-label={`Edit ${instructor.first_name} ${instructor.last_name}`}>Edit</Button>
         </>
       }
     >
@@ -949,8 +949,10 @@ function VenueCreateModal({
               type="text"
               id="venue-form-name"
               required
+              aria-required="true"
               value={form.name}
               onChange={(e) => setField('name', e.target.value)}
+              maxLength={100}
               placeholder="e.g. Main Stage"
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
@@ -1683,9 +1685,10 @@ export default function PeoplePage() {
                     </div>
 
                     {/* Edit Button */}
-                    <Tooltip text="Edit">
+                    <Tooltip text={`Edit ${inst.first_name} ${inst.last_name}`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditingInstructor(inst); }}
+                        aria-label={`Edit ${inst.first_name} ${inst.last_name}`}
                         className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <Edit2 className="w-3.5 h-3.5 text-slate-400" />
@@ -1806,9 +1809,10 @@ export default function PeoplePage() {
                   </div>
 
                   {/* Edit Button */}
-                  <Tooltip text="Edit">
+                  <Tooltip text={`Edit ${venue.name}`}>
                     <button
                       onClick={(e) => { e.stopPropagation(); setSelectedVenue(venue); }}
+                      aria-label={`Edit ${venue.name}`}
                       className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <Edit2 className="w-3.5 h-3.5 text-slate-400" />
@@ -1846,6 +1850,7 @@ export default function PeoplePage() {
           onSave={handleSaveInstructor}
           onDelete={editingInstructor ? handleDeleteInstructor : null}
           onClose={() => { setEditingInstructor(null); setShowCreateModal(false); }}
+          existingInstructors={allInstructors}
         />
       )}
 

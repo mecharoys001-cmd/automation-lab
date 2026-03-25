@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
@@ -124,34 +123,25 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Fetch the current authenticated user
+  // Fetch the current authenticated user via server API (cookies are httpOnly)
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-      console.log('[AdminLayout] authUser:', JSON.stringify(authUser, null, 2));
-      if (!authUser) return;
-      const fullName =
-        authUser.user_metadata?.full_name ||
-        authUser.user_metadata?.name ||
-        authUser.email?.split('@')[0] ||
-        'User';
-      console.log('[AdminLayout] fullName:', fullName);
-      const parts = fullName.trim().split(/\s+/);
-      const initials =
-        parts.length >= 2
-          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-          : fullName.slice(0, 2).toUpperCase();
-      console.log('[AdminLayout] initials:', initials);
-      const role = authUser.user_metadata?.role || 'Administrator';
-      const userObj = { name: fullName, initials, role };
-      console.log('[AdminLayout] setting user:', userObj);
-      setUser(userObj);
-    });
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.email) return;
+        const fullName = data.email.split('@')[0] || 'User';
+        const parts = fullName.trim().split(/\s+/);
+        const initials =
+          parts.length >= 2
+            ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            : fullName.slice(0, 2).toUpperCase();
+        const role = data.role_level || data.role || 'Administrator';
+        setUser({ name: fullName, initials, role });
+      });
   }, []);
 
   const handleLogout = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch('/api/auth/signout', { method: 'POST' });
     router.push('/tools/scheduler');
   }, [router]);
 

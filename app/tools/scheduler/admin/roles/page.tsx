@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
-import { createClient } from '@/lib/supabase/client';
 import {
   Plus,
   Pencil,
@@ -83,7 +82,7 @@ const emptyForm: UserFormData = { email: '', name: '', role: 'editor' };
 const cardBodyClass = 'rounded-lg border border-slate-200 bg-white shadow-sm p-5';
 const sectionTitleClass = 'text-base font-semibold text-slate-900';
 const sectionDescClass = 'text-[13px] text-slate-500 mt-0.5';
-const labelClass = 'block text-xs font-medium text-slate-500 mb-1';
+const labelClass = 'block text-sm font-medium text-slate-500 mb-1';
 const inputClass =
   'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
@@ -214,10 +213,11 @@ export default function RolesPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setCurrentUserEmail(user.email.toLowerCase());
-    });
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.email) setCurrentUserEmail(data.email.toLowerCase());
+      });
   }, []);
 
   // =========================================================================
@@ -480,6 +480,7 @@ export default function RolesPage() {
             <Tooltip key={role} text={isActive ? 'Click to clear filter' : `Filter by ${meta.label}`}>
               <button
                 onClick={() => setRoleFilter(isActive ? null : role)}
+                aria-pressed={isActive}
                 className={`w-full rounded-lg border px-3 py-2.5 flex items-center gap-2.5 cursor-pointer transition-colors text-left ${
                   isActive
                     ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
@@ -618,6 +619,7 @@ export default function RolesPage() {
                             <Tooltip text="Change this user's role">
                               <button
                                 onClick={() => startEdit(user)}
+                                aria-label={`Edit ${user.name}`}
                                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
                               >
                                 <Pencil className="w-3 h-3" />
@@ -628,6 +630,7 @@ export default function RolesPage() {
                               <button
                                 onClick={() => !isSelf && setRemoveUser(user)}
                                 disabled={isSelf}
+                                aria-label={`Remove ${user.name}`}
                                 className={`${btnDanger} ${isSelf ? 'opacity-40 cursor-not-allowed' : ''}`}
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -709,7 +712,7 @@ export default function RolesPage() {
               </div>
 
               {formError && (
-                <p className="text-xs text-red-500 font-medium">{formError}</p>
+                <p role="alert" className="text-xs text-red-500 font-medium">{formError}</p>
               )}
             </div>
 

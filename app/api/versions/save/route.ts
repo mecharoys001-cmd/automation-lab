@@ -51,12 +51,28 @@ export async function POST(request: NextRequest) {
       (v: { version_number: number }) => v.version_number
     );
 
+    const allowOverwrite = searchParams.get('allow_overwrite') === 'true';
+
     let nextSlot: number;
     if (usedSlots.length < 5) {
       // Find first unused slot 1-5
       nextSlot = [1, 2, 3, 4, 5].find((n) => !usedSlots.includes(n)) ?? 1;
+    } else if (!allowOverwrite) {
+      // All 5 slots used and overwrite not explicitly allowed
+      const sorted = [...(existing ?? [])].sort(
+        (a: { created_at: string }, b: { created_at: string }) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      return NextResponse.json(
+        {
+          error: `All 5 version slots for ${year} are full. The oldest version (v${sorted[0].version_number}) would be overwritten.`,
+          code: 'SLOTS_FULL',
+          oldest_version_number: sorted[0].version_number,
+        },
+        { status: 409 }
+      );
     } else {
-      // All 5 slots used — overwrite the oldest
+      // All 5 slots used — overwrite the oldest (explicitly allowed)
       const sorted = [...(existing ?? [])].sort(
         (a: { created_at: string }, b: { created_at: string }) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()

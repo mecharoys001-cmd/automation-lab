@@ -478,14 +478,14 @@ export function OneOffEventModal({
       <div className="px-6 pb-4 pt-2 space-y-4">
         {/* Error banner */}
         {formError && (
-          <div className="px-3 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-medium">
+          <div role="alert" className="px-3 py-2 rounded-lg bg-red-50 text-red-700 text-xs font-medium">
             {formError}
           </div>
         )}
 
         {/* Event Name */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
             Event Name <span className="text-red-400">*</span>
           </label>
           <input
@@ -502,7 +502,7 @@ export function OneOffEventModal({
         {/* Event Type Tag + Instructor row */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Event Type</label>
+            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Event Type</label>
             <select
               value={subjectTagId}
               onChange={(e) => setSubjectTagId(e.target.value)}
@@ -523,7 +523,7 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Staff</label>
+            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Staff</label>
             <select
               value={instructorId}
               onChange={(e) => setInstructorId(e.target.value)}
@@ -547,7 +547,7 @@ export function OneOffEventModal({
 
         {/* Venue */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue <span className="text-red-400">*</span></label>
+          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Venue <span className="text-red-400">*</span></label>
           <select
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
@@ -574,7 +574,7 @@ export function OneOffEventModal({
 
         {/* Grade Groups */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grade Groups</label>
+          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Grade Groups</label>
           <div className="flex flex-wrap gap-1.5">
             {GRADE_OPTIONS.map((g) => {
               const selected = gradeGroups.includes(g);
@@ -582,6 +582,9 @@ export function OneOffEventModal({
                 <button
                   key={g}
                   type="button"
+                  role="checkbox"
+                  aria-checked={selected}
+                  aria-label={`Grade ${g}`}
                   onClick={() => toggleGrade(g)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
                     selected
@@ -599,7 +602,7 @@ export function OneOffEventModal({
         {/* Date + Time + Duration row */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</label>
+            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Date</label>
             <input
               type="date"
               value={date}
@@ -609,7 +612,7 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
+            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
             <input
               type="time"
               value={startTime}
@@ -619,7 +622,7 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration (min)</label>
+            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Duration (min)</label>
             <input
               type="number"
               value={durationMinutes}
@@ -634,7 +637,7 @@ export function OneOffEventModal({
 
         {/* Recurrence (hidden in edit mode — only applies to new events) */}
         {!editEvent && <div className="space-y-2">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
+          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
           <div className="flex flex-wrap gap-1.5">
             {([
               ['none', 'One-time only'],
@@ -736,6 +739,9 @@ export function OneOffEventModal({
                         <button
                           key={instr.id}
                           type="button"
+                          role="checkbox"
+                          aria-checked={selected}
+                          aria-label={`${instr.first_name} ${instr.last_name}`}
                           onClick={() =>
                             setRotationInstructorIds((prev) =>
                               selected

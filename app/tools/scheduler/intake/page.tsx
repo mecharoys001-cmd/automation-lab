@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { AvailabilityJson, DayOfWeek } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
 
@@ -100,6 +101,17 @@ interface FormErrors {
 // ── Component ──────────────────────────────────────────────
 
 export default function IntakePage() {
+  return (
+    <Suspense fallback={<div className="dark min-h-screen bg-background text-foreground flex items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>}>
+      <IntakeForm />
+    </Suspense>
+  );
+}
+
+function IntakeForm() {
+  const searchParams = useSearchParams();
+  const urlProgramId = searchParams.get('program_id');
+
   const [form, setForm] = useState<FormData>({
     first_name: '',
     last_name: '',
@@ -127,15 +139,16 @@ export default function IntakePage() {
       .then((res) => res.json())
       .then((data) => {
         const programs = data.programs ?? [];
-        const validProgram = programs.find(
-          (p: { id: string; start_date?: string; end_date?: string }) => p.start_date && p.end_date
-        );
-        if (validProgram) {
+        // If a program_id was provided in the URL, use that; otherwise fall back to first valid
+        const targetProgram = urlProgramId
+          ? programs.find((p: { id: string; start_date?: string; end_date?: string }) => p.id === urlProgramId && p.start_date && p.end_date)
+          : programs.find((p: { id: string; start_date?: string; end_date?: string }) => p.start_date && p.end_date);
+        if (targetProgram) {
           setHasProgram(true);
-          setProgramId(validProgram.id);
+          setProgramId(targetProgram.id);
 
           // Fetch event types scoped to this program
-          fetch(`/api/tags?program_id=${validProgram.id}`)
+          fetch(`/api/tags?program_id=${targetProgram.id}`)
             .then((res) => res.json())
             .then((tagData) => {
               const tags: SubjectTag[] = (tagData.tags ?? []).filter(
@@ -155,7 +168,7 @@ export default function IntakePage() {
         setSubjectsLoading(false);
       })
       .finally(() => setProgramLoading(false));
-  }, []);
+  }, [urlProgramId]);
 
   // Drag-to-paint state for availability grid
   const isDragging = useRef(false);
@@ -358,7 +371,8 @@ export default function IntakePage() {
   // ── Form ───────────────────────────────────────────────
 
   return (
-    <div
+    <main
+      role="main"
       className="dark min-h-screen bg-background text-foreground"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -384,7 +398,7 @@ export default function IntakePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} role="form" noValidate>
           {/* ── Contact Information ─────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
             <h2 className="text-lg font-semibold mb-4">Contact Information</h2>
@@ -399,6 +413,7 @@ export default function IntakePage() {
                   <input
                     id="first_name"
                     type="text"
+                    required
                     value={form.first_name}
                     onChange={handleFieldChange('first_name')}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -419,6 +434,7 @@ export default function IntakePage() {
                   <input
                     id="last_name"
                     type="text"
+                    required
                     value={form.last_name}
                     onChange={handleFieldChange('last_name')}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -439,6 +455,7 @@ export default function IntakePage() {
                   <input
                     id="email"
                     type="email"
+                    required
                     value={form.email}
                     onChange={handleFieldChange('email')}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -663,6 +680,6 @@ export default function IntakePage() {
           </div>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

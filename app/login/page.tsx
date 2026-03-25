@@ -3,11 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,12 +17,24 @@ export default function LoginPage() {
   async function handleGoogle() {
     setOauthLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + '/auth/callback' },
-    })
-    if (error) {
-      setError(error.message)
+    try {
+      const res = await fetch('/api/auth/oauth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'google',
+          redirectTo: window.location.origin + '/auth/callback',
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        setError(data.error || 'OAuth failed')
+        setOauthLoading(false)
+        return
+      }
+      window.location.href = data.url
+    } catch {
+      setError('Something went wrong. Please try again.')
       setOauthLoading(false)
     }
   }
@@ -32,28 +42,48 @@ export default function LoginPage() {
   async function handleSignIn() {
     setLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Sign in failed')
+        setLoading(false)
+      } else {
+        router.push('/tools')
+      }
+    } catch {
+      setError('Something went wrong. Please try again.')
       setLoading(false)
-    } else {
-      router.push('/tools')
     }
   }
 
   async function handleSignUp() {
     setLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin + '/auth/callback' },
-    })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      setSignUpSuccess(true)
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          redirectTo: window.location.origin + '/auth/callback',
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Sign up failed')
+        setLoading(false)
+      } else {
+        setSignUpSuccess(true)
+        setLoading(false)
+      }
+    } catch {
+      setError('Something went wrong. Please try again.')
       setLoading(false)
     }
   }

@@ -59,6 +59,7 @@ export default function VersionsPage() {
   const [publishing, setPublishing] = useState(false);
   const [revertingId, setRevertingId] = useState<string | null>(null);
   const [confirmRevert, setConfirmRevert] = useState<VersionSummary | null>(null);
+  const [confirmOverwrite, setConfirmOverwrite] = useState<{ action: 'draft' | 'published'; oldestVersion: number } | null>(null);
 
   const fetchVersions = useCallback(async () => {
     setLoading(true);
@@ -102,56 +103,50 @@ export default function VersionsPage() {
     return () => clearInterval(interval);
   }, [year, fetchVersions]);
 
-  // ── Save Draft ─────────────────────────────────────────────
-  const handleSaveDraft = async () => {
-    setSaving(true);
+  // ── Save (shared logic) ────────────────────────────────────
+  const handleSave = async (status: 'draft' | 'published', allowOverwrite = false) => {
+    const isSaveDraft = status === 'draft';
+    if (isSaveDraft) setSaving(true); else setPublishing(true);
     try {
-      const res = await fetch(`/api/versions/save?year=${year}`, {
+      const url = `/api/versions/save?year=${year}${allowOverwrite ? '&allow_overwrite=true' : ''}`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'draft' }),
+        body: JSON.stringify({ status }),
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to save draft');
+        if (data.code === 'SLOTS_FULL') {
+          // Show confirmation modal instead of error
+          setConfirmOverwrite({ action: status, oldestVersion: data.oldest_version_number });
+          return;
+        }
+        throw new Error(data.error || `Failed to ${isSaveDraft ? 'save draft' : 'publish'}`);
       }
-      setToast({ message: 'Draft saved successfully', type: 'success', id: Date.now() });
+      setToast({
+        message: isSaveDraft ? 'Draft saved successfully' : 'Schedule published and saved',
+        type: 'success',
+        id: Date.now(),
+      });
       await fetchVersions();
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : 'Save failed',
+        message: err instanceof Error ? err.message : `${isSaveDraft ? 'Save' : 'Publish'} failed`,
         type: 'error',
         id: Date.now(),
       });
     } finally {
-      setSaving(false);
+      if (isSaveDraft) setSaving(false); else setPublishing(false);
     }
   };
 
-  // ── Publish ────────────────────────────────────────────────
-  const handlePublish = async () => {
-    setPublishing(true);
-    try {
-      const res = await fetch(`/api/versions/save?year=${year}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'published' }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to publish');
-      }
-      setToast({ message: 'Schedule published and saved', type: 'success', id: Date.now() });
-      await fetchVersions();
-    } catch (err) {
-      setToast({
-        message: err instanceof Error ? err.message : 'Publish failed',
-        type: 'error',
-        id: Date.now(),
-      });
-    } finally {
-      setPublishing(false);
-    }
+  const handleSaveDraft = () => handleSave('draft');
+  const handlePublish = () => handleSave('published');
+
+  const handleConfirmOverwrite = async () => {
+    if (!confirmOverwrite) return;
+    setConfirmOverwrite(null);
+    await handleSave(confirmOverwrite.action, true);
   };
 
   // ── Revert ─────────────────────────────────────────────────
@@ -420,6 +415,43 @@ export default function VersionsPage() {
 
       {/* Toast */}
       {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Overwrite Confirmation Modal */}
+      <Modal
+        open={!!confirmOverwrite}
+        onClose={() => setConfirmOverwrite(null)}
+        title="All version slots are full"
+        width={480}
+        footer={
+          confirmOverwrite ? (
+            <>
+              <ModalButton variant="secondary" onClick={() => setConfirmOverwrite(null)}>
+                Cancel
+              </ModalButton>
+              <ModalButton
+                variant="danger"
+                onClick={handleConfirmOverwrite}
+              >
+                Overwrite Oldest Version
+              </ModalButton>
+            </>
+          ) : undefined
+        }
+      >
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            All 5 version slots for {year} are in use. Saving will <strong>permanently overwrite</strong> the
+            oldest version (v{confirmOverwrite?.oldestVersion}).
+          </p>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <strong>This cannot be undone.</strong> If you need to keep all existing versions, consider
+              deleting one first or choosing a different year.
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       {/* Revert Confirmation Modal */}
       <Modal

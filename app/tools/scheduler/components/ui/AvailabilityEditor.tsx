@@ -148,6 +148,8 @@ export function AvailabilityEditor({
       <div className="overflow-x-auto">
         <div className="min-w-[400px] select-none">
           <div
+            role="grid"
+            aria-label="Weekly availability grid"
             className="grid gap-px rounded-lg border border-slate-200 overflow-hidden"
             style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}
           >
@@ -178,9 +180,19 @@ export function AvailabilityEditor({
                   return (
                     <div
                       key={`${d.key}-${hour}`}
+                      role="gridcell"
+                      tabIndex={0}
+                      aria-label={`${d.short} ${formatHourLabel(hour)} — ${active ? 'available' : 'unavailable'}`}
+                      aria-pressed={active}
                       onMouseDown={() => handleMouseDown(d.key, hour)}
                       onMouseEnter={() => handleMouseEnter(d.key, hour)}
-                      className={`h-6 border-t border-l border-slate-200 cursor-pointer transition-colors ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleCell(d.key, hour);
+                        }
+                      }}
+                      className={`h-6 border-t border-l border-slate-200 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset outline-none ${
                         active ? 'bg-emerald-500/40 hover:bg-emerald-500/60' : 'bg-slate-50 hover:bg-emerald-100'
                       }`}
                     />

@@ -1,14 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { withSecureCookies } from '@/lib/supabase/cookie-options'
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/tools'
+export async function POST(request: Request) {
+  try {
+    const { email, password } = await request.json()
 
-  if (code) {
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    }
+
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,9 +28,15 @@ export async function GET(request: NextRequest) {
         },
       }
     )
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) return NextResponse.redirect(`${origin}${next}`)
-  }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
