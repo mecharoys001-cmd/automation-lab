@@ -118,6 +118,8 @@ function IntakeForm() {
     email: '',
     phone: '',
   });
+  // Honeypot field — invisible to humans, bots auto-fill it
+  const [honeypot, setHoneypot] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<FormErrors>({});
@@ -293,6 +295,12 @@ function IntakeForm() {
       e.preventDefault();
       if (!validate()) return;
 
+      // Honeypot check — silently "succeed" if a bot filled the hidden field
+      if (honeypot) {
+        setSubmitState('success');
+        return;
+      }
+
       setSubmitState('loading');
       setSubmitError('');
 
@@ -330,6 +338,7 @@ function IntakeForm() {
 
   const resetForm = useCallback(() => {
     setForm({ first_name: '', last_name: '', email: '', phone: '' });
+    setHoneypot('');
     setSelectedSkills(new Set());
     setSelectedSlots(new Set());
     setErrors({});
@@ -399,6 +408,20 @@ function IntakeForm() {
         )}
 
         <form onSubmit={handleSubmit} role="form" noValidate>
+          {/* Honeypot — hidden from humans, caught by bots */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
+
           {/* ── Contact Information ─────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
             <h2 className="text-lg font-semibold mb-4">Contact Information</h2>

@@ -6,9 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from '../seed/default-tags';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,6 +39,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const body = await request.json();
 

@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { runScheduler } from '@/lib/scheduler';
+import { requireAdmin } from '@/lib/api-auth';
 
 export const maxDuration = 60;
 
@@ -34,6 +35,9 @@ function createServiceClient() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     // Parse request body
     const body = await request.json();
     const { program_id, year, day_start_time, day_end_time } = body;

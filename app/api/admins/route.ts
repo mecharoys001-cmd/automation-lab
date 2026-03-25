@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,6 +29,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+    const masterCheck = requireMasterAdmin(auth.user);
+    if (masterCheck) return masterCheck;
+
     const supabase = createServiceClient();
     const body = await request.json();
 
@@ -42,6 +51,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log(JSON.stringify({
+      audit: 'admin_role_change',
+      action: 'create',
+      email: body.google_email,
+      role_level: body.role_level ?? 'standard',
+      display_name: body.display_name ?? null,
+      admin_id: data.id,
+      timestamp: new Date().toISOString(),
+    }));
+
     return NextResponse.json({ admin: data }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
@@ -53,6 +72,11 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+    const masterCheck = requireMasterAdmin(auth.user);
+    if (masterCheck) return masterCheck;
+
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -74,6 +98,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log(JSON.stringify({
+      audit: 'admin_role_change',
+      action: 'update',
+      admin_id: id,
+      changes: body,
+      timestamp: new Date().toISOString(),
+    }));
+
     return NextResponse.json({ admin: data });
   } catch (err) {
     return NextResponse.json(
@@ -85,6 +117,11 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+    const masterCheck = requireMasterAdmin(auth.user);
+    if (masterCheck) return masterCheck;
+
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -92,6 +129,13 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'Missing admin id' }, { status: 400 });
     }
+
+    // Fetch admin details before deletion for audit trail
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('admins') as any)
+      .select('google_email, role_level, display_name')
+      .eq('id', id)
+      .maybeSingle();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('admins') as any)
@@ -101,6 +145,15 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    console.log(JSON.stringify({
+      audit: 'admin_role_change',
+      action: 'delete',
+      admin_id: id,
+      email: existing?.google_email ?? null,
+      role_level: existing?.role_level ?? null,
+      timestamp: new Date().toISOString(),
+    }));
 
     return NextResponse.json({ success: true });
   } catch (err) {

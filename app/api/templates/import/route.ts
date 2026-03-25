@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { requireAdmin } from '@/lib/api-auth';
 
 const DAY_MAP: Record<string, number> = {
   sunday: 0, sun: 0,
@@ -64,6 +65,9 @@ function timeDiffMinutes(start: string, end: string): number {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { rows, program_id } = (await request.json()) as {
       rows: TemplateRow[];

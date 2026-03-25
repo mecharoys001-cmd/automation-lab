@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, availabilityCoversWindow, toTimeWindow, dayIndexToName, parseDate } from '@/lib/scheduler/utils';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const supabase = createServiceClient();
     const body = await request.json();
@@ -239,6 +243,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const supabase = createServiceClient();
 

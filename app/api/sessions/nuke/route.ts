@@ -10,9 +10,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 

@@ -30,12 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Analytics is non-critical — fail gracefully so it never blocks the app
-    try {
-      const svc = createServiceClient();
+    // Return immediately — analytics must never block the app
+    // Fire-and-forget: don't await the insert
+    const svc = createServiceClient();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (svc.from('analytics_events') as any).insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (svc.from('analytics_events') as any)
+      .insert({
         user_id: user.id,
         user_email: user.email,
         session_id,
@@ -45,21 +46,15 @@ export async function POST(request: NextRequest) {
         element_text: element_text || null,
         user_agent: request.headers.get('user-agent') || null,
         metadata: metadata || {},
+      })
+      .then(({ error }: { error: unknown }) => {
+        if (error) console.error('[analytics] Insert failed:', error);
+      })
+      .catch((err: unknown) => {
+        console.error('[analytics] Unexpected error:', err);
       });
 
-      if (error) {
-        console.error('[analytics] Failed to insert event:', error.message);
-      } else {
-        // Cleanup: delete events older than 30 days (run opportunistically)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (svc.from('analytics_events') as any)
-          .delete()
-          .lt('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-      }
-    } catch (analyticsErr) {
-      console.error('[analytics] Unexpected error:', analyticsErr);
-    }
-
+    // Return immediately
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

@@ -14,6 +14,9 @@ interface ProgramContextValue {
   updateWizardState: (wizardCompleted: boolean, wizardStep: number) => Promise<void>;
 }
 
+// Intentional: program ID is stored in localStorage to persist the user's
+// selected program across page reloads. This is non-sensitive data (a UUID)
+// and is validated against the fetched programs list before use.
 const STORAGE_KEY = 'symphonix-selected-program';
 
 const ProgramContext = createContext<ProgramContextValue>({

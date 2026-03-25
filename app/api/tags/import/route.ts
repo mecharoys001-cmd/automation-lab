@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin } from '@/lib/api-auth';
 
 interface TagRow {
   name: string;
@@ -13,6 +14,9 @@ const isValidHex = (v: string): boolean => /^#[0-9A-Fa-f]{6}$/.test(v.trim());
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { rows: rawRows, program_id } = (await request.json()) as { rows: Record<string, any>[]; program_id?: string };

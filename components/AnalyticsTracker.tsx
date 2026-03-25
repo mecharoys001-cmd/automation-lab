@@ -14,6 +14,41 @@ function getSessionId(): string {
   return sid;
 }
 
+// Batch queue for analytics events
+let eventQueue: Array<{
+  event_type: 'page_view' | 'button_click' | 'form_submit';
+  page_path: string;
+  element_id?: string;
+  element_text?: string;
+  metadata?: Record<string, unknown>;
+}> = [];
+let flushTimer: NodeJS.Timeout | null = null;
+
+function flushEvents() {
+  if (eventQueue.length === 0) return;
+  
+  const sessionId = getSessionId();
+  if (!sessionId) return;
+
+  // Send all events in a single batch
+  const batch = eventQueue.splice(0, eventQueue.length);
+  
+  // For batching, we send them individually but fire-and-forget
+  // Could be optimized further with a batch endpoint
+  batch.forEach((event) => {
+    const payload = JSON.stringify({ session_id: sessionId, ...event });
+    const sent = navigator.sendBeacon?.('/api/analytics/track', new Blob([payload], { type: 'application/json' }));
+    if (!sent) {
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(() => { /* silent fail */ });
+    }
+  });
+}
+
 function trackEvent(event: {
   event_type: 'page_view' | 'button_click' | 'form_submit';
   page_path: string;
@@ -21,20 +56,31 @@ function trackEvent(event: {
   element_text?: string;
   metadata?: Record<string, unknown>;
 }) {
-  const sessionId = getSessionId();
-  if (!sessionId) return;
-
-  // Use sendBeacon for reliability, fall back to fetch
-  const payload = JSON.stringify({ session_id: sessionId, ...event });
-  const sent = navigator.sendBeacon?.('/api/analytics/track', new Blob([payload], { type: 'application/json' }));
-  if (!sent) {
-    fetch('/api/analytics/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-      keepalive: true,
-    }).catch(() => { /* silent fail - analytics should never break the app */ });
+  // Batch clicks and form submits, but send page views immediately
+  if (event.event_type === 'page_view') {
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+    const payload = JSON.stringify({ session_id: sessionId, ...event });
+    const sent = navigator.sendBeacon?.('/api/analytics/track', new Blob([payload], { type: 'application/json' }));
+    if (!sent) {
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(() => { /* silent fail */ });
+    }
+    return;
   }
+
+  // Queue other events and flush after 2 seconds of inactivity
+  eventQueue.push(event);
+  
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = setTimeout(() => {
+    flushEvents();
+    flushTimer = null;
+  }, 2000);
 }
 
 export default function AnalyticsTracker() {

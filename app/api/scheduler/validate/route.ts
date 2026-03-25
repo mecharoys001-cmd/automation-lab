@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin } from '@/lib/api-auth';
 
 export interface ValidationCheck {
   label: string;
@@ -30,6 +31,9 @@ export interface ValidationResult {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const programId = request.nextUrl.searchParams.get('program_id');
 
     if (!programId) {

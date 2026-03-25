@@ -25,12 +25,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { ScheduleSnapshot } from '@/types/database';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const supabase = createServiceClient();
 

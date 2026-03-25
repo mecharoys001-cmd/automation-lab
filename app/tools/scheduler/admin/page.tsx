@@ -44,6 +44,7 @@ import type { CalendarView } from '../components/ui/ViewToggle';
 import { ReadinessWidget } from '../components/ui/ReadinessWidget';
 import { SchedulerResultModal } from '../components/modals/SchedulerResultModal';
 import { Modal, ModalButton } from '../components/ui/Modal';
+import { requestCache } from '@/lib/requestCache';
 
 // ---------------------------------------------------------------------------
 // Convert 12-hour display time ('9:00 AM') to 24-hour format ('09:00')
@@ -204,27 +205,33 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
 // Helpers — filter
 // ---------------------------------------------------------------------------
 
-/** Check if an event matches the active filters */
-function eventMatchesFilters(event: CalendarEvent, filters: ActiveFilters): boolean {
+/** Normalize filters for fast comparison (memoize this externally) */
+function normalizeFilters(filters: ActiveFilters): Map<string, Set<string>> {
+  const normalized = new Map<string, Set<string>>();
   for (const [key, values] of Object.entries(filters)) {
-    if (values.length === 0) continue;
+    if (values.length > 0) {
+      normalized.set(key, new Set(values.map((v) => v.toLowerCase().trim())));
+    }
+  }
+  return normalized;
+}
 
-    // Case-insensitive comparison helper
-    const lowerValues = values.map((v) => v.toLowerCase().trim());
-
+/** Check if an event matches the active filters (optimized with pre-normalized filters) */
+function eventMatchesFilters(event: CalendarEvent, normalizedFilters: Map<string, Set<string>>): boolean {
+  for (const [key, lowerValues] of normalizedFilters) {
     if (key === 'instructor') {
-      if (!lowerValues.includes(event.instructor.toLowerCase().trim())) return false;
+      if (!lowerValues.has(event.instructor.toLowerCase().trim())) return false;
     } else if (key === 'venue') {
-      if (!event.venue || !lowerValues.includes(event.venue.toLowerCase().trim())) return false;
+      if (!event.venue || !lowerValues.has(event.venue.toLowerCase().trim())) return false;
     } else if (key === 'status') {
-      if (!event.status || !lowerValues.includes(event.status.toLowerCase().trim())) return false;
+      if (!event.status || !lowerValues.has(event.status.toLowerCase().trim())) return false;
     } else if (key === 'grade') {
-      if (!event.gradeLevel || !lowerValues.includes(event.gradeLevel.toLowerCase().trim())) return false;
+      if (!event.gradeLevel || !lowerValues.has(event.gradeLevel.toLowerCase().trim())) return false;
     } else if (key === 'eventType') {
-      if (!lowerValues.includes(event.type.toLowerCase().trim())) return false;
+      if (!lowerValues.has(event.type.toLowerCase().trim())) return false;
     } else if (key === 'tags' || key.startsWith('tag_')) {
       // Tag category filter: check if event has ANY of the selected tags
-      if (!event.tags || !event.tags.some((t) => lowerValues.includes(t.toLowerCase().trim()))) return false;
+      if (!event.tags || !event.tags.some((t) => lowerValues.has(t.toLowerCase().trim()))) return false;
     }
   }
   return true;
@@ -529,11 +536,13 @@ function CalendarDashboard() {
   }, [searchParams]);
 
   // Filter events based on active selections
+  // Memoize normalized filters to avoid repeated toLowerCase/trim calls
+  const normalizedFilters = useMemo(() => normalizeFilters(activeFilters), [activeFilters]);
+
   const filteredEvents = useMemo(() => {
-    const anyActive = Object.values(activeFilters).some((v) => v.length > 0);
-    if (!anyActive) return events;
-    return events.filter((event) => eventMatchesFilters(event, activeFilters));
-  }, [activeFilters, events]);
+    if (normalizedFilters.size === 0) return events;
+    return events.filter((event) => eventMatchesFilters(event, normalizedFilters));
+  }, [normalizedFilters, events]);
 
   const activeFilterSummary = useMemo(() => {
     const parts: string[] = [];
@@ -899,20 +908,16 @@ function CalendarDashboard() {
     };
   }, [fetchSessions]);
 
-  // Fetch dynamic filter options from API
+  // Fetch dynamic filter options from API with deduplication and caching
   const fetchFilterOptions = useCallback(async () => {
     if (!selectedProgramId) return;
     
     try {
-      const [instRes, venueRes, tagRes] = await Promise.all([
-        fetch(`/api/instructors?program_id=${selectedProgramId}`),
-        fetch(`/api/venues?program_id=${selectedProgramId}`),
-        fetch(`/api/tags?program_id=${selectedProgramId}`),
-      ]);
+      // Use request cache to prevent duplicate concurrent requests
       const [instData, venueData, tagData] = await Promise.all([
-        instRes.json(),
-        venueRes.json(),
-        tagRes.json(),
+        requestCache.fetch<{ instructors: { id: string; first_name: string; last_name: string }[] }>(`/api/instructors?program_id=${selectedProgramId}`, {}, 10000),
+        requestCache.fetch<{ venues: { id: string; name: string }[] }>(`/api/venues?program_id=${selectedProgramId}`, {}, 10000),
+        requestCache.fetch<{ tags: { id: string; name: string; category: string | null; emoji?: string | null }[] }>(`/api/tags?program_id=${selectedProgramId}`, {}, 10000),
       ]);
       setFilterOptions({
         instructors: instData.instructors || [],

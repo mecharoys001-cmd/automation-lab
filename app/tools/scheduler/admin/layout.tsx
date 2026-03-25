@@ -2,10 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
-import { OnboardingChecklist } from '../components/OnboardingChecklist';
+
+const OnboardingChecklist = dynamic(
+  () => import('../components/OnboardingChecklist').then((m) => m.OnboardingChecklist),
+  { ssr: false }
+);
 import {
   CalendarDays,
   LayoutDashboard,

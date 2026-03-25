@@ -12,11 +12,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { availabilityCoversWindow, toTimeWindow, parseDate } from '@/lib/scheduler/utils';
+import { requireAdmin } from '@/lib/api-auth';
 
 const MAX_BATCH_SIZE = 5000;
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const body = await request.json();
     const { assignments } = body;
 
