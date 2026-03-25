@@ -27,9 +27,7 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
       const encoded = encodeShareData(data, fileName);
       const url = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
       
-      // Update URL without reload
-      history.replaceState(null, "", `#d=${encoded}`);
-      
+      // Copy link without changing the current page URL
       await navigator.clipboard.writeText(url);
       setShareStatus("copied");
       setTimeout(() => setShareStatus("idle"), 3000);
