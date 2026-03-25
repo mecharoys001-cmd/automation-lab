@@ -775,6 +775,7 @@ function TableView({
                         onClick={() => onEdit(t.id)}
                         className="p-1.5 rounded hover:bg-slate-100 transition-colors"
                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                        aria-label={`Edit ${t.name || 'template'}`}
                       >
                         <Pencil className="w-4 h-4 text-slate-700" />
                       </button>
@@ -786,6 +787,7 @@ function TableView({
                         onClick={() => onDelete(t.id)}
                         className="p-1.5 rounded hover:bg-red-50 transition-colors"
                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                        aria-label={`Delete ${t.name || 'template'}`}
                       >
                         <Trash2 className="w-4 h-4 text-red-700" />
                       </button>
@@ -879,6 +881,7 @@ function DraggableView({
                       onDragStart={(e) => e.stopPropagation()}
                       draggable={false}
                       className="p-1 rounded hover:bg-white/30 text-slate-600 hover:text-blue-400 transition-colors cursor-pointer"
+                      aria-label={`Edit ${item.name}`}
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>

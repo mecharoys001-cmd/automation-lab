@@ -20,15 +20,28 @@ interface Props {
 export default function Dashboard({ data, fileName, onReset }: Props) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "shortening" | "copied" | "error">("idle");
 
   const shareReport = useCallback(async () => {
     try {
+      setShareStatus("shortening");
       const encoded = encodeShareData(data, fileName);
-      const url = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
+      const longUrl = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
       
-      // Copy link without changing the current page URL
-      await navigator.clipboard.writeText(url);
+      // Shorten via TinyURL (free, no auth)
+      let shortUrl: string;
+      try {
+        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        if (res.ok) {
+          shortUrl = await res.text();
+        } else {
+          shortUrl = longUrl; // Fallback to long URL
+        }
+      } catch {
+        shortUrl = longUrl; // Fallback if TinyURL is down
+      }
+      
+      await navigator.clipboard.writeText(shortUrl);
       setShareStatus("copied");
       setTimeout(() => setShareStatus("idle"), 3000);
     } catch (err) {
@@ -122,14 +135,19 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
               ? "bg-emerald-600"
               : shareStatus === "error"
               ? "bg-red-600"
+              : shareStatus === "shortening"
+              ? "bg-purple-500 cursor-wait"
               : "bg-purple-600 hover:bg-purple-700"
           }`}
+          disabled={shareStatus === "shortening"}
           title="Copy a shareable link with full interactive dashboard"
         >
           {shareStatus === "copied"
             ? "✅ Link Copied!"
             : shareStatus === "error"
             ? "❌ Failed to copy"
+            : shareStatus === "shortening"
+            ? "⏳ Shortening..."
             : "🔗 Share Interactive Link"}
         </button>
         <button
