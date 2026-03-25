@@ -183,7 +183,7 @@ export function Modal({
           <div>
             <h2 id="modal-title" className="text-xl font-bold text-slate-900">{title}</h2>
             {subtitle && (
-              <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>
+              <p className="text-sm text-slate-600 mt-0.5">{subtitle}</p>
             )}
           </div>
           <Tooltip text="Close">
@@ -192,7 +192,7 @@ export function Modal({
               className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
               aria-label="Close modal"
             >
-              <X className="w-4 h-4 text-slate-500" />
+              <X className="w-4 h-4 text-slate-600" />
             </button>
           </Tooltip>
         </div>
@@ -214,11 +214,11 @@ export function Modal({
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-semibold text-red-700">{w.label}</span>
-                    <p className="text-xs text-red-600 mt-0.5 leading-relaxed">{w.message}</p>
+                    <p className="text-xs text-red-700 mt-0.5 leading-relaxed">{w.message}</p>
                   </div>
                   <button
                     onClick={() => dismissWarning(w.id)}
-                    className="absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center text-red-700 opacity-0 group-hover:opacity-100 hover:bg-red-200 hover:text-red-600 transition-all"
+                    className="absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center text-red-700 opacity-0 group-hover:opacity-100 hover:bg-red-200 hover:text-red-700 transition-all"
                     aria-label="Dismiss warning"
                   >
                     <X className="w-3 h-3" />

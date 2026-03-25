@@ -108,7 +108,7 @@ export function EventContextMenu({
         <p className="text-[12px] font-semibold" style={{ color: colors.text }}>
           {event.title}
         </p>
-        <p className="text-[11px] text-slate-500 mt-0.5">
+        <p className="text-[11px] text-slate-600 mt-0.5">
           {event.time}{event.endTime ? ` – ${event.endTime}` : ''} · {event.instructor}
         </p>
       </div>
@@ -118,7 +118,7 @@ export function EventContextMenu({
         <Tooltip text="Cancel this event and notify staff">
           <button
             onClick={() => onAction('cancel', event)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
           >
             <XCircle className="w-4 h-4" />
             Cancel Event
@@ -138,7 +138,7 @@ export function EventContextMenu({
         <Tooltip text="Permanently delete this event">
           <button
             onClick={() => onAction('delete', event)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
             Delete Event
@@ -150,7 +150,7 @@ export function EventContextMenu({
       <div className="border-t border-slate-100">
         <div className="flex items-center gap-2 px-3 py-2">
           <RefreshCw className="w-3.5 h-3.5 text-slate-700" />
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+          <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
             Suggested Replacements
           </span>
         </div>

@@ -164,10 +164,10 @@ function FilterDropdown({
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-[13px] font-medium transition-colors cursor-pointer ${
             hasSelections
               ? 'border-blue-300 bg-blue-50 text-blue-700'
-              : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <Icon className={`w-3.5 h-3.5 ${hasSelections ? 'text-blue-500' : 'text-slate-500'}`} />
+          <Icon className={`w-3.5 h-3.5 ${hasSelections ? 'text-blue-500' : 'text-slate-600'}`} />
           <span>{filter.label}</span>
           {hasSelections && (
             <Badge variant="count" color="blue" className="ml-0.5">
@@ -189,7 +189,7 @@ function FilterDropdown({
             style={{ top: dropdownPos.top, left: dropdownPos.left }}
           >
           {filter.options.length === 0 ? (
-            <div className="px-3 py-3 text-[13px] text-slate-500 text-center">
+            <div className="px-3 py-3 text-[13px] text-slate-600 text-center">
               <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
               {filter.emptyHref && (
                 <a
@@ -368,7 +368,7 @@ export function FilterBar({
               </button>
             </Tooltip>
             {totalCount != null && filteredCount != null && (
-              <span className="text-[12px] text-slate-500 ml-1">
+              <span className="text-[12px] text-slate-600 ml-1">
                 Showing {filteredCount} of {totalCount} session{totalCount !== 1 ? 's' : ''}
               </span>
             )}

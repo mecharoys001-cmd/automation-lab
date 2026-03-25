@@ -33,8 +33,8 @@ function isHex(color: string): boolean {
 // Common presets for quick use (grade/tag pills that don't map to subjects)
 export const PILL_PRESETS = {
   gradeBlue:  { bgColor: 'bg-blue-100',    textColor: 'text-blue-700' },
-  gradeGreen: { bgColor: 'bg-emerald-100', textColor: 'text-emerald-600' },
-  gradeAmber: { bgColor: 'bg-amber-100',   textColor: 'text-amber-700' },
+  gradeGreen: { bgColor: 'bg-emerald-100', textColor: 'text-emerald-800' },
+  gradeAmber: { bgColor: 'bg-amber-100',   textColor: 'text-amber-800' },
   tagSmallGroup: { bgColor: 'bg-blue-100',    textColor: 'text-blue-800' },
   tagWeekly:     { bgColor: 'bg-emerald-100', textColor: 'text-emerald-800' },
 } as const;
@@ -49,7 +49,7 @@ export function Pill({
   children,
   variant = 'skill',
   bgColor = 'bg-blue-100',
-  textColor = 'text-blue-500',
+  textColor = 'text-blue-700',
   emoji,
   tooltip,
   className = '',

@@ -149,9 +149,9 @@ export default function HoursByTagPage() {
 
         <Tooltip text="Select date range for report data">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-4 py-2 cursor-default">
-            <Calendar className="w-4 h-4 text-slate-500" />
+            <Calendar className="w-4 h-4 text-slate-600" />
             <span className="text-[13px] font-medium text-slate-900">{dateRangeLabel}</span>
-            <ChevronDown className="w-4 h-4 text-slate-500" />
+            <ChevronDown className="w-4 h-4 text-slate-600" />
           </div>
         </Tooltip>
 

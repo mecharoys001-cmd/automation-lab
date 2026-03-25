@@ -24,7 +24,7 @@ export function ReportsTabBar() {
                 className={`relative px-5 py-3.5 text-sm transition-colors ${
                   isActive
                     ? 'font-semibold text-blue-500'
-                    : 'font-medium text-slate-500 hover:text-slate-700'
+                    : 'font-medium text-slate-600 hover:text-slate-700'
                 }`}
               >
                 {tab.label}

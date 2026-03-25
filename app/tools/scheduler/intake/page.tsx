@@ -414,10 +414,10 @@ function IntakeForm() {
         {/* Program check banner */}
         {!programLoading && !hasProgram && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 mb-6 text-center">
-            <p className="text-sm text-amber-700 font-medium">
+            <p className="text-sm text-amber-800 font-medium">
               This form is not yet available. The scheduling program has not been configured.
             </p>
-            <p className="text-xs text-amber-700/70 mt-1">
+            <p className="text-xs text-amber-800/70 mt-1">
               Please contact your administrator to set up program time blocks first.
             </p>
           </div>

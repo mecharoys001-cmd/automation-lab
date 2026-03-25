@@ -155,7 +155,7 @@ function EventChip({
           {event.title}
         </span>
         {event.instructor && (
-          <span className="text-[9px] text-slate-500 truncate leading-tight">
+          <span className="text-[9px] text-slate-600 truncate leading-tight">
             {event.instructor}
           </span>
         )}
@@ -184,7 +184,7 @@ function LegendItem({ type }: { type: EventType }) {
           className="w-3 h-3 rounded-sm"
           style={{ backgroundColor: colors.accent }}
         />
-        <span className="text-xs font-medium text-slate-500">
+        <span className="text-xs font-medium text-slate-600">
           {EVENT_TYPE_LABELS[type]}
         </span>
       </div>
@@ -309,7 +309,7 @@ function MonthGrid({
                     {schoolEntry.status_type === 'no_school' && (
                       <Tooltip text={`No School${schoolEntry.description ? ': ' + schoolEntry.description : ''}`}>
                         <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 border border-amber-300">
-                          <Ban className="w-3 h-3 text-amber-700" />
+                          <Ban className="w-3 h-3 text-amber-800" />
                         </div>
                       </Tooltip>
                     )}
@@ -726,7 +726,7 @@ export function YearView({
           <Tooltip text="Scroll to top">
             <button
               onClick={scrollToTop}
-              className="inline-flex items-center justify-center w-10 h-10 bg-white text-slate-500 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center w-10 h-10 bg-white text-slate-600 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
               aria-label="Scroll to top"
             >
               <ChevronUp className="w-5 h-5" />

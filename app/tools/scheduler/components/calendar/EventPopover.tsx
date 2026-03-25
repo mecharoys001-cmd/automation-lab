@@ -404,7 +404,7 @@ export function EventPopover({
       <div className="px-4 py-3 space-y-2.5">
         {/* Subtitle */}
         {event.subtitle && (
-          <p className="text-[11px] text-slate-500">{event.subtitle}</p>
+          <p className="text-[11px] text-slate-600">{event.subtitle}</p>
         )}
 
         {/* ---- VIEW MODE ---- */}
@@ -418,7 +418,7 @@ export function EventPopover({
                 <span className="text-[12px] font-medium text-slate-700">
                   {event.date}
                 </span>
-                <span className="text-[12px] text-slate-500 ml-2">
+                <span className="text-[12px] text-slate-600 ml-2">
                   {event.time}{event.endTime ? ` \u2013 ${event.endTime}` : ''}
                 </span>
               </div>
@@ -499,7 +499,7 @@ export function EventPopover({
                 <Tooltip text={`Status: ${event.status}`}>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
                     event.status === 'published' ? 'bg-green-100 text-green-700' :
-                    event.status === 'canceled' ? 'bg-red-100 text-red-600' :
+                    event.status === 'canceled' ? 'bg-red-100 text-red-700' :
                     event.status === 'draft' ? 'bg-slate-100 text-slate-600' :
                     'bg-blue-100 text-blue-700'
                   }`}>
@@ -580,7 +580,7 @@ export function EventPopover({
               </div>
             ) : (
               <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 min-h-[48px]">
-                <p className="text-[12px] text-slate-500 whitespace-pre-wrap">
+                <p className="text-[12px] text-slate-600 whitespace-pre-wrap">
                   {noteText || 'No notes added.'}
                 </p>
               </div>
@@ -595,7 +595,7 @@ export function EventPopover({
               <AlertCircle className="w-4 h-4 text-amber-800 mt-0.5 shrink-0" />
               <div>
                 <p className="text-[12px] font-semibold text-amber-900">Are you sure you want to cancel this event?</p>
-                <p className="text-[11px] text-amber-700 mt-0.5">
+                <p className="text-[11px] text-amber-800 mt-0.5">
                   You can choose to replace the staff or the entire event afterward.
                 </p>
               </div>
@@ -665,14 +665,14 @@ export function EventPopover({
             {/* Similar event suggestions */}
             <div className="space-y-1.5 pt-2 border-t border-slate-100">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-amber-700" />
+                <Sparkles className="w-3 h-3 text-amber-800" />
                 <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-[0.5px]">
                   Similar events (different staff)
                 </span>
               </div>
               {loadingSimilar ? (
                 <div className="flex items-center justify-center py-3 gap-2">
-                  <Loader2 className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 text-amber-800 animate-spin" />
                   <span className="text-[11px] text-slate-700">Finding similar events...</span>
                 </div>
               ) : similarEvents.length === 0 ? (
@@ -716,11 +716,11 @@ export function EventPopover({
             {loadingSubstitutes ? (
               <div className="flex items-center justify-center py-4 gap-2">
                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                <span className="text-[12px] text-slate-500">Finding available staff...</span>
+                <span className="text-[12px] text-slate-600">Finding available staff...</span>
               </div>
             ) : substitutes.length === 0 ? (
               <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-center">
-                <p className="text-[12px] text-slate-500">No substitute staff available.</p>
+                <p className="text-[12px] text-slate-600">No substitute staff available.</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -771,11 +771,11 @@ export function EventPopover({
             {loadingTemplates ? (
               <div className="flex items-center justify-center py-4 gap-2">
                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                <span className="text-[12px] text-slate-500">Finding available events...</span>
+                <span className="text-[12px] text-slate-600">Finding available events...</span>
               </div>
             ) : templates.length === 0 ? (
               <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-center">
-                <p className="text-[12px] text-slate-500">No replacement sessions available.</p>
+                <p className="text-[12px] text-slate-600">No replacement sessions available.</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -787,7 +787,7 @@ export function EventPopover({
                       aria-label={`Select replacement ${tmpl.name}`}
                     >
                       <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                        <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                        <Calendar className="w-3.5 h-3.5 text-emerald-800" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[12px] font-medium text-slate-800 truncate">
@@ -816,7 +816,7 @@ export function EventPopover({
           <Tooltip text="Cancel this event">
             <button
               onClick={handleCancelClick}
-              className="text-[11px] font-medium text-red-700 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
+              className="text-[11px] font-medium text-red-700 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
               aria-label="Cancel event"
             >
               Cancel Event

@@ -434,7 +434,7 @@ export function OneOffEventModal({
                   <button
                     onClick={() => onDelete(editEvent.id, 'single')}
                     disabled={saving}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-red-700 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     Delete
@@ -485,7 +485,7 @@ export function OneOffEventModal({
 
         {/* Event Name */}
         <div className="space-y-1.5">
-          <label htmlFor="event-name" className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+          <label htmlFor="event-name" className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
             Event Name <span className="text-red-700">*</span>
           </label>
           <input
@@ -496,14 +496,14 @@ export function OneOffEventModal({
             placeholder="e.g. Spring Assembly, Guest Artist Visit"
             autoFocus
             aria-required="true"
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
           />
         </div>
 
         {/* Event Type Tag + Instructor row */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Event Type</label>
+            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Event Type</label>
             <select
               value={subjectTagId}
               onChange={(e) => setSubjectTagId(e.target.value)}
@@ -524,7 +524,7 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Staff</label>
+            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Staff</label>
             <select
               value={instructorId}
               onChange={(e) => setInstructorId(e.target.value)}
@@ -538,7 +538,7 @@ export function OneOffEventModal({
               ))}
             </select>
             {instructorAvailabilityWarning && (
-              <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+              <p className="text-[11px] text-red-700 mt-1 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                 {instructorAvailabilityWarning}
               </p>
@@ -548,7 +548,7 @@ export function OneOffEventModal({
 
         {/* Venue */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Venue <span className="text-red-700">*</span></label>
+          <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Venue <span className="text-red-700">*</span></label>
           <select
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
@@ -563,8 +563,8 @@ export function OneOffEventModal({
             ))}
           </select>
           {venueConflict && (
-            <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded-full bg-red-100 text-red-600 text-center text-[9px] font-bold leading-3">!</span>
+            <p className="text-[11px] text-red-700 mt-1 flex items-center gap-1">
+              <span className="inline-block w-3 h-3 rounded-full bg-red-100 text-red-700 text-center text-[9px] font-bold leading-3">!</span>
               {venueConflict}
             </p>
           )}
@@ -575,7 +575,7 @@ export function OneOffEventModal({
 
         {/* Grade Groups */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Grade Groups</label>
+          <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Grade Groups</label>
           <div className="flex flex-wrap gap-1.5">
             {GRADE_OPTIONS.map((g) => {
               const selected = gradeGroups.includes(g);
@@ -603,7 +603,7 @@ export function OneOffEventModal({
         {/* Date + Time + Duration row */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Date</label>
+            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Date</label>
             <input
               type="date"
               value={date}
@@ -613,7 +613,7 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
+            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Start Time</label>
             <input
               type="time"
               value={startTime}
@@ -623,7 +623,7 @@ export function OneOffEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Duration (min)</label>
+            <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Duration (min)</label>
             <input
               type="number"
               value={durationMinutes}
@@ -638,7 +638,7 @@ export function OneOffEventModal({
 
         {/* Recurrence (hidden in edit mode — only applies to new events) */}
         {!editEvent && <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Recurrence</label>
+          <label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Recurrence</label>
           <div className="flex flex-wrap gap-1.5">
             {([
               ['none', 'One-time only'],
@@ -665,7 +665,7 @@ export function OneOffEventModal({
           {/* Conditional fields */}
           {recurrenceType === 'every_x_weeks' && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-slate-500">Every</span>
+              <span className="text-xs text-slate-600">Every</span>
               <input
                 type="number"
                 value={intervalWeeks}
@@ -674,13 +674,13 @@ export function OneOffEventModal({
                 max={52}
                 className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
-              <span className="text-xs text-slate-500">weeks</span>
+              <span className="text-xs text-slate-600">weeks</span>
             </div>
           )}
 
           {recurrenceType === 'for_x_sessions' && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-slate-500">Repeat for</span>
+              <span className="text-xs text-slate-600">Repeat for</span>
               <input
                 type="number"
                 value={sessionCount}
@@ -689,13 +689,13 @@ export function OneOffEventModal({
                 max={52}
                 className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
-              <span className="text-xs text-slate-500">total sessions</span>
+              <span className="text-xs text-slate-600">total sessions</span>
             </div>
           )}
 
           {recurrenceType === 'until_date' && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-slate-500">Repeat until</span>
+              <span className="text-xs text-slate-600">Repeat until</span>
               <input
                 type="date"
                 value={untilDate}
@@ -762,7 +762,7 @@ export function OneOffEventModal({
                     })}
                   </div>
                   {rotateInstructors && rotationInstructorIds.length >= 2 && (
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-600">
                       Rotation order: {rotationInstructorIds.map((id) => {
                         const i = instructors.find((x) => x.id === id);
                         return i ? `${i.first_name} ${i.last_name[0]}.` : '?';

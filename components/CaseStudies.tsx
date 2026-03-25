@@ -8,7 +8,6 @@ const cases = [
     results: [
       { label: "Labor Saved",  value: "30 hrs/wk",   sub: "1,560 hrs/year" },
       { label: "Cost Offset",  value: "$31,200/yr",  sub: "Annual savings" },
-      { label: "Dev ROI",      value: "$78/hr",       sub: "Return on time" },
     ],
     stack: ["Zapier","Givebutter","Salesforce","Quickbooks","Gmail","Slack","Mailchimp","Airtable","Duda"],
     accentRaw: "#1282a2",
@@ -22,7 +21,6 @@ const cases = [
     results: [
       { label: "Labor Saved",  value: "20 hrs/mo",   sub: "240 hrs/year" },
       { label: "Cost Offset",  value: "$4,800/yr",   sub: "Annual savings" },
-      { label: "Dev ROI",      value: "$240/hr",      sub: "Return on time" },
     ],
     stack: ["Google Gemini AI Studio","Custom Python","CivicLift"],
     accentRaw: "#68ccd1",
@@ -36,7 +34,6 @@ const cases = [
     results: [
       { label: "Labor Saved",  value: "3 hrs/wk",    sub: "~150 hrs/year" },
       { label: "Cost Offset",  value: "$3,000/yr",   sub: "Annual savings" },
-      { label: "Dev ROI",      value: "$750/hr",      sub: "Return on time" },
     ],
     stack: ["Google Gemini AI Studio","CivicLift","Mailchimp"],
     accentRaw: "#a28231",
@@ -86,19 +83,17 @@ export default function CaseStudies() {
                     >
                       {c.year}
                     </span>
-                    <span style={{ fontSize: "11px", color: "var(--text-subtle)" }}>{c.timeline}</span>
                   </div>
                   <h3 className="heading-card" style={{ fontSize: "15px", marginBottom: "6px", lineHeight: 1.4 }}>
                     {c.title}
                   </h3>
                   <div style={{ fontSize: "12px", color: "var(--text-subtle)" }}>
-                    Funded by: <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>{c.funder}</span>
-                    {c.amount !== "In-Kind" && <> · <span style={{ color: c.accentRaw, fontWeight: 600 }}>{c.amount}</span></>}
+                    Project Cost: <span style={{ color: c.amount === "In-Kind" ? "var(--text-muted)" : c.accentRaw, fontWeight: 600 }}>{c.amount === "In-Kind" ? "In-Kind" : c.amount}</span>
                   </div>
                 </div>
 
                 {/* Results */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "8px" }}>
                   {c.results.map((r) => (
                     <div key={r.label} className="card-stat">
                       <div style={{ fontSize: "14px", fontWeight: 900, color: c.accentRaw, fontFamily: "'Montserrat', sans-serif" }}>

@@ -182,7 +182,7 @@ export function TagSelector({
           setShowDropdown(!showDropdown);
         }}
         disabled={disabled}
-        className="w-full flex items-center justify-between text-left text-sm text-slate-500 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-between text-left text-sm text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span>{value.length === 0 ? placeholder : `${value.length} selected`}</span>
         <svg className="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 20 20">
@@ -282,7 +282,7 @@ export function TagSelector({
                           <button
                             type="button"
                             onClick={() => { setShowAddForm(false); setNewTagName(''); setNewTagEmoji(''); }}
-                            className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                            className="px-2 py-1 text-xs text-slate-600 hover:text-slate-700 transition-colors"
                           >
                             Cancel
                           </button>

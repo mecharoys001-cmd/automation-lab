@@ -129,7 +129,7 @@ export default function InstructorDetailPage() {
             {loading && !data ? 'Loading…' : data?.instructor.name ?? 'Staff Detail'}
           </h1>
           {data && (
-            <div className="flex items-center gap-3 text-sm text-slate-500">
+            <div className="flex items-center gap-3 text-sm text-slate-600">
               <Tooltip text="Total hours across the selected date range">
                 <span className="flex items-center gap-1 cursor-help">
                   <Clock className="w-3.5 h-3.5" />
@@ -151,7 +151,7 @@ export default function InstructorDetailPage() {
         {/* Date Range Picker */}
         <Tooltip text="Filter report by start date">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-            <Calendar className="w-4 h-4 text-slate-500" />
+            <Calendar className="w-4 h-4 text-slate-600" />
             <input
               type="date"
               value={startDate}
@@ -165,7 +165,7 @@ export default function InstructorDetailPage() {
 
         <Tooltip text="Filter report by end date">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-            <Calendar className="w-4 h-4 text-slate-500" />
+            <Calendar className="w-4 h-4 text-slate-600" />
             <input
               type="date"
               value={endDate}
@@ -183,7 +183,7 @@ export default function InstructorDetailPage() {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 text-slate-700 animate-spin" />
-            <span className="ml-3 text-sm text-slate-500">Loading staff data…</span>
+            <span className="ml-3 text-sm text-slate-600">Loading staff data…</span>
           </div>
         )}
 
@@ -211,7 +211,7 @@ export default function InstructorDetailPage() {
                     <Clock className="w-[22px] h-[22px] text-blue-500" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-slate-500">Total Hours</span>
+                    <span className="text-xs font-medium text-slate-600">Total Hours</span>
                     <span className="text-[28px] font-bold leading-none text-slate-900 tabular-nums">{data.total_hours}h</span>
                   </div>
                 </div>
@@ -223,7 +223,7 @@ export default function InstructorDetailPage() {
                     <Hash className="w-[22px] h-[22px] text-emerald-700" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-slate-500">Total Events</span>
+                    <span className="text-xs font-medium text-slate-600">Total Events</span>
                     <span className="text-[28px] font-bold leading-none text-slate-900 tabular-nums">{data.total_sessions}</span>
                   </div>
                 </div>
@@ -232,10 +232,10 @@ export default function InstructorDetailPage() {
               <Tooltip text="Number of weeks with at least one event">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-amber-100">
-                    <Calendar className="w-[22px] h-[22px] text-amber-700" />
+                    <Calendar className="w-[22px] h-[22px] text-amber-800" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-slate-500">Active Weeks</span>
+                    <span className="text-xs font-medium text-slate-600">Active Weeks</span>
                     <span className="text-[28px] font-bold leading-none text-slate-900 tabular-nums">{data.weekly_breakdown.length}</span>
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export default function InstructorDetailPage() {
                     <Tag className="w-[22px] h-[22px] text-violet-500" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-slate-500">Tags</span>
+                    <span className="text-xs font-medium text-slate-600">Tags</span>
                     <span className="text-[28px] font-bold leading-none text-slate-900 tabular-nums">{data.hours_by_tag.length}</span>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default function InstructorDetailPage() {
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
                         isActive
                           ? 'bg-slate-900 text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                          : 'text-slate-600 hover:text-slate-700 hover:bg-slate-50'
                       }`}
                       onClick={() => setActiveTab(tab.key)}
                     >
@@ -381,7 +381,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                           <span className="font-medium text-slate-800">{s.name}</span>
                           <span>{dayName} {s.date}</span>
                           <span>{s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}</span>
-                          <span className="text-slate-500">{s.venue}</span>
+                          <span className="text-slate-600">{s.venue}</span>
                         </div>
                       );
                     })}

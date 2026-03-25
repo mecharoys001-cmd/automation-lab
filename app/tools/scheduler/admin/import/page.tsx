@@ -167,7 +167,7 @@ export default function ImportPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Check className="w-5 h-5 text-emerald-600" />
+              <Check className="w-5 h-5 text-emerald-800" />
               <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: 0 }}>
                 Import Complete
               </h3>
@@ -206,7 +206,7 @@ export default function ImportPage() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             }}
           >
-            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-red-700 flex-shrink-0" />
             <div style={{ fontSize: 14, color: '#EF4444' }}>
               {error}
             </div>

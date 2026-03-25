@@ -78,7 +78,7 @@ export function openPrintView(opts: ExportPrintOptions) {
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; padding: 24px; font-size: 12px; }
     h1 { font-size: 18px; margin-bottom: 2px; }
     .subtitle { font-size: 13px; color: #64748b; margin-bottom: 4px; }
-    .generated { font-size: 11px; color: #94a3b8; margin-bottom: 12px; }
+    .generated { font-size: 11px; color: #475569; margin-bottom: 12px; }
     .filter-notice { background: #fef9c3; border: 1px solid #facc15; border-radius: 4px; padding: 6px 10px; font-size: 11px; color: #854d0e; margin-bottom: 12px; }
     table { width: 100%; border-collapse: collapse; }
     th { text-align: left; font-size: 11px; font-weight: 600; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 6px 8px; }
@@ -109,7 +109,7 @@ export function openPrintView(opts: ExportPrintOptions) {
       </tr>
     </thead>
     <tbody>
-      ${tableRows || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8;">No events in this range</td></tr>'}
+      ${tableRows || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#475569;">No events in this range</td></tr>'}
     </tbody>
   </table>
   <p class="total">Total: ${sorted.length} event${sorted.length !== 1 ? 's' : ''}</p>

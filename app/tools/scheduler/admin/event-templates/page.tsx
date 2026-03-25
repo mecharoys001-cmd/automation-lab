@@ -496,7 +496,7 @@ export default function EventTemplatesPage() {
             <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold text-slate-900">
               Event Templates
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-xs sm:text-sm text-slate-600">
               Create and manage session templates
             </p>
           </div>
@@ -648,7 +648,7 @@ export default function EventTemplatesPage() {
               <h4 className="font-semibold text-slate-800 mb-2">Columns</h4>
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-left text-xs text-slate-500 border-b border-slate-100">
+                  <tr className="text-left text-xs text-slate-600 border-b border-slate-100">
                     <th className="pb-1 pr-3">Column</th>
                     <th className="pb-1 pr-3">Format</th>
                     <th className="pb-1 pr-3">Required?</th>
@@ -677,9 +677,9 @@ export default function EventTemplatesPage() {
                   ].map(([col, fmt, req, desc]) => (
                     <tr key={col}>
                       <td className="py-1 pr-3 font-mono text-slate-800">{col}</td>
-                      <td className="py-1 pr-3 text-slate-500">{fmt}</td>
+                      <td className="py-1 pr-3 text-slate-600">{fmt}</td>
                       <td className="py-1 pr-3">{req}</td>
-                      <td className="py-1 text-slate-500">{desc}</td>
+                      <td className="py-1 text-slate-600">{desc}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -2,7 +2,7 @@ const phases = [
   {
     number: "01",
     title: "Research & Discovery",
-    timeline: "Jan – Mar 2026",
+    timeline: "Jan - Mar 2026",
     status: "active" as const,
     statusLabel: "Underway",
     goals: [
@@ -21,7 +21,7 @@ const phases = [
   {
     number: "02",
     title: "Pilot Projects",
-    timeline: "Mar – Oct 2026",
+    timeline: "Mar - Oct 2026",
     status: "upcoming" as const,
     statusLabel: "Up Next",
     goals: [
@@ -40,7 +40,7 @@ const phases = [
   {
     number: "03",
     title: "Systematization",
-    timeline: "Oct – Dec 2026",
+    timeline: "Oct - Dec 2026",
     status: "future" as const,
     statusLabel: "Planned",
     goals: [
@@ -66,7 +66,7 @@ export default function Roadmap() {
           <div className="label-overline" style={{ marginBottom: "10px" }}>2026 Timeline</div>
           <h2 className="heading-section">The Plan</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "15px", maxWidth: "480px", margin: "0 auto" }}>
-            Three phases from research to replicable infrastructure — all within 2026.
+            Three phases from research to replicable infrastructure, all within 2026.
           </p>
         </div>
 

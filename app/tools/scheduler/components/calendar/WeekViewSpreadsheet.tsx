@@ -144,7 +144,7 @@ function EventBlock({
           </p>
 
           {/* Instructor */}
-          <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+          <p className="text-[10px] text-slate-600 leading-tight truncate mt-0.5">
             {event.instructor}
           </p>
 
@@ -209,7 +209,7 @@ function EventBlock({
                 setContextMenuOpen(false);
                 onEventCancel?.(event);
               }}
-              className="w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+              className="w-full px-3 py-2 text-left text-[13px] text-red-700 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               <span>Cancel Session</span>

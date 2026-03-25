@@ -290,14 +290,14 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">
                     {step.description}
                   </p>
                 </div>
 
                 {/* Arrow or Check */}
                 {step.completed ? (
-                  <span className="text-xs font-medium text-emerald-600 flex-shrink-0 mt-1">Done</span>
+                  <span className="text-xs font-medium text-emerald-800 flex-shrink-0 mt-1">Done</span>
                 ) : (
                   <ChevronRight className="w-4 h-4 text-slate-700 flex-shrink-0 mt-2" />
                 )}

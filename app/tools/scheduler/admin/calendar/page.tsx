@@ -276,7 +276,7 @@ function MonthGrid({
             key={d}
             style={{ gridRow: 1 }}
             className={`px-0.5 sm:px-1.5 py-1.5 sm:py-2 text-center text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
-              idx === 0 || idx === 6 ? 'text-slate-700' : 'text-slate-500'
+              idx === 0 || idx === 6 ? 'text-slate-700' : 'text-slate-600'
             } ${idx < 6 ? 'border-r border-slate-200' : ''}`}
           >
             {d}
@@ -1083,7 +1083,7 @@ export default function CalendarPage() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center max-w-md">
           <CalendarDays className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-slate-900 mb-2">School Calendar</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Select a program to manage its calendar entries.
           </p>
         </div>
@@ -1107,7 +1107,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Date */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
               Date <span className="text-red-700 ml-0.5">*</span>
             </label>
             <Tooltip text="Select the calendar entry date">
@@ -1126,27 +1126,27 @@ export default function CalendarPage() {
               />
             </Tooltip>
             {dateError && (
-              <p className="text-xs text-red-600 font-medium">Date is required</p>
+              <p className="text-xs text-red-700 font-medium">Date is required</p>
             )}
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</label>
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Description</label>
             <Tooltip text="Enter a description for this calendar event">
               <input
                 type="text"
                 placeholder="e.g. Winter Break"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
             </Tooltip>
           </div>
 
           {/* Status type */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</label>
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</label>
             <Tooltip text="Choose the calendar event type">
               <select
                 value={form.status_type}
@@ -1163,7 +1163,7 @@ export default function CalendarPage() {
           {/* Early dismissal time (conditional) */}
           {form.status_type === 'early_dismissal' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dismissal Time</label>
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Dismissal Time</label>
               <Tooltip text="Set the early dismissal time">
                 <input
                   type="time"
@@ -1205,7 +1205,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-slate-600 mt-1">
                 Manage blackout dates, early dismissals, and instructor exceptions.
               </p>
             </div>
@@ -1275,7 +1275,7 @@ export default function CalendarPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
             <span>{error}</span>
             <Tooltip text="Dismiss this error">
-              <button onClick={() => setError(null)} className="text-red-700 hover:text-red-600 ml-4 transition-colors">
+              <button onClick={() => setError(null)} className="text-red-700 hover:text-red-700 ml-4 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </Tooltip>
@@ -1374,7 +1374,7 @@ export default function CalendarPage() {
           ) : (
             <div className="space-y-3">
               {/* Legend */}
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
                 <Tooltip text={STATUS_TOOLTIPS.no_school}>
                   <span className="flex items-center gap-1.5 cursor-help">
                     <span className="h-3 w-3 rounded-sm bg-red-100 border border-red-200" />
@@ -1448,7 +1448,7 @@ export default function CalendarPage() {
                   <Tooltip text="Deselect all days">
                     <button
                       onClick={clearSelection}
-                      className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                     >
                       <XCircle className="w-3.5 h-3.5 shrink-0" />
                       <span className="hidden sm:inline">Deselect All</span>
@@ -1504,7 +1504,7 @@ export default function CalendarPage() {
                   placeholder="Search by description or date..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
                 />
               </div>
             </Tooltip>
@@ -1542,26 +1542,26 @@ export default function CalendarPage() {
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50">
                       <Tooltip text="Date of the calendar event">
-                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Date</th>
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-600 uppercase tracking-wider cursor-help">Date</th>
                       </Tooltip>
                       <Tooltip text="Description of the calendar event">
-                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Description</th>
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-600 uppercase tracking-wider cursor-help">Description</th>
                       </Tooltip>
                       <Tooltip text="Event type: No School, Early Dismissal, or Staff Exception">
-                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Type</th>
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-600 uppercase tracking-wider cursor-help">Type</th>
                       </Tooltip>
                       <Tooltip text="Time of early dismissal (if applicable)">
-                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell cursor-help">
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-600 uppercase tracking-wider hidden sm:table-cell cursor-help">
                           Dismissal Time
                         </th>
                       </Tooltip>
                       <Tooltip text="Staff member affected by this exception">
-                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell cursor-help">
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-600 uppercase tracking-wider hidden md:table-cell cursor-help">
                           Staff
                         </th>
                       </Tooltip>
                       <Tooltip text="Edit or delete calendar entries">
-                        <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</th>
+                        <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-slate-600 uppercase tracking-wider text-right cursor-help">Actions</th>
                       </Tooltip>
                     </tr>
                   </thead>
@@ -1598,18 +1598,18 @@ export default function CalendarPage() {
                           <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
                             {formatDate(entry.date)}
                           </td>
-                          <td className="px-4 py-3 text-slate-500">
+                          <td className="px-4 py-3 text-slate-600">
                             {entry.description ?? '--'}
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={entry.status_type} />
                           </td>
-                          <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">
+                          <td className="px-4 py-3 text-slate-600 hidden sm:table-cell">
                             {entry.status_type === 'early_dismissal'
                               ? formatTime(entry.early_dismissal_time)
                               : '--'}
                           </td>
-                          <td className="px-4 py-3 text-slate-500 hidden md:table-cell">
+                          <td className="px-4 py-3 text-slate-600 hidden md:table-cell">
                             {entry.instructor
                               ? `${entry.instructor.first_name} ${entry.instructor.last_name}`
                               : '--'}
@@ -1712,7 +1712,7 @@ export default function CalendarPage() {
           {/* Warning for existing statuses */}
           {batchExistingCount > 0 && batchModal?.action !== 'clear' && (
             <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3">
-              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
               <p className="text-sm text-amber-800">
                 {batchExistingCount} of {batchModal?.dates.length} day{(batchModal?.dates.length ?? 0) !== 1 ? 's' : ''} already
                 {batchExistingCount === 1 ? ' has' : ' have'} a status. Existing entries will be updated.
@@ -1723,7 +1723,7 @@ export default function CalendarPage() {
           {/* Early dismissal time input */}
           {batchModal?.action === 'early_dismissal' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Dismissal Time <span className="text-red-700 ml-0.5">*</span>
               </label>
               <p className="text-xs text-slate-700">This time will be applied to all selected days.</p>
@@ -1739,7 +1739,7 @@ export default function CalendarPage() {
           {/* Instructor selection */}
           {batchModal?.action === 'instructor_exception' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Instructor <span className="text-red-700 ml-0.5">*</span>
               </label>
               <p className="text-xs text-slate-700">Select the staff member for this exception.</p>
@@ -1762,7 +1762,7 @@ export default function CalendarPage() {
 
           {/* Dates list */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
               Affected Dates
             </label>
             <div className="max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">

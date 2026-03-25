@@ -66,10 +66,10 @@ const cardClass =
   'rounded-lg border border-slate-200 bg-white shadow-sm';
 const cardBodyClass = `${cardClass} p-5`;
 const sectionTitleClass = 'text-base font-semibold text-slate-900';
-const sectionDescClass = 'text-[13px] text-slate-500 mt-0.5';
-const labelClass = 'block text-sm font-medium text-slate-500 mb-1';
+const sectionDescClass = 'text-[13px] text-slate-600 mt-0.5';
+const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
 const inputClass =
-  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
+  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
   'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
@@ -79,7 +79,7 @@ const btnDanger =
 const btnDangerOutline =
   'inline-flex items-center gap-1.5 rounded-lg border border-red-300 text-red-700 px-3 py-1.5 text-xs font-medium hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const thClass =
-  'text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider';
+  'text-left px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wider';
 const tdClass = 'px-4 py-3 text-sm';
 
 // ---------------------------------------------------------------------------
@@ -489,7 +489,7 @@ export default function SettingsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-[13px] text-slate-500 mt-1">
+          <p className="text-[13px] text-slate-600 mt-1">
             Program configuration, admin management, and platform preferences.
           </p>
         </div>
@@ -637,7 +637,7 @@ export default function SettingsPage() {
                         </button>
                       </Tooltip>
                     </td>
-                    <td className={`${tdClass} text-slate-500`}>
+                    <td className={`${tdClass} text-slate-600`}>
                       {formatDate(p.start_date)} — {formatDate(p.end_date)}
                     </td>
                     <td className={`${tdClass} text-right`}>
@@ -792,13 +792,13 @@ export default function SettingsPage() {
                 {admins.map((admin) => (
                   <tr key={admin.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className={`${tdClass} text-slate-900 font-medium`}>{admin.google_email}</td>
-                    <td className={`${tdClass} text-slate-500`}>{admin.display_name || '—'}</td>
+                    <td className={`${tdClass} text-slate-600`}>{admin.display_name || '—'}</td>
                     <td className={tdClass}>
                       <span
                         className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${
                           admin.role_level === 'master'
                             ? 'bg-violet-100 text-violet-600'
-                            : 'bg-slate-100 text-slate-500'
+                            : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {admin.role_level}
@@ -911,7 +911,7 @@ export default function SettingsPage() {
         >
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-100">
-              <ShieldAlert className="w-[18px] h-[18px] text-red-600" />
+              <ShieldAlert className="w-[18px] h-[18px] text-red-700" />
             </div>
             <div className="text-left">
               <h2 className="text-base font-semibold text-red-700">Danger Zone</h2>
@@ -937,8 +937,8 @@ export default function SettingsPage() {
         </div>
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 mb-4 flex items-start gap-2.5">
-          <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
-          <p className="text-[13px] text-amber-700">
+          <AlertTriangle className="w-4 h-4 text-amber-800 mt-0.5 shrink-0" />
+          <p className="text-[13px] text-amber-800">
             This will clear all existing data and reload with mock data. This action cannot be undone.
           </p>
         </div>
@@ -1060,7 +1060,7 @@ export default function SettingsPage() {
                   className="rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-center"
                 >
                   <div className="text-lg font-bold text-slate-900">{count}</div>
-                  <div className="text-[11px] font-medium text-slate-500 capitalize">{key}</div>
+                  <div className="text-[11px] font-medium text-slate-600 capitalize">{key}</div>
                 </div>
               ))}
             </div>
@@ -1104,7 +1104,7 @@ export default function SettingsPage() {
               </div>
               <Tooltip text={`Type ${seedConfirmPhrase} exactly to continue`}>
                 <div>
-                  <label htmlFor="seed-confirm" className="block text-xs font-medium text-slate-500 mb-1">
+                  <label htmlFor="seed-confirm" className="block text-xs font-medium text-slate-600 mb-1">
                     Type <span className="font-mono font-bold text-red-700">{seedConfirmPhrase}</span> to continue
                   </label>
                   <input
@@ -1167,7 +1167,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
             <div className="flex-1 mr-4">
               <p className="text-sm font-medium text-slate-900">Clear Sessions Only</p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Removes all scheduled sessions for this program. Templates, staff, and venues are kept.
               </p>
             </div>
@@ -1187,7 +1187,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50/30 px-4 py-3">
             <div className="flex-1 mr-4">
               <p className="text-sm font-medium text-slate-900">Clear All Data</p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Removes all sessions, templates, venues, and tags for this program. Staff are preserved. Use this to fully reset after testing with mock data.
               </p>
             </div>
@@ -1246,7 +1246,7 @@ export default function SettingsPage() {
                   </p>
                   <Tooltip text="Type DELETE ALL SESSIONS exactly to continue">
                     <div>
-                      <label htmlFor="clear-confirm" className="block text-xs font-medium text-slate-500 mb-1">
+                      <label htmlFor="clear-confirm" className="block text-xs font-medium text-slate-600 mb-1">
                         Type <span className="font-mono font-bold text-red-700">DELETE ALL SESSIONS</span> to continue
                       </label>
                       <input
@@ -1262,7 +1262,7 @@ export default function SettingsPage() {
                     </div>
                   </Tooltip>
                   {clearProgress && (
-                    <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-500">
+                    <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-600">
                       <Loader2 className="w-4 h-4 animate-spin text-red-700" />
                       {clearProgress}
                     </div>
@@ -1276,7 +1276,7 @@ export default function SettingsPage() {
                   </p>
                   <Tooltip text="Type DELETE ALL DATA exactly to continue">
                     <div>
-                      <label htmlFor="clear-all-confirm" className="block text-xs font-medium text-slate-500 mb-1">
+                      <label htmlFor="clear-all-confirm" className="block text-xs font-medium text-slate-600 mb-1">
                         Type <span className="font-mono font-bold text-red-700">DELETE ALL DATA</span> to continue
                       </label>
                       <input
@@ -1317,7 +1317,7 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50/50 px-3 py-2">
                               <Trash2 className="w-3.5 h-3.5 text-red-700" />
                               <span className="text-sm text-slate-700 flex-1">{label}</span>
-                              <span className="text-sm font-semibold text-red-600">{count}</span>
+                              <span className="text-sm font-semibold text-red-700">{count}</span>
                             </div>
                           </Tooltip>
                         );
@@ -1328,11 +1328,11 @@ export default function SettingsPage() {
               ) : (
                 /* Step 3: Final confirmation */
                 <div className="space-y-3">
-                  <p className="text-sm text-red-600 font-medium leading-relaxed">
+                  <p className="text-sm text-red-700 font-medium leading-relaxed">
                     This is your final confirmation. Click below to permanently delete all program data.
                   </p>
                   {clearProgress && (
-                    <div className="mt-2 flex items-center gap-2 text-[13px] text-slate-500">
+                    <div className="mt-2 flex items-center gap-2 text-[13px] text-slate-600">
                       <Loader2 className="w-4 h-4 animate-spin text-red-700" />
                       {clearProgress}
                     </div>

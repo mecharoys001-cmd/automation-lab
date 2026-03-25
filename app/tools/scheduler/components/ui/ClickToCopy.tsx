@@ -156,7 +156,7 @@ export function ClickToCopy({
 
         {/* Text or "Copied" state */}
         {copied ? (
-          <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-medium">
+          <span className="inline-flex items-center gap-1 text-emerald-800 text-xs font-medium">
             <Check className="w-3.5 h-3.5" /> Copied
           </span>
         ) : (

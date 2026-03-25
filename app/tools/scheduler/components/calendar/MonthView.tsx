@@ -118,7 +118,7 @@ function EventChip({
           {event.title}
         </span>
         {event.instructor && (
-          <span className="text-[9px] text-slate-500 truncate leading-tight">
+          <span className="text-[9px] text-slate-600 truncate leading-tight">
             {event.instructor}
           </span>
         )}
@@ -326,7 +326,7 @@ export function MonthView({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
             aria-label="Previous month"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-500" />
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
         </Tooltip>
 
@@ -340,7 +340,7 @@ export function MonthView({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
             aria-label="Next month"
           >
-            <ChevronRight className="w-5 h-5 text-slate-500" />
+            <ChevronRight className="w-5 h-5 text-slate-600" />
           </button>
         </Tooltip>
 
@@ -369,7 +369,7 @@ export function MonthView({
             <div className="flex flex-col items-center gap-3 pointer-events-auto">
               <CalendarDays className="w-8 h-8 text-slate-300" />
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
+                <p className="text-sm font-medium text-slate-600">No sessions scheduled yet</p>
                 <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
               </div>
               <div className="flex flex-col items-center gap-1.5 mt-1">
@@ -451,7 +451,7 @@ export function MonthView({
                       {schoolEntry.status_type === 'no_school' && (
                         <Tooltip text={`No School${schoolEntry.description ? ': ' + schoolEntry.description : ''}`}>
                           <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 border border-amber-300">
-                            <Ban className="w-3.5 h-3.5 text-amber-700" />
+                            <Ban className="w-3.5 h-3.5 text-amber-800" />
                           </div>
                         </Tooltip>
                       )}
@@ -518,7 +518,7 @@ export function MonthView({
                       ))}
                       {dayEvents.length > 3 && (
                         <button
-                          className="w-full text-[10px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
+                          className="w-full text-[10px] font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
                           onClick={(e) => { e.stopPropagation(); onDayClick?.(date); }}
                         >
                           +{dayEvents.length - 3} more

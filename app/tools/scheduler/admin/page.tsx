@@ -1507,7 +1507,7 @@ function CalendarDashboard() {
         <Button
           variant="secondary"
           tooltip="Generate draft events from your weekly template"
-          icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-500 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-500" />}
+          icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-600 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-600" />}
           onClick={handleGenerateSchedule}
           disabled={isGenerating}
         >
@@ -1716,7 +1716,7 @@ function CalendarDashboard() {
                 onChange={(e) => setDayStartTime(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent"
               />
-              <p className="text-xs text-slate-500 mt-1">Earliest start time for auto-scheduled sessions</p>
+              <p className="text-xs text-slate-600 mt-1">Earliest start time for auto-scheduled sessions</p>
             </div>
             <div>
               <Tooltip text="The latest time the scheduler will allow auto-timed sessions to end. Templates with an explicit start time are not affected.">
@@ -1730,11 +1730,11 @@ function CalendarDashboard() {
                 onChange={(e) => setDayEndTime(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent"
               />
-              <p className="text-xs text-slate-500 mt-1">Latest end time for auto-scheduled sessions</p>
+              <p className="text-xs text-slate-600 mt-1">Latest end time for auto-scheduled sessions</p>
             </div>
           </div>
           <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               <span className="font-medium text-slate-600">Note:</span> These settings only affect templates without an explicit start time. Templates placed on the Schedule Builder or with fixed times are not changed.
             </p>
           </div>

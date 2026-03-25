@@ -27,7 +27,7 @@ export function MonthlyBreakdownCards({ months, onViewDetail }: MonthlyBreakdown
               key={m.month}
               className="flex-1 flex flex-col gap-1 bg-white border border-slate-200 rounded-lg p-3"
             >
-              <span className="text-[11px] font-medium text-slate-500">{m.month}</span>
+              <span className="text-[11px] font-medium text-slate-600">{m.month}</span>
               <span className="text-base font-bold text-slate-900 tabular-nums">{m.hours} hrs</span>
               <ProgressBar
                 value={pct}

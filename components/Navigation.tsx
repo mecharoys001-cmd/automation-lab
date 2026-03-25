@@ -71,7 +71,7 @@ export default function Navigation() {
               className="btn-primary"
               style={{ padding: "9px 18px", fontSize: "13px" }}
             >
-              Take the Survey
+              Take the Self-Assessment
             </a>
           </div>
 
@@ -100,7 +100,7 @@ export default function Navigation() {
               rel="noopener noreferrer"
               style={{ display: "block", color: "var(--teal-dark)", padding: "12px 0", fontSize: "15px", fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}
             >
-              Take the Survey →
+              Take the Self-Assessment →
             </a>
           </div>
         )}

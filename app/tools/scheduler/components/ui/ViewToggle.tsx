@@ -42,7 +42,7 @@ export function ViewToggle({
               className={`px-3 py-1.5 text-[13px] font-medium rounded-md transition-all cursor-pointer ${
                 isActive
                   ? 'bg-white text-slate-900 font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.1)]'
-                  : 'text-slate-500 hover:text-slate-700'
+                  : 'text-slate-600 hover:text-slate-700'
               }`}
             >
               {viewLabels[view]}

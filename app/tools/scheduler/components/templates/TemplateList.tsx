@@ -247,8 +247,8 @@ export function TemplateList({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={mode === 'draggable'
-                ? 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500'
-                : 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500'
+                ? 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500'
+                : 'w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500'
               }
             />
           </div>
@@ -471,8 +471,8 @@ export function TemplateList({
           </div>
         ) : (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
-            <span className="ml-2 text-sm text-slate-500">Loading events&hellip;</span>
+            <Loader2 className="w-5 h-5 animate-spin text-slate-600" />
+            <span className="ml-2 text-sm text-slate-600">Loading events&hellip;</span>
           </div>
         )
       ) : filtered.length === 0 ? (
@@ -878,7 +878,7 @@ function DraggableView({
                       onClick={(e) => { e.stopPropagation(); onEdit(item.id); }}
                       onDragStart={(e) => e.stopPropagation()}
                       draggable={false}
-                      className="p-1 rounded hover:bg-white/30 text-slate-500 hover:text-blue-400 transition-colors cursor-pointer"
+                      className="p-1 rounded hover:bg-white/30 text-slate-600 hover:text-blue-400 transition-colors cursor-pointer"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -930,7 +930,7 @@ function DraggableView({
         ))}
 
         {items.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-slate-500">
+          <div className="px-4 py-8 text-center text-sm text-slate-600">
             No events yet. Click &ldquo;Create Template&rdquo; to add one.
           </div>
         )}

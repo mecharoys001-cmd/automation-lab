@@ -146,7 +146,7 @@ export function InstructorEditModal({
                 <Tooltip text="Cancel deletion">
                   <button
                     onClick={() => setConfirmDelete(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Cancel
                   </button>
@@ -181,7 +181,7 @@ export function InstructorEditModal({
       <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5">
         {/* First Name */}
         <div>
-          <label htmlFor="instructor-first-name" className="block text-sm font-semibold text-slate-500 mb-1.5">First Name<span className="text-red-700 ml-0.5">*</span></label>
+          <label htmlFor="instructor-first-name" className="block text-sm font-semibold text-slate-600 mb-1.5">First Name<span className="text-red-700 ml-0.5">*</span></label>
           <Tooltip text="Staff member's first name" className="w-full">
             <input
               id="instructor-first-name"
@@ -192,14 +192,14 @@ export function InstructorEditModal({
               onChange={(e) => setField('first_name', e.target.value)}
               maxLength={100}
               placeholder="e.g. Sarah"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
 
         {/* Last Name */}
         <div>
-          <label htmlFor="instructor-last-name" className="block text-sm font-semibold text-slate-500 mb-1.5">Last Name<span className="text-red-700 ml-0.5">*</span></label>
+          <label htmlFor="instructor-last-name" className="block text-sm font-semibold text-slate-600 mb-1.5">Last Name<span className="text-red-700 ml-0.5">*</span></label>
           <Tooltip text="Staff member's last name" className="w-full">
             <input
               id="instructor-last-name"
@@ -210,7 +210,7 @@ export function InstructorEditModal({
               onChange={(e) => setField('last_name', e.target.value)}
               maxLength={100}
               placeholder="e.g. Johnson"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -225,7 +225,7 @@ export function InstructorEditModal({
 
         {/* Email */}
         <div>
-          <label htmlFor="instructor-email" className="block text-sm font-semibold text-slate-500 mb-1.5">Email</label>
+          <label htmlFor="instructor-email" className="block text-sm font-semibold text-slate-600 mb-1.5">Email</label>
           <Tooltip text="Contact email for this staff member" className="w-full">
             <input
               id="instructor-email"
@@ -239,7 +239,7 @@ export function InstructorEditModal({
               }}
               maxLength={255}
               placeholder="sarah@example.com"
-              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${emailError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:ring-1 transition-colors ${emailError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
           {emailError && <p role="alert" className="text-xs text-red-700 mt-1">{emailError}</p>}
@@ -247,7 +247,7 @@ export function InstructorEditModal({
 
         {/* Phone */}
         <div>
-          <label htmlFor="instructor-phone" className="block text-sm font-semibold text-slate-500 mb-1.5">Phone</label>
+          <label htmlFor="instructor-phone" className="block text-sm font-semibold text-slate-600 mb-1.5">Phone</label>
           <Tooltip text="Contact phone number" className="w-full">
             <input
               id="instructor-phone"
@@ -264,7 +264,7 @@ export function InstructorEditModal({
               }}
               maxLength={30}
               placeholder="(555) 123-4567"
-              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${phoneError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:ring-1 transition-colors ${phoneError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
           {phoneError && <p role="alert" className="text-xs text-red-700 mt-1">{phoneError}</p>}
@@ -272,7 +272,7 @@ export function InstructorEditModal({
 
         {/* Event Type */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-2">Event Type</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Event Type</label>
           <Tooltip text="Select the event types this staff member teaches">
             <TagSelector
               value={form.skills}
@@ -286,7 +286,7 @@ export function InstructorEditModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Notes</label>
+          <label className="block text-sm font-semibold text-slate-600 mb-1.5">Notes</label>
           <Tooltip text="Internal notes about this staff member" className="w-full">
             <textarea
               value={form.notes}
@@ -294,14 +294,14 @@ export function InstructorEditModal({
               maxLength={500}
               placeholder="Add notes about this staff member…"
               rows={3}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
         </div>
 
         {/* Availability */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-2">Availability</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Availability</label>
           {selectedProgram && (
             <Tooltip text="This availability extends outside your program dates">
               <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
@@ -321,7 +321,7 @@ export function InstructorEditModal({
         {/* Active Toggle — only shown when editing, not creating */}
         {!isNew && (
         <div>
-          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Status</label>
+          <label className="block text-sm font-semibold text-slate-600 mb-1.5">Status</label>
           <Tooltip text={form.is_active ? 'Staff member is active and can be scheduled' : 'Staff member is inactive and will not appear in scheduling'}>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input

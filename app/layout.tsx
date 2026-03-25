@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -8,6 +8,7 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { LayoutShell } from "@/components/LayoutShell";
 
 const inter = Inter({ subsets: ["latin"] });
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
 
 export const metadata: Metadata = {
   title: "The Automation Lab | NWCT Arts Council",
@@ -36,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} ${montserrat.variable}`}>
         <ScrollRevealProvider />
         <AnalyticsTracker />
         <LayoutShell

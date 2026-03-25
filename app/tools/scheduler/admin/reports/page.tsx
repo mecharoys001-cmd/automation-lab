@@ -87,7 +87,7 @@ const AVATAR_COLORS = [
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; tooltip: string }> = {
   Active:      { bg: 'bg-emerald-100', text: 'text-emerald-700', tooltip: 'Staff member is actively teaching on a regular schedule' },
-  'Part-time': { bg: 'bg-amber-100',   text: 'text-amber-700',   tooltip: 'Staff member works a reduced or part-time schedule' },
+  'Part-time': { bg: 'bg-amber-100',   text: 'text-amber-800',   tooltip: 'Staff member works a reduced or part-time schedule' },
   Substitute:  { bg: 'bg-blue-100',    text: 'text-blue-700',    tooltip: 'Staff member fills in as a substitute on an as-needed basis' },
 };
 
@@ -134,22 +134,22 @@ function InstructorHoursTab({
       <table className="w-full border-collapse min-w-[668px]">
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-            <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
+            <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[280px]">
               <Tooltip text="Full name of the staff member">
                 <span className="cursor-help">Staff Name</span>
               </Tooltip>
             </th>
-            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[120px]">
               <Tooltip text="Cumulative hours taught across the selected date range">
                 <span className="cursor-help">Total Hours</span>
               </Tooltip>
             </th>
-            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[100px]">
               <Tooltip text="Average number of hours taught per week">
                 <span className="cursor-help">Avg/Week</span>
               </Tooltip>
             </th>
-            <th scope="col" className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-center px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[120px]">
               <Tooltip text="Current employment status of the staff member">
                 <span className="cursor-help">Status</span>
               </Tooltip>
@@ -168,7 +168,7 @@ function InstructorHoursTab({
                 <div className="flex flex-col items-center gap-3">
                   <Users className="w-8 h-8 text-slate-300" />
                   <div>
-                    <p className="text-sm font-medium text-slate-500">No staff hours available</p>
+                    <p className="text-sm font-medium text-slate-600">No staff hours available</p>
                     <p className="text-sm text-slate-700 mt-1">Add staff members and assign them to events to start tracking hours.</p>
                   </div>
                   <Link
@@ -239,7 +239,7 @@ function InstructorHoursTab({
 
                         {/* Avg/Week */}
                         <Tooltip text={`${instructor.avgPerWeek} hours per week on average`}>
-                          <span className="text-sm text-slate-500 text-right tabular-nums block">
+                          <span className="text-sm text-slate-600 text-right tabular-nums block">
                             {instructor.avgPerWeek}/wk
                           </span>
                         </Tooltip>
@@ -347,22 +347,22 @@ function HoursByTagTab({
       <table className="w-full border-collapse min-w-[560px]">
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-            <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
               <Tooltip text="Event type category with associated emoji">
                 <span className="cursor-help">Tag</span>
               </Tooltip>
             </th>
-            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[120px]">
               <Tooltip text="Total hours of instruction for this tag across the date range">
                 <span className="cursor-help">Total Hours</span>
               </Tooltip>
             </th>
-            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[100px]">
               <Tooltip text="Number of individual events tagged with this category">
                 <span className="cursor-help">Events</span>
               </Tooltip>
             </th>
-            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-[120px]">
               <Tooltip text="Average length of each event in minutes">
                 <span className="cursor-help">Avg Duration</span>
               </Tooltip>
@@ -376,7 +376,7 @@ function HoursByTagTab({
                 <div className="flex flex-col items-center gap-3">
                   <Tag className="w-8 h-8 text-slate-300" />
                   <div>
-                    <p className="text-sm font-medium text-slate-500">No tag data available</p>
+                    <p className="text-sm font-medium text-slate-600">No tag data available</p>
                     <p className="text-sm text-slate-700 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
                   </div>
                   <Link
@@ -430,7 +430,7 @@ function HoursByTagTab({
                   {/* Sessions */}
                   <td className="px-5 py-3.5 text-right">
                     <Tooltip text={`${tag.sessions} events tagged as ${tag.name}`}>
-                      <span className="text-sm text-slate-500 tabular-nums">
+                      <span className="text-sm text-slate-600 tabular-nums">
                         {tag.sessions}
                       </span>
                     </Tooltip>
@@ -439,7 +439,7 @@ function HoursByTagTab({
                   {/* Avg Duration */}
                   <td className="px-5 py-3.5 text-right">
                     <Tooltip text={`Average session duration: ${tag.avgDuration} minutes`}>
-                      <span className="text-sm text-slate-500 tabular-nums">
+                      <span className="text-sm text-slate-600 tabular-nums">
                         {tag.avgDuration} min
                       </span>
                     </Tooltip>
@@ -614,7 +614,7 @@ export default function ReportsPage() {
 
         <Tooltip text="Select date range for report data — click to change period">
           <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-4 py-2 cursor-pointer hover:border-slate-300 transition-colors">
-            <Calendar className="w-4 h-4 text-slate-500" />
+            <Calendar className="w-4 h-4 text-slate-600" />
             <span className="text-[13px] font-medium text-slate-900">{dateRangeLabel}</span>
             <ChevronDown className="w-4 h-4 text-slate-700" />
           </div>
@@ -660,7 +660,7 @@ export default function ReportsPage() {
                   className={`relative flex items-center gap-2 px-5 py-3.5 text-sm transition-colors cursor-pointer ${
                     isActive
                       ? 'font-semibold text-[#3B82F6]'
-                      : 'font-medium text-slate-500 hover:text-slate-700'
+                      : 'font-medium text-slate-600 hover:text-slate-700'
                   }`}
                   onClick={() => setActiveTab(tab.key)}
                 >

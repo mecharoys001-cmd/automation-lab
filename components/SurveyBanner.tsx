@@ -84,7 +84,7 @@ export default function SurveyBanner() {
         </a>
 
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px", marginTop: "16px" }}>
-          Takes 5–10 minutes · Open to NWCT arts &amp; culture nonprofits
+          Takes 5-10 minutes · Open to NWCT arts &amp; culture nonprofits
         </p>
       </div>
     </section>

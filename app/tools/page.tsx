@@ -1,7 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { getOrgMembership, isOrgMember } from "@/lib/rbac";
 
 export const metadata: Metadata = {
   title: "Tools | The Automation Lab",
@@ -9,52 +7,7 @@ export const metadata: Metadata = {
     "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
 };
 
-// ── Static tool definitions (scheduler excluded — added conditionally) ────
-
-const publicTools = [
-  {
-    id: "tech-stack",
-    name: "Tech Stack Mapper",
-    description:
-      "Build a visual map of every tool your organization uses and how they connect. Add tools from a library of 45+ nonprofit staples, draw integration lines between them, and instantly spot the manual handoffs that are costing you hours. Export as JSON or share with your team. Runs entirely in your browser.",
-    status: "live",
-    features: [
-      "45+ tools pre-loaded",
-      "Category lane layout",
-      "Click-to-connect integrations",
-      "Gap & isolation detection",
-      "Custom tool support",
-      "Export / Import JSON",
-      "100% browser-based",
-      "No data uploaded",
-    ],
-    icon: "🗺️",
-    href: "/tools/tech-stack",
-    accent: "#0ea5e9",
-    usedBy: "Nonprofits, arts orgs, ops teams doing a tech audit",
-  },
-  {
-    id: "camp-scheduler",
-    name: "Camp Scheduler",
-    description:
-      "A full-featured weekly activity scheduler for camps and summer programs. Built with conflict detection, drag-and-drop scheduling, instructor availability management, multi-venue support, and Google Sheets integration.",
-    status: "live",
-    features: [
-      "50+ activity support",
-      "Drag & drop scheduling",
-      "6-type conflict detection",
-      "Auto-resolution engine",
-      "Instructor availability & limits",
-      "Employee self-submit portal",
-      "16+ venue management with utilization",
-      "Google Sheets sync",
-      "Print view",
-    ],
-    icon: "📅",
-    href: "/tools/camp-scheduler",
-    accent: "#10b981",
-    usedBy: "Camps, summer programs, youth organizations",
-  },
+const tools = [
   {
     id: "csv-dedup",
     name: "CSV Deduplicator",
@@ -76,52 +29,52 @@ const publicTools = [
     accent: "#6366f1",
     usedBy: "Nonprofits, arts orgs, event planners with mailing lists",
   },
-  { id: 'donation-receipts', name: 'Donation Receipt Generator', icon: '🧾', accent: '#10b981', status: 'live', href: '/tools/donation-receipts', usedBy: 'Nonprofits tracking donations for tax compliance', description: 'Generate and track tax-deductible donation receipts with auto-numbered IDs. Syncs to Google Sheets via Apps Script — or runs offline locally.', features: ['Auto receipt numbers', 'Google Sheets sync', 'Donor email tracking', 'Donation totals', 'Export ready', 'Offline mode'] },
-  { id: 'volunteer-tracker', name: 'Volunteer Hour Tracker', icon: '🙌', accent: '#6366f1', status: 'live', href: '/tools/volunteer-tracker', usedBy: 'Volunteer coordinators and program managers', description: 'Log volunteer hours by activity and date. Tracks totals per volunteer, shows a leaderboard, and syncs to Google Sheets.', features: ['Per-volunteer totals', 'Activity tagging', 'Date range filter', 'Leaderboard', 'Google Sheets sync', 'Offline mode'] },
-  { id: 'event-scheduler', name: 'Event Schedule Builder', icon: '🗓️', accent: '#f59e0b', status: 'live', href: '/tools/event-scheduler', usedBy: 'Event coordinators and program directors', description: 'Build and manage event schedules with speaker slots, locations, and times. Filter by date, export to Sheets.', features: ['Multi-day scheduling', 'Speaker management', 'Location tracking', 'Date filtering', 'Google Sheets sync', 'Bulk import'] },
-  { id: 'mail-merge', name: 'Mail Merge Preview', icon: '✉️', accent: '#ec4899', status: 'live', href: '/tools/mail-merge', usedBy: 'Development teams and program staff', description: 'Write a {{field}} template and preview it merged with your contact list. Send via Gmail through Apps Script.', features: ['{{field}} templates', 'Live preview', 'Gmail send', 'CSV paste', 'Google Sheets source', 'Bulk send'] },
-  { id: 'event-attendance', name: 'Event Attendance Checker', icon: '✅', accent: '#14b8a6', status: 'live', href: '/tools/event-attendance', usedBy: 'Event coordinators managing check-in', description: "Compare your registration list against check-ins to instantly see who showed up, who didn't, and who walked in unregistered.", features: ['No-show detection', 'Walk-in tracking', 'Attendance rate %', 'Multi-event support', 'Google Sheets sync', 'Fuzzy matching'] },
-  { id: 'donor-thankyou', name: 'Donor Thank-You Generator', icon: '💌', accent: '#f97316', status: 'live', href: '/tools/donor-thankyou', usedBy: 'Development and fundraising staff', description: 'Generate personalized thank-you letters for donors using customizable templates. Send via Gmail with one click.', features: ['Personalized letters', '2 default templates', 'Gmail send', 'Sent tracking', 'Bulk generation', 'Tax receipt option'] },
-  { id: 'budget-tracker', name: 'Budget vs. Actual Tracker', icon: '📊', accent: '#8b5cf6', status: 'live', href: '/tools/budget-tracker', usedBy: 'Finance staff and executive directors', description: 'Track budgeted vs. actual spending by category and period. Color-coded variance with summary totals.', features: ['Variance calculation', 'Period filtering', 'Color-coded overage', 'Summary totals', 'Google Sheets sync', 'Multi-period tracking'] },
+  {
+    id: "reports",
+    name: "Transaction Reports",
+    description:
+      "Upload your Shopify transaction CSV and get an instant visual dashboard. See sales breakdowns by type, payment method trends, net sales over time, and summary statistics. Runs 100% in your browser - no data uploaded.",
+    status: "live",
+    features: [
+      "Shopify CSV import",
+      "Sales by type breakdown",
+      "Payment method analysis",
+      "Time trend charts",
+      "Summary statistics",
+      "100% browser-based",
+      "No data uploaded",
+      "Instant results",
+    ],
+    icon: "📊",
+    href: "/tools/reports",
+    accent: "#10b981",
+    usedBy: "Nonprofits and small businesses tracking Shopify sales",
+  },
+  {
+    id: "scheduler",
+    name: "Symphonix Scheduler",
+    icon: "🎵",
+    accent: "#a244ae",
+    status: "live",
+    href: "/tools/scheduler",
+    usedBy: "Music program coordinators and education directors",
+    description:
+      "Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, track venues, and publish schedules with automated email notifications.",
+    features: [
+      "Template-based scheduling",
+      "Automated session generation",
+      "Instructor availability tracking",
+      "Multi-venue management",
+      "Conflict detection & resolution",
+      "Email notification system",
+      "School calendar integration",
+      "Tag & categorization system",
+      "Real-time schedule publishing",
+    ],
+  },
 ];
 
-const schedulerTool = {
-  id: 'scheduler',
-  name: 'Symphonix Scheduler',
-  icon: '🎵',
-  accent: '#a244ae',
-  status: 'live',
-  href: '/tools/scheduler',
-  usedBy: 'Music program coordinators and education directors',
-  description: 'Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, track venues, and publish schedules with automated email notifications.',
-  features: [
-    'Template-based scheduling',
-    'Automated session generation',
-    'Instructor availability tracking',
-    'Multi-venue management',
-    'Conflict detection & resolution',
-    'Email notification system',
-    'School calendar integration',
-    'Tag & categorization system',
-    'Real-time schedule publishing'
-  ]
-};
-
-export default async function ToolsPage() {
-  // Check if the current user is an org member to conditionally show the scheduler
-  let showScheduler = false;
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.email) {
-      const membership = await getOrgMembership(user.email);
-      showScheduler = isOrgMember(membership);
-    }
-  } catch {
-    // If membership check fails, hide scheduler (safe default)
-  }
-
-  const tools = showScheduler ? [...publicTools, schedulerTool] : publicTools;
+export default function ToolsPage() {
 
   return (
     <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "#0f172a" }}>

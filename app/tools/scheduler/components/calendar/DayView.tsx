@@ -169,7 +169,7 @@ function DayEventBlock({
             <p className="text-[10px] font-semibold leading-none truncate" style={{ color: colors.text }}>
               {event.title}
             </p>
-            <p className="text-[9px] text-slate-500 leading-none shrink-0">
+            <p className="text-[9px] text-slate-600 leading-none shrink-0">
               {event.time}
             </p>
           </>
@@ -181,7 +181,7 @@ function DayEventBlock({
             >
               {event.title}
             </p>
-            <p className="text-[10px] text-slate-500 leading-tight truncate mt-0.5">
+            <p className="text-[10px] text-slate-600 leading-tight truncate mt-0.5">
               {event.instructor}
               {event.venue ? ` · ${event.venue}` : ''}
             </p>
@@ -380,7 +380,7 @@ export function DayView({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
             aria-label="Previous day"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-500" />
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
         </Tooltip>
 
@@ -394,7 +394,7 @@ export function DayView({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
             aria-label="Next day"
           >
-            <ChevronRight className="w-5 h-5 text-slate-500" />
+            <ChevronRight className="w-5 h-5 text-slate-600" />
           </button>
         </Tooltip>
 
@@ -456,7 +456,7 @@ export function DayView({
             <div className="flex flex-col items-center gap-3 pointer-events-auto">
               <CalendarDays className="w-8 h-8 text-slate-300" />
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
+                <p className="text-sm font-medium text-slate-600">No sessions scheduled yet</p>
                 <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
               </div>
               <div className="flex flex-col items-center gap-1.5 mt-1">
@@ -487,7 +487,7 @@ export function DayView({
                 {selectedVenues.map((venueId, laneIdx) => (
                   <div
                     key={venueId}
-                    className={`flex-1 text-[11px] font-semibold text-slate-500 py-2 text-center truncate px-1 ${
+                    className={`flex-1 text-[11px] font-semibold text-slate-600 py-2 text-center truncate px-1 ${
                       laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                     }`}
                   >

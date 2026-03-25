@@ -195,10 +195,10 @@ export function CsvImportDialog({
           {/* Result state */}
           {result && (
             <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-              <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <Check className="w-5 h-5 text-emerald-800 flex-shrink-0" />
               <div>
                 <p className="font-medium text-emerald-800">Import complete</p>
-                <p className="text-sm text-emerald-600">
+                <p className="text-sm text-emerald-800">
                   {result.imported} imported, {result.skipped} skipped
                 </p>
               </div>
@@ -253,12 +253,12 @@ export function CsvImportDialog({
                 onClick={() => setHelpOpen((v) => !v)}
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                <HelpCircle className="w-4 h-4 text-slate-400" />
+                <HelpCircle className="w-4 h-4 text-slate-600" />
                 Column Reference
                 {helpOpen ? (
-                  <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
+                  <ChevronDown className="w-4 h-4 text-slate-600 ml-auto" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400 ml-auto" />
+                  <ChevronRight className="w-4 h-4 text-slate-600 ml-auto" />
                 )}
               </button>
               {helpOpen && (
@@ -286,7 +286,7 @@ export function CsvImportDialog({
                     {rows.length} row{rows.length !== 1 ? 's' : ''} parsed
                   </span>
                   {errorCount > 0 && (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">
                       <AlertTriangle className="w-3 h-3" />
                       {errorCount} row{errorCount !== 1 ? 's' : ''} with errors
                     </span>
@@ -297,7 +297,7 @@ export function CsvImportDialog({
                 </div>
                 <button
                   onClick={reset}
-                  className="text-xs text-slate-500 hover:text-slate-700"
+                  className="text-xs text-slate-600 hover:text-slate-700"
                 >
                   Choose different file
                 </button>
@@ -308,10 +308,10 @@ export function CsvImportDialog({
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 sticky top-0">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 w-8">#</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 w-8"></th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-600 w-8">#</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-600 w-8"></th>
                         {displayCols.map((col) => (
-                          <th key={col} className="px-3 py-2 text-left text-xs font-medium text-slate-500">
+                          <th key={col} className="px-3 py-2 text-left text-xs font-medium text-slate-600">
                             {columns.find((c) => c.csvHeader.toLowerCase() === col)?.label ?? col}
                           </th>
                         ))}
@@ -335,7 +335,7 @@ export function CsvImportDialog({
                               const cellErrors = rowErrors.filter((e) => e.column === col);
                               return (
                                 <td key={col} className="px-3 py-2">
-                                  <span className={cellErrors.length > 0 ? 'text-red-600 font-medium' : 'text-slate-700'}>
+                                  <span className={cellErrors.length > 0 ? 'text-red-700 font-medium' : 'text-slate-700'}>
                                     {row[col] || <span className="text-slate-300">-</span>}
                                   </span>
                                   {cellErrors.map((e, ei) => (

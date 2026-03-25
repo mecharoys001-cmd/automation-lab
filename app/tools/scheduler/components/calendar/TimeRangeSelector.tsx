@@ -104,7 +104,7 @@ export function TimeRangeSelector({
 
       {/* Error toast */}
       {toastMessage && (
-        <div className="absolute top-full right-0 mt-2 z-50 whitespace-nowrap rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-600 shadow-md">
+        <div className="absolute top-full right-0 mt-2 z-50 whitespace-nowrap rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700 shadow-md">
           {toastMessage}
         </div>
       )}

@@ -14,7 +14,7 @@ const team = [
   {
     name: "Ethan S. Brewerton",
     role: "Development Lead",
-    bio: "Creative technologist dedicated to operational efficiency. With two years of specialized experience in computational models and generative scripting, Ethan has mastered automating intricate, multi-step processes — applying that expertise to the nonprofit sector.",
+    bio: "Creative technologist dedicated to operational efficiency. With two years of specialized experience in computational models and generative scripting, Ethan has mastered automating intricate, multi-step processes, applying that expertise to the nonprofit sector.",
     highlights: ["Computational modeling & generative scripting", "Custom tool development", "AI workflow architecture"],
     photo: "/images/team/ethan.png",
     accentColor: "#21b8bb",

@@ -27,7 +27,7 @@ interface InstructorHoursTableProps {
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Active:     { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  'Part-time': { bg: 'bg-amber-100',  text: 'text-amber-700' },
+  'Part-time': { bg: 'bg-amber-100',  text: 'text-amber-800' },
   Substitute: { bg: 'bg-blue-100',    text: 'text-blue-500' },
 };
 
@@ -123,7 +123,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
                   </span>
 
                   {/* Avg/Week */}
-                  <span className="text-sm text-slate-500 text-right tabular-nums">
+                  <span className="text-sm text-slate-600 text-right tabular-nums">
                     {instructor.avgPerWeek}/wk
                   </span>
 

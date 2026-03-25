@@ -113,10 +113,10 @@ function FilterDropdown({
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-[13px] font-medium transition-colors cursor-pointer ${
             hasSelections
               ? 'border-blue-300 bg-blue-50 text-blue-700'
-              : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <Icon className={`w-3.5 h-3.5 ${hasSelections ? 'text-blue-500' : 'text-slate-500'}`} />
+          <Icon className={`w-3.5 h-3.5 ${hasSelections ? 'text-blue-500' : 'text-slate-600'}`} />
           <span>{filter.label}</span>
           {hasSelections && (
             <Badge variant="count" color="blue" className="ml-0.5">
@@ -138,7 +138,7 @@ function FilterDropdown({
           style={{ top: dropdownPos.top, left: dropdownPos.left }}
         >
           {filter.options.length === 0 ? (
-            <div className="px-3 py-3 text-[13px] text-slate-500 text-center">
+            <div className="px-3 py-3 text-[13px] text-slate-600 text-center">
               <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
               {filter.emptyHref && (
                 <a
@@ -324,7 +324,7 @@ export function DynamicFilterBar({
   if (loadingTags && tagCategories.length > 0) {
     return (
       <div className={`bg-white border-b border-slate-200 ${className}`}>
-        <div className="flex items-center gap-2 px-6 py-3 text-slate-500 text-sm">
+        <div className="flex items-center gap-2 px-6 py-3 text-slate-600 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>Loading filters...</span>
         </div>

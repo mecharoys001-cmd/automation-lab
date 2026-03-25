@@ -71,7 +71,7 @@ export default function Hero() {
               textTransform: "uppercase",
             }}
           >
-            Phase 1: Research & Discovery — Underway
+            Phase 1: Research & Discovery - Underway
           </span>
         </div>
 
@@ -114,14 +114,14 @@ export default function Hero() {
           }}
         >
           Exploring how responsible, human-centered automation can free up staff
-          time for mission-driven work — and build reusable infrastructure for
+          time for mission-driven work and build reusable infrastructure for
           arts & culture nonprofits across Northwest Connecticut.
         </p>
 
         {/* CTAs */}
         <div
           className="animate-fade-up delay-300"
-          style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginBottom: "3.5rem" }}
+          style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}
         >
           <Link href="/tools" className="btn-primary">
             🛠️ Try Our Tools
@@ -132,47 +132,10 @@ export default function Hero() {
             rel="noopener noreferrer"
             className="btn-outline-white"
           >
-            Join the Research →
+            Take the Self-Assessment
           </a>
         </div>
 
-        {/* Quick stats row */}
-        <div
-          className="animate-fade-up delay-400"
-          style={{
-            display: "flex",
-            gap: "0",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            background: "rgba(255,255,255,0.15)",
-            borderRadius: "var(--radius-md)",
-            border: "1px solid rgba(255,255,255,0.25)",
-            overflow: "hidden",
-          }}
-        >
-          {[
-            { value: "30 hrs", label: "Saved / Week" },
-            { value: "$39K", label: "Annual Savings" },
-            { value: "$315/hr", label: "Dev ROI" },
-          ].map((s, i) => (
-            <div
-              key={s.label}
-              style={{
-                flex: "1 1 160px",
-                padding: "18px 24px",
-                textAlign: "center",
-                borderRight: i < 2 ? "1px solid rgba(255,255,255,0.2)" : "none",
-              }}
-            >
-              <div style={{ fontSize: "1.6rem", fontWeight: 900, color: "#ffffff", fontFamily: "'Montserrat', sans-serif", letterSpacing: "-0.02em" }}>
-                {s.value}
-              </div>
-              <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginTop: "4px" }}>
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );

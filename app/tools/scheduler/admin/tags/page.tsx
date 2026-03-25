@@ -530,7 +530,7 @@ export default function TagsPage() {
   if (loading && tags.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50">
-        <div className="flex items-center gap-3 text-slate-500">
+        <div className="flex items-center gap-3 text-slate-600">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm font-medium">Loading tags...</span>
         </div>
@@ -543,7 +543,7 @@ export default function TagsPage() {
       <div className="h-full flex items-center justify-center bg-slate-50">
         <div className="max-w-md text-center">
           <AlertTriangle className="w-12 h-12 text-red-700 mx-auto mb-4" />
-          <p className="text-sm text-red-600 font-medium">{error}</p>
+          <p className="text-sm text-red-700 font-medium">{error}</p>
           <Button variant="primary" onClick={fetchTags} className="mt-4">
             Retry
           </Button>
@@ -563,7 +563,7 @@ export default function TagsPage() {
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <AlertTriangle className="w-5 h-5 text-red-700" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Delete &ldquo;{deleteConfirm.name}&rdquo;?</h3>
             </div>
@@ -601,7 +601,7 @@ export default function TagsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tags</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-600 mt-1">
               Organize sessions with categorical tags for filtering and reporting
             </p>
           </div>
@@ -633,7 +633,7 @@ export default function TagsPage() {
       <div className="bg-white px-4 sm:px-8 py-4 border-b border-slate-200 shrink-0">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1">
-            <label htmlFor="quick-add-tag" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
+            <label htmlFor="quick-add-tag" className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
               Quick Add Tag
             </label>
             <input
@@ -644,15 +644,15 @@ export default function TagsPage() {
               onChange={(e) => { setQuickAddValue(e.target.value); setQuickAddError(null); setQuickAddSuccess(false); }}
               onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
               placeholder="e.g., Percussion, Strings, Brass (comma-separated for bulk)"
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               disabled={quickAddLoading}
             />
-            {quickAddError && <p className="text-xs text-red-600 mt-1">{quickAddError}</p>}
-            {quickAddSuccess && <p className="text-xs text-emerald-600 mt-1">✓ Tag created</p>}
+            {quickAddError && <p className="text-xs text-red-700 mt-1">{quickAddError}</p>}
+            {quickAddSuccess && <p className="text-xs text-emerald-800 mt-1">✓ Tag created</p>}
           </div>
 
           <div className="w-full sm:w-48">
-            <label htmlFor="quick-add-category" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
+            <label htmlFor="quick-add-category" className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
               Category
             </label>
             <select
@@ -705,7 +705,7 @@ export default function TagsPage() {
                 if (e.key === 'Escape') { setNewCategoryName(''); setShowNewCategoryInput(false); }
               }}
               placeholder="Category name..."
-              className="flex-1 h-9 rounded-lg border border-blue-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+              className="flex-1 h-9 rounded-lg border border-blue-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               autoFocus
             />
             <Button variant="primary" size="sm" onClick={createCategory} disabled={!newCategoryName.trim()}>
@@ -736,7 +736,7 @@ export default function TagsPage() {
                     <div className="flex items-center gap-3">
                       <ChevronDown className={`w-4 h-4 text-slate-700 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
                       <h3 className="text-sm font-bold text-slate-900">{category}</h3>
-                      <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
+                      <span className="text-xs text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
                         {categoryTags.length}
                       </span>
                     </div>
@@ -767,7 +767,7 @@ export default function TagsPage() {
                           if (e.key === 'Escape') setCategoryQuickAdd(null);
                         }}
                         placeholder={`Add tag to ${category} (comma-separated for bulk)...`}
-                        className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                        className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         autoFocus
                         disabled={categoryQuickAddLoading}
                       />
@@ -876,7 +876,7 @@ export default function TagsPage() {
                                   <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
                                 </div>
                                 {getDescriptionForTag(tag) && (
-                                  <p className="text-xs text-slate-500 mt-0.5">{getDescriptionForTag(tag)}</p>
+                                  <p className="text-xs text-slate-600 mt-0.5">{getDescriptionForTag(tag)}</p>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
@@ -892,7 +892,7 @@ export default function TagsPage() {
                                   <button
                                     onClick={() => deleteTag(tag.id, tag.name)}
                                     disabled={isDeleting}
-                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {isDeleting ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -917,7 +917,7 @@ export default function TagsPage() {
 
           {categories.length === 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-              <p className="text-sm text-slate-500">No tags yet. Create your first tag above!</p>
+              <p className="text-sm text-slate-600">No tags yet. Create your first tag above!</p>
             </div>
           )}
         </div>

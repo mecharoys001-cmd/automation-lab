@@ -43,7 +43,7 @@ export function HoursByTagTable({ tags }: HoursByTagTableProps) {
           <div className="flex flex-col items-center gap-3">
             <Tag className="w-8 h-8 text-slate-300" />
             <div>
-              <p className="text-sm font-medium text-slate-500">No tag data available</p>
+              <p className="text-sm font-medium text-slate-600">No tag data available</p>
               <p className="text-sm text-slate-700 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
             </div>
             <Link
@@ -86,12 +86,12 @@ export function HoursByTagTable({ tags }: HoursByTagTableProps) {
                 </span>
 
                 {/* Sessions */}
-                <span className="text-sm text-slate-500 text-right tabular-nums">
+                <span className="text-sm text-slate-600 text-right tabular-nums">
                   {tag.sessions}
                 </span>
 
                 {/* Avg Duration */}
-                <span className="text-sm text-slate-500 text-right tabular-nums">
+                <span className="text-sm text-slate-600 text-right tabular-nums">
                   {tag.avgDuration} min
                 </span>
               </div>

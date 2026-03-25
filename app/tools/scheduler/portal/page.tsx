@@ -300,7 +300,7 @@ export default function InstructorPortalPage() {
                             )}
                             {session.status !== 'published' && (
                               <div className="mt-2">
-                                <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                                <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                                   {session.status}
                                 </span>
                               </div>

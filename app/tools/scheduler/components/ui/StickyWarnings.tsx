@@ -122,7 +122,7 @@ export function StickyWarningBanner({ warnings }: { warnings: StickyWarning[] })
   return (
     <div className="sticky bottom-0 z-10 bg-red-50 border-t border-red-200 px-5 py-2.5 space-y-1 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
       {warnings.map((w) => (
-        <div key={w.id} className="flex items-start gap-1.5 text-[11px] text-red-600">
+        <div key={w.id} className="flex items-start gap-1.5 text-[11px] text-red-700">
           <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
           <span>
             <span className="font-semibold">{w.label}:</span>{' '}

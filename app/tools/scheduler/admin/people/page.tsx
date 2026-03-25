@@ -391,7 +391,7 @@ function VenueDetailModal({
             <>
               {confirmDelete ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-red-600 font-medium">Delete this venue?</span>
+                  <span className="text-xs text-red-700 font-medium">Delete this venue?</span>
                   <Tooltip text="Confirm deletion">
                     <button
                       onClick={onDelete}
@@ -404,7 +404,7 @@ function VenueDetailModal({
                   <Tooltip text="Cancel deletion">
                     <button
                       onClick={() => setConfirmDelete(false)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                       Cancel
                     </button>
@@ -474,7 +474,7 @@ function VenueDetailModal({
           {/* Subjects */}
           {venue.subjects && venue.subjects.length > 0 && (
             <div className="flex items-center flex-wrap px-6 py-3 gap-1.5">
-              <span className="text-[13px] text-slate-500 mr-1">Event Type:</span>
+              <span className="text-[13px] text-slate-600 mr-1">Event Type:</span>
               {venue.subjects.map((s) => (
                 <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
                   {s}
@@ -488,7 +488,7 @@ function VenueDetailModal({
             <Accessibility className="w-4 h-4 text-slate-700" />
             <span className="text-[13px] text-slate-700">
               Wheelchair accessible:{' '}
-              <span className={`font-medium ${isAccessible ? 'text-emerald-600' : 'text-slate-700'}`}>
+              <span className={`font-medium ${isAccessible ? 'text-emerald-800' : 'text-slate-700'}`}>
                 {isAccessible ? 'Yes' : 'No'}
               </span>
             </span>
@@ -531,7 +531,7 @@ function VenueDetailModal({
         <div className="px-6 py-4 space-y-5">
           {/* Capacity */}
           <div>
-            <label htmlFor="venue-capacity" className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
+            <label htmlFor="venue-capacity" className="block text-xs font-semibold text-slate-600 mb-1.5">Capacity</label>
             <Tooltip text="Maximum number of people this venue can hold">
               <input
                 type="number"
@@ -540,14 +540,14 @@ function VenueDetailModal({
                 value={capacity}
                 onChange={(e) => { const v = e.target.value; setCapacity(v === '' || Number(v) >= 0 ? v : '0'); }}
                 placeholder="e.g. 30"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
             </Tooltip>
           </div>
 
           {/* Availability Times */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability Times</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Availability Times</label>
             <AvailabilityEditor
               value={editAvailability}
               onChange={setEditAvailability}
@@ -556,7 +556,7 @@ function VenueDetailModal({
 
           {/* Space Type */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Space Type</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Space Type</label>
             <Tooltip text="Select the space type for this venue">
               <div className="relative">
                 <select
@@ -581,7 +581,7 @@ function VenueDetailModal({
           {/* Subjects (Optional) */}
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="text-xs font-semibold text-slate-500">Event Type (Optional)</label>
+              <label className="text-xs font-semibold text-slate-600">Event Type (Optional)</label>
               <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
                 <AlertTriangle className="w-3 h-3 text-slate-700" />
               </Tooltip>
@@ -597,7 +597,7 @@ function VenueDetailModal({
 
           {/* Accessibility */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Accessibility</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Accessibility</label>
             <Tooltip text="Mark if this venue is wheelchair accessible">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -613,7 +613,7 @@ function VenueDetailModal({
 
           {/* Setup / Teardown Buffer */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup / Teardown Buffer</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Setup / Teardown Buffer</label>
             <Tooltip text="Minutes needed before and after events for setup and cleanup">
               <div className="flex items-center gap-2">
                 <input
@@ -622,23 +622,23 @@ function VenueDetailModal({
                   value={bufferMinutes}
                   onChange={(e) => { const v = e.target.value; setBufferMinutes(v === '' || Number(v) >= 0 ? v : '0'); }}
                   placeholder="0"
-                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
-                <span className="text-sm text-slate-500">minutes</span>
+                <span className="text-sm text-slate-600">minutes</span>
               </div>
             </Tooltip>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
             <Tooltip text="Additional notes or special instructions for this venue">
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add notes about this venue…"
                 rows={3}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
               />
             </Tooltip>
           </div>
@@ -701,7 +701,7 @@ function InstructorDetailModal({
               className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
                 instructor.on_call
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                  : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               {togglingOnCall ? 'Updating\u2026' : instructor.on_call ? 'On-Call \u2713' : 'Set On-Call'}
@@ -714,7 +714,7 @@ function InstructorDetailModal({
               className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
                 instructor.is_active
                   ? 'border-red-300 text-red-700 hover:bg-red-50'
-                  : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+                  : 'border-emerald-300 text-emerald-800 hover:bg-emerald-50'
               }`}
             >
               {togglingStatus ? 'Updating\u2026' : instructor.is_active ? 'Make Inactive' : 'Activate'}
@@ -729,7 +729,7 @@ function InstructorDetailModal({
         <Tooltip text={instructor.is_active ? 'Active staff member' : 'Inactive staff member'}>
           <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${instructor.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
         </Tooltip>
-        <span className="text-sm text-slate-500">{instructor.is_active ? 'Active' : 'Inactive'}</span>
+        <span className="text-sm text-slate-600">{instructor.is_active ? 'Active' : 'Inactive'}</span>
         {instructor.on_call && (
           <Badge variant="status" color="green" tooltip="Available for last-minute substitutions">
             On-Call
@@ -755,7 +755,7 @@ function InstructorDetailModal({
             text={instructor.phone}
             label="phone"
             icon={Phone}
-            textClassName="text-[13px] text-slate-500"
+            textClassName="text-[13px] text-slate-600"
             buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
           />
         )}
@@ -943,7 +943,7 @@ function VenueCreateModal({
       <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">
         {/* Name */}
         <div>
-          <label htmlFor="venue-form-name" className="block text-xs font-semibold text-slate-500 mb-1.5">Name *</label>
+          <label htmlFor="venue-form-name" className="block text-xs font-semibold text-slate-600 mb-1.5">Name *</label>
           <Tooltip text="Venue or room name" className="w-full">
             <input
               type="text"
@@ -954,7 +954,7 @@ function VenueCreateModal({
               onChange={(e) => setField('name', e.target.value)}
               maxLength={100}
               placeholder="e.g. Main Stage"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -962,7 +962,7 @@ function VenueCreateModal({
         {/* Space Type (from tags) */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="text-xs font-semibold text-slate-500">Space Type</label>
+            <label className="text-xs font-semibold text-slate-600">Space Type</label>
             <Tooltip text="Add a new space type">
               <button
                 type="button"
@@ -991,7 +991,7 @@ function VenueCreateModal({
                 onChange={(e) => setNewSpaceTypeName(e.target.value)}
                 placeholder="New space type name"
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSpaceType(); } }}
-                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 autoFocus
               />
               <Tooltip text="Create space type tag">
@@ -1025,7 +1025,7 @@ function VenueCreateModal({
         {/* Subjects (Optional) */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="text-xs font-semibold text-slate-500">Event Type (Optional)</label>
+            <label className="text-xs font-semibold text-slate-600">Event Type (Optional)</label>
             <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
               <AlertTriangle className="w-3 h-3 text-slate-700" />
             </Tooltip>
@@ -1041,7 +1041,7 @@ function VenueCreateModal({
 
         {/* Max Capacity */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Max Capacity</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Max Capacity</label>
           <Tooltip text="Maximum number of people this venue can hold (leave blank for unlimited)" className="w-full">
             <input
               type="number"
@@ -1049,7 +1049,7 @@ function VenueCreateModal({
               value={form.max_capacity}
               onChange={(e) => { const v = e.target.value; setField('max_capacity', v === '' || Number(v) >= 0 ? v : '0'); }}
               placeholder="e.g. 30"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -1071,7 +1071,7 @@ function VenueCreateModal({
 
         {/* Setup / Teardown Buffer */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Setup/Teardown Buffer</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Setup/Teardown Buffer</label>
           <Tooltip text="Minutes needed before and after events for setup and teardown" className="w-full">
             <div className="flex items-center gap-2">
               <input
@@ -1080,16 +1080,16 @@ function VenueCreateModal({
                 value={form.buffer_minutes}
                 onChange={(e) => { const v = e.target.value; setField('buffer_minutes', v === '' || Number(v) >= 0 ? v : '0'); }}
                 placeholder="0"
-                className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
-              <span className="text-sm text-slate-500">minutes</span>
+              <span className="text-sm text-slate-600">minutes</span>
             </div>
           </Tooltip>
         </div>
 
         {/* Availability */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Availability</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Availability</label>
           <AvailabilityEditor
             value={form.availability_json}
             onChange={(v) => setField('availability_json', v)}
@@ -1098,14 +1098,14 @@ function VenueCreateModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notes</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
           <Tooltip text="Internal notes about this venue" className="w-full">
             <textarea
               value={form.notes}
               onChange={(e) => setField('notes', e.target.value)}
               placeholder="Add notes about this venue…"
               rows={3}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
         </div>
@@ -1487,7 +1487,7 @@ export default function PeoplePage() {
                   placeholder="Search staff..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-500 bg-transparent outline-none"
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-700 bg-transparent outline-none"
                 />
               </div>
             </Tooltip>
@@ -1498,7 +1498,7 @@ export default function PeoplePage() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-                  className="appearance-none bg-transparent px-3 py-1.5 pr-8 text-[13px] font-medium text-slate-500 outline-none cursor-pointer"
+                  className="appearance-none bg-transparent px-3 py-1.5 pr-8 text-[13px] font-medium text-slate-600 outline-none cursor-pointer"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -1529,7 +1529,7 @@ export default function PeoplePage() {
           {loadingAll ? (
             <CardGridSkeleton />
           ) : filtered.length === 0 ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-500">
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-600">
               {allInstructors.length === 0
                 ? 'No staff found.'
                 : 'No staff match your filters.'}
@@ -1631,7 +1631,7 @@ export default function PeoplePage() {
                         );
                       })}
                       {(!inst.skills || inst.skills.length === 0) && (
-                        <span className="text-[11px] text-slate-500">No event types listed</span>
+                        <span className="text-[11px] text-slate-600">No event types listed</span>
                       )}
                     </div>
 
@@ -1655,7 +1655,7 @@ export default function PeoplePage() {
                         return (
                           <Tooltip key={day.key} text={tooltipText}>
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="text-[10px] font-medium text-slate-500">
+                              <span className="text-[10px] font-medium text-slate-600">
                                 {day.label}
                               </span>
                               <div className="flex flex-col gap-0.5">
@@ -1725,7 +1725,7 @@ export default function PeoplePage() {
                   placeholder="Search venues..."
                   value={venueSearch}
                   onChange={(e) => setVenueSearch(e.target.value)}
-                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-500 bg-transparent outline-none"
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-700 bg-transparent outline-none"
                 />
               </div>
             </Tooltip>
@@ -1788,8 +1788,8 @@ export default function PeoplePage() {
                   {/* Capacity */}
                   <Tooltip text={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>
                     <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-slate-500" />
-                      <span className="text-[13px] text-slate-500">
+                      <Users className="w-3.5 h-3.5 text-slate-600" />
+                      <span className="text-[13px] text-slate-600">
                         Capacity: {venue.max_capacity ?? 'Unlimited'}
                       </span>
                     </div>

@@ -299,17 +299,17 @@ function WeekEventBlock({
               {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
             </p>
             {height >= 50 && (
-              <p className="text-[10px] text-slate-500 leading-snug truncate group-hover:whitespace-normal mt-0.5">
+              <p className="text-[10px] text-slate-600 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.instructor}
               </p>
             )}
             {height >= 50 && event.venue && (
-              <p className="text-[9px] text-slate-500 leading-snug truncate group-hover:whitespace-normal mt-0.5">
+              <p className="text-[9px] text-slate-600 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.venue}
               </p>
             )}
             {height >= 64 && event.gradeLevel && (
-              <p className="text-[10px] text-slate-500 leading-snug truncate group-hover:whitespace-normal mt-0.5">
+              <p className="text-[10px] text-slate-600 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.gradeLevel}
               </p>
             )}
@@ -361,7 +361,7 @@ function TemplateSidebar({
       {/* Header */}
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-3 border-b border-slate-200`}>
         {!collapsed && (
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
             Event Library
           </span>
         )}
@@ -383,7 +383,7 @@ function TemplateSidebar({
       {!collapsed && (
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
           {templates.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-4">No active templates</p>
+            <p className="text-xs text-slate-600 text-center py-4">No active templates</p>
           ) : (
             templates.map((template) => {
               const subject = template.required_skills?.[0];
@@ -422,23 +422,23 @@ function TemplateSidebar({
                 >
                   <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0 group-hover:text-blue-400" />
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-500 italic'}`}>
+                    <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-600 italic'}`}>
                       {displayName}
                     </p>
                     {subtitle && (
-                      <p className="text-[11px] text-slate-500 truncate leading-snug">
+                      <p className="text-[11px] text-slate-600 truncate leading-snug">
                         {subtitle}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       {instructorName && (
-                        <span className="text-[10px] text-slate-500 truncate">{instructorName}</span>
+                        <span className="text-[10px] text-slate-600 truncate">{instructorName}</span>
                       )}
                       {venueName && (
-                        <span className="text-[10px] text-slate-500 truncate">{venueName}</span>
+                        <span className="text-[10px] text-slate-600 truncate">{venueName}</span>
                       )}
                       {template.duration_minutes > 0 && (
-                        <span className="text-[10px] text-slate-500">{template.duration_minutes}m</span>
+                        <span className="text-[10px] text-slate-600">{template.duration_minutes}m</span>
                       )}
                     </div>
                   </div>
@@ -779,7 +779,7 @@ export function WeekView({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
             aria-label="Previous week"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-500" />
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
         </Tooltip>
 
@@ -793,7 +793,7 @@ export function WeekView({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
             aria-label="Next week"
           >
-            <ChevronRight className="w-5 h-5 text-slate-500" />
+            <ChevronRight className="w-5 h-5 text-slate-600" />
           </button>
         </Tooltip>
 
@@ -831,7 +831,7 @@ export function WeekView({
             <div className="flex flex-col items-center gap-3 pointer-events-auto">
               <CalendarDays className="w-8 h-8 text-slate-300" />
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
+                <p className="text-sm font-medium text-slate-600">No sessions scheduled yet</p>
                 <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
               </div>
               <div className="flex flex-col items-center gap-1.5 mt-1">
@@ -902,7 +902,7 @@ export function WeekView({
                 className="flex items-start justify-end pr-3 pt-0"
                 style={{ height: `${HOUR_HEIGHT}px` }}
               >
-                <span className="text-[12px] font-semibold text-slate-500 -mt-2 select-none">
+                <span className="text-[12px] font-semibold text-slate-600 -mt-2 select-none">
                   {formatHourLabel(hour)}
                 </span>
               </div>
@@ -1269,7 +1269,7 @@ export function WeekView({
                               {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(snapTo15Min(dropPreview.hour + dropPreview.durationHours))}
                             </p>
                             {dropPreview.templateName && (
-                              <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
+                              <p className='text-[10px] font-medium text-slate-600 truncate'>{dropPreview.templateName}</p>
                             )}
                           </div>
                         </div>
@@ -1320,7 +1320,7 @@ export function WeekView({
                               {formatDecimalToTime(dropPreview.hour)} – {formatDecimalToTime(snapTo15Min(dropPreview.hour + dropPreview.durationHours))}
                             </p>
                             {dropPreview.templateName && (
-                              <p className='text-[10px] font-medium text-slate-500 truncate'>{dropPreview.templateName}</p>
+                              <p className='text-[10px] font-medium text-slate-600 truncate'>{dropPreview.templateName}</p>
                             )}
                           </div>
                         </div>

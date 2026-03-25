@@ -72,7 +72,7 @@ const ROLE_META: Record<AppRole, { label: string; description: string; color: st
   instructor: {
     label: 'Staff',
     description: 'View own schedule and availability only',
-    color: 'bg-emerald-100 text-emerald-600',
+    color: 'bg-emerald-100 text-emerald-800',
     icon: GraduationCap,
   },
 };
@@ -81,10 +81,10 @@ const emptyForm: UserFormData = { email: '', name: '', role: 'editor' };
 
 const cardBodyClass = 'rounded-lg border border-slate-200 bg-white shadow-sm p-5';
 const sectionTitleClass = 'text-base font-semibold text-slate-900';
-const sectionDescClass = 'text-[13px] text-slate-500 mt-0.5';
-const labelClass = 'block text-sm font-medium text-slate-500 mb-1';
+const sectionDescClass = 'text-[13px] text-slate-600 mt-0.5';
+const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
 const inputClass =
-  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
+  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
   'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
@@ -92,7 +92,7 @@ const btnSecondary =
 const btnDanger =
   'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const thClass =
-  'text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider';
+  'text-left px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wider';
 const tdClass = 'px-4 py-3 text-sm';
 
 // ---------------------------------------------------------------------------
@@ -484,7 +484,7 @@ export default function RolesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Role Management</h1>
-          <p className="text-[13px] text-slate-500 mt-1">
+          <p className="text-[13px] text-slate-600 mt-1">
             Manage user access levels for the Symphonix scheduler.
           </p>
         </div>
@@ -598,7 +598,7 @@ export default function RolesPage() {
                           </span>
                         )}
                       </td>
-                      <td className={`${tdClass} text-slate-500`}>{user.email || '—'}</td>
+                      <td className={`${tdClass} text-slate-600`}>{user.email || '—'}</td>
                       <td className={tdClass}>
                         {isEditing ? (
                           <select
@@ -635,7 +635,7 @@ export default function RolesPage() {
                             <Tooltip text="Cancel">
                               <button
                                 onClick={cancelEdit}
-                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
                               >
                                 <X className="w-3 h-3" />
                                 Cancel

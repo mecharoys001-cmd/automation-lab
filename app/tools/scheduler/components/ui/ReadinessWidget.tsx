@@ -28,7 +28,7 @@ interface ReadinessWidgetProps {
 
 const STATUS_ICON_CLASS = {
   ready: 'text-emerald-700',
-  warning: 'text-amber-700',
+  warning: 'text-amber-800',
   error: 'text-red-700',
 };
 
@@ -46,7 +46,7 @@ const STATUS_BG_CLASS = {
 
 const STATUS_TEXT_CLASS = {
   ready: 'text-emerald-700',
-  warning: 'text-amber-700',
+  warning: 'text-amber-800',
   error: 'text-red-700',
 };
 
@@ -91,7 +91,7 @@ function CheckSection({ check, onNavigate }: { check: ValidationCheck; onNavigat
         <span className={`text-xs font-semibold ${STATUS_TEXT_CLASS[check.status]}`}>
           {check.label}
         </span>
-        <span className="text-xs text-slate-500 ml-auto">
+        <span className="text-xs text-slate-600 ml-auto">
           {check.summary}
         </span>
       </div>

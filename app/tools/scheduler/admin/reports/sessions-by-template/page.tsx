@@ -198,7 +198,7 @@ export default function SessionsByTemplatePage() {
       <div className="flex flex-wrap items-center justify-between gap-4 px-4 sm:px-8 py-4 sm:py-6 bg-white border-b border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Sessions by Template</h1>
-          <p className="text-[13px] text-slate-500 mt-1">
+          <p className="text-[13px] text-slate-600 mt-1">
             View session counts by template with filtering and sorting
           </p>
         </div>
@@ -374,10 +374,10 @@ export default function SessionsByTemplatePage() {
                     <td className="px-4 py-3 text-slate-600">{row.subjects.join(', ')}</td>
                     <td className="px-4 py-3 text-slate-600">{DAY_NAMES[row.day_of_week]}</td>
                     <td className="px-4 py-3 text-right font-semibold text-slate-900">{row.session_count}</td>
-                    <td className="px-4 py-3 text-right text-emerald-600">{row.published_count}</td>
-                    <td className="px-4 py-3 text-right text-slate-500">{row.draft_count}</td>
+                    <td className="px-4 py-3 text-right text-emerald-800">{row.published_count}</td>
+                    <td className="px-4 py-3 text-right text-slate-600">{row.draft_count}</td>
                     <td className="px-4 py-3 text-right text-blue-600">{row.completed_count}</td>
-                    <td className="px-4 py-3 text-right text-red-600">{row.canceled_count}</td>
+                    <td className="px-4 py-3 text-right text-red-700">{row.canceled_count}</td>
                   </tr>
                 ))}
               </tbody>
@@ -387,16 +387,16 @@ export default function SessionsByTemplatePage() {
                   <td className="px-4 py-3 text-right font-bold text-slate-900">
                     {sortedData.reduce((sum, row) => sum + row.session_count, 0)}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-emerald-600">
+                  <td className="px-4 py-3 text-right font-semibold text-emerald-800">
                     {sortedData.reduce((sum, row) => sum + row.published_count, 0)}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-500">
+                  <td className="px-4 py-3 text-right font-semibold text-slate-600">
                     {sortedData.reduce((sum, row) => sum + row.draft_count, 0)}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-blue-600">
                     {sortedData.reduce((sum, row) => sum + row.completed_count, 0)}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-red-600">
+                  <td className="px-4 py-3 text-right font-semibold text-red-700">
                     {sortedData.reduce((sum, row) => sum + row.canceled_count, 0)}
                   </td>
                 </tr>

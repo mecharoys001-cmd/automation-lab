@@ -2,37 +2,34 @@ import Link from "next/link";
 
 const tools = [
   {
-    id: "camp-scheduler",
-    name: "Camp Scheduler",
+    id: "csv-dedup",
+    name: "CSV Deduplicator",
     description:
-      "A full-featured weekly activity scheduler for camps and programs. Drag-and-drop scheduling, conflict detection, one-click resolution, instructor availability management, venue tracking, and Google Sheets integration.",
-    status: "live" as const,
-    features: ["Drag & drop scheduling","Conflict detection (6 types)","Auto-resolution engine","Instructor availability","16+ venue management","Google Sheets sync"],
-    icon: "📅",
-    href: "/tools/camp-scheduler",
-    accentRaw: "#1282a2",
+      "Clean your mailing lists instantly. Fuzzy matching catches misspelled names, initials, and duplicates. Runs 100% in your browser — your data never leaves your computer.",
+    features: ["Fuzzy name matching", "Address normalization", "Smart record selection", "100% browser-based"],
+    icon: "🧹",
+    href: "/tools/csv-dedup",
+    accentRaw: "#6366f1",
   },
   {
-    id: "email-automator",
-    name: "Email Newsletter Automator",
+    id: "scheduler",
+    name: "Symphonix Scheduler",
     description:
-      "Automate your nonprofit email newsletter workflow. Connect your event data source and let AI draft, format, and schedule your newsletters.",
-    status: "coming-soon" as const,
-    features: ["AI-generated drafts","Mailchimp integration","Event data import","Scheduled sends"],
-    icon: "📧",
-    href: "#",
-    accentRaw: "#68ccd1",
+      "Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, and publish schedules.",
+    features: ["Template-based scheduling", "Instructor availability", "Conflict detection", "Email notifications"],
+    icon: "🎵",
+    href: "/tools/scheduler",
+    accentRaw: "#a244ae",
   },
   {
-    id: "grant-tracker",
-    name: "Grant Tracker",
+    id: "reports",
+    name: "Transaction Reports",
     description:
-      "Track grant deadlines, requirements, and reporting cycles. Never miss a funder deadline or renewal window again.",
-    status: "coming-soon" as const,
-    features: ["Deadline tracking","Report reminders","Funder CRM","Impact metrics"],
-    icon: "📋",
-    href: "#",
-    accentRaw: "#a28231",
+      "Upload your Shopify transaction CSV and get an instant visual dashboard with sales breakdowns, payment method trends, and summary statistics.",
+    features: ["Shopify CSV import", "Sales breakdown charts", "Payment method analysis", "100% browser-based"],
+    icon: "📊",
+    href: "/tools/reports",
+    accentRaw: "#10b981",
   },
 ];
 
@@ -44,7 +41,7 @@ export default function ToolsPreview() {
           <div className="label-overline" style={{ marginBottom: "10px" }}>Free Tools</div>
           <h2 className="heading-section">Tools Built for Nonprofits</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "15px", maxWidth: "480px", margin: "0 auto" }}>
-            Free, open tools developed through the Automation Lab — ready for your organization to use today.
+            Free, open tools developed through the Automation Lab, ready for your organization to use today.
           </p>
         </div>
 
@@ -59,7 +56,6 @@ export default function ToolsPreview() {
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
-                opacity: tool.status === "coming-soon" ? 0.8 : 1,
               }}
             >
               <div className="card-accent-top" style={{ background: tool.accentRaw }} />
@@ -69,9 +65,7 @@ export default function ToolsPreview() {
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
                     <span style={{ fontSize: "2rem" }}>{tool.icon}</span>
-                    {tool.status === "live"
-                      ? <span className="badge-live">● Live</span>
-                      : <span className="badge-soon">Coming Soon</span>}
+                    <span className="badge-live">● Live</span>
                   </div>
                   <h3 className="heading-card" style={{ fontSize: "16px", marginBottom: "8px" }}>{tool.name}</h3>
                   <p style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.65 }}>{tool.description}</p>
@@ -98,31 +92,13 @@ export default function ToolsPreview() {
                 </div>
 
                 {/* CTA */}
-                {tool.status === "live" ? (
-                  <Link
-                    href={tool.href}
-                    className="btn-primary"
-                    style={{ justifyContent: "center", background: tool.accentRaw }}
-                  >
-                    Open Tool →
-                  </Link>
-                ) : (
-                  <div
-                    style={{
-                      background: "var(--bg-light)",
-                      color: "var(--text-muted)",
-                      padding: "12px",
-                      borderRadius: "var(--radius-md)",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      textAlign: "center",
-                      border: "1px solid var(--border)",
-                      fontFamily: "'Montserrat', sans-serif",
-                    }}
-                  >
-                    In Development
-                  </div>
-                )}
+                <Link
+                  href={tool.href}
+                  className="btn-primary"
+                  style={{ justifyContent: "center", background: tool.accentRaw }}
+                >
+                  Open Tool →
+                </Link>
               </div>
             </div>
           ))}

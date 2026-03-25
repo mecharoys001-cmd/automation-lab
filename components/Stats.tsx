@@ -1,8 +1,7 @@
 const stats = [
-  { value: "30 hrs", label: "Saved per week", sublabel: "1,560 hrs/year",    color: "var(--teal)" },
-  { value: "$39K",   label: "Annual savings",  sublabel: "Across 2 projects", color: "var(--teal)" },
-  { value: "$315/hr",label: "Avg. dev ROI",    sublabel: "All case studies",  color: "var(--gold-light)" },
-  { value: "3",      label: "Projects complete",sublabel: "2023–2025",        color: "var(--teal-light)" },
+  { value: "3",      label: "Projects complete", sublabel: "2023-2025",        color: "var(--teal)" },
+  { value: "30 hrs", label: "Saved per week",    sublabel: "1,560 hrs/year",   color: "var(--teal)" },
+  { value: "$39K",   label: "Annual savings",    sublabel: "Across all projects", color: "var(--gold-light)" },
 ];
 
 export default function Stats() {

@@ -382,7 +382,7 @@ export function TemplateFormModal({
             }}
             placeholder="e.g., Weekly Strings K-2"
             autoFocus
-            className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition-colors ${
+            className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 outline-none transition-colors ${
               nameError
                 ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-1 focus:ring-red-400'
                 : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500'
@@ -436,7 +436,7 @@ export function TemplateFormModal({
             </span>
           )}
           {filteredInstructors.length > 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && (
-            <span className="text-[11px] text-slate-500 mt-0.5 inline-flex items-center gap-0.5">
+            <span className="text-[11px] text-slate-600 mt-0.5 inline-flex items-center gap-0.5">
               <Filter className="w-3 h-3 inline align-middle" />
               Filtered by{form.required_skills.length > 0 ? ` event type: ${form.required_skills.join(', ')}` : ''}{form.required_skills.length > 0 && showSessionFields && sessionDate ? ' &' : ''}{showSessionFields && sessionDate ? ' availability' : ''}
             </span>
@@ -459,7 +459,7 @@ export function TemplateFormModal({
             ))}
           </select>
           {venueConflict && (
-            <span className="text-[11px] text-red-600 mt-0.5 inline-flex items-center gap-1">
+            <span className="text-[11px] text-red-700 mt-0.5 inline-flex items-center gap-1">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
               {venueConflict}
             </span>
@@ -482,7 +482,7 @@ export function TemplateFormModal({
                   className={`px-3 py-1 rounded-full text-[13px] font-medium border transition-all cursor-pointer ${
                     selected
                       ? 'border-blue-500 bg-blue-50 text-blue-600'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {g}
@@ -527,7 +527,7 @@ export function TemplateFormModal({
                 {form.scheduling_mode === 'date_range' && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <label htmlFor="template-starts-on" className="text-[11px] text-slate-500 block mb-0.5">From</label>
+                      <label htmlFor="template-starts-on" className="text-[11px] text-slate-600 block mb-0.5">From</label>
                       <input
                         id="template-starts-on"
                         type="date"
@@ -538,7 +538,7 @@ export function TemplateFormModal({
                       />
                     </div>
                     <div>
-                      <label htmlFor="template-ends-on" className="text-[11px] text-slate-500 block mb-0.5">Until</label>
+                      <label htmlFor="template-ends-on" className="text-[11px] text-slate-600 block mb-0.5">Until</label>
                       <input
                         id="template-ends-on"
                         type="date"
@@ -569,7 +569,7 @@ export function TemplateFormModal({
                 {form.scheduling_mode === 'duration' && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <label htmlFor="template-duration-starts" className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
+                      <label htmlFor="template-duration-starts" className="text-[11px] text-slate-600 block mb-0.5">Starts</label>
                       <input
                         id="template-duration-starts"
                         type="date"
@@ -580,7 +580,7 @@ export function TemplateFormModal({
                       />
                     </div>
                     <div>
-                      <label htmlFor="template-duration-weeks" className="text-[11px] text-slate-500 block mb-0.5">Weeks</label>
+                      <label htmlFor="template-duration-weeks" className="text-[11px] text-slate-600 block mb-0.5">Weeks</label>
                       <input
                         id="template-duration-weeks"
                         type="number"
@@ -589,7 +589,7 @@ export function TemplateFormModal({
                         value={form.duration_weeks ?? ''}
                         onChange={(e) => updateForm({ duration_weeks: e.target.value ? Number(e.target.value) : null })}
                         placeholder="e.g. 12"
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                         aria-required="true"
                       />
                     </div>
@@ -614,7 +614,7 @@ export function TemplateFormModal({
                 {form.scheduling_mode === 'session_count' && (
                   <div className="flex flex-col gap-2 mt-2">
                     <div>
-                      <label htmlFor="template-session-count-starts" className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
+                      <label htmlFor="template-session-count-starts" className="text-[11px] text-slate-600 block mb-0.5">Starts</label>
                       <input
                         id="template-session-count-starts"
                         type="date"
@@ -626,7 +626,7 @@ export function TemplateFormModal({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label htmlFor="template-session-count" className="text-[11px] text-slate-500 block mb-0.5">Number of Sessions</label>
+                        <label htmlFor="template-session-count" className="text-[11px] text-slate-600 block mb-0.5">Number of Sessions</label>
                         <input
                           id="template-session-count"
                           type="number"
@@ -635,12 +635,12 @@ export function TemplateFormModal({
                           value={form.session_count ?? ''}
                           onChange={(e) => updateForm({ session_count: e.target.value ? Number(e.target.value) : null })}
                           placeholder="e.g. 10"
-                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                           aria-required="true"
                         />
                       </div>
                       <div>
-                        <label htmlFor="template-within-weeks" className="text-[11px] text-slate-500 block mb-0.5">Within X Weeks (optional)</label>
+                        <label htmlFor="template-within-weeks" className="text-[11px] text-slate-600 block mb-0.5">Within X Weeks (optional)</label>
                         <input
                           id="template-within-weeks"
                           type="number"
@@ -649,7 +649,7 @@ export function TemplateFormModal({
                           value={form.within_weeks ?? ''}
                           onChange={(e) => updateForm({ within_weeks: e.target.value ? Number(e.target.value) : null })}
                           placeholder="No limit"
-                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                         />
                       </div>
                     </div>
@@ -673,7 +673,7 @@ export function TemplateFormModal({
                   className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-all cursor-pointer ${
                     selected
                       ? 'border-blue-500 bg-blue-50 text-blue-600'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {mins} min
@@ -686,7 +686,7 @@ export function TemplateFormModal({
               className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-all cursor-pointer ${
                 form.duration_custom
                   ? 'border-blue-500 bg-blue-50 text-blue-600'
-                  : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
               Custom
@@ -701,7 +701,7 @@ export function TemplateFormModal({
                   onChange={(e) => updateForm({ duration_minutes: Number(e.target.value) || 0 })}
                   className="w-20 h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
-                <span className="text-[13px] text-slate-500">min</span>
+                <span className="text-[13px] text-slate-600">min</span>
               </div>
             )}
           </div>
@@ -724,7 +724,7 @@ export function TemplateFormModal({
                 {n}×
               </button>
             ))}
-            <span className="text-[13px] text-slate-500 ml-1">
+            <span className="text-[13px] text-slate-600 ml-1">
               {form.sessions_per_week === 1 ? '(once a week)' : form.sessions_per_week === 5 ? '(daily)' : 'per week'}
             </span>
           </div>
@@ -742,7 +742,7 @@ export function TemplateFormModal({
                 className="cursor-pointer accent-blue-500"
               />
               <span className="text-[13px] font-medium text-slate-900">Every week</span>
-              <span className="text-xs text-slate-500 ml-auto">(runs weekly)</span>
+              <span className="text-xs text-slate-600 ml-auto">(runs weekly)</span>
             </label>
 
             <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.week_cycle_length === 2 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
@@ -753,7 +753,7 @@ export function TemplateFormModal({
                 className="cursor-pointer accent-blue-500"
               />
               <span className="text-[13px] font-medium text-slate-900">Alternating weeks</span>
-              <span className="text-xs text-slate-500 ml-auto">(Week A / Week B)</span>
+              <span className="text-xs text-slate-600 ml-auto">(Week A / Week B)</span>
             </label>
 
             <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${form.week_cycle_length === 3 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
@@ -764,7 +764,7 @@ export function TemplateFormModal({
                 className="cursor-pointer accent-blue-500"
               />
               <span className="text-[13px] font-medium text-slate-900">Every 3 weeks</span>
-              <span className="text-xs text-slate-500 ml-auto">(Week A / Week B / Week C)</span>
+              <span className="text-xs text-slate-600 ml-auto">(Week A / Week B / Week C)</span>
             </label>
 
             <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border transition-colors ${(form.week_cycle_length ?? 1) > 3 ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'}`}>
@@ -792,7 +792,7 @@ export function TemplateFormModal({
                 }}
                 className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
-              <span className="text-xs text-slate-500">weeks</span>
+              <span className="text-xs text-slate-600">weeks</span>
             </label>
 
             {/* Week in cycle selector (shown when > 1 week) */}
@@ -810,14 +810,14 @@ export function TemplateFormModal({
                       className={`px-4 py-1.5 rounded-full text-[13px] font-medium border transition-all cursor-pointer ${
                         (form.week_in_cycle ?? 0) === i
                           ? 'border-blue-500 bg-blue-50 text-blue-600'
-                          : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       Week {String.fromCharCode(65 + i)}
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-2">
+                <p className="text-[11px] text-slate-600 mt-2">
                   Tip: Use alternating weeks for schedules that rotate. For example, if Grade 3 Piano runs in Week A and Grade 4 Piano runs in Week B, create both templates and assign them to different weeks.
                 </p>
               </div>
@@ -853,7 +853,7 @@ export function TemplateFormModal({
         {showSessionFields && (
           <>
             <div className="border-t border-slate-200 mt-1 pt-4">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Session Placement
               </span>
             </div>
@@ -889,7 +889,7 @@ export function TemplateFormModal({
 function FormField({ label, hint, required, error, children, htmlFor }: { label: string; hint?: string; required?: boolean; error?: string | null; children: React.ReactNode; htmlFor?: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      <label htmlFor={htmlFor} className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
         {label}
         {required && <span className="text-red-700 ml-0.5">*</span>}
         {hint && <span className="font-normal normal-case ml-1.5 text-slate-700">{hint}</span>}

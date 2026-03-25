@@ -2,7 +2,7 @@ const principles = [
   {
     icon: "🔍",
     title: "Research-Driven",
-    desc: "Every tool we build is grounded in real nonprofit needs — identified through sector surveys and direct partnership.",
+    desc: "Every tool we build is grounded in real nonprofit needs, identified through sector surveys and direct partnership.",
     accentRaw: "#68ccd1",
   },
   {

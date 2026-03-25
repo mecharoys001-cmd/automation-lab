@@ -120,7 +120,7 @@ export function InstructorDetailModal({
                 className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
                   data.onCall
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 {togglingOnCall ? 'Updating\u2026' : data.onCall ? 'On-Call \u2713' : 'Set On-Call'}
@@ -135,7 +135,7 @@ export function InstructorDetailModal({
                 className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
                   data.isActive
                     ? 'border-red-300 text-red-700 hover:bg-red-50'
-                    : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+                    : 'border-emerald-300 text-emerald-800 hover:bg-emerald-50'
                 }`}
               >
                 {togglingStatus ? 'Updating\u2026' : data.isActive ? 'Make Inactive' : 'Activate'}
@@ -157,7 +157,7 @@ export function InstructorDetailModal({
             }`}
           />
         </Tooltip>
-        <span className="text-sm text-slate-500">{data.isActive ? 'Active' : 'Inactive'}</span>
+        <span className="text-sm text-slate-600">{data.isActive ? 'Active' : 'Inactive'}</span>
         {data.onCall && (
           <Badge variant="status" color="green" tooltip="Available for last-minute substitutions">
             On-Call
@@ -183,7 +183,7 @@ export function InstructorDetailModal({
             text={data.phone}
             label="phone"
             icon={Phone}
-            textClassName="text-[13px] text-slate-500"
+            textClassName="text-[13px] text-slate-600"
             buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
           />
         )}
@@ -222,7 +222,7 @@ export function InstructorDetailModal({
             const slots = byDay[day];
             return (
               <div key={day} className="flex items-center gap-3 py-1">
-                <span className="w-10 text-xs font-medium text-slate-500">{day}</span>
+                <span className="w-10 text-xs font-medium text-slate-600">{day}</span>
                 {slots.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {slots.map((slot, i) => (
