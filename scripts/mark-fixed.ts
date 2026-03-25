@@ -2,7 +2,7 @@
 import { markAsFixed } from '../lib/airtable';
 
 async function main() {
-  const recordId = 'recebBjYHHYSFThsJ';
+  const recordId = 'recpog9dEqFpuvqnk';
   console.log(`Marking ${recordId} as "ROY fix"...`);
   
   const success = await markAsFixed(recordId);

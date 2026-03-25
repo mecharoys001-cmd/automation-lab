@@ -8,16 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { FinancialStatusBreakdown } from "../lib/types";
-
-const STATUS_COLORS: Record<string, string> = {
-  paid: "#10b981",
-  pending: "#f59e0b",
-  partially_paid: "#f97316",
-  refunded: "#ef4444",
-  authorized: "#3b82f6",
-  voided: "#6b7280",
-  unknown: "#9ca3af",
-};
+import { STATUS_COLORS, TOOLTIP_STYLE } from "../lib/colors";
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -66,10 +57,7 @@ export default function FinancialStatus({ data }: Props) {
             <Tooltip
               formatter={((value: number, name: string) => [fmt(value), statusLabel(name)]) as any}
               contentStyle={{
-                backgroundColor: "#1f2937",
-                border: "1px solid #374151",
-                borderRadius: "8px",
-                color: "#f3f4f6",
+                ...TOOLTIP_STYLE,
                 fontSize: "13px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
               }}

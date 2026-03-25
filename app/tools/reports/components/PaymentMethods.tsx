@@ -11,11 +11,7 @@ import {
   Cell,
 } from "recharts";
 import type { PaymentMethodBreakdown } from "../lib/types";
-
-const COLORS = [
-  "#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#ec4899", "#14b8a6", "#f97316",
-];
+import { PAYMENT_COLORS as COLORS, TOOLTIP_STYLE } from "../lib/colors";
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -54,10 +50,9 @@ export default function PaymentMethods({ data }: Props) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={((value: number) => [fmt(value), "Amount"]) as any}
               contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-                color: "hsl(var(--foreground))",
+                ...TOOLTIP_STYLE,
+                fontSize: "13px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
               }}
             />
             <Bar dataKey="amount" radius={[0, 4, 4, 0]}>

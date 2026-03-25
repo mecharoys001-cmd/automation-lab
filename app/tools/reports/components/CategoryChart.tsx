@@ -8,11 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { CategoryBreakdown } from "../lib/types";
-
-const COLORS = [
-  "#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16",
-];
+import { CATEGORY_COLORS as COLORS, TOOLTIP_STYLE } from "../lib/colors";
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -54,10 +50,7 @@ export default function CategoryChart({ data }: Props) {
             <Tooltip
               formatter={((value: number) => fmt(value)) as any}
               contentStyle={{
-                backgroundColor: "#1f2937",
-                border: "1px solid #374151",
-                borderRadius: "8px",
-                color: "#f3f4f6",
+                ...TOOLTIP_STYLE,
                 fontSize: "13px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
               }}

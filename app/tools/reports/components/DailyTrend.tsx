@@ -10,19 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import type { DailyRevenue, TransactionCategory } from "../lib/types";
-
-const CATEGORY_COLORS: Record<string, string> = {
-  "Summer Camps": "#10b981",
-  Classes: "#3b82f6",
-  "Open Studio": "#f59e0b",
-  "Ceramics Retail": "#ef4444",
-  Supplies: "#8b5cf6",
-  Events: "#ec4899",
-  Donations: "#14b8a6",
-  "Local Artists": "#f97316",
-  "Professional Services": "#6366f1",
-  Other: "#84cc16",
-};
+import { CATEGORY_COLOR_MAP as CATEGORY_COLORS, TOOLTIP_STYLE } from "../lib/colors";
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -74,15 +62,12 @@ export default function DailyTrend({ data }: Props) {
               cursor={{ fill: "rgba(255,255,255,0.05)" }}
               formatter={((value: number, name: string) => [fmt(value), name]) as any}
               contentStyle={{
-                backgroundColor: "#1f2937",
-                border: "1px solid #374151",
-                borderRadius: "8px",
-                color: "#f3f4f6",
+                ...TOOLTIP_STYLE,
                 fontSize: "13px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
               }}
-              itemStyle={{ color: "#e5e7eb", padding: "2px 0" }}
-              labelStyle={{ color: "#f9fafb", fontWeight: 600, marginBottom: "4px" }}
+              itemStyle={{ color: "#e2e8f0", padding: "2px 0" }}
+              labelStyle={{ color: "#f8fafc", fontWeight: 600, marginBottom: "4px" }}
               labelFormatter={(label) => {
                 const d = new Date(label + "T00:00:00");
                 return d.toLocaleDateString("en-US", {
