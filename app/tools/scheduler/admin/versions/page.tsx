@@ -200,7 +200,7 @@ export default function VersionsPage() {
 
   return (
     <div
-      className="overflow-y-auto h-full bg-slate-50 p-4 sm:p-8"
+      className="overflow-y-auto overflow-x-hidden h-full bg-slate-50 p-3 sm:p-4 md:p-8"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Page Header */}

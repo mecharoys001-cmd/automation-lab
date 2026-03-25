@@ -41,6 +41,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Valid email address is required' }, { status: 400 });
     }
 
+    if (String(body.google_email).trim().length > 255) {
+      return NextResponse.json({ error: 'Email must be 255 characters or less' }, { status: 400 });
+    }
+
+    if (body.display_name && String(body.display_name).trim().length > 100) {
+      return NextResponse.json({ error: 'Display name must be 100 characters or less' }, { status: 400 });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('admins') as any)
       .insert(body)
@@ -86,6 +94,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    // Validate email if being updated
+    if (body.google_email && String(body.google_email).trim().length > 255) {
+      return NextResponse.json({ error: 'Email must be 255 characters or less' }, { status: 400 });
+    }
+
+    if (body.google_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.google_email)) {
+      return NextResponse.json({ error: 'Valid email address is required' }, { status: 400 });
+    }
+
+    if ('display_name' in body && body.display_name && String(body.display_name).trim().length > 100) {
+      return NextResponse.json({ error: 'Display name must be 100 characters or less' }, { status: 400 });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('admins') as any)

@@ -93,7 +93,7 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
 
           {/* Quick search (optional - can add later) */}
           <div className="mt-2 pt-2 border-t border-slate-200">
-            <p className="text-xs text-slate-400 text-center">
+            <p className="text-xs text-slate-700 text-center">
               Click an emoji to select
             </p>
           </div>

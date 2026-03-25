@@ -168,7 +168,7 @@ export default function TagsPage() {
 
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null);
-  let toastCounter = useRef(0);
+  const toastCounter = useRef(0);
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type, id: ++toastCounter.current });
@@ -542,7 +542,7 @@ export default function TagsPage() {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50">
         <div className="max-w-md text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="w-12 h-12 text-red-700 mx-auto mb-4" />
           <p className="text-sm text-red-600 font-medium">{error}</p>
           <Button variant="primary" onClick={fetchTags} className="mt-4">
             Retry
@@ -586,9 +586,10 @@ export default function TagsPage() {
               </Button>
               <button
                 onClick={() => executeDelete(deleteConfirm.id, deleteConfirm.name, deleteConfirm.sessionCount > 0)}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                disabled={deleteLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {deleteConfirm.sessionCount > 0 ? 'Delete & Remove from Sessions' : 'Delete'}
+                {deleteLoading ? 'Deleting...' : deleteConfirm.sessionCount > 0 ? 'Delete & Remove from Sessions' : 'Delete'}
               </button>
             </div>
           </div>
@@ -731,7 +732,7 @@ export default function TagsPage() {
                     className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 text-slate-700 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
                       <h3 className="text-sm font-bold text-slate-900">{category}</h3>
                       <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
                         {categoryTags.length}
@@ -744,7 +745,7 @@ export default function TagsPage() {
                           setCategoryQuickAdd(category);
                           setCategoryQuickAddValue('');
                         }}
-                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-400 hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
                         aria-label="Add new tag to this category"
                       >
                         <Plus className="w-4 h-4" />
@@ -794,7 +795,7 @@ export default function TagsPage() {
                   <>
                     {categoryTags.length === 0 ? (
                       <div className="px-5 py-6 text-center border-t border-slate-100">
-                        <p className="text-sm text-slate-400 mb-3">No tags in this category yet.</p>
+                        <p className="text-sm text-slate-700 mb-3">No tags in this category yet.</p>
                         <button
                           onClick={() => {
                             setCategoryQuickAdd(category);
@@ -807,7 +808,7 @@ export default function TagsPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
                         {categoryTags.map(tag => {
                       const isEditing = editingId === tag.id;
                       const isDeleting = deletingId === tag.id;
@@ -880,7 +881,7 @@ export default function TagsPage() {
                                 <Tooltip text="Edit tag">
                                   <button
                                     onClick={() => startEdit(tag)}
-                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-400 hover:text-blue-600"
+                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-600"
                                   >
                                     <Pencil className="w-4 h-4" />
                                   </button>
@@ -889,7 +890,7 @@ export default function TagsPage() {
                                   <button
                                     onClick={() => deleteTag(tag.id, tag.name)}
                                     disabled={isDeleting}
-                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {isDeleting ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />

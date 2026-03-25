@@ -225,7 +225,7 @@ export function ImportFromProgramModal({
           </div>
 
           {loading && (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-slate-700">
               <Loader2 className="w-4 h-4 animate-spin" />
               Loading source data...
             </div>

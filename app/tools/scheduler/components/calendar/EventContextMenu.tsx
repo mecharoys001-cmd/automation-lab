@@ -130,7 +130,7 @@ export function EventContextMenu({
             onClick={() => onAction('duplicate', event)}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
           >
-            <Copy className="w-4 h-4 text-slate-400" />
+            <Copy className="w-4 h-4 text-slate-700" />
             Duplicate Event
           </button>
         </Tooltip>
@@ -149,7 +149,7 @@ export function EventContextMenu({
       {/* Suggest Replacements section */}
       <div className="border-t border-slate-100">
         <div className="flex items-center gap-2 px-3 py-2">
-          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+          <RefreshCw className="w-3.5 h-3.5 text-slate-700" />
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
             Suggested Replacements
           </span>
@@ -164,20 +164,20 @@ export function EventContextMenu({
                 className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left transition-colors cursor-pointer ${
                   s.available
                     ? 'hover:bg-blue-50 text-slate-700'
-                    : 'opacity-50 cursor-not-allowed text-slate-400'
+                    : 'opacity-50 cursor-not-allowed text-slate-700'
                 }`}
               >
                 <UserPlus className="w-3.5 h-3.5 shrink-0" style={{ color: s.available ? colors.accent : undefined }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-medium truncate">{s.instructor}</p>
-                  <p className="text-[10px] text-slate-400">{s.time}{!s.available ? ' · Unavailable' : ''}</p>
+                  <p className="text-[10px] text-slate-700">{s.time}{!s.available ? ' · Unavailable' : ''}</p>
                 </div>
               </button>
             </Tooltip>
           ))}
 
           {suggestions.length === 0 && (
-            <p className="text-[11px] text-slate-400 text-center py-2">
+            <p className="text-[11px] text-slate-700 text-center py-2">
               No suggestions available
             </p>
           )}

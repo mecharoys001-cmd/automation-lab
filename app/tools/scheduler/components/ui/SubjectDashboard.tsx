@@ -124,14 +124,14 @@ export function SubjectDashboard({ templates, className = '', onTagClick, select
     <div className={`rounded-xl border border-slate-200 bg-white ${className}`}>
       {/* Stats inline */}
       {stats.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-slate-400">
+        <div className="px-4 py-6 text-center text-sm text-slate-700">
           No event templates yet
         </div>
       ) : (
         <div className="px-4 py-3">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Event Types</span>
-            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs text-slate-700">·</span>
             <span className="text-xs text-slate-500">{totalTemplates} total</span>
           </div>
           <div className="flex flex-wrap gap-2">

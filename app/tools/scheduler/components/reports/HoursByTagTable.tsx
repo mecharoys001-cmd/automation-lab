@@ -44,7 +44,7 @@ export function HoursByTagTable({ tags }: HoursByTagTableProps) {
             <Tag className="w-8 h-8 text-slate-300" />
             <div>
               <p className="text-sm font-medium text-slate-500">No tag data available</p>
-              <p className="text-sm text-slate-400 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
+              <p className="text-sm text-slate-700 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
             </div>
             <Link
               href="/tools/scheduler/admin/tags"

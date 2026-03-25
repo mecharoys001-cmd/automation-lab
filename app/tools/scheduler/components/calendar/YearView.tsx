@@ -160,12 +160,12 @@ function EventChip({
           </span>
         )}
         {event.venue && (
-          <span className="text-[9px] text-slate-400 truncate leading-tight">
+          <span className="text-[9px] text-slate-700 truncate leading-tight">
             {event.venue}
           </span>
         )}
         {event.gradeLevel && (
-          <span className="text-[9px] text-slate-400 truncate leading-tight">
+          <span className="text-[9px] text-slate-700 truncate leading-tight">
             {event.gradeLevel}
           </span>
         )}
@@ -194,7 +194,7 @@ function LegendItem({ type }: { type: EventType }) {
 
 function LoadingIndicator() {
   return (
-    <div className="flex items-center justify-center py-6 gap-2 text-slate-400">
+    <div className="flex items-center justify-center py-6 gap-2 text-slate-700">
       <Loader2 className="w-4 h-4 animate-spin" />
       <span className="text-xs font-medium">Loading more months…</span>
     </div>
@@ -244,7 +244,7 @@ function MonthGrid({
         </h3>
         {eventCount > 0 && (
           <Tooltip text={`${eventCount} total event${eventCount !== 1 ? 's' : ''} in ${MONTH_NAMES[jsMonth]}`}>
-            <span className="text-xs font-medium text-slate-400">
+            <span className="text-xs font-medium text-slate-700">
               {eventCount} event{eventCount !== 1 ? 's' : ''}
             </span>
           </Tooltip>
@@ -258,7 +258,7 @@ function MonthGrid({
           <div
             key={label}
             style={{ gridRow: 1 }}
-            className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-400 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
+            className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-700 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
               idx < 6 ? 'border-r border-slate-200' : ''
             }`}
           >
@@ -339,7 +339,7 @@ function MonthGrid({
                             padding: '1px',
                           }}
                         >
-                          <div className="text-[8px] font-bold text-slate-400 text-center leading-tight mb-0.5 truncate">
+                          <div className="text-[8px] font-bold text-slate-700 text-center leading-tight mb-0.5 truncate">
                             {venueAbbrev(venueId)}
                           </div>
                           <div className="space-y-0.5">
@@ -353,7 +353,7 @@ function MonthGrid({
                               />
                             ))}
                             {laneEvents.length > 1 && (
-                              <div className="text-[7px] text-slate-400 text-center">
+                              <div className="text-[7px] text-slate-700 text-center">
                                 +{laneEvents.length - 1}
                               </div>
                             )}
@@ -374,7 +374,7 @@ function MonthGrid({
                       />
                     ))}
                     {dayEvents.length > 2 && (
-                      <div className="text-[8px] text-slate-400 text-center leading-tight">
+                      <div className="text-[8px] text-slate-700 text-center leading-tight">
                         +{dayEvents.length - 2}
                       </div>
                     )}
@@ -727,6 +727,7 @@ export function YearView({
             <button
               onClick={scrollToTop}
               className="inline-flex items-center justify-center w-10 h-10 bg-white text-slate-500 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+              aria-label="Scroll to top"
             >
               <ChevronUp className="w-5 h-5" />
             </button>

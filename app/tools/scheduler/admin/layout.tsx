@@ -46,14 +46,14 @@ function SidebarProgramSelector() {
     <div className="pb-6">
       <div className="flex items-center gap-2.5 mb-3">
         <CalendarDays className="w-6 h-6 text-blue-400 flex-shrink-0" />
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
           Symphonix
         </span>
       </div>
       {loading ? (
         <div className="h-9 w-full rounded-lg bg-slate-700 animate-pulse" />
       ) : programs.length === 0 ? (
-        <span className="text-sm text-slate-400">No programs found</span>
+        <span className="text-sm text-slate-700">No programs found</span>
       ) : (
         <Tooltip text="Switch program" position="right">
           <select

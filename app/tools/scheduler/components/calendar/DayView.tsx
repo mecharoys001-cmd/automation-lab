@@ -186,7 +186,7 @@ function DayEventBlock({
               {event.venue ? ` · ${event.venue}` : ''}
             </p>
             {height > 40 && (
-              <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">
+              <p className="text-[10px] text-slate-700 leading-tight truncate mt-0.5">
                 {event.time}
                 {event.endTime ? ` – ${event.endTime}` : ''}
               </p>
@@ -457,7 +457,7 @@ export function DayView({
               <CalendarDays className="w-8 h-8 text-slate-300" />
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
-                <p className="text-sm text-slate-400 mt-1">Set up templates and staff to start generating your schedule.</p>
+                <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
               </div>
               <div className="flex flex-col items-center gap-1.5 mt-1">
                 <Link href="/tools/scheduler/admin/event-templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
@@ -506,7 +506,7 @@ export function DayView({
             {hours.map((hour) => (
               <div
                 key={hour}
-                className="flex items-start justify-end pr-2 text-[11px] font-medium text-slate-400"
+                className="flex items-start justify-end pr-2 text-[11px] font-medium text-slate-700"
                 style={{ height: `${HOUR_HEIGHT}px` }}
               >
                 <span className="-mt-1.5">{formatHourLabel(hour)}</span>

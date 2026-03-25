@@ -150,7 +150,7 @@ function EventBlock({
 
           {/* Venue (if available) */}
           {event.venue && (
-            <p className="text-[9px] text-slate-400 leading-tight truncate mt-0.5">
+            <p className="text-[9px] text-slate-700 leading-tight truncate mt-0.5">
               📍 {event.venue}
             </p>
           )}
@@ -260,7 +260,7 @@ export function WeekViewSpreadsheet({
                 idx < 6 ? 'border-r border-slate-100' : ''
               }`}
             >
-              <span className="text-[11px] font-semibold text-slate-400 tracking-[1px]">
+              <span className="text-[11px] font-semibold text-slate-700 tracking-[1px]">
                 {day.label}
               </span>
               <span className="text-xl font-semibold text-slate-900 leading-tight mt-0.5">

@@ -27,9 +27,9 @@ interface ReadinessWidgetProps {
 }
 
 const STATUS_ICON_CLASS = {
-  ready: 'text-emerald-500',
-  warning: 'text-amber-500',
-  error: 'text-red-500',
+  ready: 'text-emerald-700',
+  warning: 'text-amber-700',
+  error: 'text-red-700',
 };
 
 const StatusIcon = {
@@ -193,7 +193,7 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
   if (!hasIssues) {
     return (
       <div className="inline-flex items-center gap-1.5">
-        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+        <CheckCircle2 className="w-4 h-4 text-emerald-700" />
         <span className="text-xs font-medium text-emerald-700">Ready to publish</span>
       </div>
     );
@@ -257,7 +257,7 @@ export function ReadinessWidget({ programId }: ReadinessWidgetProps) {
             {issueChecks.map(check => (
               <CheckSection key={check.label} check={check} onNavigate={(path) => { setExpanded(false); router.push(path); }} />
             ))}
-            <p className="text-[10px] text-slate-400 px-1">
+            <p className="text-[10px] text-slate-700 px-1">
               Resolve these before publishing. Click the blue links to fix each issue.
             </p>
           </div>

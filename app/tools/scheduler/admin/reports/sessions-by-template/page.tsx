@@ -152,7 +152,7 @@ export default function SessionsByTemplatePage() {
   }
 
   function getSortIcon(field: SortField) {
-    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />;
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-700" />;
     return sortDirection === 'asc' ?
       <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> :
       <ArrowDown className="w-3.5 h-3.5 text-blue-500" />;
@@ -288,7 +288,7 @@ export default function SessionsByTemplatePage() {
                 <option value="canceled">Canceled Only</option>
               </select>
             </Tooltip>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-700 pointer-events-none" />
           </div>
 
           {activeFilterCount > 0 && (
@@ -312,7 +312,7 @@ export default function SessionsByTemplatePage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : sortedData.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
+          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-700">
             {data.length === 0 ? 'No sessions found.' : 'No sessions match your filters.'}
           </div>
         ) : (

@@ -161,7 +161,7 @@ export default function InstructorDetailPage() {
           </div>
         </Tooltip>
 
-        <span className="text-sm text-slate-400">–</span>
+        <span className="text-sm text-slate-700">–</span>
 
         <Tooltip text="Filter report by end date">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
@@ -182,7 +182,7 @@ export default function InstructorDetailPage() {
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-slate-700 animate-spin" />
             <span className="ml-3 text-sm text-slate-500">Loading staff data…</span>
           </div>
         )}
@@ -191,7 +191,7 @@ export default function InstructorDetailPage() {
         {!loading && error && (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100">
-              <AlertCircle className="w-6 h-6 text-red-500" />
+              <AlertCircle className="w-6 h-6 text-red-700" />
             </div>
             <p className="text-sm font-medium text-slate-700">{error}</p>
             <Button variant="secondary" size="sm" onClick={fetchData}>
@@ -220,7 +220,7 @@ export default function InstructorDetailPage() {
               <Tooltip text="Total events for this staff member in the selected range">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-emerald-100">
-                    <Hash className="w-[22px] h-[22px] text-emerald-500" />
+                    <Hash className="w-[22px] h-[22px] text-emerald-700" />
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-medium text-slate-500">Total Events</span>
@@ -232,7 +232,7 @@ export default function InstructorDetailPage() {
               <Tooltip text="Number of weeks with at least one event">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-amber-100">
-                    <Calendar className="w-[22px] h-[22px] text-amber-500" />
+                    <Calendar className="w-[22px] h-[22px] text-amber-700" />
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-medium text-slate-500">Active Weeks</span>
@@ -270,7 +270,7 @@ export default function InstructorDetailPage() {
                       }`}
                       onClick={() => setActiveTab(tab.key)}
                     >
-                      <TabIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <TabIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-700'}`} />
                       {tab.label}
                     </button>
                   </Tooltip>
@@ -314,15 +314,15 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
     <div className="bg-white rounded-xl border border-slate-200">
       {/* Header */}
       <div className="flex items-center gap-4 px-5 py-3.5 border-b border-slate-200">
-        <Calendar className="w-[18px] h-[18px] text-slate-400" />
+        <Calendar className="w-[18px] h-[18px] text-slate-700" />
         <h2 className="text-base font-semibold text-slate-900">Weekly Breakdown</h2>
-        <span className="text-xs font-medium text-slate-400 ml-auto">
+        <span className="text-xs font-medium text-slate-700 ml-auto">
           {rows.length} week{rows.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-[24px_minmax(160px,1fr)_80px_80px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="grid grid-cols-[24px_minmax(160px,1fr)_80px_80px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-700">
         <span />
         <span>Week Starting</span>
         <span className="text-right">Hours</span>
@@ -332,7 +332,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
 
       {/* Rows */}
       {rows.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-slate-400">
+        <div className="px-5 py-8 text-center text-sm text-slate-700">
           No weekly data available for this date range.
         </div>
       ) : (
@@ -346,7 +346,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                   className="grid grid-cols-[24px_minmax(160px,1fr)_80px_80px_1fr] items-center px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer select-none"
                   onClick={() => toggleWeek(row.week)}
                 >
-                  <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 text-slate-700 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   <span className="text-[13px] font-medium text-slate-900">
                     {formatWeekLabel(row.week)}
                   </span>
@@ -368,7 +368,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                 {/* Expanded session list */}
                 {isExpanded && row.sessions && row.sessions.length > 0 && (
                   <div className="bg-slate-50/50 border-t border-slate-100 px-5 py-2">
-                    <div className="grid grid-cols-4 gap-4 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 pl-6">
+                    <div className="grid grid-cols-4 gap-4 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 pl-6">
                       <span>Event</span>
                       <span>Date</span>
                       <span>Time</span>
@@ -404,17 +404,17 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
     <div className="bg-white rounded-xl border border-slate-200">
       {/* Header */}
       <div className="flex items-center gap-4 px-5 py-3.5 border-b border-slate-200">
-        <Tag className="w-[18px] h-[18px] text-slate-400" />
+        <Tag className="w-[18px] h-[18px] text-slate-700" />
         <h2 className="text-base font-semibold text-slate-900">Hours by Tag</h2>
         <Tooltip text="Total hours across all tags (sessions may have multiple tags)">
-          <span className="text-xs font-medium text-slate-400 ml-auto cursor-help">
+          <span className="text-xs font-medium text-slate-700 ml-auto cursor-help">
             {Math.round(totalHours * 10) / 10}h total
           </span>
         </Tooltip>
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-[minmax(160px,auto)_100px_100px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="grid grid-cols-[minmax(160px,auto)_100px_100px_1fr] items-center px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-700">
         <span>Tag</span>
         <span className="text-right">Hours</span>
         <span className="text-right">Sessions</span>
@@ -423,7 +423,7 @@ function HoursByTagTable({ rows }: { rows: HoursByTag[] }) {
 
       {/* Rows */}
       {rows.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-slate-400">
+        <div className="px-5 py-8 text-center text-sm text-slate-700">
           No tag data available for this date range.
         </div>
       ) : (

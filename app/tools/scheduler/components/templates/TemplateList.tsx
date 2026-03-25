@@ -230,7 +230,7 @@ export function TemplateList({
         <div className="flex items-center gap-2 mb-3">
           <div className="relative" style={mode === 'table' ? { maxWidth: 320, flex: 1 } : { flex: 1 }}>
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700"
             />
             <input
               type="text"
@@ -400,7 +400,8 @@ export function TemplateList({
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F1F5F9' }}>
               <button
                 onClick={() => setFilters(EMPTY_FILTERS)}
-                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-red-700 transition-colors cursor-pointer"
+                aria-label="Clear all filters"
               >
                 <X className="w-3 h-3" />
                 Clear all filters
@@ -427,7 +428,7 @@ export function TemplateList({
       ) : filtered.length === 0 ? (
         /* Empty state */
         <div
-          className="text-center text-sm text-slate-400"
+          className="text-center text-sm text-slate-700"
           style={mode === 'table'
             ? { borderRadius: 12, backgroundColor: '#FFFFFF', padding: 48 }
             : { padding: '32px 16px' }}
@@ -635,21 +636,21 @@ function TableView({
               {/* Time */}
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <Clock className="w-3.5 h-3.5 text-slate-700" />
                   {t.timeLabel}
                 </div>
               </td>
               {/* Instructor */}
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
-                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <User className="w-3.5 h-3.5 text-slate-700" />
                   {t.instructor ?? '\u2014'}
                 </div>
               </td>
               {/* Venue */}
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#334155' }}>
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <MapPin className="w-3.5 h-3.5 text-slate-700" />
                   {t.venue ?? '\u2014'}
                 </div>
               </td>
@@ -691,7 +692,7 @@ function TableView({
                         className="p-1.5 rounded hover:bg-slate-100 transition-colors"
                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                       >
-                        <Pencil className="w-4 h-4 text-slate-400" />
+                        <Pencil className="w-4 h-4 text-slate-700" />
                       </button>
                     </Tooltip>
                   )}
@@ -702,7 +703,7 @@ function TableView({
                         className="p-1.5 rounded hover:bg-red-50 transition-colors"
                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                       >
-                        <Trash2 className="w-4 h-4 text-red-400" />
+                        <Trash2 className="w-4 h-4 text-red-700" />
                       </button>
                     </Tooltip>
                   )}
@@ -808,9 +809,10 @@ function DraggableView({
                       disabled={deletingId === item.id}
                       className={`p-1 rounded transition-colors cursor-pointer ${
                         deletingId === item.id
-                          ? 'text-slate-500 cursor-not-allowed'
-                          : 'hover:bg-white/30 text-slate-500 hover:text-red-400'
+                          ? 'text-slate-700 cursor-not-allowed'
+                          : 'hover:bg-white/30 text-slate-700 hover:text-red-700'
                       }`}
+                      aria-label={`Delete ${item.name}`}
                     >
                       {deletingId === item.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />

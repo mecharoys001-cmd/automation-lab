@@ -169,7 +169,7 @@ function InstructorHoursTab({
                   <Users className="w-8 h-8 text-slate-300" />
                   <div>
                     <p className="text-sm font-medium text-slate-500">No staff hours available</p>
-                    <p className="text-sm text-slate-400 mt-1">Add staff members and assign them to events to start tracking hours.</p>
+                    <p className="text-sm text-slate-700 mt-1">Add staff members and assign them to events to start tracking hours.</p>
                   </div>
                   <Link
                     href="/tools/scheduler/admin/people"
@@ -261,8 +261,8 @@ function InstructorHoursTab({
                             <Tooltip text={isExpanded ? 'Collapse monthly view' : 'Expand monthly view'}>
                               <span>
                                 {isExpanded
-                                  ? <ChevronDown className="w-4 h-4 text-slate-400" />
-                                  : <ChevronRight className="w-4 h-4 text-slate-400" />
+                                  ? <ChevronDown className="w-4 h-4 text-slate-700" />
+                                  : <ChevronRight className="w-4 h-4 text-slate-700" />
                                 }
                               </span>
                             </Tooltip>
@@ -285,7 +285,7 @@ function InstructorHoursTab({
                                 text={`${instructor.name} — ${m.month}: ${m.hours} hours`}
                               >
                                 <div className="flex flex-col gap-1.5 bg-white rounded-lg border border-[#E2E8F0] px-3 py-2.5">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-700">
                                     {m.month}
                                   </span>
                                   <span className="text-sm font-bold text-slate-900 tabular-nums">
@@ -377,7 +377,7 @@ function HoursByTagTab({
                   <Tag className="w-8 h-8 text-slate-300" />
                   <div>
                     <p className="text-sm font-medium text-slate-500">No tag data available</p>
-                    <p className="text-sm text-slate-400 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
+                    <p className="text-sm text-slate-700 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
                   </div>
                   <Link
                     href="/tools/scheduler/admin/tags"
@@ -607,7 +607,7 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: '#F8FAFC' }}>
       {/* ─── Top Bar ──────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-8 py-3 sm:py-0 sm:h-16 border-b border-[#E2E8F0]">
+      <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-8 py-3 sm:min-h-[4rem] border-b border-[#E2E8F0]">
         <Tooltip text="Reports dashboard — view staff hours and tag breakdowns">
           <h1 className="text-2xl font-bold text-slate-900 cursor-default mr-auto">Reports</h1>
         </Tooltip>
@@ -616,7 +616,7 @@ export default function ReportsPage() {
           <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-4 py-2 cursor-pointer hover:border-slate-300 transition-colors">
             <Calendar className="w-4 h-4 text-slate-500" />
             <span className="text-[13px] font-medium text-slate-900">{dateRangeLabel}</span>
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-slate-700" />
           </div>
         </Tooltip>
 
@@ -664,7 +664,7 @@ export default function ReportsPage() {
                   }`}
                   onClick={() => setActiveTab(tab.key)}
                 >
-                  <TabIcon className={`w-4 h-4 ${isActive ? 'text-[#3B82F6]' : 'text-slate-400'}`} />
+                  <TabIcon className={`w-4 h-4 ${isActive ? 'text-[#3B82F6]' : 'text-slate-700'}`} />
                   {tab.label}
                   {isActive && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3B82F6]" />

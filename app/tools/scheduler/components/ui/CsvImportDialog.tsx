@@ -176,7 +176,7 @@ export function CsvImportDialog({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
           <button onClick={handleClose} className="p-1 rounded hover:bg-slate-100" aria-label="Close dialog">
-            <X className="w-5 h-5 text-slate-400" />
+            <X className="w-5 h-5 text-slate-700" />
           </button>
         </div>
 
@@ -206,11 +206,11 @@ export function CsvImportDialog({
                 onDrop={handleDrop}
                 onClick={() => fileRef.current?.click()}
               >
-                <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+                <Upload className="w-8 h-8 text-slate-700 mx-auto mb-3" />
                 <p className="text-sm font-medium text-slate-700">
                   Drop a CSV file here, or click to browse
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-700 mt-1">
                   Expected columns: {columns.map((c) => c.csvHeader).join(', ')}
                 </p>
                 <input
@@ -256,7 +256,7 @@ export function CsvImportDialog({
                       {errorCount} row{errorCount !== 1 ? 's' : ''} with errors
                     </span>
                   )}
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-700">
                     {validCount} will be imported
                   </span>
                 </div>
@@ -288,12 +288,12 @@ export function CsvImportDialog({
                         const hasError = rowErrors.length > 0;
                         return (
                           <tr key={i} className={hasError ? 'bg-red-50/50' : ''}>
-                            <td className="px-3 py-2 text-xs text-slate-400">{i + 1}</td>
+                            <td className="px-3 py-2 text-xs text-slate-700">{i + 1}</td>
                             <td className="px-3 py-2">
                               {hasError ? (
-                                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                                <AlertTriangle className="w-3.5 h-3.5 text-red-700" />
                               ) : (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <Check className="w-3.5 h-3.5 text-emerald-700" />
                               )}
                             </td>
                             {displayCols.map((col) => {
@@ -304,7 +304,7 @@ export function CsvImportDialog({
                                     {row[col] || <span className="text-slate-300">-</span>}
                                   </span>
                                   {cellErrors.map((e, ei) => (
-                                    <span key={ei} className="block text-[11px] text-red-500">{e.message}</span>
+                                    <span key={ei} className="block text-[11px] text-red-700">{e.message}</span>
                                   ))}
                                 </td>
                               );

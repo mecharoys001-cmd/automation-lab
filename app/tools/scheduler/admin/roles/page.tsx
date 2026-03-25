@@ -428,24 +428,49 @@ export default function RolesPage() {
 
   async function handleRemove() {
     if (!removeUser) return;
-    setRemoving(true);
+    
+    const userToRemove = removeUser;
+    
+    // Optimistic update: immediately remove from UI and close modal
+    if (userToRemove.source === 'instructor') {
+      setInstructors((prev) => prev.filter((i) => i.id !== userToRemove.id));
+    } else {
+      setAdmins((prev) => prev.filter((a) => a.id !== userToRemove.id));
+    }
+    setRemoveUser(null);
+    setRemoving(false);
 
+    // Show optimistic success (will be replaced if error occurs)
+    setToast({ message: `Removing ${userToRemove.name}...`, type: 'success', id: Date.now() });
+
+    // Make API call in background
     try {
-      if (removeUser.source === 'instructor') {
-        const res = await fetch(`/api/instructors/${removeUser.id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Failed to remove instructor');
-      } else {
-        const res = await fetch(`/api/admins?id=${removeUser.id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Failed to remove admin');
+      const endpoint = userToRemove.source === 'instructor'
+        ? `/api/instructors/${userToRemove.id}`
+        : `/api/admins?id=${userToRemove.id}`;
+      
+      const res = await fetch(endpoint, { method: 'DELETE' });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to remove user');
       }
 
-      await fetchAll();
-      setToast({ message: `${removeUser.name} removed`, type: 'success', id: Date.now() });
-      setRemoveUser(null);
-    } catch {
-      setToast({ message: 'Failed to remove user', type: 'error', id: Date.now() });
-    } finally {
-      setRemoving(false);
+      // Success - update toast
+      setToast({ message: `${userToRemove.name} removed`, type: 'success', id: Date.now() });
+    } catch (err) {
+      // Rollback optimistic update on error
+      if (userToRemove.source === 'instructor') {
+        // Refetch to restore the user
+        fetchAll();
+      } else {
+        fetchAll();
+      }
+      setToast({ 
+        message: err instanceof Error ? err.message : 'Failed to remove user. Please try again.',
+        type: 'error',
+        id: Date.now()
+      });
     }
   }
 
@@ -492,7 +517,7 @@ export default function RolesPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-900">{meta.label}</p>
-                  <p className="text-[11px] text-slate-400 leading-tight">{meta.description}</p>
+                  <p className="text-[11px] text-slate-700 leading-tight">{meta.description}</p>
                 </div>
               </button>
             </Tooltip>
@@ -510,7 +535,7 @@ export default function RolesPage() {
             </p>
           </div>
           <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
             <input
               type="text"
               value={search}
@@ -522,7 +547,7 @@ export default function RolesPage() {
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -538,7 +563,7 @@ export default function RolesPage() {
           </div>
         ) : users.length === 0 ? (
           <div className="rounded-lg bg-slate-50 border border-slate-200 py-10 text-center">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-700">
               {search ? 'No users match your search.' : 'No users found. Add one to get started.'}
             </p>
           </div>
@@ -661,7 +686,7 @@ export default function RolesPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-0">
               <h3 className="text-base font-semibold text-slate-900">Add User</h3>
-              <button onClick={closeAddModal} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Close modal">
+              <button onClick={closeAddModal} className="text-slate-700 hover:text-slate-600 transition-colors" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -712,7 +737,7 @@ export default function RolesPage() {
               </div>
 
               {formError && (
-                <p role="alert" className="text-xs text-red-500 font-medium">{formError}</p>
+                <p role="alert" className="text-xs text-red-700 font-medium">{formError}</p>
               )}
             </div>
 
@@ -747,12 +772,12 @@ export default function RolesPage() {
             <div className="flex items-center justify-between px-5 pt-5 pb-0">
               <div className="flex items-center gap-2.5">
                 <div className="flex items-center justify-center w-9 h-9 rounded-full bg-red-100">
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  <AlertTriangle className="w-5 h-5 text-red-700" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900">Remove User</h3>
               </div>
               {!removing && (
-                <button onClick={() => setRemoveUser(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <button onClick={() => setRemoveUser(null)} className="text-slate-700 hover:text-slate-600 transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               )}

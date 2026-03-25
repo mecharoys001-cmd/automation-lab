@@ -128,7 +128,7 @@ export function InstructorEditModal({
           {onDelete && !isNew && (
             confirmDelete ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-red-500">Are you sure?</span>
+                <span className="text-xs text-red-700">Are you sure?</span>
                 <Tooltip text="Confirm deletion — this cannot be undone">
                   <button
                     onClick={onDelete}
@@ -156,7 +156,7 @@ export function InstructorEditModal({
               <Tooltip text="Delete this staff member permanently">
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 border border-red-200 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
                   Delete
@@ -181,9 +181,10 @@ export function InstructorEditModal({
       <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5">
         {/* First Name */}
         <div>
-          <label className="block text-sm font-semibold text-slate-500 mb-1.5">First Name<span className="text-red-400 ml-0.5">*</span></label>
+          <label htmlFor="instructor-first-name" className="block text-sm font-semibold text-slate-500 mb-1.5">First Name<span className="text-red-700 ml-0.5">*</span></label>
           <Tooltip text="Staff member's first name" className="w-full">
             <input
+              id="instructor-first-name"
               type="text"
               required
               aria-required="true"
@@ -198,9 +199,10 @@ export function InstructorEditModal({
 
         {/* Last Name */}
         <div>
-          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Last Name<span className="text-red-400 ml-0.5">*</span></label>
+          <label htmlFor="instructor-last-name" className="block text-sm font-semibold text-slate-500 mb-1.5">Last Name<span className="text-red-700 ml-0.5">*</span></label>
           <Tooltip text="Staff member's last name" className="w-full">
             <input
+              id="instructor-last-name"
               type="text"
               required
               aria-required="true"
@@ -223,9 +225,10 @@ export function InstructorEditModal({
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Email</label>
+          <label htmlFor="instructor-email" className="block text-sm font-semibold text-slate-500 mb-1.5">Email</label>
           <Tooltip text="Contact email for this staff member" className="w-full">
             <input
+              id="instructor-email"
               type="email"
               value={form.email}
               onChange={(e) => setField('email', e.target.value)}
@@ -234,14 +237,15 @@ export function InstructorEditModal({
               className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${emailError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
-          {emailError && <p role="alert" className="text-xs text-red-500 mt-1">{emailError}</p>}
+          {emailError && <p role="alert" className="text-xs text-red-700 mt-1">{emailError}</p>}
         </div>
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-semibold text-slate-500 mb-1.5">Phone</label>
+          <label htmlFor="instructor-phone" className="block text-sm font-semibold text-slate-500 mb-1.5">Phone</label>
           <Tooltip text="Contact phone number" className="w-full">
             <input
+              id="instructor-phone"
               type="tel"
               value={form.phone}
               onChange={(e) => setField('phone', e.target.value)}
@@ -250,7 +254,7 @@ export function InstructorEditModal({
               className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${phoneError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
-          {phoneError && <p role="alert" className="text-xs text-red-500 mt-1">{phoneError}</p>}
+          {phoneError && <p role="alert" className="text-xs text-red-700 mt-1">{phoneError}</p>}
         </div>
 
         {/* Event Type */}

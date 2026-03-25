@@ -367,7 +367,7 @@ export function EventPopover({
               className="p-1 rounded hover:bg-white/60 transition-colors cursor-pointer"
               aria-label="Edit event"
             >
-              <Pencil className="w-3.5 h-3.5 text-slate-400" />
+              <Pencil className="w-3.5 h-3.5 text-slate-700" />
             </button>
           </Tooltip>
         )}
@@ -382,7 +382,7 @@ export function EventPopover({
             {pinned ? (
               <PinOff className="w-3.5 h-3.5 text-blue-500" />
             ) : (
-              <Pin className="w-3.5 h-3.5 text-slate-400" />
+              <Pin className="w-3.5 h-3.5 text-slate-700" />
             )}
           </button>
         </Tooltip>
@@ -393,7 +393,7 @@ export function EventPopover({
             className="p-1 rounded hover:bg-white/60 transition-colors cursor-pointer"
             aria-label="Close popover"
           >
-            <X className="w-3.5 h-3.5 text-slate-400" />
+            <X className="w-3.5 h-3.5 text-slate-700" />
           </button>
         </Tooltip>
       </div>
@@ -412,7 +412,7 @@ export function EventPopover({
             {/* Time */}
             <div className="flex items-center gap-2">
               <Tooltip text="Event time">
-                <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <Clock className="w-3.5 h-3.5 text-slate-700 shrink-0" />
               </Tooltip>
               <div>
                 <span className="text-[12px] font-medium text-slate-700">
@@ -427,7 +427,7 @@ export function EventPopover({
             {/* Instructor */}
             <div className="flex items-center gap-2">
               <Tooltip text="Staff member">
-                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <User className="w-3.5 h-3.5 text-slate-700 shrink-0" />
               </Tooltip>
               <span className="text-[12px] font-medium text-slate-700">
                 {event.instructor}
@@ -438,7 +438,7 @@ export function EventPopover({
             {event.venue && (
               <div className="flex items-center gap-2">
                 <Tooltip text="Venue">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-slate-700 shrink-0" />
                 </Tooltip>
                 <span className="text-[12px] text-slate-700">{event.venue}</span>
               </div>
@@ -448,7 +448,7 @@ export function EventPopover({
             {event.gradeLevel && (
               <div className="flex items-center gap-2">
                 <Tooltip text="Grade level">
-                  <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <GraduationCap className="w-3.5 h-3.5 text-slate-700 shrink-0" />
                 </Tooltip>
                 <span className="text-[12px] text-slate-700">{event.gradeLevel}</span>
               </div>
@@ -458,7 +458,7 @@ export function EventPopover({
             {event.durationMinutes != null && (
               <div className="flex items-center gap-2">
                 <Tooltip text="Duration">
-                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-slate-700 shrink-0" />
                 </Tooltip>
                 <span className="text-[12px] text-slate-700">
                   {event.durationMinutes >= 60
@@ -472,7 +472,7 @@ export function EventPopover({
             {event.subjects && event.subjects.length > 0 && (
               <div className="flex items-start gap-2">
                 <Tooltip text="Subjects / Skills">
-                  <Tag className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <Tag className="w-3.5 h-3.5 text-slate-700 shrink-0 mt-0.5" />
                 </Tooltip>
                 <div className="flex flex-wrap gap-1">
                   {event.subjects.map((subj) => (
@@ -513,7 +513,7 @@ export function EventPopover({
             {event.tags && event.tags.length > 0 && (
               <div className="flex items-start gap-2">
                 <Tooltip text="Tags">
-                  <Tag className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <Tag className="w-3.5 h-3.5 text-slate-700 shrink-0 mt-0.5" />
                 </Tooltip>
                 <div className="flex flex-wrap gap-1">
                   {event.tags.map((tag) => (
@@ -532,8 +532,8 @@ export function EventPopover({
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <StickyNote className="w-3 h-3 text-slate-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
+                <StickyNote className="w-3 h-3 text-slate-700" />
+                <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-[0.5px]">
                   Notes
                 </span>
               </div>
@@ -665,18 +665,18 @@ export function EventPopover({
             {/* Similar event suggestions */}
             <div className="space-y-1.5 pt-2 border-t border-slate-100">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.5px]">
+                <Sparkles className="w-3 h-3 text-amber-700" />
+                <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-[0.5px]">
                   Similar events (different staff)
                 </span>
               </div>
               {loadingSimilar ? (
                 <div className="flex items-center justify-center py-3 gap-2">
-                  <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                  <span className="text-[11px] text-slate-400">Finding similar events...</span>
+                  <Loader2 className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                  <span className="text-[11px] text-slate-700">Finding similar events...</span>
                 </div>
               ) : similarEvents.length === 0 ? (
-                <p className="text-[11px] text-slate-400 py-1">No similar events found.</p>
+                <p className="text-[11px] text-slate-700 py-1">No similar events found.</p>
               ) : (
                 <div className="space-y-1">
                   {similarEvents.map((se) => (
@@ -684,7 +684,7 @@ export function EventPopover({
                       <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-50/60 border border-amber-100 text-left">
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] font-medium text-slate-700 truncate">{se.title}</p>
-                          <p className="text-[10px] text-slate-400 truncate">
+                          <p className="text-[10px] text-slate-700 truncate">
                             {se.instructor} &middot; {se.date} {se.time}
                             {se.venue ? ` \u00b7 ${se.venue}` : ''}
                           </p>
@@ -739,7 +739,7 @@ export function EventPopover({
                           {candidate.first_name} {candidate.last_name}
                         </p>
                         {candidate.skills.length > 0 && (
-                          <p className="text-[10px] text-slate-400 truncate">
+                          <p className="text-[10px] text-slate-700 truncate">
                             {candidate.skills.join(', ')}
                           </p>
                         )}
@@ -793,7 +793,7 @@ export function EventPopover({
                         <p className="text-[12px] font-medium text-slate-800 truncate">
                           {tmpl.name}
                         </p>
-                        <p className="text-[10px] text-slate-400 truncate">
+                        <p className="text-[10px] text-slate-700 truncate">
                           {tmpl.duration_minutes} min
                           {tmpl.instructor_name ? ` \u00b7 ${tmpl.instructor_name}` : ''}
                         </p>
@@ -816,7 +816,7 @@ export function EventPopover({
           <Tooltip text="Cancel this event">
             <button
               onClick={handleCancelClick}
-              className="text-[11px] font-medium text-red-500 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
+              className="text-[11px] font-medium text-red-700 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
               aria-label="Cancel event"
             >
               Cancel Event
@@ -827,7 +827,7 @@ export function EventPopover({
             <Tooltip text="Click to pin and add notes">
               <button
                 onClick={(e) => { e.stopPropagation(); onPin(); }}
-                className="text-[11px] font-medium text-slate-400 hover:text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
+                className="text-[11px] font-medium text-slate-700 hover:text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
                 aria-label="Pin popover"
               >
                 Pin

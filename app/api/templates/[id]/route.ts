@@ -53,33 +53,54 @@ export async function PATCH(
         { status: 400 }
       );
     }
+
+    if ('name' in body && String(body.name).trim().length > 200) {
+      return NextResponse.json(
+        { error: 'Template name must be 200 characters or less' },
+        { status: 400 }
+      );
+    }
     // venue_id is optional — generator can auto-assign
 
-    // Validate scheduling mode fields if being updated
-    if (body.scheduling_mode) {
-      const mode = body.scheduling_mode;
+    // Fetch existing template data for validation context
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('session_templates') as any)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
+
+    // Merge body with existing data for validation
+    const merged = { ...existing, ...body };
+
+    // Validate scheduling mode fields using merged data
+    if (body.scheduling_mode || existing.scheduling_mode) {
+      const mode = merged.scheduling_mode;
       if (mode === 'date_range') {
-        if (!body.starts_on || !body.ends_on) {
+        if (!merged.starts_on || !merged.ends_on) {
           return NextResponse.json(
             { error: 'Date Range mode requires both a start and end date' },
             { status: 400 }
           );
         }
-        if (body.starts_on > body.ends_on) {
+        if (merged.starts_on > merged.ends_on) {
           return NextResponse.json(
             { error: 'Start date must be before end date' },
             { status: 400 }
           );
         }
       } else if (mode === 'duration') {
-        if (!body.starts_on || !body.duration_weeks || body.duration_weeks < 1) {
+        if (!merged.starts_on || !merged.duration_weeks || merged.duration_weeks < 1) {
           return NextResponse.json(
             { error: 'Duration mode requires a start date and number of weeks' },
             { status: 400 }
           );
         }
       } else if (mode === 'session_count') {
-        if (!body.starts_on || !body.session_count || body.session_count < 1) {
+        if (!merged.starts_on || !merged.session_count || merged.session_count < 1) {
           return NextResponse.json(
             { error: 'Session Count mode requires a start date and number of sessions' },
             { status: 400 }
@@ -99,13 +120,6 @@ export async function PATCH(
     const instructorId = body.instructor_id;
     const requiredSkills = body.required_skills;
     if (instructorId !== undefined || requiredSkills !== undefined) {
-      // If only one field is being updated, fetch the other from the existing template
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: existing } = await (supabase.from('session_templates') as any)
-        .select('instructor_id, required_skills')
-        .eq('id', id)
-        .single();
-
       // If instructor_id was explicitly sent (even as null), use it; otherwise fall back to existing
       const finalInstructorId = instructorId !== undefined ? instructorId : existing?.instructor_id;
       const finalSkills = requiredSkills ?? existing?.required_skills;

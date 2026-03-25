@@ -485,10 +485,11 @@ export function OneOffEventModal({
 
         {/* Event Name */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
-            Event Name <span className="text-red-400">*</span>
+          <label htmlFor="event-name" className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+            Event Name <span className="text-red-700">*</span>
           </label>
           <input
+            id="event-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -547,7 +548,7 @@ export function OneOffEventModal({
 
         {/* Venue */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Venue <span className="text-red-400">*</span></label>
+          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Venue <span className="text-red-700">*</span></label>
           <select
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
@@ -568,7 +569,7 @@ export function OneOffEventModal({
             </p>
           )}
           {checkingConflict && (
-            <p className="text-[11px] text-slate-400 mt-1">Checking availability...</p>
+            <p className="text-[11px] text-slate-700 mt-1">Checking availability...</p>
           )}
         </div>
 
@@ -706,7 +707,7 @@ export function OneOffEventModal({
           )}
 
           {recurrenceType !== 'none' && (
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-700">
               Blackout days will be skipped automatically. Sessions won&apos;t be created outside the program date range.
             </p>
           )}
@@ -729,7 +730,7 @@ export function OneOffEventModal({
 
               {rotateInstructors && (
                 <div className="space-y-1.5 pl-6">
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-700">
                     Select 2+ staff to rotate through recurring sessions (A, B, A, B, ...).
                   </p>
                   <div className="flex flex-wrap gap-1.5">

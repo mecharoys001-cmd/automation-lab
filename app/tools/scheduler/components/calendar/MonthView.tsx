@@ -123,12 +123,12 @@ function EventChip({
           </span>
         )}
         {event.venue && (
-          <span className="text-[9px] text-slate-400 truncate leading-tight">
+          <span className="text-[9px] text-slate-700 truncate leading-tight">
             {event.venue}
           </span>
         )}
         {event.gradeLevel && (
-          <span className="text-[9px] text-slate-400 truncate leading-tight">
+          <span className="text-[9px] text-slate-700 truncate leading-tight">
             {event.gradeLevel}
           </span>
         )}
@@ -370,7 +370,7 @@ export function MonthView({
               <CalendarDays className="w-8 h-8 text-slate-300" />
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
-                <p className="text-sm text-slate-400 mt-1">Set up templates and staff to start generating your schedule.</p>
+                <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
               </div>
               <div className="flex flex-col items-center gap-1.5 mt-1">
                 <Link href="/tools/scheduler/admin/event-templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
@@ -402,7 +402,7 @@ export function MonthView({
               }`}
               style={{ gridRow: 1 }}
             >
-              <div className="text-[11px] font-semibold tracking-[1px] text-slate-400">{label}</div>
+              <div className="text-[11px] font-semibold tracking-[1px] text-slate-700">{label}</div>
             </div>
           ))}
 
@@ -482,7 +482,7 @@ export function MonthView({
                               padding: '1px',
                             }}
                           >
-                            <div className="text-[8px] font-bold text-slate-400 text-center leading-tight mb-0.5 truncate">
+                            <div className="text-[8px] font-bold text-slate-700 text-center leading-tight mb-0.5 truncate">
                               {venueAbbrev(venueId)}
                             </div>
                             <div className="space-y-0.5">
@@ -496,7 +496,7 @@ export function MonthView({
                                 />
                               ))}
                               {laneEvents.length > 2 && (
-                                <div className="text-[8px] text-slate-400 text-center">
+                                <div className="text-[8px] text-slate-700 text-center">
                                   +{laneEvents.length - 2}
                                 </div>
                               )}

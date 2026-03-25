@@ -47,18 +47,33 @@ export async function POST(request: NextRequest) {
       } catch { return null; }
     };
 
-    const rows: (InstructorRow & { program_id: string })[] = rawRows.map((r) => ({
-      first_name: String(r.first_name ?? '').trim(),
-      last_name: String(r.last_name ?? '').trim(),
-      email: r.email ? String(r.email).trim().toLowerCase() : null,
-      phone: r.phone ? String(r.phone).trim() : null,
-      skills: parseSemicolonList(r.skills),
-      availability_json: parseJSON(r.availability_json),
-      is_active: r.is_active != null && r.is_active !== '' ? parseBool(r.is_active) : true,
-      on_call: r.on_call != null && r.on_call !== '' ? parseBool(r.on_call) : false,
-      notes: r.notes ? String(r.notes).trim() : null,
-      program_id,
-    }));
+    const rows: (InstructorRow & { program_id: string })[] = rawRows.map((r, idx) => {
+      const email = r.email ? String(r.email).trim().toLowerCase() : null;
+      const phone = r.phone ? String(r.phone).trim() : null;
+
+      // Validate email format
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new Error(`Row ${idx + 1}: Invalid email format "${email}"`);
+      }
+
+      // Validate phone format
+      if (phone && (!/^[0-9\s\-()+]+$/.test(phone) || !/[0-9]/.test(phone))) {
+        throw new Error(`Row ${idx + 1}: Invalid phone format "${phone}"`);
+      }
+
+      return {
+        first_name: String(r.first_name ?? '').trim(),
+        last_name: String(r.last_name ?? '').trim(),
+        email,
+        phone,
+        skills: parseSemicolonList(r.skills),
+        availability_json: parseJSON(r.availability_json),
+        is_active: r.is_active != null && r.is_active !== '' ? parseBool(r.is_active) : true,
+        on_call: r.on_call != null && r.on_call !== '' ? parseBool(r.on_call) : false,
+        notes: r.notes ? String(r.notes).trim() : null,
+        program_id,
+      };
+    });
 
     // Check for duplicate emails against existing instructors in this program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

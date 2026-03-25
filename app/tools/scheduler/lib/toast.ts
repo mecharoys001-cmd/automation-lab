@@ -22,6 +22,9 @@ const TOAST_ICONS: Record<ToastType, string> = {
 
 export function showToast(message: string, type: ToastType = 'success') {
   const el = document.createElement('div');
+  el.setAttribute('role', 'alert');
+  el.setAttribute('aria-live', 'assertive');
+  el.setAttribute('aria-atomic', 'true');
   Object.assign(el.style, {
     position: 'fixed',
     bottom: '16px',

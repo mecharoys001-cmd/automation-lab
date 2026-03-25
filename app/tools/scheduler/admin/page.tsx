@@ -728,9 +728,13 @@ function CalendarDashboard() {
 
   // Publish all draft sessions
   const handlePublishSchedule = useCallback(async () => {
+    if (events.length === 0) {
+      showToast('No sessions to publish — generate a schedule first', 'info');
+      return;
+    }
     const drafts = events.filter((ev) => ev.status === 'draft');
     if (drafts.length === 0) {
-      showToast('No draft sessions to publish', 'info');
+      showToast('No draft sessions to publish — all sessions are already published', 'info');
       return;
     }
 
@@ -1333,12 +1337,12 @@ function CalendarDashboard() {
       {/* ================================================================= */}
       {/* TOP BAR                                                            */}
       {/* ================================================================= */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4 bg-white px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 border-b border-slate-200 shrink-0">
-        {/* View Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 lg:gap-4 bg-white px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 border-b border-slate-200 shrink-0">
+        {/* View Toggle — left group */}
         <ViewToggle value={currentView} onChange={setCurrentView} />
 
-        {/* Spacer - grows to push action buttons right, shrinks to 0 when toolbar wraps */}
-        <div className="flex-1 basis-0 min-w-0" />
+        {/* Action buttons — right group, wraps to second row at narrow widths */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
 
         {/* Recently modified indicator (fades after 5s) */}
         {modifiedCount > 0 && (
@@ -1382,13 +1386,13 @@ function CalendarDashboard() {
                 )}
 
                 {/* CSV section */}
-                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">CSV</div>
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-700 uppercase tracking-wider">CSV</div>
                 <Tooltip text={`Download ${currentView} view events as CSV`}>
                   <button
                     onClick={() => handleExportCsv('current')}
                     className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
-                    <Download className="w-3.5 h-3.5 text-slate-400" />
+                    <Download className="w-3.5 h-3.5 text-slate-700" />
                     Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
                   </button>
                 </Tooltip>
@@ -1397,7 +1401,7 @@ function CalendarDashboard() {
                     onClick={() => handleExportCsv('full')}
                     className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
-                    <Download className="w-3.5 h-3.5 text-slate-400" />
+                    <Download className="w-3.5 h-3.5 text-slate-700" />
                     Full Program Year
                   </button>
                 </Tooltip>
@@ -1406,13 +1410,13 @@ function CalendarDashboard() {
                 <div className="border-t border-slate-100 my-1" />
 
                 {/* PDF / Print section */}
-                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">PDF / Print</div>
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-700 uppercase tracking-wider">PDF / Print</div>
                 <Tooltip text={`Open ${currentView} view as printable PDF`}>
                   <button
                     onClick={() => handleExportPdf('current')}
                     className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
-                    <Printer className="w-3.5 h-3.5 text-slate-400" />
+                    <Printer className="w-3.5 h-3.5 text-slate-700" />
                     Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
                   </button>
                 </Tooltip>
@@ -1421,7 +1425,7 @@ function CalendarDashboard() {
                     onClick={() => handleExportPdf('full')}
                     className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
-                    <Printer className="w-3.5 h-3.5 text-slate-400" />
+                    <Printer className="w-3.5 h-3.5 text-slate-700" />
                     Full Program Year
                   </button>
                 </Tooltip>
@@ -1459,38 +1463,38 @@ function CalendarDashboard() {
                 )}
 
                 {/* CSV section */}
-                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Export CSV</div>
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-700 uppercase tracking-wider">Export CSV</div>
                 <button
                   onClick={() => { handleExportCsv('current'); setShowOverflowMenu(false); }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                  <Download className="w-3.5 h-3.5 text-slate-700" />
                   Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
                 </button>
                 <button
                   onClick={() => { handleExportCsv('full'); setShowOverflowMenu(false); }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                  <Download className="w-3.5 h-3.5 text-slate-700" />
                   Full Program Year
                 </button>
 
                 <div className="border-t border-slate-100 my-1" />
 
                 {/* PDF / Print section */}
-                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Print / PDF</div>
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-700 uppercase tracking-wider">Print / PDF</div>
                 <button
                   onClick={() => { handleExportPdf('current'); setShowOverflowMenu(false); }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                 >
-                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  <Printer className="w-3.5 h-3.5 text-slate-700" />
                   Current View ({currentView.charAt(0).toUpperCase() + currentView.slice(1)})
                 </button>
                 <button
                   onClick={() => { handleExportPdf('full'); setShowOverflowMenu(false); }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                 >
-                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  <Printer className="w-3.5 h-3.5 text-slate-700" />
                   Full Program Year
                 </button>
 
@@ -1522,6 +1526,7 @@ function CalendarDashboard() {
             {isPublishing ? 'Publishing...' : 'Publish Sessions'}
           </Button>
         </div>
+        </div>{/* end action buttons wrapper */}
       </div>
 
       {/* ================================================================= */}

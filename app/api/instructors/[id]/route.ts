@@ -14,8 +14,24 @@ export async function PATCH(
     const supabase = createServiceClient();
     const body = await request.json();
 
+    if ('first_name' in body && String(body.first_name).trim().length > 50) {
+      return NextResponse.json({ error: 'First name must be 50 characters or less' }, { status: 400 });
+    }
+
+    if ('last_name' in body && String(body.last_name).trim().length > 50) {
+      return NextResponse.json({ error: 'Last name must be 50 characters or less' }, { status: 400 });
+    }
+
+    if ('email' in body && body.email && String(body.email).trim().length > 255) {
+      return NextResponse.json({ error: 'Email must be 255 characters or less' }, { status: 400 });
+    }
+
     if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email).trim())) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
+    if ('phone' in body && body.phone && String(body.phone).trim().length > 20) {
+      return NextResponse.json({ error: 'Phone must be 20 characters or less' }, { status: 400 });
     }
 
     if (body.phone) {

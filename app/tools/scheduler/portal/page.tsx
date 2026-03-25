@@ -184,7 +184,8 @@ export default function InstructorPortalPage() {
               <Tooltip text="Sign out of your account">
                 <button
                   onClick={handleSignOut}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                  className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-700 hover:border-red-500/30"
+                  aria-label="Sign out of your account"
                 >
                   <svg className="inline-block h-4 w-4 mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3l3-3m0 0l-3-3m3 3H9" />
@@ -201,7 +202,7 @@ export default function InstructorPortalPage() {
 
         {error ? (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-8 text-center">
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         ) : (
           <>
@@ -299,7 +300,7 @@ export default function InstructorPortalPage() {
                             )}
                             {session.status !== 'published' && (
                               <div className="mt-2">
-                                <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                                <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-700">
                                   {session.status}
                                 </span>
                               </div>

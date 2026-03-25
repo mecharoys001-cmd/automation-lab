@@ -134,7 +134,7 @@ export function InstructorDetailModal({
                 disabled={togglingStatus}
                 className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
                   data.isActive
-                    ? 'border-red-300 text-red-500 hover:bg-red-50'
+                    ? 'border-red-300 text-red-700 hover:bg-red-50'
                     : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
                 }`}
               >
@@ -193,7 +193,7 @@ export function InstructorDetailModal({
 
       {/* ── Event Type ───────────────────────────────────────── */}
       <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Event Type</span>
+        <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Event Type</span>
         {data.skills.length > 0 ? (
           data.skills.map((skill) => (
             <Pill
@@ -208,7 +208,7 @@ export function InstructorDetailModal({
             </Pill>
           ))
         ) : (
-          <span className="text-sm text-slate-400">No event types listed</span>
+          <span className="text-sm text-slate-700">No event types listed</span>
         )}
       </div>
 
@@ -261,7 +261,7 @@ export function InstructorDetailModal({
                 <span className="text-xs font-medium text-slate-900 truncate">
                   {session.name}
                 </span>
-                <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
+                <span className="text-[11px] text-slate-700 ml-auto whitespace-nowrap">
                   {session.day} {session.time}
                 </span>
                 <Badge
@@ -276,7 +276,7 @@ export function InstructorDetailModal({
             );
           })
         ) : (
-          <p className="text-sm text-slate-400">No sessions assigned yet.</p>
+          <p className="text-sm text-slate-700">No sessions assigned yet.</p>
         )}
       </div>
     </Modal>

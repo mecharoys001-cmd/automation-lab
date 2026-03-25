@@ -101,8 +101,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
 
+    if (body.first_name && String(body.first_name).trim().length > 50) {
+      return NextResponse.json({ error: 'First name must be 50 characters or less' }, { status: 400 });
+    }
+
+    if (body.last_name && String(body.last_name).trim().length > 50) {
+      return NextResponse.json({ error: 'Last name must be 50 characters or less' }, { status: 400 });
+    }
+
+    if (body.email && String(body.email).trim().length > 255) {
+      return NextResponse.json({ error: 'Email must be 255 characters or less' }, { status: 400 });
+    }
+
     if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email).trim())) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
+    if (body.phone && String(body.phone).trim().length > 20) {
+      return NextResponse.json({ error: 'Phone must be 20 characters or less' }, { status: 400 });
     }
 
     if (body.phone) {

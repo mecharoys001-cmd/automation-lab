@@ -164,7 +164,8 @@ export function Sidebar({
             <Tooltip text="Sign out" position="top">
               <button
                 onClick={onLogout}
-                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0"
+                className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0"
+                aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </button>

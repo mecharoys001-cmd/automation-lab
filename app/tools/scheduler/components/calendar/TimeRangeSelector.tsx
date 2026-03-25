@@ -69,7 +69,7 @@ export function TimeRangeSelector({
   return (
     <div className="relative flex items-center gap-2">
       <Tooltip text="Visible time range">
-        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <Clock className="w-3.5 h-3.5 text-slate-700 shrink-0" />
       </Tooltip>
 
       <Tooltip text="Set calendar start time">
@@ -86,7 +86,7 @@ export function TimeRangeSelector({
         </select>
       </Tooltip>
 
-      <span className="text-[11px] text-slate-400 font-medium">–</span>
+      <span className="text-[11px] text-slate-700 font-medium">–</span>
 
       <Tooltip text="Set calendar end time">
         <select

@@ -264,7 +264,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
                   className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
                     step.completed
                       ? 'bg-emerald-500 text-white'
-                      : 'bg-slate-100 text-slate-400'
+                      : 'bg-slate-100 text-slate-700'
                   }`}
                 >
                   {step.completed ? (
@@ -299,7 +299,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
                 {step.completed ? (
                   <span className="text-xs font-medium text-emerald-600 flex-shrink-0 mt-1">Done</span>
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 mt-2" />
+                  <ChevronRight className="w-4 h-4 text-slate-700 flex-shrink-0 mt-2" />
                 )}
               </div>
             </div>

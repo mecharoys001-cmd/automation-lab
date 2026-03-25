@@ -427,7 +427,7 @@ export function TemplateFormModal({
             ))}
           </select>
           {filteredInstructors.length === 0 && (form.required_skills.length > 0 || (showSessionFields && sessionDate)) && (
-            <span className="text-[11px] text-red-500 mt-0.5 inline-flex items-center gap-0.5">
+            <span className="text-[11px] text-red-700 mt-0.5 inline-flex items-center gap-0.5">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
               No staff available{form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}{showSessionFields && sessionDate ? ' at this date/time' : ''}.{' '}
               <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
@@ -465,7 +465,7 @@ export function TemplateFormModal({
             </span>
           )}
           {checkingConflict && (
-            <span className="text-[11px] text-slate-400 mt-0.5">Checking availability...</span>
+            <span className="text-[11px] text-slate-700 mt-0.5">Checking availability...</span>
           )}
         </FormField>
 
@@ -507,7 +507,7 @@ export function TemplateFormModal({
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-slate-700">Ongoing</span>
-                <div className="text-xs text-slate-400 mt-0.5">Runs for the entire program year</div>
+                <div className="text-xs text-slate-700 mt-0.5">Runs for the entire program year</div>
               </div>
             </label>
 
@@ -523,25 +523,29 @@ export function TemplateFormModal({
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-slate-700">Date Range</span>
-                <div className="text-xs text-slate-400 mt-0.5">Runs between specific start and end dates</div>
+                <div className="text-xs text-slate-700 mt-0.5">Runs between specific start and end dates</div>
                 {form.scheduling_mode === 'date_range' && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <label className="text-[11px] text-slate-500 block mb-0.5">From</label>
+                      <label htmlFor="template-starts-on" className="text-[11px] text-slate-500 block mb-0.5">From</label>
                       <input
+                        id="template-starts-on"
                         type="date"
                         value={form.starts_on}
                         onChange={(e) => updateForm({ starts_on: e.target.value })}
                         className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                        aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-slate-500 block mb-0.5">Until</label>
+                      <label htmlFor="template-ends-on" className="text-[11px] text-slate-500 block mb-0.5">Until</label>
                       <input
+                        id="template-ends-on"
                         type="date"
                         value={form.ends_on}
                         onChange={(e) => updateForm({ ends_on: e.target.value })}
                         className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                        aria-required="true"
                       />
                     </div>
                   </div>
@@ -561,21 +565,24 @@ export function TemplateFormModal({
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-slate-700">Duration</span>
-                <div className="text-xs text-slate-400 mt-0.5">Starts on a date and runs for a set number of weeks</div>
+                <div className="text-xs text-slate-700 mt-0.5">Starts on a date and runs for a set number of weeks</div>
                 {form.scheduling_mode === 'duration' && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <label className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
+                      <label htmlFor="template-duration-starts" className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
                       <input
+                        id="template-duration-starts"
                         type="date"
                         value={form.starts_on}
                         onChange={(e) => updateForm({ starts_on: e.target.value })}
                         className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                        aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-slate-500 block mb-0.5">Weeks</label>
+                      <label htmlFor="template-duration-weeks" className="text-[11px] text-slate-500 block mb-0.5">Weeks</label>
                       <input
+                        id="template-duration-weeks"
                         type="number"
                         min={1}
                         max={52}
@@ -583,6 +590,7 @@ export function TemplateFormModal({
                         onChange={(e) => updateForm({ duration_weeks: e.target.value ? Number(e.target.value) : null })}
                         placeholder="e.g. 12"
                         className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                        aria-required="true"
                       />
                     </div>
                   </div>
@@ -602,22 +610,25 @@ export function TemplateFormModal({
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-slate-700">Session Count</span>
-                <div className="text-xs text-slate-400 mt-0.5">Create a fixed number of sessions, optionally within a time window</div>
+                <div className="text-xs text-slate-700 mt-0.5">Create a fixed number of sessions, optionally within a time window</div>
                 {form.scheduling_mode === 'session_count' && (
                   <div className="flex flex-col gap-2 mt-2">
                     <div>
-                      <label className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
+                      <label htmlFor="template-session-count-starts" className="text-[11px] text-slate-500 block mb-0.5">Starts</label>
                       <input
+                        id="template-session-count-starts"
                         type="date"
                         value={form.starts_on}
                         onChange={(e) => updateForm({ starts_on: e.target.value })}
                         className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                        aria-required="true"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-slate-500 block mb-0.5">Number of Sessions</label>
+                        <label htmlFor="template-session-count" className="text-[11px] text-slate-500 block mb-0.5">Number of Sessions</label>
                         <input
+                          id="template-session-count"
                           type="number"
                           min={1}
                           max={200}
@@ -625,11 +636,13 @@ export function TemplateFormModal({
                           onChange={(e) => updateForm({ session_count: e.target.value ? Number(e.target.value) : null })}
                           placeholder="e.g. 10"
                           className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+                          aria-required="true"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-slate-500 block mb-0.5">Within X Weeks (optional)</label>
+                        <label htmlFor="template-within-weeks" className="text-[11px] text-slate-500 block mb-0.5">Within X Weeks (optional)</label>
                         <input
+                          id="template-within-weeks"
                           type="number"
                           min={1}
                           max={52}
@@ -878,12 +891,12 @@ function FormField({ label, hint, required, error, children, htmlFor }: { label:
     <div className="flex flex-col gap-1">
       <label htmlFor={htmlFor} className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
         {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
-        {hint && <span className="font-normal normal-case ml-1.5 text-slate-400">{hint}</span>}
+        {required && <span className="text-red-700 ml-0.5">*</span>}
+        {hint && <span className="font-normal normal-case ml-1.5 text-slate-700">{hint}</span>}
       </label>
       {children}
       {error && (
-        <span className="text-xs text-red-500 font-medium">{error}</span>
+        <span className="text-xs text-red-700 font-medium">{error}</span>
       )}
     </div>
   );

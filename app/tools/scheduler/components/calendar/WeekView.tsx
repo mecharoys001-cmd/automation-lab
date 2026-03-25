@@ -371,9 +371,9 @@ function TemplateSidebar({
             className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
           >
             {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-slate-400" />
+              <PanelLeftOpen className="w-4 h-4 text-slate-700" />
             ) : (
-              <PanelLeftClose className="w-4 h-4 text-slate-400" />
+              <PanelLeftClose className="w-4 h-4 text-slate-700" />
             )}
           </button>
         </Tooltip>
@@ -770,7 +770,7 @@ export function WeekView({
         />
       )}
 
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+    <div className="flex-1 flex flex-col overflow-y-hidden overflow-x-auto" style={{ minWidth: 0 }}>
       {/* ------- Week Navigation Sub-bar ------- */}
       <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-6 py-3 border-b border-slate-200 shrink-0">
         <Tooltip text="Previous week">
@@ -832,7 +832,7 @@ export function WeekView({
               <CalendarDays className="w-8 h-8 text-slate-300" />
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-500">No sessions scheduled yet</p>
-                <p className="text-sm text-slate-400 mt-1">Set up templates and staff to start generating your schedule.</p>
+                <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
               </div>
               <div className="flex flex-col items-center gap-1.5 mt-1">
                 <Link href="/tools/scheduler/admin/event-templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
@@ -850,9 +850,9 @@ export function WeekView({
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, minmax(140px, 1fr))`,
+            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, minmax(100px, 1fr))`,
             gridTemplateRows: `auto ${totalHeight}px`,
-            minWidth: `${TIME_COL_WIDTH + 7 * 140}px`,
+            minWidth: `${TIME_COL_WIDTH + 7 * 100}px`,
           }}
         >
           {/* Row 1, Col 1: Sticky empty corner above time gutter (sticky both axes) */}
@@ -871,7 +871,7 @@ export function WeekView({
               style={{ gridRow: 1 }}
             >
               <div className="px-1.5 py-2">
-                <div className="text-[11px] font-semibold tracking-[1px] text-slate-400">{DAY_LABELS[idx]}</div>
+                <div className="text-[11px] font-semibold tracking-[1px] text-slate-700">{DAY_LABELS[idx]}</div>
                 <div className="text-lg font-semibold text-slate-800">{date.getDate()}</div>
               </div>
               {multiLane && (
@@ -879,7 +879,7 @@ export function WeekView({
                   {selectedVenues.map((venueId, laneIdx) => (
                     <div
                       key={venueId}
-                      className={`flex-1 text-[10px] font-medium text-slate-400 py-1 truncate px-1 ${
+                      className={`flex-1 text-[10px] font-medium text-slate-700 py-1 truncate px-1 ${
                         laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                       }`}
                     >

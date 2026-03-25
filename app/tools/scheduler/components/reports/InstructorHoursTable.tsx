@@ -26,8 +26,8 @@ interface InstructorHoursTableProps {
 /* ── Status badge config ───────────────────────────────── */
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  Active:     { bg: 'bg-emerald-100', text: 'text-emerald-500' },
-  'Part-time': { bg: 'bg-amber-100',  text: 'text-amber-500' },
+  Active:     { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  'Part-time': { bg: 'bg-amber-100',  text: 'text-amber-700' },
   Substitute: { bg: 'bg-blue-100',    text: 'text-blue-500' },
 };
 
@@ -62,7 +62,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
 
       {/* Rows */}
       {instructors.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-slate-400">
+        <div className="px-5 py-8 text-center text-sm text-slate-700">
           No staff data available for this date range.
         </div>
       ) : (
@@ -140,8 +140,8 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
                   <div className="flex items-center justify-center">
                     {hasMonthly && (
                       isExpanded
-                        ? <ChevronDown className="w-4 h-4 text-slate-400" />
-                        : <ChevronRight className="w-4 h-4 text-slate-400" />
+                        ? <ChevronDown className="w-4 h-4 text-slate-700" />
+                        : <ChevronRight className="w-4 h-4 text-slate-700" />
                     )}
                   </div>
                   </div>

@@ -276,7 +276,7 @@ function MonthGrid({
             key={d}
             style={{ gridRow: 1 }}
             className={`px-0.5 sm:px-1.5 py-1.5 sm:py-2 text-center text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
-              idx === 0 || idx === 6 ? 'text-slate-400' : 'text-slate-500'
+              idx === 0 || idx === 6 ? 'text-slate-700' : 'text-slate-500'
             } ${idx < 6 ? 'border-r border-slate-200' : ''}`}
           >
             {d}
@@ -352,7 +352,7 @@ function MonthGrid({
                       : isSelected
                       ? 'text-blue-800 font-semibold'
                       : isWeekend
-                      ? 'text-slate-400'
+                      ? 'text-slate-700'
                       : 'text-slate-700'
                   }`}
                 >
@@ -1108,7 +1108,7 @@ export default function CalendarPage() {
           {/* Date */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Date <span className="text-red-400 ml-0.5">*</span>
+              Date <span className="text-red-700 ml-0.5">*</span>
             </label>
             <Tooltip text="Select the calendar entry date">
               <input
@@ -1198,8 +1198,8 @@ export default function CalendarPage() {
   // ── Main render ──────────────────────────────────────────────
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-[1200px] mx-auto px-6 lg:px-8 py-8 space-y-8">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
+      <div className="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* ── Page Header ─────────────────────────────────────── */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1271,7 +1271,7 @@ export default function CalendarPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
             <span>{error}</span>
             <Tooltip text="Dismiss this error">
-              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-4 transition-colors">
+              <button onClick={() => setError(null)} className="text-red-700 hover:text-red-600 ml-4 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </Tooltip>
@@ -1304,7 +1304,7 @@ export default function CalendarPage() {
             <div className="flex items-center gap-3">
               <h2 className="text-base font-semibold text-slate-900">Calendar Overview</h2>
               <Tooltip text="Months load automatically as you scroll up or down">
-                <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-medium cursor-help">
+                <span className="text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full font-medium cursor-help">
                   Scroll for more
                 </span>
               </Tooltip>
@@ -1493,7 +1493,7 @@ export default function CalendarPage() {
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <Tooltip text="Search entries by description or date">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                 <input
                   type="text"
                   aria-label="Search calendar entries"
@@ -1506,7 +1506,7 @@ export default function CalendarPage() {
             </Tooltip>
             <Tooltip text="Filter entries by type" position="bottom">
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as CalendarStatusType | 'all')}
@@ -1526,7 +1526,7 @@ export default function CalendarPage() {
             {loading ? (
               <TableSkeleton rows={6} />
             ) : sortedEntries.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
+              <div className="p-12 text-center text-slate-700">
                 {entries.length === 0
                   ? 'No calendar entries yet. Add one above or import a CSV.'
                   : 'No entries match your filters.'}
@@ -1612,7 +1612,7 @@ export default function CalendarPage() {
                           <td className="px-4 py-3 text-right">
                             {isDeleting ? (
                               <div className="flex items-center justify-end gap-2">
-                                <span className="text-xs text-slate-400">Delete?</span>
+                                <span className="text-xs text-slate-700">Delete?</span>
                                 <Button
                                   variant="danger"
                                   size="sm"
@@ -1638,7 +1638,7 @@ export default function CalendarPage() {
                                 <Tooltip text="Edit this calendar entry">
                                   <button
                                     onClick={() => startEdit(entry)}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                                    className="p-1.5 rounded-md text-slate-700 hover:text-slate-600 hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
                                     aria-label="Edit this calendar entry"
                                   >
                                     <Pencil className="w-4 h-4" />
@@ -1647,7 +1647,7 @@ export default function CalendarPage() {
                                 <Tooltip text="Delete this calendar entry">
                                   <button
                                     onClick={() => setDeletingId(entry.id)}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                                    className="p-1.5 rounded-md text-slate-700 hover:text-red-700 hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
                                     aria-label="Delete this calendar entry"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1668,7 +1668,7 @@ export default function CalendarPage() {
           {/* Count footer */}
           {!loading && sortedEntries.length > 0 && (
             <Tooltip text="Filtered results — adjust search or filter to see more">
-              <p className="text-xs text-slate-400 mt-3 cursor-help">
+              <p className="text-xs text-slate-700 mt-3 cursor-help">
                 Showing {sortedEntries.length} of {entries.length} entr{entries.length !== 1 ? 'ies' : 'y'}
               </p>
             </Tooltip>
@@ -1707,7 +1707,7 @@ export default function CalendarPage() {
           {/* Warning for existing statuses */}
           {batchExistingCount > 0 && batchModal?.action !== 'clear' && (
             <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <p className="text-sm text-amber-800">
                 {batchExistingCount} of {batchModal?.dates.length} day{(batchModal?.dates.length ?? 0) !== 1 ? 's' : ''} already
                 {batchExistingCount === 1 ? ' has' : ' have'} a status. Existing entries will be updated.
@@ -1719,9 +1719,9 @@ export default function CalendarPage() {
           {batchModal?.action === 'early_dismissal' && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Dismissal Time <span className="text-red-400 ml-0.5">*</span>
+                Dismissal Time <span className="text-red-700 ml-0.5">*</span>
               </label>
-              <p className="text-xs text-slate-400">This time will be applied to all selected days.</p>
+              <p className="text-xs text-slate-700">This time will be applied to all selected days.</p>
               <input
                 type="time"
                 value={batchTime}
@@ -1735,9 +1735,9 @@ export default function CalendarPage() {
           {batchModal?.action === 'instructor_exception' && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Instructor <span className="text-red-400 ml-0.5">*</span>
+                Instructor <span className="text-red-700 ml-0.5">*</span>
               </label>
-              <p className="text-xs text-slate-400">Select the staff member for this exception.</p>
+              <p className="text-xs text-slate-700">Select the staff member for this exception.</p>
               <select
                 value={batchInstructorId}
                 onChange={(e) => setBatchInstructorId(e.target.value)}
@@ -1770,7 +1770,7 @@ export default function CalendarPage() {
                   >
                     <span className="font-medium text-slate-700">{formatDate(d)}</span>
                     {existing.length > 0 && (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-slate-700">
                         {existing.map((e) => STATUS_LABELS[e.status_type]).join(', ')}
                       </span>
                     )}
@@ -1789,7 +1789,7 @@ export default function CalendarPage() {
                   style={{ width: `${Math.round((batchProgress.done / batchProgress.total) * 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-slate-400 text-center">
+              <p className="text-xs text-slate-700 text-center">
                 {batchProgress.done} of {batchProgress.total} processed
               </p>
             </div>

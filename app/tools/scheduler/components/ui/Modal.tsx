@@ -210,7 +210,7 @@ export function Modal({
                   className="flex items-center gap-3 px-6 py-3 border-b border-red-100 last:border-b-0 relative group"
                 >
                   <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <AlertTriangle className="w-4 h-4 text-red-700" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-semibold text-red-700">{w.label}</span>
@@ -218,7 +218,7 @@ export function Modal({
                   </div>
                   <button
                     onClick={() => dismissWarning(w.id)}
-                    className="absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-200 hover:text-red-600 transition-all"
+                    className="absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center text-red-700 opacity-0 group-hover:opacity-100 hover:bg-red-200 hover:text-red-600 transition-all"
                     aria-label="Dismiss warning"
                   >
                     <X className="w-3 h-3" />

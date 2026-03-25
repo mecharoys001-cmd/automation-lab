@@ -137,12 +137,12 @@ export function AvailabilityEditor({
         </button>
         <span className="text-slate-300">·</span>
         <button type="button" onClick={clearAll}
-          className="text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors">
+          className="text-[11px] font-medium text-slate-700 hover:text-slate-600 transition-colors">
           Clear All
         </button>
       </div>
 
-      <p className="text-[11px] text-slate-400">Click or drag cells to mark available times. Green = available.</p>
+      <p className="text-[11px] text-slate-700">Click or drag cells to mark available times. Green = available.</p>
 
       {/* Grid */}
       <div className="overflow-x-auto">
@@ -161,7 +161,7 @@ export function AvailabilityEditor({
                   type="button"
                   onClick={() => toggleDay(d.key)}
                   className={`py-1.5 text-center text-xs font-medium transition-colors ${
-                    isDayEnabled(d.key) ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'
+                    isDayEnabled(d.key) ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-700'
                   }`}
                 >
                   {d.short}
@@ -172,7 +172,7 @@ export function AvailabilityEditor({
             {/* Hour rows */}
             {EDITOR_HOURS.map((hour) => (
               <div key={hour} className="contents">
-                <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-400 bg-white h-6 border-t border-slate-200">
+                <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-6 border-t border-slate-200">
                   {formatHourLabel(hour)}
                 </div>
                 {EDITOR_DAYS.map((d) => {

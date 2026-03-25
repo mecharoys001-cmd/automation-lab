@@ -408,7 +408,7 @@ export default function EventTemplatesPage() {
   if (!selectedProgramId) {
     return (
       <div className="overflow-y-auto h-full bg-slate-50 p-4 sm:p-8">
-        <div className="flex flex-col items-center justify-center h-64 text-slate-400 text-sm">
+        <div className="flex flex-col items-center justify-center h-64 text-slate-700 text-sm">
           Select a program from the sidebar to manage event templates.
         </div>
       </div>

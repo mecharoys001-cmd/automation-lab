@@ -88,6 +88,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
 
+    if (!body.name || !String(body.name).trim()) {
+      return NextResponse.json({ error: 'Venue name is required' }, { status: 400 });
+    }
+
+    if (String(body.name).trim().length > 100) {
+      return NextResponse.json({ error: 'Venue name must be 100 characters or less' }, { status: 400 });
+    }
+
+    // Check for duplicate name in the same program (case-insensitive)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('venues') as any)
+      .select('id, name')
+      .eq('program_id', body.program_id)
+      .ilike('name', String(body.name).trim());
+
+    if (existing && existing.length > 0) {
+      return NextResponse.json(
+        { error: `A venue named "${String(body.name).trim()}" already exists in this program` },
+        { status: 400 }
+      );
+    }
+
     if (body.max_capacity != null && (typeof body.max_capacity !== 'number' || body.max_capacity < 0)) {
       return NextResponse.json({ error: 'max_capacity must be a non-negative number' }, { status: 400 });
     }

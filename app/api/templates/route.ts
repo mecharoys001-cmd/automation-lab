@@ -111,6 +111,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (String(body.name).trim().length > 200) {
+      return NextResponse.json(
+        { error: 'Template name must be 200 characters or less' },
+        { status: 400 }
+      );
+    }
     // venue_id is optional — generator can auto-assign
 
     // Validate scheduling mode fields

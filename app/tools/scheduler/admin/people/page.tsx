@@ -250,7 +250,7 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 
 function AvailabilityGrid({ availability }: { availability: AvailabilityJson | null }) {
   if (!availability || Object.keys(availability).length === 0) {
-    return <p className="text-sm text-slate-400">No availability set</p>;
+    return <p className="text-sm text-slate-700">No availability set</p>;
   }
   return (
     <div className="overflow-x-auto">
@@ -261,13 +261,13 @@ function AvailabilityGrid({ availability }: { availability: AvailabilityJson | n
         >
           <div className="bg-slate-50 p-1" />
           {ALL_DAYS.map((d) => (
-            <div key={d.key} className="bg-slate-50 py-1.5 text-center text-xs font-medium text-slate-400">
+            <div key={d.key} className="bg-slate-50 py-1.5 text-center text-xs font-medium text-slate-700">
               {d.short}
             </div>
           ))}
           {GRID_HOURS.map((hour) => (
             <div key={hour} className="contents">
-              <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-400 bg-white h-6 border-t border-slate-200">
+              <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-6 border-t border-slate-200">
                 {formatHourLabel(hour)}
               </div>
               {ALL_DAYS.map((d) => {
@@ -414,7 +414,7 @@ function VenueDetailModal({
                 <Tooltip text="Delete this venue permanently">
                   <button
                     onClick={() => setConfirmDelete(true)}
-                    className="px-4 py-2 rounded-lg text-[13px] font-medium border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                    className="px-4 py-2 rounded-lg text-[13px] font-medium border border-red-200 text-red-700 hover:bg-red-50 transition-colors"
                   >
                     Delete
                   </button>
@@ -455,7 +455,7 @@ function VenueDetailModal({
           <div className="flex items-center px-6 py-3 gap-6">
             <Tooltip text="Maximum capacity">
               <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-slate-400" />
+                <Users className="w-4 h-4 text-slate-700" />
                 <span className="text-[13px] text-slate-700">
                   Capacity: <span className="font-medium">{venue.max_capacity ?? 'Not set'}</span>
                 </span>
@@ -463,7 +463,7 @@ function VenueDetailModal({
             </Tooltip>
             <Tooltip text="Space type">
               <div className="flex items-center gap-1.5">
-                <Home className="w-4 h-4 text-slate-400" />
+                <Home className="w-4 h-4 text-slate-700" />
                 <span className="text-[13px] text-slate-700">
                   Space Type: <span className="font-medium">{venue.space_type || 'Not set'}</span>
                 </span>
@@ -485,10 +485,10 @@ function VenueDetailModal({
 
           {/* Accessibility */}
           <div className="flex items-center px-6 py-3 gap-1.5">
-            <Accessibility className="w-4 h-4 text-slate-400" />
+            <Accessibility className="w-4 h-4 text-slate-700" />
             <span className="text-[13px] text-slate-700">
               Wheelchair accessible:{' '}
-              <span className={`font-medium ${isAccessible ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <span className={`font-medium ${isAccessible ? 'text-emerald-600' : 'text-slate-700'}`}>
                 {isAccessible ? 'Yes' : 'No'}
               </span>
             </span>
@@ -498,7 +498,7 @@ function VenueDetailModal({
           <div className="flex items-center px-6 py-3 gap-1.5">
             <Tooltip text="Setup and teardown time required before/after events">
               <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-slate-400" />
+                <Clock className="w-4 h-4 text-slate-700" />
                 <span className="text-[13px] text-slate-700">
                   Setup/Teardown buffer:{' '}
                   <span className="font-medium">
@@ -518,11 +518,11 @@ function VenueDetailModal({
           {/* Notes */}
           <div className="px-6 py-3">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <StickyNote className="w-4 h-4 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Notes</span>
+              <StickyNote className="w-4 h-4 text-slate-700" />
+              <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Notes</span>
             </div>
             <p className="text-sm text-slate-600 whitespace-pre-wrap">
-              {venue.notes || <span className="text-slate-400">No notes added</span>}
+              {venue.notes || <span className="text-slate-700">No notes added</span>}
             </p>
           </div>
         </div>
@@ -573,7 +573,7 @@ function VenueDetailModal({
                     <option key={roomType} value={roomType}>{roomType}</option>
                   )}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-700 pointer-events-none" />
               </div>
             </Tooltip>
           </div>
@@ -583,7 +583,7 @@ function VenueDetailModal({
             <div className="flex items-center gap-1.5 mb-1.5">
               <label className="text-xs font-semibold text-slate-500">Event Type (Optional)</label>
               <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
-                <AlertTriangle className="w-3 h-3 text-slate-400" />
+                <AlertTriangle className="w-3 h-3 text-slate-700" />
               </Tooltip>
             </div>
             <TagSelector
@@ -713,7 +713,7 @@ function InstructorDetailModal({
               disabled={togglingStatus}
               className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors disabled:opacity-50 ${
                 instructor.is_active
-                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  ? 'border-red-300 text-red-700 hover:bg-red-50'
                   : 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
               }`}
             >
@@ -765,7 +765,7 @@ function InstructorDetailModal({
 
       {/* Subjects (clickable → calendar filter) */}
       <div className="flex items-center flex-wrap gap-2 px-6 py-3">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Event Type</span>
+        <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Event Type</span>
         {(instructor.skills ?? []).map((skill) => {
           const s = SKILL_STYLES[skill];
           return (
@@ -781,7 +781,7 @@ function InstructorDetailModal({
           );
         })}
         {(!instructor.skills || instructor.skills.length === 0) && (
-          <span className="text-sm text-slate-400">No event types listed</span>
+          <span className="text-sm text-slate-700">No event types listed</span>
         )}
       </div>
 
@@ -803,7 +803,7 @@ function InstructorDetailModal({
         {!loadingSessions && sessions.slice(0, 3).map((s) => (
           <div key={s.id} className="flex items-center bg-slate-100 rounded-lg h-9 px-3 gap-2">
             <span className="text-xs font-medium text-slate-900 truncate">{s.venue?.name ?? 'Session'}</span>
-            <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
+            <span className="text-[11px] text-slate-700 ml-auto whitespace-nowrap">
               {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
               {s.start_time?.slice(0, 5)}
             </span>
@@ -814,7 +814,7 @@ function InstructorDetailModal({
           </div>
         ))}
         {!loadingSessions && sessions.length === 0 && (
-          <p className="text-sm text-slate-400">No sessions assigned yet.</p>
+          <p className="text-sm text-slate-700">No sessions assigned yet.</p>
         )}
       </div>
     </Modal>
@@ -1018,7 +1018,7 @@ function VenueCreateModal({
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-700 pointer-events-none" />
           </div>
         </div>
 
@@ -1027,7 +1027,7 @@ function VenueCreateModal({
           <div className="flex items-center gap-1.5 mb-1.5">
             <label className="text-xs font-semibold text-slate-500">Event Type (Optional)</label>
             <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
-              <AlertTriangle className="w-3 h-3 text-slate-400" />
+              <AlertTriangle className="w-3 h-3 text-slate-700" />
             </Tooltip>
           </div>
           <TagSelector
@@ -1480,7 +1480,7 @@ export default function PeoplePage() {
             {/* Search Bar */}
             <Tooltip text="Search by name, email, or event type">
               <div className="flex items-center w-full sm:w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
-                <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <Search className="w-4 h-4 text-slate-700 flex-shrink-0" />
                 <input
                   type="text"
                   aria-label="Search people"
@@ -1504,7 +1504,7 @@ export default function PeoplePage() {
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
-                <ChevronDown className="absolute right-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 w-3.5 h-3.5 text-slate-700 pointer-events-none" />
               </div>
             </Tooltip>
 
@@ -1691,7 +1691,7 @@ export default function PeoplePage() {
                         aria-label={`Edit ${inst.first_name} ${inst.last_name}`}
                         className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
                       >
-                        <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                        <Edit2 className="w-3.5 h-3.5 text-slate-700" />
                       </button>
                     </Tooltip>
                   </div>
@@ -1718,7 +1718,7 @@ export default function PeoplePage() {
             {/* Search Bar */}
             <Tooltip text="Search by venue name or space type">
               <div className="flex items-center w-full sm:w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
-                <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <Search className="w-4 h-4 text-slate-700 flex-shrink-0" />
                 <input
                   type="text"
                   aria-label="Search venues"
@@ -1751,7 +1751,7 @@ export default function PeoplePage() {
           {loadingVenues ? (
             <CardGridSkeleton count={3} />
           ) : filteredVenues.length === 0 ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-700">
               {venues.length === 0
                 ? 'No venues found.'
                 : 'No venues match your search.'}
@@ -1770,7 +1770,7 @@ export default function PeoplePage() {
                       <p className="text-[16px] font-bold text-slate-900 truncate">
                         {venue.name}
                       </p>
-                      <p className="text-sm text-slate-400">{venue.space_type}</p>
+                      <p className="text-sm text-slate-700">{venue.space_type}</p>
                     </div>
                   </div>
 
@@ -1815,7 +1815,7 @@ export default function PeoplePage() {
                       aria-label={`Edit ${venue.name}`}
                       className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
                     >
-                      <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                      <Edit2 className="w-3.5 h-3.5 text-slate-700" />
                     </button>
                   </Tooltip>
                 </div>

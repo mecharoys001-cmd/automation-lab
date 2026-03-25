@@ -398,10 +398,10 @@ function IntakeForm() {
         {/* Program check banner */}
         {!programLoading && !hasProgram && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 mb-6 text-center">
-            <p className="text-sm text-amber-300 font-medium">
+            <p className="text-sm text-amber-700 font-medium">
               This form is not yet available. The scheduling program has not been configured.
             </p>
-            <p className="text-xs text-amber-400/70 mt-1">
+            <p className="text-xs text-amber-700/70 mt-1">
               Please contact your administrator to set up program time blocks first.
             </p>
           </div>
@@ -430,7 +430,7 @@ function IntakeForm() {
               {/* First Name */}
               <div>
                 <label htmlFor="first_name" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                  First Name <span className="text-red-400">*</span>
+                  First Name <span className="text-red-700">*</span>
                 </label>
                 <Tooltip text="Enter your first name" className="w-full">
                   <input
@@ -445,13 +445,13 @@ function IntakeForm() {
                     placeholder="Jane"
                   />
                 </Tooltip>
-                {errors.first_name && <p className="mt-1 text-xs text-red-400">{errors.first_name}</p>}
+                {errors.first_name && <p className="mt-1 text-xs text-red-700">{errors.first_name}</p>}
               </div>
 
               {/* Last Name */}
               <div>
                 <label htmlFor="last_name" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                  Last Name <span className="text-red-400">*</span>
+                  Last Name <span className="text-red-700">*</span>
                 </label>
                 <Tooltip text="Enter your last name" className="w-full">
                   <input
@@ -466,13 +466,13 @@ function IntakeForm() {
                     placeholder="Doe"
                   />
                 </Tooltip>
-                {errors.last_name && <p className="mt-1 text-xs text-red-400">{errors.last_name}</p>}
+                {errors.last_name && <p className="mt-1 text-xs text-red-700">{errors.last_name}</p>}
               </div>
 
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                  Email <span className="text-red-400">*</span>
+                  Email <span className="text-red-700">*</span>
                 </label>
                 <Tooltip text="Enter your email address" className="w-full">
                   <input
@@ -487,7 +487,7 @@ function IntakeForm() {
                     placeholder="jane@example.com"
                   />
                 </Tooltip>
-                {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
+                {errors.email && <p className="mt-1 text-xs text-red-700">{errors.email}</p>}
               </div>
 
               {/* Phone */}
@@ -513,7 +513,7 @@ function IntakeForm() {
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
             <h2 className="text-lg font-semibold mb-1">Event Types</h2>
             <p className="text-xs text-muted-foreground mb-4">
-              Select all areas you are qualified to teach. <span className="text-red-400">*</span>
+              Select all areas you are qualified to teach. <span className="text-red-700">*</span>
             </p>
 
             {subjectsLoading ? (
@@ -566,7 +566,7 @@ function IntakeForm() {
                 })}
               </div>
             )}
-            {errors.skills && <p className="mt-2 text-xs text-red-400">{errors.skills}</p>}
+            {errors.skills && <p className="mt-2 text-xs text-red-700">{errors.skills}</p>}
           </div>
 
           {/* ── Weekly Availability Grid ────────────────── */}
@@ -581,7 +581,7 @@ function IntakeForm() {
                 <div>
                   <h2 className="text-lg font-semibold">Weekly Availability</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Click or drag to select your available time blocks. <span className="text-red-400">*</span>
+                    Click or drag to select your available time blocks. <span className="text-red-700">*</span>
                   </p>
                 </div>
               </div>
@@ -662,7 +662,7 @@ function IntakeForm() {
               </div>
             </div>
 
-            {errors.availability && <p className="mt-2 text-xs text-red-400">{errors.availability}</p>}
+            {errors.availability && <p className="mt-2 text-xs text-red-700">{errors.availability}</p>}
 
             {/* Selected summary */}
             {selectedSlots.size > 0 && (
@@ -674,7 +674,7 @@ function IntakeForm() {
 
           {/* ── Error Banner ────────────────────────────── */}
           {submitState === 'error' && submitError && (
-            <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
               {submitError}
             </div>
           )}

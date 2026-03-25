@@ -137,7 +137,7 @@ export function TagSelector({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-slate-400 text-sm">
+      <div className="flex items-center gap-2 text-slate-700 text-sm">
         <Loader2 className="w-4 h-4 animate-spin" />
         <span>Loading tags...</span>
       </div>
@@ -185,7 +185,7 @@ export function TagSelector({
         className="w-full flex items-center justify-between text-left text-sm text-slate-500 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span>{value.length === 0 ? placeholder : `${value.length} selected`}</span>
-        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 20 20">
           <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 8l4 4 4-4" />
         </svg>
       </button>
@@ -206,7 +206,7 @@ export function TagSelector({
           >
             {allTags.length === 0 && !showAddForm ? (
               <div className="px-3 py-3 text-center">
-                <p className="text-sm text-slate-400 mb-2">
+                <p className="text-sm text-slate-700 mb-2">
                   No tags available{category && ` in "${category}" category`}
                 </p>
                 <Tooltip text="Create a new tag in this category">

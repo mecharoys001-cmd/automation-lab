@@ -124,9 +124,9 @@ export function ClickToCopy({
           aria-label={`Copy ${label || 'to clipboard'}`}
         >
           {copied ? (
-            <Check className="w-4 h-4 text-emerald-500" />
+            <Check className="w-4 h-4 text-emerald-700" />
           ) : (
-            <Copy className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+            <Copy className="w-4 h-4 text-slate-700 hover:text-slate-600" />
           )}
         </button>
       </Tooltip>
@@ -145,11 +145,11 @@ export function ClickToCopy({
         }
       >
         {/* Leading icon (Mail / Phone / custom) */}
-        {Icon && <Icon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
+        {Icon && <Icon className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />}
 
         {/* Label (only rendered when no icon) */}
         {label && !Icon && (
-          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+          <span className="text-xs font-medium text-slate-700 uppercase tracking-wide">
             {label}
           </span>
         )}
