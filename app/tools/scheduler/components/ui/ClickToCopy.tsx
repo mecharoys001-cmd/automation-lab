@@ -121,6 +121,7 @@ export function ClickToCopy({
           type="button"
           onClick={handleCopy}
           className={`p-1 rounded hover:bg-slate-100 transition-colors ${className}`}
+          aria-label={`Copy ${label || 'to clipboard'}`}
         >
           {copied ? (
             <Check className="w-4 h-4 text-emerald-500" />

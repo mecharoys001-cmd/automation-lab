@@ -82,8 +82,7 @@ export default function ImportPage() {
 
   return (
     <div
-      className="overflow-y-auto h-full"
-      style={{ backgroundColor: '#F8FAFC', padding: 32 }}
+      className="overflow-y-auto h-full bg-slate-50 p-4 sm:p-8"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 800 }}>
         {/* Page Header */}

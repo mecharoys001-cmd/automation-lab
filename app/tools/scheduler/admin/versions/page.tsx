@@ -203,8 +203,7 @@ export default function VersionsPage() {
 
   return (
     <div
-      className="overflow-y-auto h-full"
-      style={{ backgroundColor: '#F8FAFC', padding: 32 }}
+      className="overflow-y-auto h-full bg-slate-50 p-4 sm:p-8"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Page Header */}
@@ -458,7 +457,7 @@ export default function VersionsPage() {
 
           {/* Warning: not reversible */}
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
             <div className="text-sm text-amber-800">
               <strong>This cannot be undone.</strong> The current schedule data will be permanently
               overwritten. No new version is created automatically &mdash; if you want to preserve

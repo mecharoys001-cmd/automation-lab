@@ -405,7 +405,7 @@ export default function EventTemplatesPage() {
 
   if (!selectedProgramId) {
     return (
-      <div className="overflow-y-auto h-full bg-slate-50 p-8">
+      <div className="overflow-y-auto h-full bg-slate-50 p-4 sm:p-8">
         <div className="flex flex-col items-center justify-center h-64 text-slate-400 text-sm">
           Select a program from the sidebar to manage event templates.
         </div>
@@ -416,19 +416,19 @@ export default function EventTemplatesPage() {
   /* ── Render ─────────────────────────────────────────────── */
 
   return (
-    <div className="overflow-y-auto h-full" style={{ backgroundColor: '#F8FAFC', padding: 32 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="overflow-y-auto h-full bg-slate-50 p-3 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:gap-6">
         {/* Page Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold text-slate-900">
               Event Templates
             </h1>
-            <p style={{ fontSize: 14, color: '#64748B', margin: 0 }}>
+            <p className="text-xs sm:text-sm text-slate-500">
               Create and manage session templates
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="flex gap-2 flex-wrap">
             <Button variant="secondary" onClick={() => setImportOpen(true)} tooltip="Import templates from CSV">
               <Upload className="w-4 h-4" />
               Import CSV
@@ -448,16 +448,18 @@ export default function EventTemplatesPage() {
         />
 
         {/* Template Table */}
-        <TemplateList
-          mode="table"
-          templates={filteredListItems}
-          loading={loading}
-          onEdit={(id) => {
-            const t = templates.find((t) => t.id === id);
-            if (t) openEditForm(t);
-          }}
-          onDelete={(id) => setDeleteConfirmId(id)}
-        />
+        <div className="overflow-x-auto">
+          <TemplateList
+            mode="table"
+            templates={filteredListItems}
+            loading={loading}
+            onEdit={(id) => {
+              const t = templates.find((t) => t.id === id);
+              if (t) openEditForm(t);
+            }}
+            onDelete={(id) => setDeleteConfirmId(id)}
+          />
+        </div>
       </div>
 
       {/* ── Create / Edit Form Modal ──────────────────────────── */}

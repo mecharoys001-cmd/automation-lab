@@ -119,7 +119,7 @@ export default function InstructorDetailPage() {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* ─── Top Bar ──────────────────────────────────────── */}
-      <div className="flex items-center gap-4 bg-white px-8 py-4 border-b border-slate-200">
+      <div className="flex items-center gap-4 bg-white px-4 sm:px-8 py-4 border-b border-slate-200">
         <Button variant="ghost" size="sm" onClick={goBack} tooltip="Back to Reports">
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -177,7 +177,7 @@ export default function InstructorDetailPage() {
       </div>
 
       {/* ─── Content ──────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
 
         {/* Loading State */}
         {loading && (

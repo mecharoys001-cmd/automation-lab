@@ -446,7 +446,7 @@ export function OneOffEventModal({
                   <button
                     onClick={() => onCancelEvent(editEvent.id, 'single')}
                     disabled={saving}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-amber-800 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <XCircle className="w-3.5 h-3.5" />
                     Cancel Event
@@ -494,7 +494,7 @@ export function OneOffEventModal({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Spring Assembly, Guest Artist Visit"
             autoFocus
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
           />
         </div>
 
@@ -505,7 +505,7 @@ export function OneOffEventModal({
             <select
               value={subjectTagId}
               onChange={(e) => setSubjectTagId(e.target.value)}
-              className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer ${
+              className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer ${
                 subjectTagId ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'
               }`}
             >
@@ -526,7 +526,7 @@ export function OneOffEventModal({
             <select
               value={instructorId}
               onChange={(e) => setInstructorId(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer"
             >
               <option value="">— None —</option>
               {instructors.map((i) => (
@@ -550,7 +550,7 @@ export function OneOffEventModal({
           <select
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer"
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer"
           >
             <option value="">— None —</option>
             {venues.map((v) => (
@@ -602,7 +602,7 @@ export function OneOffEventModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
             />
           </div>
 
@@ -612,7 +612,7 @@ export function OneOffEventModal({
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
             />
           </div>
 
@@ -625,7 +625,7 @@ export function OneOffEventModal({
               min={5}
               max={480}
               step={5}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
             />
           </div>
         </div>
@@ -666,7 +666,7 @@ export function OneOffEventModal({
                 onChange={(e) => setIntervalWeeks(Math.max(2, parseInt(e.target.value) || 2))}
                 min={2}
                 max={52}
-                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
               <span className="text-xs text-slate-500">weeks</span>
             </div>
@@ -681,7 +681,7 @@ export function OneOffEventModal({
                 onChange={(e) => setSessionCount(Math.max(2, parseInt(e.target.value) || 2))}
                 min={2}
                 max={52}
-                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
               <span className="text-xs text-slate-500">total sessions</span>
             </div>
@@ -695,7 +695,7 @@ export function OneOffEventModal({
                 value={untilDate}
                 onChange={(e) => setUntilDate(e.target.value)}
                 min={date}
-                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
             </div>
           )}
@@ -717,7 +717,7 @@ export function OneOffEventModal({
                     setRotateInstructors(e.target.checked);
                     if (!e.target.checked) setRotationInstructorIds([]);
                   }}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer"
                 />
                 <span className="text-xs font-medium text-slate-600">Rotate Instructors</span>
               </label>

@@ -368,10 +368,11 @@ export function TemplateFormModal({
         )}
 
         {/* 1. Name */}
-        <FormField label="Name" required error={nameError}>
+        <FormField label="Name" required error={nameError} htmlFor="template-name">
           <input
             ref={nameInputRef}
             type="text"
+            id="template-name"
             value={form.name}
             onChange={(e) => {
               updateForm({ name: e.target.value });
@@ -380,10 +381,10 @@ export function TemplateFormModal({
             }}
             placeholder="e.g., Weekly Strings K-2"
             autoFocus
-            className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors ${
+            className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition-colors ${
               nameError
-                ? 'border-red-400 focus:border-red-400 focus:ring-1 focus:ring-red-400'
-                : 'border-slate-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400'
+                ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-1 focus:ring-red-400'
+                : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500'
             }`}
           />
         </FormField>
@@ -410,11 +411,12 @@ export function TemplateFormModal({
         </FormField>
 
         {/* 3. Staff */}
-        <FormField label="Staff">
+        <FormField label="Staff" htmlFor="template-staff">
           <select
+            id="template-staff"
             value={form.instructor_id}
             onChange={(e) => updateForm({ instructor_id: e.target.value })}
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors appearance-none"
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 cursor-pointer transition-colors appearance-none"
           >
             <option value="">— None —</option>
             {filteredInstructors.map((i) => (
@@ -441,11 +443,12 @@ export function TemplateFormModal({
         </FormField>
 
         {/* 4. Venue */}
-        <FormField label="Venue" hint="Leave empty to auto-assign based on availability">
+        <FormField label="Venue" hint="Leave empty to auto-assign based on availability" htmlFor="template-venue">
           <select
+            id="template-venue"
             value={form.venue_id}
             onChange={(e) => updateForm({ venue_id: e.target.value })}
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors appearance-none"
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 cursor-pointer transition-colors appearance-none"
           >
             <option value="">— Auto-assign —</option>
             {venues.map((v) => (
@@ -528,7 +531,7 @@ export function TemplateFormModal({
                         type="date"
                         value={form.starts_on}
                         onChange={(e) => updateForm({ starts_on: e.target.value })}
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                       />
                     </div>
                     <div>
@@ -537,7 +540,7 @@ export function TemplateFormModal({
                         type="date"
                         value={form.ends_on}
                         onChange={(e) => updateForm({ ends_on: e.target.value })}
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                       />
                     </div>
                   </div>
@@ -566,7 +569,7 @@ export function TemplateFormModal({
                         type="date"
                         value={form.starts_on}
                         onChange={(e) => updateForm({ starts_on: e.target.value })}
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                       />
                     </div>
                     <div>
@@ -578,7 +581,7 @@ export function TemplateFormModal({
                         value={form.duration_weeks ?? ''}
                         onChange={(e) => updateForm({ duration_weeks: e.target.value ? Number(e.target.value) : null })}
                         placeholder="e.g. 12"
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                       />
                     </div>
                   </div>
@@ -607,7 +610,7 @@ export function TemplateFormModal({
                         type="date"
                         value={form.starts_on}
                         onChange={(e) => updateForm({ starts_on: e.target.value })}
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -620,7 +623,7 @@ export function TemplateFormModal({
                           value={form.session_count ?? ''}
                           onChange={(e) => updateForm({ session_count: e.target.value ? Number(e.target.value) : null })}
                           placeholder="e.g. 10"
-                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                         />
                       </div>
                       <div>
@@ -632,7 +635,7 @@ export function TemplateFormModal({
                           value={form.within_weeks ?? ''}
                           onChange={(e) => updateForm({ within_weeks: e.target.value ? Number(e.target.value) : null })}
                           placeholder="No limit"
-                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                          className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                         />
                       </div>
                     </div>
@@ -682,7 +685,7 @@ export function TemplateFormModal({
                   max={480}
                   value={form.duration_minutes}
                   onChange={(e) => updateForm({ duration_minutes: Number(e.target.value) || 0 })}
-                  className="w-20 h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                  className="w-20 h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
                 <span className="text-[13px] text-slate-500">min</span>
               </div>
@@ -773,7 +776,7 @@ export function TemplateFormModal({
                     updateForm({ week_cycle_length: 4, week_in_cycle: 0 });
                   }
                 }}
-                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                className="w-16 h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
               <span className="text-xs text-slate-500">weeks</span>
             </label>
@@ -846,7 +849,7 @@ export function TemplateFormModal({
                   type="date"
                   value={sessionDate}
                   onChange={(e) => setSessionDate(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
               </FormField>
               <FormField label="Start Time">
@@ -854,7 +857,7 @@ export function TemplateFormModal({
                   type="time"
                   value={sessionStartTime}
                   onChange={(e) => setSessionStartTime(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
               </FormField>
             </div>
@@ -869,10 +872,10 @@ export function TemplateFormModal({
 
 /* ── Shared form components ─────────────────────────────────── */
 
-function FormField({ label, hint, required, error, children }: { label: string; hint?: string; required?: boolean; error?: string | null; children: React.ReactNode }) {
+function FormField({ label, hint, required, error, children, htmlFor }: { label: string; hint?: string; required?: boolean; error?: string | null; children: React.ReactNode; htmlFor?: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      <label htmlFor={htmlFor} className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
         {label}
         {required && <span className="text-red-400 ml-0.5">*</span>}
         {hint && <span className="font-normal normal-case ml-1.5 text-slate-400">{hint}</span>}

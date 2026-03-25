@@ -401,7 +401,7 @@ export default function IntakePage() {
                     type="text"
                     value={form.first_name}
                     onChange={handleFieldChange('first_name')}
-                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
+                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       errors.first_name ? 'border-red-500' : 'border-border'
                     }`}
                     placeholder="Jane"
@@ -421,7 +421,7 @@ export default function IntakePage() {
                     type="text"
                     value={form.last_name}
                     onChange={handleFieldChange('last_name')}
-                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
+                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       errors.last_name ? 'border-red-500' : 'border-border'
                     }`}
                     placeholder="Doe"
@@ -441,7 +441,7 @@ export default function IntakePage() {
                     type="email"
                     value={form.email}
                     onChange={handleFieldChange('email')}
-                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
+                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       errors.email ? 'border-red-500' : 'border-border'
                     }`}
                     placeholder="jane@example.com"
@@ -461,7 +461,7 @@ export default function IntakePage() {
                     type="tel"
                     value={form.phone}
                     onChange={handleFieldChange('phone')}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     placeholder="(555) 123-4567"
                   />
                 </Tooltip>

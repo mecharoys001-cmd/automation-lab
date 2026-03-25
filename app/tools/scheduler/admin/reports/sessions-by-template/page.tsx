@@ -226,7 +226,7 @@ export default function SessionsByTemplatePage() {
                 multiple
                 value={gradeFilter}
                 onChange={(e) => setGradeFilter(Array.from(e.target.selectedOptions, (o) => o.value))}
-                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus-visible:ring-2 focus:ring-blue-500"
                 size={1}
               >
                 <option value="" disabled>Grade</option>
@@ -244,7 +244,7 @@ export default function SessionsByTemplatePage() {
                 multiple
                 value={subjectFilter}
                 onChange={(e) => setSubjectFilter(Array.from(e.target.selectedOptions, (o) => o.value))}
-                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus-visible:ring-2 focus:ring-blue-500"
                 size={1}
               >
                 <option value="" disabled>Event Type</option>
@@ -262,7 +262,7 @@ export default function SessionsByTemplatePage() {
                 multiple
                 value={dayFilter.map(String)}
                 onChange={(e) => setDayFilter(Array.from(e.target.selectedOptions, (o) => Number(o.value)))}
-                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus-visible:ring-2 focus:ring-blue-500"
                 size={1}
               >
                 <option value="" disabled>Day</option>
@@ -279,7 +279,7 @@ export default function SessionsByTemplatePage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 text-[13px] text-slate-900 bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 appearance-none"
               >
                 <option value="all">All Status</option>
                 <option value="published">Published Only</option>

@@ -152,7 +152,7 @@ export function InstructorEditModal({
               value={form.first_name}
               onChange={(e) => setField('first_name', e.target.value)}
               placeholder="e.g. Sarah"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -167,7 +167,7 @@ export function InstructorEditModal({
               value={form.last_name}
               onChange={(e) => setField('last_name', e.target.value)}
               placeholder="e.g. Johnson"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -181,7 +181,7 @@ export function InstructorEditModal({
               value={form.email}
               onChange={(e) => setField('email', e.target.value)}
               placeholder="sarah@example.com"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -195,7 +195,7 @@ export function InstructorEditModal({
               value={form.phone}
               onChange={(e) => setField('phone', e.target.value)}
               placeholder="(555) 123-4567"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -223,7 +223,7 @@ export function InstructorEditModal({
               onChange={(e) => setField('notes', e.target.value)}
               placeholder="Add notes about this staff member…"
               rows={3}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
         </div>
@@ -233,7 +233,7 @@ export function InstructorEditModal({
           <label className="block text-xs font-semibold text-slate-500 mb-2">Availability</label>
           {selectedProgram && (
             <Tooltip text="This availability extends outside your program dates">
-              <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>
                   Program runs {new Date(selectedProgram.start_date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} to {new Date(selectedProgram.end_date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -257,7 +257,7 @@ export function InstructorEditModal({
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setField('is_active', e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
               />
               <span className="text-sm text-slate-700">
                 {form.is_active ? 'Active' : 'Inactive'}

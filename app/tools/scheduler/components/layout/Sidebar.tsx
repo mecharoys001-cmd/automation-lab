@@ -40,6 +40,10 @@ interface SidebarProps {
   /** Callback when user clicks the logout button */
   onLogout?: () => void;
   className?: string;
+  /** Whether the sidebar is open on mobile */
+  mobileOpen?: boolean;
+  /** Callback to close the sidebar on mobile */
+  onMobileClose?: () => void;
 }
 
 const defaultNavItems: NavItem[] = [
@@ -82,6 +86,8 @@ export function Sidebar({
   header,
   onLogout,
   className = '',
+  mobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
 
@@ -96,9 +102,17 @@ export function Sidebar({
   };
 
   return (
-    <aside
-      className={`w-[240px] flex flex-col justify-between bg-slate-800 py-6 px-4 flex-shrink-0 ${className}`}
-    >
+    <>
+      {/* Mobile overlay backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+      <aside
+        className={`w-[240px] flex flex-col justify-between bg-slate-800 py-6 px-4 flex-shrink-0 fixed inset-y-0 left-0 z-50 lg:static lg:translate-x-0 transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${className}`}
+      >
       {/* Top section: Logo + Nav */}
       <div className="min-h-0 flex flex-col">
         {/* Header */}
@@ -158,6 +172,7 @@ export function Sidebar({
           )}
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

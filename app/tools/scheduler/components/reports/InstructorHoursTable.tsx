@@ -50,7 +50,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
     <div className="bg-white rounded-lg border border-slate-200 overflow-x-auto">
       {/* Column Headers */}
       <div
-        className="grid items-center px-5 h-11 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+        className="grid items-center px-5 h-11 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider"
         style={{ gridTemplateColumns: '1fr 120px 100px 100px 40px' }}
       >
         <span>Staff</span>

@@ -19,6 +19,7 @@ import {
   GitBranch,
   Settings,
   Upload,
+  Menu,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -54,7 +55,7 @@ function SidebarProgramSelector() {
           <select
             value={selectedProgramId ?? ''}
             onChange={(e) => setSelectedProgramId(e.target.value)}
-            className="w-full h-9 rounded-lg bg-slate-700 border border-slate-600 px-3 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 cursor-pointer appearance-none"
+            className="w-full h-9 rounded-lg bg-slate-700 border border-slate-600 px-3 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 cursor-pointer appearance-none"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
               backgroundPosition: 'right 0.5rem center',
@@ -86,6 +87,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { selectedProgram, selectedProgramId } = useProgram();
   const [user, setUser] = useState<UserProfile | undefined>();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const prevProgramIdRef = useRef<string | null>(null);
 
   // Show/hide onboarding based on per-program wizard_completed state
@@ -160,10 +162,29 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen">
       {/* Dark sidebar with program selector */}
-      <Sidebar navItems={adminNavItems} header={<SidebarProgramSelector />} onLogout={handleLogout} user={user} />
+      <Sidebar
+        navItems={adminNavItems}
+        header={<SidebarProgramSelector />}
+        onLogout={handleLogout}
+        user={user}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+      />
 
       {/* Main content — light theme matching design spec */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
+        {/* Mobile hamburger header */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-200 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100 transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <CalendarDays className="w-5 h-5 text-blue-500" />
+          <span className="text-sm font-semibold text-slate-800">Symphonix</span>
+        </div>
         <main className="flex-1 overflow-hidden">
           {children}
         </main>

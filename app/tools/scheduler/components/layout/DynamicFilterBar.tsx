@@ -137,7 +137,7 @@ function FilterDropdown({
       {open && (
         <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 max-h-64 overflow-y-auto">
           {filter.options.length === 0 ? (
-            <div className="px-3 py-3 text-[13px] text-slate-400 text-center">
+            <div className="px-3 py-3 text-[13px] text-slate-500 text-center">
               <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
               {filter.emptyHref && (
                 <a
@@ -205,6 +205,7 @@ function FilterPill({
         <button
           onClick={onRemove}
           className="ml-0.5 p-0.5 rounded-full hover:bg-blue-200 transition-colors cursor-pointer"
+          aria-label={`Remove filter ${filterLabel}: ${value}`}
         >
           <X className="w-3 h-3" />
         </button>

@@ -529,15 +529,16 @@ function VenueDetailModal({
         <div className="px-6 py-4 space-y-5">
           {/* Capacity */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
+            <label htmlFor="venue-capacity" className="block text-xs font-semibold text-slate-500 mb-1.5">Capacity</label>
             <Tooltip text="Maximum number of people this venue can hold">
               <input
                 type="number"
+                id="venue-capacity"
                 min="0"
                 value={capacity}
                 onChange={(e) => setCapacity(e.target.value)}
                 placeholder="e.g. 30"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
             </Tooltip>
           </div>
@@ -559,7 +560,7 @@ function VenueDetailModal({
                 <select
                   value={roomType}
                   onChange={(e) => setRoomType(e.target.value)}
-                  className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer transition-colors"
+                  className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 cursor-pointer transition-colors"
                 >
                   <option value="">Select space type…</option>
                   {spaceTypes.map((t) => (
@@ -601,7 +602,7 @@ function VenueDetailModal({
                   type="checkbox"
                   checked={accessible}
                   onChange={(e) => setAccessible(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
                 />
                 <span className="text-sm text-slate-700">Wheelchair accessible</span>
               </label>
@@ -619,7 +620,7 @@ function VenueDetailModal({
                   value={bufferMinutes}
                   onChange={(e) => setBufferMinutes(e.target.value)}
                   placeholder="0"
-                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                  className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
                 <span className="text-sm text-slate-500">minutes</span>
               </div>
@@ -635,7 +636,7 @@ function VenueDetailModal({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add notes about this venue…"
                 rows={3}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
               />
             </Tooltip>
           </div>
@@ -940,15 +941,16 @@ function VenueCreateModal({
       <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="px-6 py-4 space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">Name *</label>
+          <label htmlFor="venue-form-name" className="block text-xs font-semibold text-slate-500 mb-1.5">Name *</label>
           <Tooltip text="Venue or room name" className="w-full">
             <input
               type="text"
+              id="venue-form-name"
               required
               value={form.name}
               onChange={(e) => setField('name', e.target.value)}
               placeholder="e.g. Main Stage"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -985,7 +987,7 @@ function VenueCreateModal({
                 onChange={(e) => setNewSpaceTypeName(e.target.value)}
                 placeholder="New space type name"
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSpaceType(); } }}
-                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 autoFocus
               />
               <Tooltip text="Create space type tag">
@@ -1005,7 +1007,7 @@ function VenueCreateModal({
               value={form.space_type}
               onChange={(e) => setField('space_type', e.target.value)}
               disabled={loadingSpaceTypes}
-              className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full appearance-none border border-slate-200 rounded-lg px-3 py-2 pr-8 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50"
             >
               <option value="">{loadingSpaceTypes ? 'Loading...' : spaceTypes.length === 0 ? 'None yet — use + to add' : 'Select type...'}</option>
               {spaceTypes.map((t) => (
@@ -1043,7 +1045,7 @@ function VenueCreateModal({
               value={form.max_capacity}
               onChange={(e) => setField('max_capacity', e.target.value)}
               placeholder="e.g. 30"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
           </Tooltip>
         </div>
@@ -1056,7 +1058,7 @@ function VenueCreateModal({
                 type="checkbox"
                 checked={form.is_wheelchair_accessible}
                 onChange={(e) => setField('is_wheelchair_accessible', e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400 cursor-pointer accent-blue-500"
+                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
               />
               <span className="text-sm text-slate-700">Wheelchair Accessible</span>
             </label>
@@ -1074,7 +1076,7 @@ function VenueCreateModal({
                 value={form.buffer_minutes}
                 onChange={(e) => setField('buffer_minutes', e.target.value)}
                 placeholder="0"
-                className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
               <span className="text-sm text-slate-500">minutes</span>
             </div>
@@ -1099,7 +1101,7 @@ function VenueCreateModal({
               onChange={(e) => setField('notes', e.target.value)}
               placeholder="Add notes about this venue…"
               rows={3}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none transition-colors"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
         </div>
@@ -1414,26 +1416,26 @@ export default function PeoplePage() {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* ── Top Bar ──────────────────────────────────────── */}
-      <div className="flex items-center bg-white px-8 py-4 border-b border-slate-200 gap-4 flex-shrink-0">
-        <h1 className="text-[22px] font-bold text-slate-900 whitespace-nowrap">
+      <div className="flex items-center bg-white px-3 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-slate-200 gap-4 flex-shrink-0">
+        <h1 className="text-lg sm:text-xl lg:text-[22px] font-bold text-slate-900 whitespace-nowrap">
           Staff &amp; Venues
         </h1>
       </div>
 
       {/* ── Content Area ─────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* ── Share Intake Form Section ────────────────────── */}
-        <section className="bg-gradient-to-r from-blue-50 to-violet-50 rounded-lg border border-blue-200 p-5">
-          <div className="flex items-start gap-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-white border border-blue-200 flex-shrink-0">
-              <Mail className="w-6 h-6 text-blue-500" />
+        <section className="bg-gradient-to-r from-blue-50 to-violet-50 rounded-lg border border-blue-200 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white border border-blue-200 flex-shrink-0">
+              <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-slate-900 mb-1">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-900 mb-1">
                 Share Staff Availability Form
               </h3>
-              <p className="text-[13px] text-slate-600 mb-4">
+              <p className="text-xs sm:text-[13px] text-slate-600 mb-3 sm:mb-4">
                 Send this link to staff via email to collect their availability and contact information. The form saves directly to the system.
               </p>
               <div className="flex items-center gap-3 flex-wrap">
@@ -1458,10 +1460,10 @@ export default function PeoplePage() {
         </section>
 
         {/* ── Instructors Section ─────────────────────────── */}
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <Users className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-slate-900">Staff</h2>
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+            <h2 className="text-base sm:text-lg font-semibold text-slate-900">Staff</h2>
             <Badge
               variant="count"
               color="blue"
@@ -1469,18 +1471,18 @@ export default function PeoplePage() {
             >
               ({filtered.length})
             </Badge>
-            <div className="flex-1" />
+            <div className="flex-1 min-w-0" />
 
             {/* Search Bar */}
             <Tooltip text="Search by name, email, or event type">
-              <div className="flex items-center w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
+              <div className="flex items-center w-full sm:w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
                 <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Search staff..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-500 bg-transparent outline-none"
                 />
               </div>
             </Tooltip>
@@ -1522,7 +1524,7 @@ export default function PeoplePage() {
           {loadingAll ? (
             <CardGridSkeleton />
           ) : filtered.length === 0 ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-400">
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-500">
               {allInstructors.length === 0
                 ? 'No staff found.'
                 : 'No staff match your filters.'}
@@ -1624,7 +1626,7 @@ export default function PeoplePage() {
                         );
                       })}
                       {(!inst.skills || inst.skills.length === 0) && (
-                        <span className="text-[11px] text-slate-400">No event types listed</span>
+                        <span className="text-[11px] text-slate-500">No event types listed</span>
                       )}
                     </div>
 
@@ -1648,7 +1650,7 @@ export default function PeoplePage() {
                         return (
                           <Tooltip key={day.key} text={tooltipText}>
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="text-[10px] font-medium text-slate-400">
+                              <span className="text-[10px] font-medium text-slate-500">
                                 {day.label}
                               </span>
                               <div className="flex flex-col gap-0.5">
@@ -1694,10 +1696,10 @@ export default function PeoplePage() {
         </section>
 
         {/* ── Venues Section ──────────────────────────────── */}
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <MapPin className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-slate-900">Venues</h2>
+            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+            <h2 className="text-base sm:text-lg font-semibold text-slate-900">Venues</h2>
             <Badge
               variant="count"
               color="blue"
@@ -1705,18 +1707,18 @@ export default function PeoplePage() {
             >
               ({filteredVenues.length})
             </Badge>
-            <div className="flex-1" />
+            <div className="flex-1 min-w-0" />
 
             {/* Search Bar */}
             <Tooltip text="Search by venue name or space type">
-              <div className="flex items-center w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
+              <div className="flex items-center w-full sm:w-[240px] border border-slate-200 rounded-lg px-3 py-1.5 gap-2">
                 <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Search venues..."
                   value={venueSearch}
                   onChange={(e) => setVenueSearch(e.target.value)}
-                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-500 bg-transparent outline-none"
                 />
               </div>
             </Tooltip>

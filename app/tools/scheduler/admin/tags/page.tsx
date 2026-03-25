@@ -594,7 +594,7 @@ export default function TagsPage() {
       )}
 
       {/* Header */}
-      <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0">
+      <div className="bg-white px-4 sm:px-8 py-5 border-b border-slate-200 shrink-0">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tags</h1>
@@ -627,7 +627,7 @@ export default function TagsPage() {
       </div>
 
       {/* Quick Add */}
-      <div className="bg-white px-8 py-4 border-b border-slate-200 shrink-0">
+      <div className="bg-white px-4 sm:px-8 py-4 border-b border-slate-200 shrink-0">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
@@ -640,7 +640,7 @@ export default function TagsPage() {
               onChange={(e) => { setQuickAddValue(e.target.value); setQuickAddError(null); setQuickAddSuccess(false); }}
               onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
               placeholder="e.g., Percussion, Strings, Brass (comma-separated for bulk)"
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               disabled={quickAddLoading}
             />
             {quickAddError && <p className="text-xs text-red-600 mt-1">{quickAddError}</p>}
@@ -654,7 +654,7 @@ export default function TagsPage() {
             <select
               value={quickAddCategory}
               onChange={(e) => setQuickAddCategory(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors appearance-none"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors appearance-none"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                 backgroundPosition: 'right 0.5rem center',
@@ -700,7 +700,7 @@ export default function TagsPage() {
                 if (e.key === 'Escape') { setNewCategoryName(''); setShowNewCategoryInput(false); }
               }}
               placeholder="Category name..."
-              className="flex-1 h-9 rounded-lg border border-blue-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+              className="flex-1 h-9 rounded-lg border border-blue-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               autoFocus
             />
             <Button variant="primary" size="sm" onClick={createCategory} disabled={!newCategoryName.trim()}>
@@ -714,7 +714,7 @@ export default function TagsPage() {
       </div>
 
       {/* Tags List (Grouped by Category) */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
         <div className="space-y-4">
           {categories.map(category => {
             const categoryTags = tags.filter(t => normalizeCategory(t.category || 'General') === category);
@@ -742,7 +742,8 @@ export default function TagsPage() {
                           setCategoryQuickAdd(category);
                           setCategoryQuickAddValue('');
                         }}
-                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-400 hover:text-blue-600"
+                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-400 hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                        aria-label="Add new tag to this category"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -761,7 +762,7 @@ export default function TagsPage() {
                           if (e.key === 'Escape') setCategoryQuickAdd(null);
                         }}
                         placeholder={`Add tag to ${category} (comma-separated for bulk)...`}
-                        className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                        className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         autoFocus
                         disabled={categoryQuickAddLoading}
                       />
@@ -826,14 +827,14 @@ export default function TagsPage() {
                                     type="text"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
-                                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                                     placeholder="Tag name"
                                   />
                                 </div>
                                 <select
                                   value={editCategory}
                                   onChange={(e) => setEditCategory(e.target.value)}
-                                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                                 >
                                   {categories.map(cat => (
                                     <option key={cat} value={cat}>{cat}</option>
@@ -843,7 +844,7 @@ export default function TagsPage() {
                               <textarea
                                 value={editDescription}
                                 onChange={(e) => setEditDescription(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 resize-none"
                                 placeholder="Optional description"
                                 rows={2}
                               />

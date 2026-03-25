@@ -49,9 +49,9 @@ const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; ce
     cell: 'bg-red-50 text-red-700 border border-red-200',
   },
   early_dismissal: {
-    badge: 'bg-amber-100 text-amber-700 border-amber-200',
+    badge: 'bg-amber-100 text-amber-800 border-amber-200',
     dot: 'bg-amber-500',
-    cell: 'bg-amber-50 text-amber-700 border border-amber-200',
+    cell: 'bg-amber-50 text-amber-800 border border-amber-200',
   },
   instructor_exception: {
     badge: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -1116,10 +1116,10 @@ export default function CalendarPage() {
                   setForm({ ...form, date: e.target.value });
                   if (e.target.value && dateError && onDateErrorClear) onDateErrorClear();
                 }}
-                className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 transition-colors ${
+                className={`w-full h-10 rounded-lg border bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 transition-colors ${
                   dateError
-                    ? 'border-red-300 focus:ring-red-500/30 focus:border-red-500'
-                    : 'border-slate-200 focus:ring-blue-500/30 focus:border-blue-500'
+                    ? 'border-red-300 focus:ring-red-500/30 focus-visible:border-red-500'
+                    : 'border-slate-200 focus-visible:ring-blue-500 focus-visible:border-blue-500'
                 }`}
               />
             </Tooltip>
@@ -1137,7 +1137,7 @@ export default function CalendarPage() {
                 placeholder="e.g. Winter Break"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
             </Tooltip>
           </div>
@@ -1149,7 +1149,7 @@ export default function CalendarPage() {
               <select
                 value={form.status_type}
                 onChange={(e) => setForm({ ...form, status_type: e.target.value as CalendarStatusType })}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               >
                 <option value="no_school">No School</option>
                 <option value="early_dismissal">Early Dismissal</option>
@@ -1167,7 +1167,7 @@ export default function CalendarPage() {
                   type="time"
                   value={form.early_dismissal_time}
                   onChange={(e) => setForm({ ...form, early_dismissal_time: e.target.value })}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
                 />
               </Tooltip>
             </div>
@@ -1211,7 +1211,7 @@ export default function CalendarPage() {
               <Tooltip text="You have unsaved changes">
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-600">Unsaved</span>
+                  <span className="text-xs font-medium text-amber-800">Unsaved</span>
                 </span>
               </Tooltip>
             )}
@@ -1331,7 +1331,7 @@ export default function CalendarPage() {
                       el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 100);
                   }}
-                  className="text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors cursor-pointer appearance-none"
+                  className="text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer appearance-none"
                   style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 >
                   <option value="" disabled>Jump to month…</option>
@@ -1414,7 +1414,7 @@ export default function CalendarPage() {
                   <Tooltip text="Mark selected days as Early Dismissal — events end earlier than usual">
                     <button
                       onClick={() => openBatchModal('early_dismissal')}
-                      className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition-colors"
                     >
                       <Clock className="w-3.5 h-3.5 shrink-0" />
                       <span className="hidden sm:inline">Mark as Early Dismissal</span>
@@ -1497,7 +1497,7 @@ export default function CalendarPage() {
                   placeholder="Search by description or date..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
                 />
               </div>
             </Tooltip>
@@ -1507,7 +1507,7 @@ export default function CalendarPage() {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as CalendarStatusType | 'all')}
-                  className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors appearance-none"
+                  className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors appearance-none"
                 >
                   <option value="all">All Types</option>
                   <option value="no_school">No School</option>
@@ -1571,7 +1571,7 @@ export default function CalendarPage() {
                                   <Tooltip text="You have unsaved changes to this entry">
                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
                                       <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                                      <span className="text-xs font-medium text-amber-600">Unsaved changes</span>
+                                      <span className="text-xs font-medium text-amber-800">Unsaved changes</span>
                                     </span>
                                   </Tooltip>
                                 </div>
@@ -1635,7 +1635,8 @@ export default function CalendarPage() {
                                 <Tooltip text="Edit this calendar entry">
                                   <button
                                     onClick={() => startEdit(entry)}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                                    aria-label="Edit this calendar entry"
                                   >
                                     <Pencil className="w-4 h-4" />
                                   </button>
@@ -1643,7 +1644,8 @@ export default function CalendarPage() {
                                 <Tooltip text="Delete this calendar entry">
                                   <button
                                     onClick={() => setDeletingId(entry.id)}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                                    aria-label="Delete this calendar entry"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1703,7 +1705,7 @@ export default function CalendarPage() {
           {batchExistingCount > 0 && batchModal?.action !== 'clear' && (
             <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-700">
+              <p className="text-sm text-amber-800">
                 {batchExistingCount} of {batchModal?.dates.length} day{(batchModal?.dates.length ?? 0) !== 1 ? 's' : ''} already
                 {batchExistingCount === 1 ? ' has' : ' have'} a status. Existing entries will be updated.
               </p>
@@ -1721,7 +1723,7 @@ export default function CalendarPage() {
                 type="time"
                 value={batchTime}
                 onChange={(e) => setBatchTime(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               />
             </div>
           )}
@@ -1736,7 +1738,7 @@ export default function CalendarPage() {
               <select
                 value={batchInstructorId}
                 onChange={(e) => setBatchInstructorId(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               >
                 <option value="">
                   {batchInstructors.length === 0 ? 'Loading instructors…' : 'Select instructor…'}

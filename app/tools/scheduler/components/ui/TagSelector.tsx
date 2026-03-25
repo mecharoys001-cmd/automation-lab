@@ -263,7 +263,7 @@ export function TagSelector({
                             value={newTagEmoji}
                             onChange={(e) => setNewTagEmoji(e.target.value)}
                             maxLength={2}
-                            className="w-10 h-8 text-center rounded border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                            className="w-10 h-8 text-center rounded border border-slate-200 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                           />
                         </Tooltip>
                         <Tooltip text="Name for the new tag">
@@ -273,7 +273,7 @@ export function TagSelector({
                             value={newTagName}
                             onChange={(e) => setNewTagName(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
-                            className="flex-1 h-8 rounded border border-slate-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                            className="flex-1 h-8 rounded border border-slate-200 px-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                           />
                         </Tooltip>
                       </div>

@@ -69,15 +69,15 @@ const sectionTitleClass = 'text-base font-semibold text-slate-900';
 const sectionDescClass = 'text-[13px] text-slate-500 mt-0.5';
 const labelClass = 'block text-xs font-medium text-slate-500 mb-1';
 const inputClass =
-  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors';
+  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
-  'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50';
+  'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
-  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors';
+  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDanger =
-  'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50';
+  'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDangerOutline =
-  'inline-flex items-center gap-1.5 rounded-lg border border-red-300 text-red-500 px-3 py-1.5 text-xs font-medium hover:bg-red-50 transition-colors';
+  'inline-flex items-center gap-1.5 rounded-lg border border-red-300 text-red-500 px-3 py-1.5 text-xs font-medium hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const thClass =
   'text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider';
 const tdClass = 'px-4 py-3 text-sm';
@@ -513,9 +513,10 @@ export default function SettingsPage() {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Name</label>
+                <label htmlFor="scheduler-program-name" className={labelClass}>Name</label>
                 <Tooltip text="A label for this program (e.g. semester or season)" position="bottom">
                   <input
+                    id="scheduler-program-name"
                     type="text"
                     value={programForm.name}
                     onChange={(e) => setProgramForm((f) => ({ ...f, name: e.target.value }))}
@@ -525,9 +526,10 @@ export default function SettingsPage() {
                 </Tooltip>
               </div>
               <div>
-                <label className={labelClass}>Start Date</label>
+                <label htmlFor="scheduler-program-start-date" className={labelClass}>Start Date</label>
                 <Tooltip text="First day events can be scheduled" position="bottom">
                   <input
+                    id="scheduler-program-start-date"
                     type="date"
                     value={programForm.start_date}
                     onChange={(e) => setProgramForm((f) => ({ ...f, start_date: e.target.value }))}
@@ -536,9 +538,10 @@ export default function SettingsPage() {
                 </Tooltip>
               </div>
               <div>
-                <label className={labelClass}>End Date</label>
+                <label htmlFor="scheduler-program-end-date" className={labelClass}>End Date</label>
                 <Tooltip text="Last day events can be scheduled" position="bottom">
                   <input
+                    id="scheduler-program-end-date"
                     type="date"
                     value={programForm.end_date}
                     onChange={(e) => setProgramForm((f) => ({ ...f, end_date: e.target.value }))}
@@ -668,9 +671,10 @@ export default function SettingsPage() {
             <h3 className="text-sm font-semibold text-slate-900">New Admin</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={labelClass}>Google Email</label>
+                <label htmlFor="scheduler-admin-email" className={labelClass}>Google Email</label>
                 <Tooltip text="The Google account used to sign in" position="bottom">
                   <input
+                    id="scheduler-admin-email"
                     type="email"
                     value={adminForm.google_email}
                     onChange={(e) => setAdminForm((f) => ({ ...f, google_email: e.target.value }))}
@@ -680,9 +684,10 @@ export default function SettingsPage() {
                 </Tooltip>
               </div>
               <div>
-                <label className={labelClass}>Display Name</label>
+                <label htmlFor="scheduler-admin-display-name" className={labelClass}>Display Name</label>
                 <Tooltip text="Friendly name shown in the admin panel" position="bottom">
                   <input
+                    id="scheduler-admin-display-name"
                     type="text"
                     value={adminForm.display_name}
                     onChange={(e) => setAdminForm((f) => ({ ...f, display_name: e.target.value }))}
@@ -1189,7 +1194,7 @@ export default function SettingsPage() {
                   <Tooltip text="Type DELETE ALL SESSIONS exactly to continue">
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
-                        Type <span className="font-mono font-bold text-red-500">DELETE ALL SESSIONS</span> to continue
+                        Type <span className="font-mono font-bold text-red-700">DELETE ALL SESSIONS</span> to continue
                       </label>
                       <input
                         type="text"
@@ -1217,7 +1222,7 @@ export default function SettingsPage() {
                   <Tooltip text="Type DELETE ALL DATA exactly to continue">
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
-                        Type <span className="font-mono font-bold text-red-500">DELETE ALL DATA</span> to continue
+                        Type <span className="font-mono font-bold text-red-700">DELETE ALL DATA</span> to continue
                       </label>
                       <input
                         type="text"

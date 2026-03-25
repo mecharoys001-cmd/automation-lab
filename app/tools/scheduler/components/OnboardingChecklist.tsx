@@ -171,7 +171,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       );
     }
     return (
-      <div className="fixed bottom-6 left-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-[380px]">
+      <div className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-full max-w-[380px]">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         </div>
@@ -197,7 +197,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
   }
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-[380px] overflow-hidden">
+    <div className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-[380px] overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-violet-500 px-5 py-4">
         <div className="flex items-start justify-between mb-3">
@@ -212,6 +212,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
               <button
                 onClick={handleMinimize}
                 className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+                aria-label="Minimize checklist"
               >
                 <Minimize2 className="w-4 h-4" />
               </button>
@@ -220,6 +221,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
               <button
                 onClick={onClose}
                 className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+                aria-label="Close checklist"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -283,7 +285,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
                       {step.title}
                     </h4>
                     {step.optional && (
-                      <span className="text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                      <span className="text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
                         Optional
                       </span>
                     )}

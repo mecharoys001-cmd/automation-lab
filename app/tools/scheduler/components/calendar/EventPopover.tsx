@@ -557,7 +557,7 @@ export function EventPopover({
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Add notes about this event..."
-                    className="w-full px-3 py-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none bg-white"
+                    className="w-full px-3 py-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent resize-none bg-white"
                     rows={3}
                     autoFocus
                     aria-label="Event notes"
@@ -592,7 +592,7 @@ export function EventPopover({
         {showCancelConfirm && (
           <div className="space-y-3 pt-2 border-t border-slate-100">
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-amber-800 mt-0.5 shrink-0" />
               <div>
                 <p className="text-[12px] font-semibold text-amber-900">Are you sure you want to cancel this event?</p>
                 <p className="text-[11px] text-amber-700 mt-0.5">

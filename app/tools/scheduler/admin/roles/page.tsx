@@ -67,7 +67,7 @@ const ROLE_META: Record<AppRole, { label: string; description: string; color: st
   editor: {
     label: 'Editor',
     description: 'Edit schedules and sessions within existing programs',
-    color: 'bg-amber-100 text-amber-600',
+    color: 'bg-amber-100 text-amber-800',
     icon: Shield,
   },
   instructor: {
@@ -85,13 +85,13 @@ const sectionTitleClass = 'text-base font-semibold text-slate-900';
 const sectionDescClass = 'text-[13px] text-slate-500 mt-0.5';
 const labelClass = 'block text-xs font-medium text-slate-500 mb-1';
 const inputClass =
-  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors';
+  'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
-  'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50';
+  'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
-  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors';
+  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDanger =
-  'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50';
+  'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const thClass =
   'text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider';
 const tdClass = 'px-4 py-3 text-sm';
@@ -574,7 +574,7 @@ export default function RolesPage() {
                           <select
                             value={editRole}
                             onChange={(e) => setEditRole(e.target.value as AppRole)}
-                            className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                            className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                           >
                             <option value="master_admin">Master Admin</option>
                             <option value="admin">Admin</option>
@@ -657,7 +657,7 @@ export default function RolesPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-0">
               <h3 className="text-base font-semibold text-slate-900">Add User</h3>
-              <button onClick={closeAddModal} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={closeAddModal} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -665,9 +665,10 @@ export default function RolesPage() {
             {/* Body */}
             <div className="px-5 py-4 space-y-4">
               <div>
-                <label className={labelClass}>Email</label>
+                <label htmlFor="scheduler-add-user-email" className={labelClass}>Email</label>
                 <Tooltip text="The email address used to sign in" position="bottom">
                   <input
+                    id="scheduler-add-user-email"
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -677,9 +678,10 @@ export default function RolesPage() {
                 </Tooltip>
               </div>
               <div>
-                <label className={labelClass}>Name</label>
+                <label htmlFor="scheduler-add-user-name" className={labelClass}>Name</label>
                 <Tooltip text="Display name shown in the system" position="bottom">
                   <input
+                    id="scheduler-add-user-name"
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -689,9 +691,10 @@ export default function RolesPage() {
                 </Tooltip>
               </div>
               <div>
-                <label className={labelClass}>Role</label>
+                <label htmlFor="scheduler-add-user-role" className={labelClass}>Role</label>
                 <Tooltip text="Determines what level of access this user has" position="bottom">
                   <select
+                    id="scheduler-add-user-role"
                     value={form.role}
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as AppRole }))}
                     className={inputClass}

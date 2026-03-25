@@ -160,6 +160,7 @@ function EventBlock({
             <button
               onClick={handleOptionsClick}
               className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-white/50 transition-opacity"
+              aria-label="More options"
             >
               <MoreVertical className="w-3.5 h-3.5" style={{ color: colors.text }} />
             </button>

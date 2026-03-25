@@ -448,7 +448,8 @@ function UnassignedPanel({
                 onClick={() => handleAutoAssignOne(session)}
                 disabled={saving || instructors.length === 0}
                 title="Auto-assign"
-                className="p-0.5 text-amber-600 hover:bg-amber-100 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                aria-label="Auto-assign instructor"
+                className="p-0.5 text-amber-800 hover:bg-amber-100 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
               >
                 <Wand2 className="w-3 h-3" />
               </button>
@@ -460,7 +461,7 @@ function UnassignedPanel({
       {/* Panel footer */}
       <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-amber-200 bg-amber-50/60">
         {pendingCount > 0 && (
-          <span className="text-[10px] text-amber-600 mr-auto">
+          <span className="text-[10px] text-amber-800 mr-auto">
             {pendingCount} unsaved change{pendingCount !== 1 ? 's' : ''}
           </span>
         )}
@@ -604,6 +605,7 @@ export function SchedulerResultModal({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer z-10"
+          aria-label="Close modal"
         >
           <X className="w-4 h-4 text-slate-400" />
         </button>
@@ -713,7 +715,7 @@ export function SchedulerResultModal({
                                   onClick={() =>
                                     setExpandedTemplate(isExpanded ? null : key)
                                   }
-                                  className="inline-flex items-center gap-1 text-[11px] text-amber-600 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-amber-800 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
                                 >
                                   {ts.sessions_unassigned} unassigned
                                   {isExpanded ? (
@@ -723,7 +725,7 @@ export function SchedulerResultModal({
                                   )}
                                 </button>
                               ) : (
-                                <span className="text-[11px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">
+                                <span className="text-[11px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
                                   {ts.sessions_unassigned} unassigned
                                 </span>
                               )
@@ -785,17 +787,17 @@ export function SchedulerResultModal({
           {result.schedule_warnings && result.schedule_warnings.length > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
               <div className="flex items-center gap-1.5 mb-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-yellow-600" />
-                <span className="text-[12px] font-semibold text-yellow-800">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-800" />
+                <span className="text-[12px] font-semibold text-amber-800">
                   Scheduling Warnings
                 </span>
               </div>
               <div className="space-y-2">
                 {result.schedule_warnings.map((w, i) => (
-                  <div key={i} className="text-[11px] text-yellow-900 bg-yellow-100/50 rounded px-2.5 py-2">
+                  <div key={i} className="text-[11px] text-amber-800 bg-yellow-100/50 rounded px-2.5 py-2">
                     <div className="font-medium">{w.templateName}</div>
                     <div className="mt-0.5 leading-relaxed">{w.message}</div>
-                    <div className="mt-1 text-yellow-700 text-[10px]">
+                    <div className="mt-1 text-amber-800 text-[10px]">
                       Created {w.details.created} of {w.details.requested} requested
                     </div>
                   </div>

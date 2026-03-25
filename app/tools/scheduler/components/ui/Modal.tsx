@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
@@ -98,6 +98,58 @@ export function Modal({
     setDismissedIds((prev) => new Set(prev).add(id));
   }, []);
 
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap and Escape key handler
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    // Focus first focusable element on open
+    const timer = setTimeout(() => {
+      if (modalRef.current) {
+        const first = modalRef.current.querySelector<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        first?.focus();
+      }
+    }, 0);
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const visibleWarnings = warnings?.filter((w) => !dismissedIds.has(w.id));
@@ -119,13 +171,17 @@ export function Modal({
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className={`relative z-[70] rounded-2xl bg-white shadow-xl flex flex-col overflow-hidden max-h-[calc(100vh-2rem)] ${className}`}
         style={{ width }}
       >
         {/* ── Header (sticky top) ──────────────────────────── */}
         <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+            <h2 id="modal-title" className="text-xl font-bold text-slate-900">{title}</h2>
             {subtitle && (
               <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>
             )}
@@ -133,7 +189,7 @@ export function Modal({
           <Tooltip text="Close">
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
               aria-label="Close modal"
             >
               <X className="w-4 h-4 text-slate-500" />
@@ -205,7 +261,7 @@ export function ModalButton({
   disabled,
   ...props
 }: ModalButtonProps) {
-  const baseStyles = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-2';
+  const baseStyles = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
   
   const variantStyles = {
     primary: 'bg-blue-500 text-white hover:bg-blue-600',

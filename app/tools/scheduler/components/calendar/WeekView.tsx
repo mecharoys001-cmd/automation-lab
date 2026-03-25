@@ -304,12 +304,12 @@ function WeekEventBlock({
               </p>
             )}
             {height >= 50 && event.venue && (
-              <p className="text-[9px] text-slate-400 leading-snug truncate group-hover:whitespace-normal mt-0.5">
+              <p className="text-[9px] text-slate-500 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.venue}
               </p>
             )}
             {height >= 64 && event.gradeLevel && (
-              <p className="text-[10px] text-slate-400 leading-snug truncate group-hover:whitespace-normal mt-0.5">
+              <p className="text-[10px] text-slate-500 leading-snug truncate group-hover:whitespace-normal mt-0.5">
                 {event.gradeLevel}
               </p>
             )}
@@ -383,7 +383,7 @@ function TemplateSidebar({
       {!collapsed && (
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
           {templates.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-4">No active templates</p>
+            <p className="text-xs text-slate-500 text-center py-4">No active templates</p>
           ) : (
             templates.map((template) => {
               const subject = template.required_skills?.[0];
@@ -422,23 +422,23 @@ function TemplateSidebar({
                 >
                   <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0 group-hover:text-blue-400" />
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-400 italic'}`}>
+                    <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-500 italic'}`}>
                       {displayName}
                     </p>
                     {subtitle && (
-                      <p className="text-[11px] text-slate-400 truncate leading-snug">
+                      <p className="text-[11px] text-slate-500 truncate leading-snug">
                         {subtitle}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       {instructorName && (
-                        <span className="text-[10px] text-slate-400 truncate">{instructorName}</span>
+                        <span className="text-[10px] text-slate-500 truncate">{instructorName}</span>
                       )}
                       {venueName && (
-                        <span className="text-[10px] text-slate-400 truncate">{venueName}</span>
+                        <span className="text-[10px] text-slate-500 truncate">{venueName}</span>
                       )}
                       {template.duration_minutes > 0 && (
-                        <span className="text-[10px] text-slate-400">{template.duration_minutes}m</span>
+                        <span className="text-[10px] text-slate-500">{template.duration_minutes}m</span>
                       )}
                     </div>
                   </div>
@@ -776,7 +776,8 @@ export function WeekView({
         <Tooltip text="Previous week">
           <button
             onClick={() => navigate(-1)}
-            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+            aria-label="Previous week"
           >
             <ChevronLeft className="w-5 h-5 text-slate-500" />
           </button>
@@ -789,7 +790,8 @@ export function WeekView({
         <Tooltip text="Next week">
           <button
             onClick={() => navigate(1)}
-            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+            aria-label="Next week"
           >
             <ChevronRight className="w-5 h-5 text-slate-500" />
           </button>

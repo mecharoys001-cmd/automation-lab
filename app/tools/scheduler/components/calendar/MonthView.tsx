@@ -323,7 +323,8 @@ export function MonthView({
         <Tooltip text="Previous month">
           <button
             onClick={() => navigate(-1)}
-            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+            aria-label="Previous month"
           >
             <ChevronLeft className="w-5 h-5 text-slate-500" />
           </button>
@@ -336,7 +337,8 @@ export function MonthView({
         <Tooltip text="Next month">
           <button
             onClick={() => navigate(1)}
-            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+            aria-label="Next month"
           >
             <ChevronRight className="w-5 h-5 text-slate-500" />
           </button>

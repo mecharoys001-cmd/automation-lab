@@ -215,7 +215,7 @@ export function ImportFromProgramModal({
             <select
               value={sourceProgramId}
               onChange={(e) => setSourceProgramId(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"
             >
               <option value="">Select a program...</option>
               {otherPrograms.map(p => (
@@ -239,7 +239,7 @@ export function ImportFromProgramModal({
                   type="checkbox"
                   checked={importStaff}
                   onChange={(e) => setImportStaff(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/40"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700">
                   Import Staff ({staffCount} instructor{staffCount !== 1 ? 's' : ''})
@@ -252,7 +252,7 @@ export function ImportFromProgramModal({
                   type="checkbox"
                   checked={importVenues}
                   onChange={(e) => setImportVenues(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/40"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700">
                   Import Venues ({venueCount} venue{venueCount !== 1 ? 's' : ''})
@@ -266,7 +266,7 @@ export function ImportFromProgramModal({
                     type="checkbox"
                     checked={importTags}
                     onChange={(e) => setImportTags(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500/40"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
                   />
                   <span className="text-sm text-slate-700">
                     Import Tags ({tagCount} tag{tagCount !== 1 ? 's' : ''})
@@ -280,7 +280,7 @@ export function ImportFromProgramModal({
                         type="checkbox"
                         checked={selectAllCategories}
                         onChange={toggleAllCategories}
-                        className="w-3.5 h-3.5 rounded border-slate-300 text-blue-500 focus:ring-blue-500/40"
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
                       />
                       Select All
                     </label>
@@ -290,7 +290,7 @@ export function ImportFromProgramModal({
                           type="checkbox"
                           checked={selectedCategories.has(cat.category)}
                           onChange={() => toggleCategory(cat.category)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-500 focus:ring-blue-500/40"
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
                         />
                         {cat.category} ({cat.count} tag{cat.count !== 1 ? 's' : ''})
                       </label>
