@@ -35,6 +35,11 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // ── Allow unauthenticated access to reports visualizer ─────────────────
+  if (path.startsWith('/tools/reports')) {
+    return supabaseResponse
+  }
+
   // ── Protect /tools and all sub-routes ──────────────────────────────────
   if (!user && path.startsWith('/tools')) {
     const url = request.nextUrl.clone()
