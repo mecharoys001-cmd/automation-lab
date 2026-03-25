@@ -112,6 +112,7 @@ export interface FinancialStatusBreakdown {
 
 export interface DashboardData {
   orders: Order[];
+  dateRange: { start: string; end: string };
   totalRevenue: number;
   totalOrders: number;
   taxCollected: number;

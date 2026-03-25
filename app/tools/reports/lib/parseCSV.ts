@@ -319,8 +319,20 @@ export function parseCSVData(csvText: string): DashboardData {
     .reduce((s, o) => s + o.outstandingBalance, 0);
   const refundTotal = refunded.reduce((s, o) => s + Math.abs(o.total), 0);
 
+  // Compute date range from order dates
+  const allDates = orders
+    .map((o) => o.createdAt)
+    .filter((d) => d)
+    .map((d) => new Date(d).getTime())
+    .filter((t) => !isNaN(t));
+  const dateRange = {
+    start: allDates.length ? new Date(Math.min(...allDates)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Unknown",
+    end: allDates.length ? new Date(Math.max(...allDates)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Unknown",
+  };
+
   return {
     orders,
+    dateRange,
     totalRevenue,
     totalOrders,
     taxCollected,

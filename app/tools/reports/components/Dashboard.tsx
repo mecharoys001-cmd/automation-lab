@@ -24,6 +24,9 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
           <h2 className="text-2xl font-bold text-foreground">
             Transaction Report
           </h2>
+          <p className="mt-1 text-lg font-semibold text-blue-400">
+            📅 {data.dateRange.start} &mdash; {data.dateRange.end}
+          </p>
           <p className="text-sm text-muted-foreground">
             {fileName} &mdash; {data.totalOrders} orders
           </p>
