@@ -514,6 +514,7 @@ export default function RolesPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search users"
               placeholder="Search by name, email, or role..."
               className={`${inputClass} pl-9`}
             />
@@ -545,10 +546,10 @@ export default function RolesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className={thClass}>Name</th>
-                  <th className={thClass}>Email</th>
-                  <th className={thClass}>Role</th>
-                  <th className={`${thClass} text-right`}>Actions</th>
+                  <th scope="col" className={thClass}>Name</th>
+                  <th scope="col" className={thClass}>Email</th>
+                  <th scope="col" className={thClass}>Role</th>
+                  <th scope="col" className={`${thClass} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody>

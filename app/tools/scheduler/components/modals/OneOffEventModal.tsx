@@ -494,6 +494,7 @@ export function OneOffEventModal({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Spring Assembly, Guest Artist Visit"
             autoFocus
+            aria-required="true"
             className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
           />
         </div>
@@ -550,6 +551,7 @@ export function OneOffEventModal({
           <select
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
+            aria-required="true"
             className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer"
           >
             <option value="">— None —</option>

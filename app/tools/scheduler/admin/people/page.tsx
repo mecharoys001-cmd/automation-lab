@@ -234,6 +234,8 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
         isSuccess ? 'bg-emerald-500' : 'bg-red-500'
       }`}
@@ -1041,7 +1043,7 @@ function VenueCreateModal({
           <Tooltip text="Maximum number of people this venue can hold (leave blank for unlimited)" className="w-full">
             <input
               type="number"
-              min={1}
+              min={0}
               value={form.max_capacity}
               onChange={(e) => setField('max_capacity', e.target.value)}
               placeholder="e.g. 30"
@@ -1479,6 +1481,7 @@ export default function PeoplePage() {
                 <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
                   type="text"
+                  aria-label="Search people"
                   placeholder="Search staff..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -1715,6 +1718,7 @@ export default function PeoplePage() {
                 <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <input
                   type="text"
+                  aria-label="Search venues"
                   placeholder="Search venues..."
                   value={venueSearch}
                   onChange={(e) => setVenueSearch(e.target.value)}

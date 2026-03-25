@@ -234,6 +234,7 @@ export function TemplateList({
             />
             <input
               type="text"
+              aria-label="Search event templates"
               placeholder={searchPlaceholder ?? (mode === 'table'
                 ? 'Search by day, staff, venue, grade...'
                 : 'Search events\u2026')}
@@ -553,6 +554,7 @@ function TableView({
             {columns.map(({ key, label }) => (
               <th
                 key={key}
+                scope="col"
                 onClick={() => handleSort(key)}
                 style={{
                   padding: '12px 16px',
@@ -581,6 +583,7 @@ function TableView({
             ))}
             {/* Grade Groups column (non-sortable) */}
             <th
+              scope="col"
               style={{
                 padding: '12px 16px',
                 textAlign: 'left',
@@ -595,6 +598,7 @@ function TableView({
             </th>
             {/* Actions column (non-sortable) */}
             <th
+              scope="col"
               style={{
                 padding: '12px 16px',
                 textAlign: 'left',

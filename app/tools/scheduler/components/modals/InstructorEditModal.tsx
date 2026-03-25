@@ -42,6 +42,10 @@ export interface InstructorEditModalProps {
   onClose: () => void;
 }
 
+/* ── Helpers ───────────────────────────────────────────────── */
+
+const isValidEmail = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 /* ── Component ─────────────────────────────────────────────── */
 
 export function InstructorEditModal({
@@ -70,14 +74,24 @@ export function InstructorEditModal({
       : { ...EMPTY_INSTRUCTOR_FORM },
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   function setField<K extends keyof InstructorFormData>(key: K, value: InstructorFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === 'email') setEmailError('');
   }
+
+  const validateAndSave = () => {
+    if (form.email.trim() && !isValidEmail(form.email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    onSave(form);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+    validateAndSave();
   };
 
   return (
@@ -131,8 +145,8 @@ export function InstructorEditModal({
           <ModalButton onClick={onClose}>Cancel</ModalButton>
           <ModalButton
             variant="primary"
-            onClick={() => onSave(form)}
-            disabled={saving || !form.first_name.trim() || !form.last_name.trim()}
+            onClick={validateAndSave}
+            disabled={saving || !form.first_name.trim() || !form.last_name.trim() || !!emailError}
             loading={saving}
             icon={!saving ? <Save className="w-3.5 h-3.5" /> : undefined}
           >
@@ -149,6 +163,7 @@ export function InstructorEditModal({
             <input
               type="text"
               required
+              aria-required="true"
               value={form.first_name}
               onChange={(e) => setField('first_name', e.target.value)}
               placeholder="e.g. Sarah"
@@ -164,6 +179,7 @@ export function InstructorEditModal({
             <input
               type="text"
               required
+              aria-required="true"
               value={form.last_name}
               onChange={(e) => setField('last_name', e.target.value)}
               placeholder="e.g. Johnson"
@@ -181,9 +197,10 @@ export function InstructorEditModal({
               value={form.email}
               onChange={(e) => setField('email', e.target.value)}
               placeholder="sarah@example.com"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${emailError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
             />
           </Tooltip>
+          {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
         </div>
 
         {/* Phone */}

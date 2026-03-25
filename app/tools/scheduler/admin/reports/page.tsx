@@ -134,27 +134,27 @@ function InstructorHoursTab({
       <table className="w-full border-collapse min-w-[668px]">
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-            <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
+            <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
               <Tooltip text="Full name of the staff member">
                 <span className="cursor-help">Staff Name</span>
               </Tooltip>
             </th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
               <Tooltip text="Cumulative hours taught across the selected date range">
                 <span className="cursor-help">Total Hours</span>
               </Tooltip>
             </th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
               <Tooltip text="Average number of hours taught per week">
                 <span className="cursor-help">Avg/Week</span>
               </Tooltip>
             </th>
-            <th className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
               <Tooltip text="Current employment status of the staff member">
                 <span className="cursor-help">Status</span>
               </Tooltip>
             </th>
-            <th className="w-[48px] px-2 py-3">
+            <th scope="col" className="w-[48px] px-2 py-3">
               <Tooltip text="Expand row to view monthly breakdown">
                 <span className="sr-only">Expand</span>
               </Tooltip>
@@ -347,22 +347,22 @@ function HoursByTagTab({
       <table className="w-full border-collapse min-w-[560px]">
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-            <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
               <Tooltip text="Event type category with associated emoji">
                 <span className="cursor-help">Tag</span>
               </Tooltip>
             </th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
               <Tooltip text="Total hours of instruction for this tag across the date range">
                 <span className="cursor-help">Total Hours</span>
               </Tooltip>
             </th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]">
               <Tooltip text="Number of individual events tagged with this category">
                 <span className="cursor-help">Events</span>
               </Tooltip>
             </th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
+            <th scope="col" className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]">
               <Tooltip text="Average length of each event in minutes">
                 <span className="cursor-help">Avg Duration</span>
               </Tooltip>

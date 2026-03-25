@@ -285,7 +285,7 @@ function openPrintView(
     const dayName = date !== 'Unknown' ? PRINT_DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : '';
     html += `<div class="date-header">${dayName}, ${date}</div>`;
     html += `<table><thead><tr>
-      <th>Time</th><th>Event</th><th>Event Type</th><th>Staff</th><th>Venue</th><th>Grade</th><th>Status</th>
+      <th scope="col">Time</th><th scope="col">Event</th><th scope="col">Event Type</th><th scope="col">Staff</th><th scope="col">Venue</th><th scope="col">Grade</th><th scope="col">Status</th>
     </tr></thead><tbody>`;
 
     for (const evt of dateEvents) {

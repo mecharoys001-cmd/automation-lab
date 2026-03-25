@@ -373,6 +373,7 @@ export function TemplateFormModal({
             ref={nameInputRef}
             type="text"
             id="template-name"
+            aria-required="true"
             value={form.name}
             onChange={(e) => {
               updateForm({ name: e.target.value });

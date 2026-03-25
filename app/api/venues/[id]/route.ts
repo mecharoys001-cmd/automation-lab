@@ -50,6 +50,14 @@ export async function PATCH(
     const supabase = createServiceClient();
     const body = await request.json();
 
+    if (body.max_capacity != null && (typeof body.max_capacity !== 'number' || body.max_capacity < 0)) {
+      return NextResponse.json({ error: 'max_capacity must be a non-negative number' }, { status: 400 });
+    }
+
+    if (body.buffer_minutes != null && (typeof body.buffer_minutes !== 'number' || body.buffer_minutes < 0)) {
+      return NextResponse.json({ error: 'buffer_minutes must be a non-negative number' }, { status: 400 });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('venues') as any)
       .update(body)

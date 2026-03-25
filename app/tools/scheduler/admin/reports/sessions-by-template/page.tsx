@@ -320,7 +320,7 @@ export default function SessionsByTemplatePage() {
             <table className="w-full text-[13px] min-w-[800px]">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 text-left">
+                  <th scope="col" className="px-4 py-3 text-left">
                     <button
                       onClick={() => handleSort('template_name')}
                       className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900"
@@ -328,7 +328,7 @@ export default function SessionsByTemplatePage() {
                       Template {getSortIcon('template_name')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left">
+                  <th scope="col" className="px-4 py-3 text-left">
                     <button
                       onClick={() => handleSort('grade')}
                       className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900"
@@ -336,7 +336,7 @@ export default function SessionsByTemplatePage() {
                       Grade {getSortIcon('grade')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left">
+                  <th scope="col" className="px-4 py-3 text-left">
                     <button
                       onClick={() => handleSort('subject')}
                       className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900"
@@ -344,8 +344,8 @@ export default function SessionsByTemplatePage() {
                       Event Type {getSortIcon('subject')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Day</th>
-                  <th className="px-4 py-3 text-right">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold text-slate-700">Day</th>
+                  <th scope="col" className="px-4 py-3 text-right">
                     <button
                       onClick={() => handleSort('session_count')}
                       className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900 ml-auto"
@@ -353,7 +353,7 @@ export default function SessionsByTemplatePage() {
                       Total {getSortIcon('session_count')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-right">
+                  <th scope="col" className="px-4 py-3 text-right">
                     <button
                       onClick={() => handleSort('published_count')}
                       className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900 ml-auto"
@@ -361,9 +361,9 @@ export default function SessionsByTemplatePage() {
                       Published {getSortIcon('published_count')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-700">Draft</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-700">Completed</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-700">Canceled</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold text-slate-700">Draft</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold text-slate-700">Completed</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold text-slate-700">Canceled</th>
                 </tr>
               </thead>
               <tbody>

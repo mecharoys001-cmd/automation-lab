@@ -161,6 +161,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[999] focus:bg-white focus:px-4 focus:py-2 focus:rounded focus:shadow"
+      >
+        Skip to main content
+      </a>
       {/* Dark sidebar with program selector */}
       <Sidebar
         navItems={adminNavItems}
@@ -185,7 +191,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <CalendarDays className="w-5 h-5 text-blue-500" />
           <span className="text-sm font-semibold text-slate-800">Symphonix</span>
         </div>
-        <main className="flex-1 overflow-hidden">
+        <main id="main-content" className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>

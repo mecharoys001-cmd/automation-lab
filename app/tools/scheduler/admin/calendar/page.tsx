@@ -199,6 +199,8 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
         isSuccess ? 'bg-emerald-500' : 'bg-red-500'
       }`}
@@ -1494,6 +1496,7 @@ export default function CalendarPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
+                  aria-label="Search calendar entries"
                   placeholder="Search by description or date..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -1534,26 +1537,26 @@ export default function CalendarPage() {
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50">
                       <Tooltip text="Date of the calendar event">
-                        <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Date</th>
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Date</th>
                       </Tooltip>
                       <Tooltip text="Description of the calendar event">
-                        <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Description</th>
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Description</th>
                       </Tooltip>
                       <Tooltip text="Event type: No School, Early Dismissal, or Staff Exception">
-                        <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Type</th>
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider cursor-help">Type</th>
                       </Tooltip>
                       <Tooltip text="Time of early dismissal (if applicable)">
-                        <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell cursor-help">
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell cursor-help">
                           Dismissal Time
                         </th>
                       </Tooltip>
                       <Tooltip text="Staff member affected by this exception">
-                        <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell cursor-help">
+                        <th scope="col" className="text-left px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell cursor-help">
                           Staff
                         </th>
                       </Tooltip>
                       <Tooltip text="Edit or delete calendar entries">
-                        <th className="px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</th>
+                        <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-slate-500 uppercase tracking-wider text-right cursor-help">Actions</th>
                       </Tooltip>
                     </tr>
                   </thead>

@@ -102,6 +102,8 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
         isSuccess ? 'bg-emerald-500' : 'bg-red-500'
       }`}
@@ -135,6 +137,7 @@ export default function SettingsPage() {
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
+  const deletingRef = useRef(false);
 
   // ---- Global save / dirty tracking ----
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -309,15 +312,18 @@ export default function SettingsPage() {
   }
 
   async function deleteAdmin(id: string) {
+    if (deletingRef.current) return;
     if (!confirm('Remove this admin? They will lose access.')) return;
+    deletingRef.current = true;
     setDeletingAdminId(id);
     try {
       const res = await fetch(`/api/admins?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete admin');
       await fetchAdmins();
-    } catch {
-      // no-op
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : 'Failed to remove admin');
     } finally {
+      deletingRef.current = false;
       setDeletingAdminId(null);
     }
   }
@@ -518,6 +524,7 @@ export default function SettingsPage() {
                   <input
                     id="scheduler-program-name"
                     type="text"
+                    aria-required="true"
                     value={programForm.name}
                     onChange={(e) => setProgramForm((f) => ({ ...f, name: e.target.value }))}
                     className={inputClass}
@@ -531,6 +538,7 @@ export default function SettingsPage() {
                   <input
                     id="scheduler-program-start-date"
                     type="date"
+                    aria-required="true"
                     value={programForm.start_date}
                     onChange={(e) => setProgramForm((f) => ({ ...f, start_date: e.target.value }))}
                     className={inputClass}
@@ -543,6 +551,7 @@ export default function SettingsPage() {
                   <input
                     id="scheduler-program-end-date"
                     type="date"
+                    aria-required="true"
                     value={programForm.end_date}
                     onChange={(e) => setProgramForm((f) => ({ ...f, end_date: e.target.value }))}
                     className={inputClass}
@@ -584,9 +593,9 @@ export default function SettingsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className={thClass}>Name</th>
-                  <th className={thClass}>Date Range</th>
-                  <th className={`${thClass} text-right`}>Actions</th>
+                  <th scope="col" className={thClass}>Name</th>
+                  <th scope="col" className={thClass}>Date Range</th>
+                  <th scope="col" className={`${thClass} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -676,6 +685,7 @@ export default function SettingsPage() {
                   <input
                     id="scheduler-admin-email"
                     type="email"
+                    aria-required="true"
                     value={adminForm.google_email}
                     onChange={(e) => setAdminForm((f) => ({ ...f, google_email: e.target.value }))}
                     className={inputClass}
@@ -744,10 +754,10 @@ export default function SettingsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className={thClass}>Email</th>
-                  <th className={thClass}>Display Name</th>
-                  <th className={thClass}>Role</th>
-                  <th className={`${thClass} text-right`}>Actions</th>
+                  <th scope="col" className={thClass}>Email</th>
+                  <th scope="col" className={thClass}>Display Name</th>
+                  <th scope="col" className={thClass}>Role</th>
+                  <th scope="col" className={`${thClass} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -91,6 +91,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
 
+    if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email).trim())) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('instructors') as any)
       .insert(body)

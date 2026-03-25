@@ -156,6 +156,8 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-lg text-[13px] font-medium text-white ${
         toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
       }`}
