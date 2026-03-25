@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

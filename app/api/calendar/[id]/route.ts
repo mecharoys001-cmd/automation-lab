@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const supabase = createServiceClient();
 
@@ -18,6 +22,12 @@ export async function GET(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    // Verify program access
+    if (data?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, data.program_id);
+      if (accessErr) return accessErr;
     }
 
     return NextResponse.json({ entry: data });
@@ -34,8 +44,24 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Fetch existing entry to verify program access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('school_calendar') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, existing.program_id);
+      if (accessErr) return accessErr;
+    }
+
     const body = await request.json();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,8 +90,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Fetch existing entry to verify program access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('school_calendar') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, existing.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('school_calendar') as any)

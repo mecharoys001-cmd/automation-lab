@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       const phone = r.phone ? String(r.phone).trim() : null;
 
       // Validate email format
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
         throw new Error(`Row ${idx + 1}: Invalid email format "${email}"`);
       }
 

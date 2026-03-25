@@ -45,7 +45,7 @@ export interface InstructorEditModalProps {
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
-const isValidEmail = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const isValidEmail = (v: string): boolean => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v.trim());
 const isValidPhone = (v: string): boolean => {
   const trimmed = v.trim();
   if (!/^[0-9\s\-()+.]+$/.test(trimmed)) return false;
@@ -232,6 +232,11 @@ export function InstructorEditModal({
               type="email"
               value={form.email}
               onChange={(e) => setField('email', e.target.value)}
+              onBlur={() => {
+                if (form.email.trim() && !isValidEmail(form.email)) {
+                  setEmailError('Please enter a valid email address');
+                }
+              }}
               maxLength={255}
               placeholder="sarah@example.com"
               className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${emailError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
@@ -248,7 +253,15 @@ export function InstructorEditModal({
               id="instructor-phone"
               type="tel"
               value={form.phone}
-              onChange={(e) => setField('phone', e.target.value)}
+              onChange={(e) => {
+                const filtered = e.target.value.replace(/[^0-9\s\-()+.]/g, '');
+                setField('phone', filtered);
+              }}
+              onBlur={() => {
+                if (form.phone.trim() && !isValidPhone(form.phone)) {
+                  setPhoneError('Enter a valid phone number (7–15 digits, may include spaces, dashes, parentheses, dots, and +)');
+                }
+              }}
               maxLength={30}
               placeholder="(555) 123-4567"
               className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:ring-1 transition-colors ${phoneError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}

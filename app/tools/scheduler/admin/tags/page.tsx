@@ -633,10 +633,11 @@ export default function TagsPage() {
       <div className="bg-white px-4 sm:px-8 py-4 border-b border-slate-200 shrink-0">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
+            <label htmlFor="quick-add-tag" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
               Quick Add Tag
             </label>
             <input
+              id="quick-add-tag"
               ref={quickAddRef}
               type="text"
               value={quickAddValue}
@@ -651,10 +652,11 @@ export default function TagsPage() {
           </div>
 
           <div className="w-full sm:w-48">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
+            <label htmlFor="quick-add-category" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
               Category
             </label>
             <select
+              id="quick-add-category"
               value={quickAddCategory}
               onChange={(e) => setQuickAddCategory(e.target.value)}
               className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors appearance-none"

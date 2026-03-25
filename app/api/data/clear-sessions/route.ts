@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -25,6 +25,9 @@ export async function DELETE(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     const supabase = createServiceClient();
 

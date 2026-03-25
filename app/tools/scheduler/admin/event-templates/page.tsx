@@ -138,10 +138,27 @@ function validateTemplateCsvRow(row: CsvRow, rowIndex: number): ValidationError[
   return errors;
 }
 
-const TEMPLATE_CSV_EXAMPLE = `name,day,start_time,end_time,venue,instructor,subjects,grades,scheduling_mode,starts_on,ends_on,duration_weeks,session_count,within_weeks,week_cycle_length,week_in_cycle,additional_tags
+const TEMPLATE_CSV_EXAMPLE = `# SYMPHONIX EVENT TEMPLATE IMPORT
+# ─────────────────────────────────
+# REQUIRED: day (Mon-Sun), start_time (HH:MM), end_time (HH:MM)
+# OPTIONAL: name, venue, instructor, subjects (semicolon-separated), grades (semicolon-separated)
+#
+# SCHEDULING MODES:
+#   ongoing        — Runs every week for the entire program (default if omitted)
+#   date_range     — Requires: starts_on (YYYY-MM-DD), ends_on (YYYY-MM-DD)
+#   duration       — Requires: starts_on (YYYY-MM-DD), duration_weeks (integer)
+#   session_count  — Requires: session_count (integer), optional: starts_on, within_weeks
+#
+# MULTI-WEEK CYCLES:
+#   week_cycle_length — Total weeks in rotation (e.g. 2 for alternating weeks)
+#   week_in_cycle     — Which week this template runs (0-indexed: 0 = week 1, 1 = week 2)
+#
+# TAGS: additional_tags uses semicolons for multiple values (e.g. Performance;Holiday)
+# ─────────────────────────────────
+name,day,start_time,end_time,venue,instructor,subjects,grades,scheduling_mode,starts_on,ends_on,duration_weeks,session_count,within_weeks,week_cycle_length,week_in_cycle,additional_tags
 Piano Lab,Monday,09:00,10:00,Classroom 101,John Smith,Piano,3rd;4th,ongoing,,,,,,,,
 Strings,Tuesday,10:00,11:30,Stage,Jane Doe,Strings,5th;6th,date_range,2026-09-01,2026-12-15,,,,2,1,
-Choir,Wednesday,13:00,14:00,Cafe,,Choral,K;1st;2nd,duration,2026-09-01,,12,,,,, Performance;Holiday
+Choir,Wednesday,13:00,14:00,Cafe,,Choral,K;1st;2nd,duration,2026-09-01,,12,,,,,Performance;Holiday
 Guitar,Thursday,14:00,15:00,Classroom 101,,Guitar,7th;8th,session_count,2026-09-01,,,10,20,,,`;
 
 /* ── Toast ──────────────────────────────────────────────────── */
@@ -354,6 +371,59 @@ export default function EventTemplatesPage() {
     }
   };
 
+  /* ── Toggle active ────────────────────────────────────── */
+
+  const handleToggleActive = useCallback(async (id: string, active: boolean) => {
+    try {
+      const res = await fetch(`/api/templates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: active }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update status');
+      }
+      // Optimistic update
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, is_active: active } : t))
+      );
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to update status',
+        type: 'error',
+        id: Date.now(),
+      });
+    }
+  }, []);
+
+  const handleSetAllActive = useCallback(async (active: boolean) => {
+    try {
+      await Promise.all(
+        templates.map((t) =>
+          fetch(`/api/templates/${t.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_active: active }),
+          })
+        )
+      );
+      setTemplates((prev) => prev.map((t) => ({ ...t, is_active: active })));
+      setToast({
+        message: `All templates set to ${active ? 'active' : 'inactive'}`,
+        type: 'success',
+        id: Date.now(),
+      });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to update templates',
+        type: 'error',
+        id: Date.now(),
+      });
+      await fetchTemplates();
+    }
+  }, [templates, fetchTemplates]);
+
   /* ── Lookup helpers ─────────────────────────────────────── */
 
   const getInstructorName = (id: string | null) => {
@@ -460,6 +530,8 @@ export default function EventTemplatesPage() {
               if (t) openEditForm(t);
             }}
             onDelete={(id) => setDeleteConfirmId(id)}
+            onToggleActive={handleToggleActive}
+            onSetAllActive={handleSetAllActive}
           />
         </div>
       </div>
@@ -570,6 +642,60 @@ export default function EventTemplatesPage() {
         }}
         exampleCsv={TEMPLATE_CSV_EXAMPLE}
         templateFilename="event-templates.csv"
+        helpContent={
+          <div className="space-y-4 pt-3">
+            <div>
+              <h4 className="font-semibold text-slate-800 mb-2">Columns</h4>
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="text-left text-xs text-slate-500 border-b border-slate-100">
+                    <th className="pb-1 pr-3">Column</th>
+                    <th className="pb-1 pr-3">Format</th>
+                    <th className="pb-1 pr-3">Required?</th>
+                    <th className="pb-1">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {[
+                    ['name', 'Text', 'No', 'Display name for the template'],
+                    ['day', 'Mon–Sun or 0–6', 'Yes', 'Day of the week'],
+                    ['start_time', 'HH:MM', 'Yes', 'Start time (24-hour)'],
+                    ['end_time', 'HH:MM', 'Yes', 'End time (24-hour, must be after start)'],
+                    ['venue', 'Text', 'No', 'Venue name (matched to existing venues)'],
+                    ['instructor', 'Text', 'No', 'Staff name (matched to existing staff)'],
+                    ['subjects', 'Text; separated', 'No', 'Event types, semicolon-separated'],
+                    ['grades', 'Text; separated', 'No', 'Grade levels (e.g. K;1st;2nd)'],
+                    ['scheduling_mode', 'ongoing | date_range | duration | session_count', 'No', 'Defaults to ongoing if omitted'],
+                    ['starts_on', 'YYYY-MM-DD', 'Mode-dependent', 'Start date for date_range, duration, or session_count'],
+                    ['ends_on', 'YYYY-MM-DD', 'Mode-dependent', 'End date (required for date_range)'],
+                    ['duration_weeks', 'Integer', 'Mode-dependent', 'Number of weeks (required for duration)'],
+                    ['session_count', 'Integer', 'Mode-dependent', 'Number of events (required for session_count)'],
+                    ['within_weeks', 'Integer', 'No', 'Window in weeks for session_count mode'],
+                    ['week_cycle_length', 'Integer', 'No', 'Total weeks in rotation cycle (e.g. 2)'],
+                    ['week_in_cycle', 'Integer (0-indexed)', 'No', 'Which week this runs in the cycle'],
+                    ['additional_tags', 'Text; separated', 'No', 'Extra tags, semicolon-separated'],
+                  ].map(([col, fmt, req, desc]) => (
+                    <tr key={col}>
+                      <td className="py-1 pr-3 font-mono text-slate-800">{col}</td>
+                      <td className="py-1 pr-3 text-slate-500">{fmt}</td>
+                      <td className="py-1 pr-3">{req}</td>
+                      <td className="py-1 text-slate-500">{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-800 mb-1">Scheduling Modes</h4>
+              <ul className="space-y-1 text-[13px]">
+                <li><span className="font-mono text-slate-800">ongoing</span> — Runs every week for the entire program. No extra fields needed.</li>
+                <li><span className="font-mono text-slate-800">date_range</span> — Runs between two dates. Requires <span className="font-mono">starts_on</span> and <span className="font-mono">ends_on</span>.</li>
+                <li><span className="font-mono text-slate-800">duration</span> — Runs for a set number of weeks. Requires <span className="font-mono">starts_on</span> and <span className="font-mono">duration_weeks</span>.</li>
+                <li><span className="font-mono text-slate-800">session_count</span> — Runs for a set number of events. Requires <span className="font-mono">session_count</span>. Optional: <span className="font-mono">starts_on</span>, <span className="font-mono">within_weeks</span>.</li>
+              </ul>
+            </div>
+          </div>
+        }
       />
 
       {/* Toast */}

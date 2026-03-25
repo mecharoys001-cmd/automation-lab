@@ -6,9 +6,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 
@@ -18,6 +22,9 @@ export async function GET(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

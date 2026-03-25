@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
+
+    if (programId) {
+      const accessErr = await requireProgramAccess(auth.user, programId);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('school_calendar') as any)
@@ -34,8 +43,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const body = await request.json();
+
+    if (body.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, body.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('school_calendar') as any)

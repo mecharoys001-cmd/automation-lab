@@ -19,9 +19,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
@@ -29,6 +33,9 @@ export async function GET(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('template_placements') as any)
@@ -56,6 +63,9 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
@@ -63,6 +73,9 @@ export async function DELETE(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('template_placements') as any)
@@ -87,6 +100,9 @@ export async function DELETE(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { program_id, placements } = await request.json();
 
@@ -96,6 +112,9 @@ export async function PUT(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    const accessErrPut = await requireProgramAccess(auth.user, program_id);
+    if (accessErrPut) return accessErrPut;
 
     // Delete existing placements for this program, then insert new ones
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

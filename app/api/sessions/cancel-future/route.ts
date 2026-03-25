@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function PATCH(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const sessionId = request.nextUrl.searchParams.get('session_id');
     if (!sessionId) {
       return NextResponse.json({ error: 'session_id is required' }, { status: 400 });
@@ -11,15 +15,21 @@ export async function PATCH(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Look up the session to get its template_id and date
+    // Look up the session to get its template_id, date, and program_id
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session, error: lookupError } = await (supabase.from('sessions') as any)
-      .select('id, template_id, date')
+      .select('id, template_id, date, program_id')
       .eq('id', sessionId)
       .single();
 
     if (lookupError || !session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    // Verify program access
+    if (session.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, session.program_id);
+      if (accessErr) return accessErr;
     }
 
     if (!session.template_id) {

@@ -52,7 +52,7 @@ export default function CategoryChart({ data }: Props) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => fmt(value)}
+              formatter={((value: number) => fmt(value)) as any}
               contentStyle={{
                 backgroundColor: "#1f2937",
                 border: "1px solid #374151",

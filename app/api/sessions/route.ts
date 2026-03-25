@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, parseDate, formatDate } from '@/lib/scheduler/utils';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,6 +32,12 @@ export async function GET(request: NextRequest) {
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
+
+    if (programId && programId !== 'all') {
+      const accessErr = await requireProgramAccess(auth.user, programId);
+      if (accessErr) return accessErr;
+    }
+
     const instructorEmail = searchParams.get('instructor_email');
     const date = searchParams.get('date');
     const startDate = searchParams.get('start_date');
@@ -149,6 +155,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient();
     const body = await request.json();
+
+    if (body.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, body.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // Validate required fields: name and venue
     if (!body.name || !String(body.name).trim()) {

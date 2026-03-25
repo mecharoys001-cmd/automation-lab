@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('instructors') as any)
@@ -101,6 +104,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
 
+    const accessErrPost = await requireProgramAccess(auth.user, body.program_id);
+    if (accessErrPost) return accessErrPost;
+
     if (body.first_name && String(body.first_name).trim().length > 50) {
       return NextResponse.json({ error: 'First name must be 50 characters or less' }, { status: 400 });
     }
@@ -113,7 +119,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email must be 255 characters or less' }, { status: 400 });
     }
 
-    if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email).trim())) {
+    if (body.email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(String(body.email).trim())) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 

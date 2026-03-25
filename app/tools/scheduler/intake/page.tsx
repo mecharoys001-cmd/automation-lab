@@ -94,6 +94,7 @@ interface FormErrors {
   first_name?: string;
   last_name?: string;
   email?: string;
+  phone?: string;
   skills?: string;
   availability?: string;
 }
@@ -273,6 +274,18 @@ function IntakeForm() {
     setSelectedSlots(new Set());
   }, []);
 
+  // Validation helpers
+  const isValidEmail = (v: string): boolean =>
+    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v.trim());
+
+  const isValidPhone = (v: string): boolean => {
+    const trimmed = v.trim();
+    if (!trimmed) return true; // optional field
+    if (!/^[0-9\s\-()+.]+$/.test(trimmed)) return false;
+    const digits = trimmed.replace(/\D/g, '');
+    return digits.length >= 7 && digits.length <= 15;
+  };
+
   // Validation
   const validate = useCallback((): boolean => {
     const newErrors: FormErrors = {};
@@ -280,8 +293,11 @@ function IntakeForm() {
     if (!form.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!form.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
+    } else if (!isValidEmail(form.email)) {
+      newErrors.email = 'Please enter a valid email address (e.g. name@example.com)';
+    }
+    if (form.phone.trim() && !isValidPhone(form.phone)) {
+      newErrors.phone = 'Please enter a valid phone number (e.g. (555) 123-4567)';
     }
     if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one event type';
     if (selectedSlots.size === 0) newErrors.availability = 'Please select your availability';
@@ -437,6 +453,9 @@ function IntakeForm() {
                     id="first_name"
                     type="text"
                     required
+                    aria-required="true"
+                    aria-invalid={!!errors.first_name}
+                    aria-describedby={errors.first_name ? 'first_name-error' : undefined}
                     value={form.first_name}
                     onChange={handleFieldChange('first_name')}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -445,7 +464,7 @@ function IntakeForm() {
                     placeholder="Jane"
                   />
                 </Tooltip>
-                {errors.first_name && <p className="mt-1 text-xs text-red-700">{errors.first_name}</p>}
+                <p id="first_name-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.first_name ?? ''}</p>
               </div>
 
               {/* Last Name */}
@@ -458,6 +477,9 @@ function IntakeForm() {
                     id="last_name"
                     type="text"
                     required
+                    aria-required="true"
+                    aria-invalid={!!errors.last_name}
+                    aria-describedby={errors.last_name ? 'last_name-error' : undefined}
                     value={form.last_name}
                     onChange={handleFieldChange('last_name')}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -466,7 +488,7 @@ function IntakeForm() {
                     placeholder="Doe"
                   />
                 </Tooltip>
-                {errors.last_name && <p className="mt-1 text-xs text-red-700">{errors.last_name}</p>}
+                <p id="last_name-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.last_name ?? ''}</p>
               </div>
 
               {/* Email */}
@@ -479,6 +501,9 @@ function IntakeForm() {
                     id="email"
                     type="email"
                     required
+                    aria-required="true"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
                     value={form.email}
                     onChange={handleFieldChange('email')}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -487,7 +512,7 @@ function IntakeForm() {
                     placeholder="jane@example.com"
                   />
                 </Tooltip>
-                {errors.email && <p className="mt-1 text-xs text-red-700">{errors.email}</p>}
+                <p id="email-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.email ?? ''}</p>
               </div>
 
               {/* Phone */}
@@ -499,19 +524,33 @@ function IntakeForm() {
                   <input
                     id="phone"
                     type="tel"
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? 'phone-error' : undefined}
                     value={form.phone}
-                    onChange={handleFieldChange('phone')}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onChange={(e) => {
+                      const filtered = e.target.value.replace(/[^0-9\s\-()+.]/g, '');
+                      setForm((prev) => ({ ...prev, phone: filtered }));
+                      if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
+                    }}
+                    onBlur={() => {
+                      if (form.phone.trim() && !isValidPhone(form.phone)) {
+                        setErrors((prev) => ({ ...prev, phone: 'Please enter a valid phone number (e.g. (555) 123-4567)' }));
+                      }
+                    }}
+                    className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      errors.phone ? 'border-red-500' : 'border-border'
+                    }`}
                     placeholder="(555) 123-4567"
                   />
                 </Tooltip>
+                <p id="phone-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.phone ?? ''}</p>
               </div>
             </div>
           </div>
 
           {/* ── Event Types ──────────────────────────────────── */}
-          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6">
-            <h2 className="text-lg font-semibold mb-1">Event Types</h2>
+          <fieldset className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6" aria-describedby={errors.skills ? 'skills-error' : undefined}>
+            <legend className="text-lg font-semibold mb-1">Event Types</legend>
             <p className="text-xs text-muted-foreground mb-4">
               Select all areas you are qualified to teach. <span className="text-red-700">*</span>
             </p>
@@ -535,7 +574,8 @@ function IntakeForm() {
                   return (
                     <Tooltip key={subject.id} text={`Toggle ${subject.name} event type`}>
                       <label
-                        className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                        htmlFor={`event-type-${subject.id}`}
+                        className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-3 text-sm transition-colors min-h-[44px] ${
                           checked
                             ? 'border-primary/50 bg-primary/10 text-foreground'
                             : 'border-border bg-background text-muted-foreground hover:bg-accent/50'
@@ -543,17 +583,20 @@ function IntakeForm() {
                       >
                         <input
                           type="checkbox"
+                          id={`event-type-${subject.id}`}
+                          name={`event_type_${subject.name.toLowerCase().replace(/\s+/g, '_')}`}
+                          value={subject.name}
                           checked={checked}
                           onChange={() => toggleSkill(subject.name)}
                           className="sr-only"
                         />
                         <div
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-colors ${
                             checked ? 'border-primary bg-primary' : 'border-muted-foreground/40'
                           }`}
                         >
                           {checked && (
-                            <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                            <svg className="h-4 w-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                             </svg>
                           )}
@@ -566,11 +609,11 @@ function IntakeForm() {
                 })}
               </div>
             )}
-            {errors.skills && <p className="mt-2 text-xs text-red-700">{errors.skills}</p>}
-          </div>
+            <p id="skills-error" role="alert" aria-live="assertive" className="mt-2 text-xs text-red-700">{errors.skills ?? ''}</p>
+          </fieldset>
 
           {/* ── Weekly Availability Grid ────────────────── */}
-          <div className={`rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6 ${!hasProgram && !programLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className={`rounded-xl border border-border bg-card p-5 sm:p-6 shadow-lg mb-6 ${!hasProgram && !programLoading ? 'opacity-50 pointer-events-none' : ''}`} role="group" aria-label="Weekly Availability" aria-describedby={errors.availability ? 'availability-error' : undefined}>
             <div className="flex items-start justify-between mb-1 gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/20 shrink-0">
@@ -662,7 +705,7 @@ function IntakeForm() {
               </div>
             </div>
 
-            {errors.availability && <p className="mt-2 text-xs text-red-700">{errors.availability}</p>}
+            <p id="availability-error" role="alert" aria-live="assertive" className="mt-2 text-xs text-red-700">{errors.availability ?? ''}</p>
 
             {/* Selected summary */}
             {selectedSlots.size > 0 && (
@@ -672,12 +715,15 @@ function IntakeForm() {
             )}
           </div>
 
+          {/* ── Validation summary ────────────────────── */}
+          <div role="alert" aria-live="assertive" className={Object.values(errors).some(Boolean) ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
+            {Object.values(errors).some(Boolean) && `Please fix ${Object.values(errors).filter(Boolean).length} error(s) above before submitting.`}
+          </div>
+
           {/* ── Error Banner ────────────────────────────── */}
-          {submitState === 'error' && submitError && (
-            <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
-              {submitError}
-            </div>
-          )}
+          <div role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
+            {submitState === 'error' && submitError ? submitError : ''}
+          </div>
 
           {/* ── Submit ──────────────────────────────────── */}
           <div className="flex justify-end">

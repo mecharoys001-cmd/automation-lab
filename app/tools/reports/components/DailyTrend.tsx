@@ -72,7 +72,7 @@ export default function DailyTrend({ data }: Props) {
             />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.05)" }}
-              formatter={(value: number, name: string) => [fmt(value), name]}
+              formatter={((value: number, name: string) => [fmt(value), name]) as any}
               contentStyle={{
                 backgroundColor: "#1f2937",
                 border: "1px solid #374151",

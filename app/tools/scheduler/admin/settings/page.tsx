@@ -328,6 +328,11 @@ export default function SettingsPage() {
 
   async function deleteAdmin(id: string) {
     if (deletingRef.current) return;
+    const target = admins.find((a) => a.id === id);
+    if (target?.role_level === 'master' && admins.filter((a) => a.role_level === 'master').length <= 1) {
+      setAdminError('Cannot remove the last Master Admin.');
+      return;
+    }
     if (!confirm('Remove this admin? They will lose access.')) return;
     deletingRef.current = true;
     setDeletingAdminId(id);
@@ -1099,16 +1104,18 @@ export default function SettingsPage() {
               </div>
               <Tooltip text={`Type ${seedConfirmPhrase} exactly to continue`}>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                  <label htmlFor="seed-confirm" className="block text-xs font-medium text-slate-500 mb-1">
                     Type <span className="font-mono font-bold text-red-700">{seedConfirmPhrase}</span> to continue
                   </label>
                   <input
+                    id="seed-confirm"
                     type="text"
                     value={seedConfirmText}
                     onChange={(e) => setSeedConfirmText(e.target.value)}
                     placeholder={seedConfirmPhrase}
                     className={inputClass}
                     autoFocus
+                    aria-required="true"
                   />
                 </div>
               </Tooltip>
@@ -1239,16 +1246,18 @@ export default function SettingsPage() {
                   </p>
                   <Tooltip text="Type DELETE ALL SESSIONS exactly to continue">
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                      <label htmlFor="clear-confirm" className="block text-xs font-medium text-slate-500 mb-1">
                         Type <span className="font-mono font-bold text-red-700">DELETE ALL SESSIONS</span> to continue
                       </label>
                       <input
+                        id="clear-confirm"
                         type="text"
                         value={clearConfirmText}
                         onChange={(e) => setClearConfirmText(e.target.value)}
                         placeholder="DELETE ALL SESSIONS"
                         className={inputClass}
                         autoFocus
+                        aria-required="true"
                       />
                     </div>
                   </Tooltip>
@@ -1267,16 +1276,18 @@ export default function SettingsPage() {
                   </p>
                   <Tooltip text="Type DELETE ALL DATA exactly to continue">
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                      <label htmlFor="clear-all-confirm" className="block text-xs font-medium text-slate-500 mb-1">
                         Type <span className="font-mono font-bold text-red-700">DELETE ALL DATA</span> to continue
                       </label>
                       <input
+                        id="clear-all-confirm"
                         type="text"
                         value={clearConfirmText}
                         onChange={(e) => setClearConfirmText(e.target.value)}
                         placeholder="DELETE ALL DATA"
                         className={inputClass}
                         autoFocus
+                        aria-required="true"
                       />
                     </div>
                   </Tooltip>

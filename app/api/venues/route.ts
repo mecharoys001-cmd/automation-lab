@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     query = query.eq('program_id', programId);
 
@@ -51,6 +54,9 @@ export async function DELETE(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    const accessErrDel = await requireProgramAccess(auth.user, programId);
+    if (accessErrDel) return accessErrDel;
 
     const supabase = createServiceClient();
 
@@ -87,6 +93,9 @@ export async function POST(request: NextRequest) {
     if (!body.program_id) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
+
+    const accessErrPost = await requireProgramAccess(auth.user, body.program_id);
+    if (accessErrPost) return accessErrPost;
 
     if (!body.name || !String(body.name).trim()) {
       return NextResponse.json({ error: 'Venue name is required' }, { status: 400 });

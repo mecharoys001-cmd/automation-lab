@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
+
+    if (programId) {
+      const accessErr = await requireProgramAccess(auth.user, programId);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('program_rules') as any)
@@ -33,8 +42,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const body = await request.json();
+
+    if (body.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, body.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('program_rules') as any)
@@ -57,12 +74,27 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const body = await request.json();
     const { id, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing rule id' }, { status: 400 });
+    }
+
+    // Verify program access via the existing rule
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('program_rules') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, existing.program_id);
+      if (accessErr) return accessErr;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

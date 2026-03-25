@@ -146,7 +146,7 @@ Maria,Gonzalez,maria.gonzalez@example.com,555-0101,Piano;Voice;Music Theory,"{""
 James,Chen,james.chen@example.com,555-0102,Guitar;Bass;Ukulele,"{""tuesday"":[{""start"":""10:00"",""end"":""18:00""}],""thursday"":[{""start"":""10:00"",""end"":""18:00""}],""friday"":[{""start"":""12:00"",""end"":""17:00""}]}",true,true,Available for weekend workshops
 Aisha,Williams,aisha.williams@example.com,555-0103,Violin;Viola;Orchestra,"{""monday"":[{""start"":""08:00"",""end"":""14:00""}],""tuesday"":[{""start"":""08:00"",""end"":""14:00""}],""wednesday"":[{""start"":""08:00"",""end"":""14:00""}]}",true,false,`;
 
-const isValidEmail = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const isValidEmail = (v: string): boolean => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v.trim());
 
 function validateInstructorCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -538,7 +538,7 @@ function VenueDetailModal({
                 id="venue-capacity"
                 min="0"
                 value={capacity}
-                onChange={(e) => setCapacity(e.target.value)}
+                onChange={(e) => { const v = e.target.value; setCapacity(v === '' || Number(v) >= 0 ? v : '0'); }}
                 placeholder="e.g. 30"
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />
@@ -620,7 +620,7 @@ function VenueDetailModal({
                   type="number"
                   min="0"
                   value={bufferMinutes}
-                  onChange={(e) => setBufferMinutes(e.target.value)}
+                  onChange={(e) => { const v = e.target.value; setBufferMinutes(v === '' || Number(v) >= 0 ? v : '0'); }}
                   placeholder="0"
                   className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
                 />
@@ -1047,7 +1047,7 @@ function VenueCreateModal({
               type="number"
               min={0}
               value={form.max_capacity}
-              onChange={(e) => setField('max_capacity', e.target.value)}
+              onChange={(e) => { const v = e.target.value; setField('max_capacity', v === '' || Number(v) >= 0 ? v : '0'); }}
               placeholder="e.g. 30"
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
             />
@@ -1078,7 +1078,7 @@ function VenueCreateModal({
                 type="number"
                 min={0}
                 value={form.buffer_minutes}
-                onChange={(e) => setField('buffer_minutes', e.target.value)}
+                onChange={(e) => { const v = e.target.value; setField('buffer_minutes', v === '' || Number(v) >= 0 ? v : '0'); }}
                 placeholder="0"
                 className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors"
               />

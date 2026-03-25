@@ -30,6 +30,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,12 +76,18 @@ function weeksSince(programStartDate: Date, currentDate: Date): number {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { program_id } = await request.json();
 
     if (!program_id) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, program_id);
+    if (accessErr) return accessErr;
 
     // 1. Fetch program ---------------------------------------------------
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

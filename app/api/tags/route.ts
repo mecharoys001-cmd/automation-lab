@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 // Ensure this route is always dynamically evaluated (never cached)
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('tags') as any)
@@ -111,6 +114,9 @@ export async function POST(request: NextRequest) {
     if (!body.program_id) {
       return NextResponse.json({ error: 'program_id is required' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, body.program_id);
+    if (accessErr) return accessErr;
 
     const hasDescription = body.description && typeof body.description === 'string' && body.description.trim();
     const hasEmoji = body.emoji && typeof body.emoji === 'string' && body.emoji.trim();

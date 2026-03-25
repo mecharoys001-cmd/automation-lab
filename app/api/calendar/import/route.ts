@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 import type { CalendarStatusType } from '@/types/database';
 
 interface CalendarRow {
@@ -15,6 +16,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { rows: rawRows, program_id: programId } = (await request.json()) as {
       rows: CalendarRow[];
@@ -24,6 +28,9 @@ export async function POST(request: NextRequest) {
     if (!programId) {
       return NextResponse.json({ error: 'Missing program_id' }, { status: 400 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     if (!Array.isArray(rawRows) || rawRows.length === 0) {
       return NextResponse.json({ error: 'No rows provided' }, { status: 400 });

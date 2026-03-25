@@ -64,7 +64,7 @@ export default function FinancialStatus({ data }: Props) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [fmt(value), statusLabel(name)]}
+              formatter={((value: number, name: string) => [fmt(value), statusLabel(name)]) as any}
               contentStyle={{
                 backgroundColor: "#1f2937",
                 border: "1px solid #374151",

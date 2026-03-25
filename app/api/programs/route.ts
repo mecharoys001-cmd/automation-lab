@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from '../seed/default-tags';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function GET() {
   try {
@@ -15,10 +15,19 @@ export async function GET() {
 
     const supabase = createServiceClient();
 
+    // Filter to only programs this admin can access
+    const accessibleIds = await getAccessibleProgramIds(auth.user);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('programs') as any)
+    let query = (supabase.from('programs') as any)
       .select('*')
       .order('start_date', { ascending: false });
+
+    if (accessibleIds !== null) {
+      query = query.in('id', accessibleIds);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json(
@@ -55,8 +64,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Auto-copy default tags and space types into the new program
+    // Auto-grant the creating admin access to this program
     const programId = data.id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('admin_programs') as any)
+      .insert({ admin_id: auth.user.id, program_id: programId });
+
+    // Auto-copy default tags and space types into the new program
     const allDefaults = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES];
     const tagRows = allDefaults.map(t => ({
       name: t.name,

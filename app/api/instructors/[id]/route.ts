@@ -26,7 +26,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Email must be 255 characters or less' }, { status: 400 });
     }
 
-    if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email).trim())) {
+    if (body.email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(String(body.email).trim())) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 

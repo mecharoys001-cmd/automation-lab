@@ -19,6 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 function hourToTimeString(hour: number): string {
   const h = Math.floor(hour);
@@ -45,6 +46,9 @@ function getNextDateForDay(dayIndex: number): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const supabase = createServiceClient();
     const { program_id, placements } = await request.json();
 
@@ -54,6 +58,9 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, program_id);
+    if (accessErr) return accessErr;
 
     // Fetch template details so we can populate grade_groups etc.
     const templateIds = [...new Set(placements.map((p: { templateId: string }) => p.templateId))];

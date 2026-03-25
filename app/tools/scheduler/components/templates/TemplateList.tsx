@@ -72,6 +72,10 @@ export interface TemplateListProps {
   onEdit?: (id: string) => void;
   /** Called when the delete action is triggered. */
   onDelete?: (id: string) => void;
+  /** Called when a template's active status is toggled. */
+  onToggleActive?: (id: string, active: boolean) => void;
+  /** Called when the "Set All Active/Inactive" button is clicked. */
+  onSetAllActive?: (active: boolean) => void;
   /** Called when a draggable row starts being dragged. */
   onDragStart?: (id: string, e: React.DragEvent) => void;
   /** Called when drag ends. */
@@ -172,6 +176,8 @@ export function TemplateList({
   loading = false,
   onEdit,
   onDelete,
+  onToggleActive,
+  onSetAllActive,
   onDragStart,
   onDragEnd,
   deletingId = null,
@@ -246,6 +252,50 @@ export function TemplateList({
               }
             />
           </div>
+          {mode === 'table' && onSetAllActive && templates.length > 0 && (() => {
+            const allActive = templates.every((t) => t.isActive !== false);
+            return (
+              <Tooltip text={allActive ? 'Set all templates inactive' : 'Set all templates active'}>
+                <button
+                  onClick={() => onSetAllActive(!allActive)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer"
+                  style={{
+                    backgroundColor: allActive ? '#ECFDF5' : '#FFFFFF',
+                    borderColor: allActive ? '#059669' : '#E2E8F0',
+                    color: allActive ? '#059669' : '#334155',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 28,
+                      height: 16,
+                      borderRadius: 9999,
+                      backgroundColor: allActive ? '#059669' : '#CBD5E1',
+                      position: 'relative',
+                      transition: 'background-color 0.2s',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: allActive ? 14 : 2,
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: '#FFFFFF',
+                        transition: 'left 0.2s',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                      }}
+                    />
+                  </span>
+                  {allActive ? 'Set All Inactive' : 'Set All Active'}
+                </button>
+              </Tooltip>
+            );
+          })()}
           <button
             onClick={() => setFiltersOpen((v) => !v)}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer"
@@ -444,6 +494,7 @@ export function TemplateList({
           items={filtered}
           onEdit={onEdit}
           onDelete={onDelete}
+          onToggleActive={onToggleActive}
         />
       ) : (
         <DraggableView
@@ -470,10 +521,12 @@ function TableView({
   items,
   onEdit,
   onDelete,
+  onToggleActive,
 }: {
   items: TemplateListItem[];
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onToggleActive?: (id: string, active: boolean) => void;
 }) {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -660,19 +713,50 @@ function TableView({
               </td>
               {/* Status */}
               <td style={{ padding: '12px 16px' }}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '2px 10px',
-                    borderRadius: 9999,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    backgroundColor: t.isActive !== false ? '#ECFDF5' : '#F1F5F9',
-                    color: t.isActive !== false ? '#059669' : '#94A3B8',
-                  }}
-                >
-                  {t.isActive !== false ? 'Active' : 'Inactive'}
-                </span>
+                <Tooltip text={t.isActive !== false ? 'Click to deactivate' : 'Click to activate'}>
+                  <button
+                    onClick={() => onToggleActive?.(t.id, t.isActive === false)}
+                    className="inline-flex items-center gap-2 cursor-pointer"
+                    style={{ background: 'none', border: 'none', padding: 0 }}
+                    aria-label={`Toggle ${t.name} ${t.isActive !== false ? 'inactive' : 'active'}`}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 34,
+                        height: 18,
+                        borderRadius: 9999,
+                        backgroundColor: t.isActive !== false ? '#059669' : '#CBD5E1',
+                        position: 'relative',
+                        transition: 'background-color 0.2s',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: 2,
+                          left: t.isActive !== false ? 18 : 2,
+                          width: 14,
+                          height: 14,
+                          borderRadius: '50%',
+                          backgroundColor: '#FFFFFF',
+                          transition: 'left 0.2s',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                        }}
+                      />
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: t.isActive !== false ? '#059669' : '#94A3B8',
+                      }}
+                    >
+                      {t.isActive !== false ? 'Active' : 'Inactive'}
+                    </span>
+                  </button>
+                </Tooltip>
               </td>
               {/* Grade Groups */}
               <td style={{ padding: '12px 16px' }}>

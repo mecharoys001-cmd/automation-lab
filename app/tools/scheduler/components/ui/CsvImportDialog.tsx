@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { Upload, X, AlertTriangle, Check, FileText, Loader2 } from 'lucide-react';
+import { Upload, X, AlertTriangle, Check, FileText, Loader2, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from './Button';
 import { parseCSV, type CsvRow } from '@/lib/csvDedup';
 
@@ -32,6 +32,8 @@ export interface CsvImportDialogProps {
   exampleCsv?: string;
   /** Filename for the downloaded template (e.g., 'venues.csv', 'staff.csv') */
   templateFilename?: string;
+  /** Optional collapsible help content shown between upload area and preview */
+  helpContent?: React.ReactNode;
 }
 
 export function CsvImportDialog({
@@ -43,6 +45,7 @@ export function CsvImportDialog({
   onImport,
   exampleCsv,
   templateFilename = 'template.csv',
+  helpContent,
 }: CsvImportDialogProps) {
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -51,6 +54,7 @@ export function CsvImportDialog({
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reset = useCallback(() => {
@@ -83,7 +87,14 @@ export function CsvImportDialog({
         setParseError('File is empty');
         return;
       }
-      const parsed = parseCSV(text);
+      // Strip comment rows (lines starting with #) before parsing
+      const strippedText = text
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .filter((line) => !line.trimStart().startsWith('#'))
+        .join('\n');
+      const parsed = parseCSV(strippedText);
       if (parsed.rows.length === 0) {
         setParseError('No data rows found in file');
         return;
@@ -232,6 +243,30 @@ export function CsvImportDialog({
                 </button>
               )}
             </>
+          )}
+
+          {/* Collapsible help panel */}
+          {helpContent && (
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setHelpOpen((v) => !v)}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <HelpCircle className="w-4 h-4 text-slate-400" />
+                Column Reference
+                {helpOpen ? (
+                  <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-400 ml-auto" />
+                )}
+              </button>
+              {helpOpen && (
+                <div className="px-4 pb-4 text-[13px] text-slate-600 border-t border-slate-200">
+                  {helpContent}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Parse error */}

@@ -73,3 +73,55 @@ export function requireMasterAdmin(
   }
   return null;
 }
+
+// ── Program-level authorization ─────────────────────────────────────────────
+
+/**
+ * Verify that the authenticated admin has access to a specific program.
+ * Master admins can access all programs; standard/editor admins need an
+ * explicit grant in the admin_programs junction table.
+ *
+ * Returns null if authorized, or a 403 NextResponse if not.
+ */
+export async function requireProgramAccess(
+  authUser: AuthUser,
+  programId: string,
+): Promise<NextResponse | null> {
+  // Master admins bypass program-level checks
+  if (authUser.roleLevel === 'master') return null;
+
+  const service = createServiceClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (service.from('admin_programs') as any)
+    .select('admin_id')
+    .eq('admin_id', authUser.id)
+    .eq('program_id', programId)
+    .maybeSingle();
+
+  if (!data) {
+    return NextResponse.json(
+      { error: 'Forbidden: you do not have access to this program' },
+      { status: 403 },
+    );
+  }
+
+  return null;
+}
+
+/**
+ * Return the list of program IDs the admin is authorized to access.
+ * Master admins get null (meaning "all programs").
+ */
+export async function getAccessibleProgramIds(
+  authUser: AuthUser,
+): Promise<string[] | null> {
+  if (authUser.roleLevel === 'master') return null;
+
+  const service = createServiceClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (service.from('admin_programs') as any)
+    .select('program_id')
+    .eq('admin_id', authUser.id);
+
+  return (data ?? []).map((row: { program_id: string }) => row.program_id);
+}

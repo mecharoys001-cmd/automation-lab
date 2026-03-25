@@ -584,6 +584,9 @@ export default function RolesPage() {
                   const Icon = meta.icon;
                   const isEditing = editingId === user.id;
                   const isSelf = !!(currentUserEmail && user.email && user.email.toLowerCase() === currentUserEmail);
+                  const masterAdminCount = users.filter((u) => u.role === 'master_admin').length;
+                  const isLastMaster = user.role === 'master_admin' && masterAdminCount <= 1;
+                  const cannotRemove = isSelf || isLastMaster;
 
                   return (
                     <tr key={`${user.source}-${user.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -651,12 +654,12 @@ export default function RolesPage() {
                                 Edit
                               </button>
                             </Tooltip>
-                            <Tooltip text={isSelf ? "You can't remove yourself" : "Remove this user's access"}>
+                            <Tooltip text={isSelf ? "You can't remove yourself" : isLastMaster ? "Cannot remove the last Master Admin" : "Remove this user's access"}>
                               <button
-                                onClick={() => !isSelf && setRemoveUser(user)}
-                                disabled={isSelf}
+                                onClick={() => !cannotRemove && setRemoveUser(user)}
+                                disabled={cannotRemove}
                                 aria-label={`Remove ${user.name}`}
-                                className={`${btnDanger} ${isSelf ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                className={`${btnDanger} ${cannotRemove ? 'opacity-40 cursor-not-allowed' : ''}`}
                               >
                                 <Trash2 className="w-3 h-3" />
                                 Remove

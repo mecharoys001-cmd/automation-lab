@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { runScheduler } from '@/lib/scheduler';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export const maxDuration = 60;
 
@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, program_id);
+    if (accessErr) return accessErr;
 
     // Create a service-role Supabase client (bypasses RLS for admin writes)
     const supabase = createServiceClient();
