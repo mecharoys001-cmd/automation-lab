@@ -30,23 +30,26 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
 
       const el = reportRef.current;
 
-      // Capture at 2x for crisp output
+      // Detect actual background color from the page
+      const computedBg = getComputedStyle(document.documentElement).getPropertyValue("--background")?.trim();
+      const bgColor = computedBg ? `hsl(${computedBg})` : "#ffffff";
+
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#111827",
+        backgroundColor: bgColor,
         logging: false,
+        // Ensure full width capture even if scrolled
+        windowWidth: el.scrollWidth,
       });
 
       const imgData = canvas.toDataURL("image/png");
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
 
-      // Letter size in points: 612 x 792
-      // Use landscape for wider charts
-      const pdfWidth = 842; // A4 landscape width in points
-      const pdfHeight = 595; // A4 landscape height in points
-      const margin = 20;
+      const pdfWidth = 842; // A4 landscape
+      const pdfHeight = 595;
+      const margin = 24;
 
       const contentWidth = pdfWidth - margin * 2;
       const scaleFactor = contentWidth / imgWidth;
@@ -58,25 +61,29 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
         format: "a4",
       });
 
-      // Multi-page: slice the image across pages
-      let yOffset = 0;
-      let page = 0;
+      // Multi-page with clipping to avoid content bleeding across pages
       const pageContentHeight = pdfHeight - margin * 2;
+      const totalPages = Math.ceil(scaledHeight / pageContentHeight);
 
-      while (yOffset < scaledHeight) {
+      for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
+
+        // Clip to page bounds
+        pdf.saveGraphicsState();
+        // @ts-expect-error - jsPDF rect clip
+        pdf.rect(margin, margin, contentWidth, pageContentHeight, null);
+        pdf.clip();
 
         pdf.addImage(
           imgData,
           "PNG",
           margin,
-          margin - yOffset,
+          margin - page * pageContentHeight,
           imgWidth * scaleFactor,
           scaledHeight
         );
 
-        yOffset += pageContentHeight;
-        page++;
+        pdf.restoreGraphicsState();
       }
 
       const dateSlug = `${data.dateRange.start} to ${data.dateRange.end}`.replace(/[^a-zA-Z0-9]/g, "_");
@@ -91,40 +98,40 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Buttons — outside capture area */}
+      <div className="flex flex-wrap items-center justify-end gap-3 print:hidden">
+        <button
+          onClick={exportPDF}
+          disabled={exporting}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Export dashboard as PDF"
+        >
+          {exporting ? "⏳ Generating PDF..." : "📄 Export PDF"}
+        </button>
+        <button
+          onClick={onReset}
+          className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+          title="Upload a different file"
+        >
+          Upload New File
+        </button>
+      </div>
+
+      {/* Everything below is captured for PDF */}
+      <div ref={reportRef} className="space-y-6">
+        {/* Header — included in PDF */}
         <div>
           <h2 className="text-2xl font-bold text-foreground">
             Transaction Report
           </h2>
-          <p className="mt-1 text-lg font-semibold text-blue-400">
-            📅 {data.dateRange.start} &mdash; {data.dateRange.end}
+          <p className="mt-1 text-lg font-semibold text-blue-600 dark:text-blue-400">
+            📅 {data.dateRange.start} — {data.dateRange.end}
           </p>
           <p className="text-sm text-muted-foreground">
-            {fileName} &mdash; {data.totalOrders} orders
+            {fileName} · {data.totalOrders} orders
           </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={exportPDF}
-            disabled={exporting}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Export dashboard as PDF"
-          >
-            {exporting ? "⏳ Generating PDF..." : "📄 Export PDF"}
-          </button>
-          <button
-            onClick={onReset}
-            className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
-            title="Upload a different file"
-          >
-            Upload New File
-          </button>
-        </div>
-      </div>
 
-      {/* Report content — captured for PDF */}
-      <div ref={reportRef} className="space-y-6">
         {/* Summary */}
         <SummaryCards
           totalRevenue={data.totalRevenue}
