@@ -9,7 +9,9 @@ export default function ImpactDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingTool, setEditingTool] = useState<string | null>(null);
-  const [editMinutes, setEditMinutes] = useState('');
+  const [editDays, setEditDays] = useState('0');
+  const [editHours, setEditHours] = useState('0');
+  const [editMinutes, setEditMinutes] = useState('0');
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -41,7 +43,7 @@ export default function ImpactDashboard() {
       const res = await fetch('/api/usage/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool_id: toolId, minutes_per_use: Number(editMinutes) }),
+        body: JSON.stringify({ tool_id: toolId, minutes_per_use: (Number(editDays) * 24 * 60) + (Number(editHours) * 60) + Number(editMinutes) }),
       });
       if (!res.ok) throw new Error('Save failed');
       setEditingTool(null);
@@ -126,28 +128,49 @@ export default function ImpactDashboard() {
               <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', color: '#94a3b8' }}>
                 <span><strong>{s.total_uses}</strong> uses</span>
                 <span>
-                  <strong>
-                    {editingTool === s.tool_id ? (
-                      <>
-                        <input
-                          type="number"
-                          value={editMinutes}
-                          onChange={(e) => setEditMinutes(e.target.value)}
-                          style={{ width: '60px', background: '#0f172a', border: '1px solid #475569', borderRadius: '4px', color: '#e2e8f0', padding: '2px 6px', marginRight: '4px' }}
-                        />
-                        <button onClick={() => saveMinutes(s.tool_id)} disabled={saving} style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}>
-                          Save
-                        </button>
-                        <button onClick={() => setEditingTool(null)} style={{ background: 'none', color: '#64748b', border: 'none', cursor: 'pointer', fontSize: '12px', marginLeft: '4px' }}>
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <span onClick={() => { setEditingTool(s.tool_id); setEditMinutes(String(s.minutes_per_use)); }} style={{ cursor: 'pointer', borderBottom: '1px dashed #475569' }} title="Click to edit">
-                        {s.minutes_per_use}
+                  {editingTool === s.tool_id ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                        <input type="number" min="0" value={editDays} onChange={(e) => setEditDays(e.target.value)} style={{ width: '50px', background: '#0f172a', border: '1px solid #475569', borderRadius: '4px', color: '#e2e8f0', padding: '2px 6px', textAlign: 'center' }} />
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>d</span>
                       </span>
-                    )}
-                  </strong> min/use
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                        <input type="number" min="0" max="23" value={editHours} onChange={(e) => setEditHours(e.target.value)} style={{ width: '50px', background: '#0f172a', border: '1px solid #475569', borderRadius: '4px', color: '#e2e8f0', padding: '2px 6px', textAlign: 'center' }} />
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>h</span>
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                        <input type="number" min="0" max="59" value={editMinutes} onChange={(e) => setEditMinutes(e.target.value)} style={{ width: '50px', background: '#0f172a', border: '1px solid #475569', borderRadius: '4px', color: '#e2e8f0', padding: '2px 6px', textAlign: 'center' }} />
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>m</span>
+                      </span>
+                      <button onClick={() => saveMinutes(s.tool_id)} disabled={saving} style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}>
+                        Save
+                      </button>
+                      <button onClick={() => setEditingTool(null)} style={{ background: 'none', color: '#64748b', border: 'none', cursor: 'pointer', fontSize: '12px' }}>
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <span onClick={() => {
+                      const total = s.minutes_per_use;
+                      setEditDays(String(Math.floor(total / (24 * 60))));
+                      setEditHours(String(Math.floor((total % (24 * 60)) / 60)));
+                      setEditMinutes(String(total % 60));
+                      setEditingTool(s.tool_id);
+                    }} style={{ cursor: 'pointer', borderBottom: '1px dashed #475569' }} title="Click to edit">
+                      <strong>{(() => {
+                        const total = s.minutes_per_use;
+                        const d = Math.floor(total / (24 * 60));
+                        const h = Math.floor((total % (24 * 60)) / 60);
+                        const m = total % 60;
+                        const parts: string[] = [];
+                        if (d > 0) parts.push(`${d}d`);
+                        if (h > 0 || d > 0) parts.push(`${h}h`);
+                        parts.push(`${m}m`);
+                        return parts.join(' ');
+                      })()}</strong>
+                    </span>
+                  )}
+                  {' '}/use
                 </span>
                 <span>Tracking: {s.tracking_method}</span>
                 {s.last_used && <span>Last used: {new Date(s.last_used).toLocaleDateString()}</span>}
