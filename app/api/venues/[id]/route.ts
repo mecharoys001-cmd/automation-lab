@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(
   _request: NextRequest,
@@ -36,6 +36,12 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
+    // Verify program access
+    if (data.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, data.program_id);
+      if (accessErr) return accessErr;
+    }
+
     return NextResponse.json({ venue: data });
   } catch (err) {
     return NextResponse.json(
@@ -65,16 +71,25 @@ export async function PATCH(
       return NextResponse.json({ error: 'Venue name must be 100 characters or less' }, { status: 400 });
     }
 
+    // Get current venue to know its program_id and verify access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: currentVenue } = await (supabase.from('venues') as any)
+      .select('program_id, name')
+      .eq('id', id)
+      .single();
+
+    if (!currentVenue) {
+      return NextResponse.json({ error: 'Venue not found' }, { status: 404 });
+    }
+
+    if (currentVenue.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, currentVenue.program_id);
+      if (accessErr) return accessErr;
+    }
+
     // Check for duplicate name if name is being changed
     if (body.name) {
-      // Get current venue to know its program_id
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: currentVenue } = await (supabase.from('venues') as any)
-        .select('program_id, name')
-        .eq('id', id)
-        .single();
-
-      if (currentVenue && currentVenue.name.toLowerCase() !== String(body.name).trim().toLowerCase()) {
+      if (currentVenue.name.toLowerCase() !== String(body.name).trim().toLowerCase()) {
         // Only check for duplicates if the name is actually changing
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: existing } = await (supabase.from('venues') as any)
@@ -130,6 +145,22 @@ export async function DELETE(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access before deleting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: venue } = await (supabase.from('venues') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (!venue) {
+      return NextResponse.json({ error: 'Venue not found' }, { status: 404 });
+    }
+
+    if (venue.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, venue.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('venues') as any)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function PATCH(
   request: NextRequest,
@@ -12,6 +12,23 @@ export async function PATCH(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tag } = await (supabase.from('tags') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (!tag) {
+      return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
+    }
+
+    if (tag.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, tag.program_id);
+      if (accessErr) return accessErr;
+    }
+
     const body = await request.json();
 
     console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
@@ -107,6 +124,19 @@ export async function DELETE(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access before deleting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tagToDelete } = await (supabase.from('tags') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (tagToDelete?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, tagToDelete.program_id);
+      if (accessErr) return accessErr;
+    }
+
     const force = request.nextUrl.searchParams.get('force') === 'true';
 
     // Check if tag is in use via session_tags

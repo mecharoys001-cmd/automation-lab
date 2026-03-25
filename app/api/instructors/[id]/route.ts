@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function PATCH(
   request: NextRequest,
@@ -12,6 +12,23 @@ export async function PATCH(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: instructor } = await (supabase.from('instructors') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (!instructor) {
+      return NextResponse.json({ error: 'Instructor not found' }, { status: 404 });
+    }
+
+    if (instructor.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, instructor.program_id);
+      if (accessErr) return accessErr;
+    }
+
     const body = await request.json();
 
     if ('first_name' in body && String(body.first_name).trim().length > 50) {
@@ -71,6 +88,18 @@ export async function DELETE(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access before deleting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: inst } = await (supabase.from('instructors') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (inst?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, inst.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('instructors') as any)

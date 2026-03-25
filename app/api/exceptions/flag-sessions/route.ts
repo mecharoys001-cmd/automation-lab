@@ -15,22 +15,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import type { Database, SchoolCalendar } from '@/types/database';
-
-function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  }
-  return createClient<Database>(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import type { SchoolCalendar } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const body = await request.json();
     const { calendar_entry_id } = body;
 
@@ -57,6 +50,10 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Verify program access
+    const accessErr = await requireProgramAccess(auth.user, entry.program_id);
+    if (accessErr) return accessErr;
 
     // 2. Build query to find affected published sessions
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

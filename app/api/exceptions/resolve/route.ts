@@ -18,19 +18,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import type { Database, Session, Instructor } from '@/types/database';
-
-function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  }
-  return createClient<Database>(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import type { Session, Instructor } from '@/types/database';
 
 type ResolutionType = 'substitute' | 'cancel' | 'cancel_reschedule';
 
@@ -45,6 +35,9 @@ function timeToMinutes(time: string): number {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const body = await request.json();
     const { session_id, resolution_type, instructor_id, makeup_date } = body as {
       session_id?: string;
@@ -82,6 +75,10 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Verify program access
+    const accessErr = await requireProgramAccess(auth.user, session.program_id);
+    if (accessErr) return accessErr;
 
     if (!session.needs_resolution) {
       return NextResponse.json(

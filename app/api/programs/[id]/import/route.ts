@@ -15,12 +15,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const { id: targetProgramId } = await params;
     const supabase = createServiceClient();
     const body = await request.json();
@@ -46,6 +50,12 @@ export async function POST(
     if (source_program_id === targetProgramId) {
       return NextResponse.json({ error: 'Cannot import from the same program' }, { status: 400 });
     }
+
+    // Verify access to both source and target programs
+    const sourceAccessErr = await requireProgramAccess(auth.user, source_program_id);
+    if (sourceAccessErr) return sourceAccessErr;
+    const targetAccessErr = await requireProgramAccess(auth.user, targetProgramId);
+    if (targetAccessErr) return targetAccessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;

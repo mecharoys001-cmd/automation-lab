@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 import type { Session, Instructor } from '@/types/database';
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -23,6 +24,9 @@ function timeToMinutes(time: string): number {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
     const sessionId = request.nextUrl.searchParams.get('session_id');
 
     if (!sessionId) {
@@ -48,6 +52,10 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Verify program access
+    const accessErr = await requireProgramAccess(auth.user, session.program_id);
+    if (accessErr) return accessErr;
 
     // Fetch all active instructors scoped to the session's program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, availabilityCoversWindow, toTimeWindow, dayIndexToName, parseDate } from '@/lib/scheduler/utils';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function PATCH(
   request: NextRequest,
@@ -14,6 +14,23 @@ export async function PATCH(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sessionToCheck } = await (supabase.from('sessions') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (!sessionToCheck) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    if (sessionToCheck.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, sessionToCheck.program_id);
+      if (accessErr) return accessErr;
+    }
+
     const body = await request.json();
 
     // Validate required fields if being updated
@@ -248,6 +265,18 @@ export async function DELETE(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access before deleting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sess } = await (supabase.from('sessions') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (sess?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, sess.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('sessions') as any)

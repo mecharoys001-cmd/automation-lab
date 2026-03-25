@@ -14,10 +14,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 import { datasets } from './datasets';
 import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from './default-tags';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  // Seeding wipes all data — restrict to master admins only
+  const masterErr = requireMasterAdmin(auth.user);
+  if (masterErr) return masterErr;
+
   const { searchParams } = new URL(request.url);
   const datasetType = (searchParams.get('dataset') || 'medium') as 'small' | 'medium' | 'full';
   const dataset = datasets[datasetType] || datasets.medium;

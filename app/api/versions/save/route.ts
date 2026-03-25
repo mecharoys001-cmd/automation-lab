@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { ScheduleSnapshot } from '@/types/database';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
 
     const year = Number(yearParam);
     const programId = searchParams.get('program_id');
+
+    if (programId) {
+      const accessErr = await requireProgramAccess(auth.user, programId);
+      if (accessErr) return accessErr;
+    }
 
     // Parse optional status from body
     let status: 'draft' | 'published' = 'draft';

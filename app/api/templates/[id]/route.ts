@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch } from '@/lib/scheduler/utils';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(
   _request: NextRequest,
@@ -23,6 +23,11 @@ export async function GET(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    if (data.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, data.program_id);
+      if (accessErr) return accessErr;
     }
 
     return NextResponse.json({ template: data });
@@ -71,6 +76,11 @@ export async function PATCH(
 
     if (!existing) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
+
+    if (existing.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, existing.program_id);
+      if (accessErr) return accessErr;
     }
 
     // Merge body with existing data for validation
@@ -171,6 +181,18 @@ export async function DELETE(
 
     const { id } = await params;
     const supabase = createServiceClient();
+
+    // Verify program access before deleting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tmpl } = await (supabase.from('session_templates') as any)
+      .select('program_id')
+      .eq('id', id)
+      .single();
+
+    if (tmpl?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, tmpl.program_id);
+      if (accessErr) return accessErr;
+    }
 
     // Orphan sessions that reference this template
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
