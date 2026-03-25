@@ -87,9 +87,9 @@ export default function FinancialStatus({ data }: Props) {
                 className="inline-block h-3 w-3 rounded-full"
                 style={{ backgroundColor: STATUS_COLORS[entry.status] || "#6b7280" }}
               />
-              <span className="text-gray-800 dark:text-gray-200">{statusLabel(entry.status)}</span>
+              <span className="text-foreground">{statusLabel(entry.status)}</span>
             </div>
-            <span className="font-medium text-gray-900 dark:text-gray-100">
+            <span className="font-medium text-foreground font-semibold">
               {fmt(entry.amount)} ({entry.count} orders)
             </span>
           </div>

@@ -75,9 +75,9 @@ export default function CategoryChart({ data }: Props) {
                 className="inline-block h-3 w-3 rounded-full"
                 style={{ backgroundColor: COLORS[i % COLORS.length] }}
               />
-              <span className="text-gray-800 dark:text-gray-200">{item.category}</span>
+              <span className="text-foreground">{item.category}</span>
             </div>
-            <span className="font-medium text-gray-900 dark:text-gray-100">
+            <span className="font-medium text-foreground font-semibold">
               {fmt(item.revenue)} ({item.percentage.toFixed(1)}%)
             </span>
           </div>

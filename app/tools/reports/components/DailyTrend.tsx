@@ -60,14 +60,14 @@ export default function DailyTrend({ data }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="date"
-              tick={{ fill: "#4b5563", fontSize: 11 }}
+              tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
               tickFormatter={(v) => {
                 const d = new Date(v + "T00:00:00");
                 return `${d.getMonth() + 1}/${d.getDate()}`;
               }}
             />
             <YAxis
-              tick={{ fill: "#4b5563", fontSize: 11 }}
+              tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
               tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip
@@ -106,7 +106,7 @@ export default function DailyTrend({ data }: Props) {
       {/* Legend below chart to avoid overlap */}
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
         {Array.from(allCategories).map((cat) => (
-          <div key={cat} className="flex items-center gap-1.5 text-xs text-gray-800 dark:text-gray-200">
+          <div key={cat} className="flex items-center gap-1.5 text-xs text-foreground">
             <span
               className="inline-block h-2.5 w-2.5 rounded-sm"
               style={{ backgroundColor: CATEGORY_COLORS[cat] || "#888" }}
