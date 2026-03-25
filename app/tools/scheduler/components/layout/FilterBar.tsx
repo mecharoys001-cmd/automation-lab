@@ -143,28 +143,24 @@ function FilterDropdown({
   onToggle: (filterKey: string, value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   const Icon = filter.icon;
   const hasSelections = selected.length > 0;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       <Tooltip text={filter.tooltip}>
         <button
-          onClick={() => setOpen(!open)}
+          ref={triggerRef}
+          onClick={() => {
+            if (!open && triggerRef.current) {
+              const rect = triggerRef.current.getBoundingClientRect();
+              setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+            }
+            setOpen(!open);
+          }}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-[13px] font-medium transition-colors cursor-pointer ${
             hasSelections
               ? 'border-blue-300 bg-blue-50 text-blue-700'
@@ -184,9 +180,14 @@ function FilterDropdown({
         </button>
       </Tooltip>
 
-      {/* Dropdown panel */}
+      {/* Dropdown panel — fixed position to escape overflow:hidden parents */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[200] max-h-64 overflow-y-auto">
+        <>
+          <div className="fixed inset-0 z-[9990]" onClick={() => setOpen(false)} />
+          <div
+            className="fixed w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9991] max-h-64 overflow-y-auto"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          >
           {filter.options.length === 0 ? (
             <div className="px-3 py-3 text-[13px] text-slate-500 text-center">
               <p>{filter.emptyMessage || `No ${filter.label.toLowerCase()} available`}</p>
@@ -227,6 +228,7 @@ function FilterDropdown({
             })
           )}
         </div>
+        </>
       )}
     </div>
   );
