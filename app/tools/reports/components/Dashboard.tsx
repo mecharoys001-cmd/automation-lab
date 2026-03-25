@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback } from "react";
 import type { DashboardData } from "../lib/types";
+import { encodeShareData } from "../lib/share";
 import SummaryCards from "./SummaryCards";
 import CategoryChart from "./CategoryChart";
 import DailyTrend from "./DailyTrend";
@@ -19,6 +20,25 @@ interface Props {
 export default function Dashboard({ data, fileName, onReset }: Props) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "error">("idle");
+
+  const shareReport = useCallback(async () => {
+    try {
+      const encoded = encodeShareData(data, fileName);
+      const url = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
+      
+      // Update URL without reload
+      history.replaceState(null, "", `#d=${encoded}`);
+      
+      await navigator.clipboard.writeText(url);
+      setShareStatus("copied");
+      setTimeout(() => setShareStatus("idle"), 3000);
+    } catch (err) {
+      console.error("Share failed:", err);
+      setShareStatus("error");
+      setTimeout(() => setShareStatus("idle"), 3000);
+    }
+  }, [data, fileName]);
 
   const exportPDF = useCallback(async () => {
     if (!reportRef.current) return;
@@ -97,6 +117,23 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
     <div className="space-y-6">
       {/* Buttons — outside capture area */}
       <div className="flex flex-wrap items-center justify-end gap-3 print:hidden">
+        <button
+          onClick={shareReport}
+          className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
+            shareStatus === "copied"
+              ? "bg-emerald-600"
+              : shareStatus === "error"
+              ? "bg-red-600"
+              : "bg-purple-600 hover:bg-purple-700"
+          }`}
+          title="Copy a shareable link with full interactive dashboard"
+        >
+          {shareStatus === "copied"
+            ? "✅ Link Copied!"
+            : shareStatus === "error"
+            ? "❌ Failed to copy"
+            : "🔗 Share Interactive Link"}
+        </button>
         <button
           onClick={exportPDF}
           disabled={exporting}

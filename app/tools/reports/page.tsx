@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { parseCSVData } from "./lib/parseCSV";
+import { decodeShareData } from "./lib/share";
 import type { DashboardData } from "./lib/types";
 import Dashboard from "./components/Dashboard";
 import { trackToolUsage, hashCSVContent } from "@/lib/usage-tracking";
@@ -11,6 +12,21 @@ export default function ReportsPage() {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [isSharedView, setIsSharedView] = useState(false);
+
+  // On mount, check for shared data in URL hash
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // remove #
+    if (!hash || !hash.startsWith("d=")) return;
+
+    const encoded = hash.slice(2); // remove "d="
+    const result = decodeShareData(encoded);
+    if (result) {
+      setData(result.data);
+      setFileName(result.fileName);
+      setIsSharedView(true);
+    }
+  }, []);
 
   const processFile = useCallback((file: File) => {
     setError("");
@@ -19,6 +35,7 @@ export default function ReportsPage() {
       return;
     }
     setFileName(file.name);
+    setIsSharedView(false);
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -30,7 +47,11 @@ export default function ReportsPage() {
         }
         setData(parsed);
 
-        // Track usage — hash CSV to avoid counting re-uploads
+        // Clear any share hash from URL
+        if (window.location.hash) {
+          history.replaceState(null, "", window.location.pathname);
+        }
+
         hashCSVContent(text).then((hash) => {
           trackToolUsage('reports', {
             contentHash: hash,
@@ -70,16 +91,22 @@ export default function ReportsPage() {
     setData(null);
     setFileName("");
     setError("");
+    setIsSharedView(false);
+    if (window.location.hash) {
+      history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <h1 className="mb-2 text-3xl font-bold text-foreground">
           Shopify Transaction Reports
         </h1>
         <p className="mb-8 text-muted-foreground">
-          Upload a Shopify CSV export to visualize revenue, categories, and trends.
+          {isSharedView
+            ? "You're viewing a shared interactive report."
+            : "Upload a Shopify CSV export to visualize revenue, categories, and trends."}
         </p>
 
         {!data ? (
