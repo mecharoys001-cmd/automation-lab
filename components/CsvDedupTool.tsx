@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { parseCSV, toCSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
+import { trackToolUsage, hashCSVContent } from "@/lib/usage-tracking";
 
 const ACCENT = "#6366f1";
 
@@ -14,12 +15,13 @@ interface State {
   error: string | null;
   fileName: string;
   dragging: boolean;
+  rawCsv: string;
 }
 
 export default function CsvDedupTool() {
   const [s, setS] = useState<State>({
     headers: [], rows: [], nameCol: "", addrCol: "",
-    result: null, error: null, fileName: "", dragging: false,
+    result: null, error: null, fileName: "", dragging: false, rawCsv: "",
   });
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -31,10 +33,11 @@ export default function CsvDedupTool() {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const { headers, rows } = parseCSV(e.target?.result as string);
+        const text = e.target?.result as string;
+        const { headers, rows } = parseCSV(text);
         const { nameCol, addrCol } = detectColumns(headers);
         setS(p => ({
-          ...p, headers, rows, fileName: file.name,
+          ...p, headers, rows, fileName: file.name, rawCsv: text,
           nameCol: nameCol ?? headers[0] ?? "",
           addrCol: addrCol ?? headers[1] ?? "",
           result: null, error: null, dragging: false,
@@ -56,6 +59,17 @@ export default function CsvDedupTool() {
     if (!s.nameCol || !s.addrCol) { setS(p => ({ ...p, error: "Select both columns." })); return; }
     const result = deduplicate(s.rows, s.nameCol, s.addrCol);
     setS(p => ({ ...p, result, error: null }));
+
+    // Track usage — hash CSV to avoid counting re-uploads
+    hashCSVContent(s.rawCsv).then((hash) => {
+      trackToolUsage('csv-dedup', {
+        contentHash: hash,
+        metadata: {
+          total_rows: s.rows.length,
+          duplicates_found: result.removed,
+        },
+      });
+    });
   };
 
   const download = () => {
@@ -67,7 +81,7 @@ export default function CsvDedupTool() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, error: null, fileName: "", dragging: false });
+  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, error: null, fileName: "", dragging: false, rawCsv: "" });
 
   const sel = (field: "nameCol" | "addrCol") => (e: React.ChangeEvent<HTMLSelectElement>) =>
     setS(p => ({ ...p, [field]: e.target.value, result: null }));

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { parseCSVData } from "./lib/parseCSV";
 import type { DashboardData } from "./lib/types";
 import Dashboard from "./components/Dashboard";
+import { trackToolUsage, hashCSVContent } from "@/lib/usage-tracking";
 
 export default function ReportsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -28,6 +29,17 @@ export default function ReportsPage() {
           return;
         }
         setData(parsed);
+
+        // Track usage — hash CSV to avoid counting re-uploads
+        hashCSVContent(text).then((hash) => {
+          trackToolUsage('reports', {
+            contentHash: hash,
+            metadata: {
+              total_orders: parsed.totalOrders,
+              file_name: file.name,
+            },
+          });
+        });
       } catch (err) {
         setError(`Failed to parse CSV: ${err instanceof Error ? err.message : "Unknown error"}`);
       }

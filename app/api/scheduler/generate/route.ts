@@ -83,6 +83,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Track usage for non-preview successful generations
+    if (result.success && !preview) {
+      const { createServiceClient: createSvc } = await import('@/lib/supabase-service');
+      const trackingSvc = createSvc();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (trackingSvc.from('tool_usage') as any)
+        .insert({
+          tool_id: 'scheduler',
+          metadata: {
+            sessions_generated: result.sessions_created,
+            program_id,
+          },
+        })
+        .then(({ error: trackErr }: { error: unknown }) => {
+          if (trackErr) console.error('[usage-track] Scheduler tracking failed:', trackErr);
+        });
+    }
+
     return NextResponse.json(result, {
       status: result.success ? 200 : 422,
     });
