@@ -195,7 +195,7 @@ export default function SessionsByTemplatePage() {
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 bg-white border-b border-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 sm:px-8 py-4 sm:py-6 bg-white border-b border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Sessions by Template</h1>
           <p className="text-[13px] text-slate-500 mt-1">
@@ -217,7 +217,7 @@ export default function SessionsByTemplatePage() {
       </div>
 
       {/* Filters */}
-      <div className="px-8 py-4 bg-white border-b border-slate-200">
+      <div className="px-4 sm:px-8 py-4 bg-white border-b border-slate-200">
         <div className="flex items-center gap-3 flex-wrap">
           {/* Grade Filter */}
           <div className="relative">
@@ -306,7 +306,7 @@ export default function SessionsByTemplatePage() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
@@ -316,8 +316,8 @@ export default function SessionsByTemplatePage() {
             {data.length === 0 ? 'No sessions found.' : 'No sessions match your filters.'}
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <table className="w-full text-[13px]">
+          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden overflow-x-auto">
+            <table className="w-full text-[13px] min-w-[800px]">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3 text-left">

@@ -25,7 +25,7 @@ export function HoursByTagTable({ tags }: HoursByTagTableProps) {
   const maxHours = tags.length > 0 ? Math.max(...tags.map((t) => t.totalHours)) : 1;
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
+    <div className="bg-white rounded-lg border border-slate-200 overflow-x-auto">
       {/* Column Headers */}
       <div
         className="grid items-center px-5 h-11 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider"

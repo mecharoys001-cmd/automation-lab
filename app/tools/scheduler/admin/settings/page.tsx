@@ -277,8 +277,13 @@ export default function SettingsPage() {
   }
 
   async function saveAdmin() {
-    if (!adminForm.google_email.trim()) {
+    const email = adminForm.google_email.trim();
+    if (!email) {
       setAdminError('Google email is required.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAdminError('Please enter a valid email address.');
       return;
     }
     setAdminSaving(true);
@@ -470,7 +475,7 @@ export default function SettingsPage() {
       {/* SECTION 1 — Programs                                              */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
               <CalendarDays className="w-[18px] h-[18px] text-blue-500" />
@@ -481,7 +486,7 @@ export default function SettingsPage() {
             </div>
           </div>
           {!showProgramForm && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {selectedProgramId && programs.length > 1 && (
                 <Tooltip text="Import staff, venues, and tags from another program">
                   <button onClick={() => setShowImportModal(true)} className={btnPrimary}>
@@ -637,7 +642,7 @@ export default function SettingsPage() {
       {/* SECTION 2 — Admin Management                                      */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-50">
               <Users className="w-[18px] h-[18px] text-violet-500" />

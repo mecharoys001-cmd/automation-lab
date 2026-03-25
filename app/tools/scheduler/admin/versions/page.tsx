@@ -208,7 +208,7 @@ export default function VersionsPage() {
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Page Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', margin: 0 }}>
               Versions
@@ -218,7 +218,7 @@ export default function VersionsPage() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="flex items-center gap-3 flex-wrap">
             {/* Year selector */}
             <Tooltip text="Select year to view versions">
               <select
@@ -304,13 +304,11 @@ export default function VersionsPage() {
             {versions.map((v) => (
               <div
                 key={v.id}
+                className="flex flex-wrap items-center gap-4 sm:flex-nowrap"
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: 12,
                   padding: '16px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
                   ...(v.id === currentVersionId
                     ? { borderLeft: '3px solid #3B82F6' }
                     : {}),
@@ -341,7 +339,7 @@ export default function VersionsPage() {
                 </div>
 
                 {/* Info */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>
                     Version {v.version_number}
                   </span>
@@ -350,58 +348,62 @@ export default function VersionsPage() {
                   </span>
                 </div>
 
-                {/* Status badges */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      backgroundColor: v.status === 'published' ? '#DCFCE7' : '#F1F5F9',
-                      color: v.status === 'published' ? '#16A34A' : '#64748B',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    {v.status}
-                  </span>
-                  {v.id === currentVersionId && (
+                {/* Status badges + Revert — wrap to second line on narrow screens */}
+                <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
                       style={{
                         padding: '4px 10px',
                         borderRadius: 6,
                         fontSize: 12,
                         fontWeight: 600,
-                        backgroundColor: '#DBEAFE',
-                        color: '#2563EB',
+                        backgroundColor: v.status === 'published' ? '#DCFCE7' : '#F1F5F9',
+                        color: v.status === 'published' ? '#16A34A' : '#64748B',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                       }}
                     >
-                      Current
+                      {v.status}
                     </span>
-                  )}
-                </div>
+                    {v.id === currentVersionId && (
+                      <span
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          backgroundColor: '#DBEAFE',
+                          color: '#2563EB',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        Current
+                      </span>
+                    )}
+                  </div>
 
-                {/* Revert button */}
-                <Tooltip text="Revert schedule to this version">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setConfirmRevert(v)}
-                    disabled={revertingId === v.id}
-                    icon={
-                      revertingId === v.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <RotateCcw className="w-3.5 h-3.5" />
-                      )
-                    }
-                  >
-                    Revert
-                  </Button>
-                </Tooltip>
+                  {/* Revert button */}
+                  <div className="ml-auto sm:ml-2">
+                    <Tooltip text="Revert schedule to this version">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setConfirmRevert(v)}
+                        disabled={revertingId === v.id}
+                        icon={
+                          revertingId === v.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          )
+                        }
+                      >
+                        Revert
+                      </Button>
+                    </Tooltip>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

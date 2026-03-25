@@ -129,9 +129,9 @@ function InstructorHoursTab({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden overflow-x-auto">
       {/* Table Header */}
-      <table className="w-full border-collapse">
+      <table className="w-full border-collapse min-w-[668px]">
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
@@ -343,8 +343,8 @@ function HoursByTagTab({
   const maxHours = tags.length > 0 ? Math.max(...tags.map((t) => t.totalHours)) : 1;
 
   return (
-    <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
-      <table className="w-full border-collapse">
+    <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden overflow-x-auto">
+      <table className="w-full border-collapse min-w-[560px]">
         <thead>
           <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -607,12 +607,10 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: '#F8FAFC' }}>
       {/* ─── Top Bar ──────────────────────────────────────── */}
-      <div className="flex items-center gap-3 bg-white px-8 h-16 border-b border-[#E2E8F0]">
+      <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-8 py-3 sm:py-0 sm:h-16 border-b border-[#E2E8F0]">
         <Tooltip text="Reports dashboard — view staff hours and tag breakdowns">
-          <h1 className="text-2xl font-bold text-slate-900 cursor-default">Reports</h1>
+          <h1 className="text-2xl font-bold text-slate-900 cursor-default mr-auto">Reports</h1>
         </Tooltip>
-
-        <div className="flex-1" />
 
         <Tooltip text="Select date range for report data — click to change period">
           <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-4 py-2 cursor-pointer hover:border-slate-300 transition-colors">
@@ -634,7 +632,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ─── Quick Links ──────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-blue-50 to-violet-50 px-8 py-4 border-b border-slate-200">
+      <div className="bg-gradient-to-r from-blue-50 to-violet-50 px-4 sm:px-8 py-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
           <Tooltip text="View event counts by template with filtering and sorting">
             <Link
@@ -650,7 +648,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ─── Tab Navigation ───────────────────────────────── */}
-      <div className="bg-white px-8 border-b border-[#E2E8F0]">
+      <div className="bg-white px-4 sm:px-8 border-b border-[#E2E8F0]">
         <div className="flex items-center gap-0">
           {TABS.map((tab) => {
             const TabIcon = tab.icon;
@@ -679,7 +677,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ─── Tab Content ──────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
         {activeTab === 'instructor-hours' && (
           <InstructorHoursTab instructors={instructors} />
         )}

@@ -28,6 +28,10 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
     const body = await request.json();
 
+    if (!body.google_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.google_email)) {
+      return NextResponse.json({ error: 'Valid email address is required' }, { status: 400 });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('admins') as any)
       .insert(body)

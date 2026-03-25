@@ -375,16 +375,10 @@ export default function TagsPage() {
     }
   };
 
-  // Delete tag - shows confirmation dialog if tag is in use
+  // Delete tag - always shows non-blocking React confirmation dialog
   const deleteTag = async (id: string, name: string) => {
     const count = sessionCounts[id] || 0;
-    if (count > 0) {
-      // Show confirmation dialog instead of blocking
-      setDeleteConfirm({ id, name, sessionCount: count });
-      return;
-    }
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
-    await executeDelete(id, name, false);
+    setDeleteConfirm({ id, name, sessionCount: count });
   };
 
   const executeDelete = async (id: string, name: string, force: boolean) => {
@@ -572,21 +566,27 @@ export default function TagsPage() {
               <h3 className="text-base font-bold text-slate-900">Delete &ldquo;{deleteConfirm.name}&rdquo;?</h3>
             </div>
             <p className="text-sm text-slate-600 mb-5">
-              This tag is currently used by{' '}
-              <span className="font-semibold text-slate-900">
-                {deleteConfirm.sessionCount} session{deleteConfirm.sessionCount === 1 ? '' : 's'}
-              </span>
-              . Deleting it will remove the tag from all those sessions. This cannot be undone.
+              {deleteConfirm.sessionCount > 0 ? (
+                <>
+                  This tag is currently used by{' '}
+                  <span className="font-semibold text-slate-900">
+                    {deleteConfirm.sessionCount} session{deleteConfirm.sessionCount === 1 ? '' : 's'}
+                  </span>
+                  . Deleting it will remove the tag from all those sessions. This cannot be undone.
+                </>
+              ) : (
+                <>Are you sure you want to delete this tag? This cannot be undone.</>
+              )}
             </p>
             <div className="flex gap-2 justify-end">
               <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
                 Cancel
               </Button>
               <button
-                onClick={() => executeDelete(deleteConfirm.id, deleteConfirm.name, true)}
+                onClick={() => executeDelete(deleteConfirm.id, deleteConfirm.name, deleteConfirm.sessionCount > 0)}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
-                Delete & Remove from Sessions
+                {deleteConfirm.sessionCount > 0 ? 'Delete & Remove from Sessions' : 'Delete'}
               </button>
             </div>
           </div>
@@ -595,7 +595,7 @@ export default function TagsPage() {
 
       {/* Header */}
       <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tags</h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -628,7 +628,7 @@ export default function TagsPage() {
 
       {/* Quick Add */}
       <div className="bg-white px-8 py-4 border-b border-slate-200 shrink-0">
-        <div className="flex gap-3 items-end">
+        <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
               Quick Add Tag
@@ -647,7 +647,7 @@ export default function TagsPage() {
             {quickAddSuccess && <p className="text-xs text-emerald-600 mt-1">✓ Tag created</p>}
           </div>
 
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">
               Category
             </label>
@@ -804,7 +804,7 @@ export default function TagsPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
                         {categoryTags.map(tag => {
                       const isEditing = editingId === tag.id;
                       const isDeleting = deletingId === tag.id;

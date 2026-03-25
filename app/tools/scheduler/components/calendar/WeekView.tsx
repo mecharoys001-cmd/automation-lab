@@ -772,7 +772,7 @@ export function WeekView({
 
     <div className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
       {/* ------- Week Navigation Sub-bar ------- */}
-      <div className="flex items-center gap-3 bg-white px-6 py-3 border-b border-slate-200 shrink-0">
+      <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-6 py-3 border-b border-slate-200 shrink-0">
         <Tooltip text="Previous week">
           <button
             onClick={() => navigate(-1)}
@@ -823,7 +823,7 @@ export function WeekView({
       )}
 
       {/* ------- Unified Grid (sticky headers + time gutter + day columns) ------- */}
-      <div className="flex-1 overflow-y-auto bg-white relative" style={{ minWidth: 0 }}>
+      <div className="flex-1 overflow-auto bg-white relative" style={{ minWidth: 0 }}>
         {events.length === 0 && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="flex flex-col items-center gap-3 pointer-events-auto">
@@ -848,13 +848,14 @@ export function WeekView({
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, 1fr)`,
+            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, minmax(140px, 1fr))`,
             gridTemplateRows: `auto ${totalHeight}px`,
+            minWidth: `${TIME_COL_WIDTH + 7 * 140}px`,
           }}
         >
-          {/* Row 1, Col 1: Sticky empty corner above time gutter */}
+          {/* Row 1, Col 1: Sticky empty corner above time gutter (sticky both axes) */}
           <div
-            className="sticky top-0 z-10 bg-white border-b border-slate-200 border-r border-slate-200"
+            className="sticky top-0 left-0 z-20 bg-white border-b border-slate-200 border-r border-slate-200"
             style={{ gridRow: 1 }}
           />
 
@@ -888,9 +889,9 @@ export function WeekView({
             </div>
           ))}
 
-          {/* Row 2, Col 1: Time gutter */}
+          {/* Row 2, Col 1: Time gutter (sticky left for horizontal scroll) */}
           <div
-            className="border-r border-slate-200 bg-slate-50"
+            className="sticky left-0 z-[5] border-r border-slate-200 bg-slate-50"
             style={{ gridRow: 2 }}
           >
             {hours.map((hour) => (

@@ -247,9 +247,8 @@ export default function InstructorHoursPage() {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* Top Bar */}
-      <div className="flex items-center gap-3 bg-white px-8 h-16 border-b border-slate-200">
-        <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
-        <div className="flex-1" />
+      <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-8 py-3 sm:py-0 sm:h-16 border-b border-slate-200">
+        <h1 className="text-2xl font-bold text-slate-900 mr-auto">Reports</h1>
 
         <Tooltip text="Select date range for report data">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-4 py-2 cursor-default">
@@ -273,7 +272,7 @@ export default function InstructorHoursPage() {
       <ReportsTabBar />
 
       {/* Table Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
         <InstructorHoursTable instructors={instructors} />
       </div>
     </div>
