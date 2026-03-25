@@ -583,12 +583,11 @@ export default function CalendarPage() {
     if (!selectedProgramId) return;
     setIsGenerating(true);
     try {
-      const year = new Date().getFullYear();
-      const res = await fetch('/api/sessions/generate', {
+      const res = await fetch('/api/scheduler/generate', {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ program_id: selectedProgramId, year }),
+        body: JSON.stringify({ program_id: selectedProgramId }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -596,12 +595,13 @@ export default function CalendarPage() {
       }
       await fetchEntries();
       setIsDirty(true);
-      const count = body.total_generated ?? 0;
+      const count = body.sessions_created ?? 0;
+      const unassigned = body.unassigned_count ?? 0;
       setToast({
         message: count > 0
-          ? `${count} draft session${count !== 1 ? 's' : ''} generated for ${year}`
-          : 'No new sessions generated — templates may already be scheduled.',
-        type: 'success',
+          ? `${count} draft session${count !== 1 ? 's' : ''} generated${unassigned > 0 ? ` (${unassigned} unassigned)` : ''}`
+          : 'No new sessions generated — check template dates and settings.',
+        type: count > 0 ? 'success' : 'error',
         id: Date.now(),
       });
     } catch (err) {
@@ -1227,7 +1227,8 @@ export default function CalendarPage() {
               onClick={handleSaveDraft}
               disabled={!isDirty || isSaving || isPublishing}
             >
-              {isSaving ? 'Saving…' : 'Save as Draft'}
+              <span className="hidden md:inline">{isSaving ? 'Saving…' : 'Save as Draft'}</span>
+              <span className="md:hidden">{isSaving ? '…' : 'Save'}</span>
             </Button>
             <Button
               variant="primary"
@@ -1237,9 +1238,10 @@ export default function CalendarPage() {
               onClick={handlePublish}
               disabled={isDirty || isPublishing || isSaving || entries.length === 0}
             >
-              {isPublishing ? 'Publishing…' : 'Publish Calendar'}
+              <span className="hidden md:inline">{isPublishing ? 'Publishing…' : 'Publish Calendar'}</span>
+              <span className="md:hidden">{isPublishing ? '…' : 'Publish'}</span>
             </Button>
-            <div className="w-px h-8 bg-slate-200" />
+            <div className="hidden sm:block w-px h-8 bg-slate-200" />
             <Button
               variant="secondary"
               size="md"
@@ -1248,7 +1250,8 @@ export default function CalendarPage() {
               onClick={() => setImportOpen(true)}
               disabled={isSaving || isPublishing}
             >
-              Import CSV
+              <span className="hidden md:inline">Import CSV</span>
+              <span className="md:hidden">Import</span>
             </Button>
             <Button
               variant="primary"
@@ -1261,7 +1264,8 @@ export default function CalendarPage() {
                 setAddDateError(false);
               }}
             >
-              {showAddForm ? 'Cancel' : 'Add Entry'}
+              <span className="hidden md:inline">{showAddForm ? 'Cancel' : 'Add Entry'}</span>
+              <span className="md:hidden">{showAddForm ? 'Cancel' : 'Add'}</span>
             </Button>
           </div>
         </div>
@@ -1300,11 +1304,11 @@ export default function CalendarPage() {
 
         {/* ── Scrollable Month Calendar (Infinite Scroll) ──── */}
         <section>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-3">
               <h2 className="text-base font-semibold text-slate-900">Calendar Overview</h2>
               <Tooltip text="Months load automatically as you scroll up or down">
-                <span className="text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full font-medium cursor-help">
+                <span className="hidden sm:inline text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full font-medium cursor-help">
                   Scroll for more
                 </span>
               </Tooltip>
@@ -1493,7 +1497,7 @@ export default function CalendarPage() {
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <Tooltip text="Search entries by description or date">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700 pointer-events-none" />
                 <input
                   type="text"
                   aria-label="Search calendar entries"
@@ -1506,11 +1510,12 @@ export default function CalendarPage() {
             </Tooltip>
             <Tooltip text="Filter entries by type" position="bottom">
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700 pointer-events-none" />
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as CalendarStatusType | 'all')}
-                  className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors appearance-none"
+                  className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors appearance-none cursor-pointer"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 >
                   <option value="all">All Types</option>
                   <option value="no_school">No School</option>
