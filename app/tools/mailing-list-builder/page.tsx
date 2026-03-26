@@ -541,15 +541,19 @@ export default function MailingListBuilderPage() {
               <p style={{ padding: 20, color: '#64748b' }}>No records</p>
             ) : (
               <>
-                <div style={{ overflowX: 'auto', marginTop: 8 }}>
+                {/* Pagination — Top */}
+                {totalPages > 1 && (
+                  <PaginationBar safePage={safePage} totalPages={totalPages} setCurrentPage={setCurrentPage} border="bottom" />
+                )}
+                <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                        <Tip text="Row number"><th style={thStyle}>#</th></Tip>
+                        <th style={thStyle} title="Row number">#</th>
                         {cols.map(c => (
-                          <Tip key={c} text={colTooltip(c)}><th style={thStyle}>{c}</th></Tip>
+                          <th key={c} style={thStyle} title={colTooltip(c)}>{c}</th>
                         ))}
-                        {showFlagged && <Tip text="Reason this contact was flagged for review"><th style={thStyle}>Flag Reason</th></Tip>}
+                        {showFlagged && <th style={thStyle} title="Reason this contact was flagged for review">Flag Reason</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -570,46 +574,9 @@ export default function MailingListBuilderPage() {
                     </tbody>
                   </table>
                 </div>
-                {/* Pagination */}
+                {/* Pagination — Bottom */}
                 {totalPages > 1 && (
-                  <Tip text="Browse all contacts before downloading">
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      gap: 6, padding: '16px 20px', borderTop: '1px solid #E2E8F0',
-                      flexWrap: 'wrap',
-                    }}>
-                      <button
-                        disabled={safePage <= 1}
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        style={paginationBtnStyle(false, safePage <= 1)}
-                      >
-                        Previous
-                      </button>
-                      {getPaginationPages(safePage, totalPages).map((p, i) =>
-                        p === '...' ? (
-                          <span key={`ellipsis-${i}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: '0.85rem' }}>...</span>
-                        ) : (
-                          <button
-                            key={p}
-                            onClick={() => setCurrentPage(p as number)}
-                            style={paginationBtnStyle(safePage === p, false)}
-                          >
-                            {p}
-                          </button>
-                        )
-                      )}
-                      <button
-                        disabled={safePage >= totalPages}
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        style={paginationBtnStyle(false, safePage >= totalPages)}
-                      >
-                        Next
-                      </button>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: 8 }}>
-                        Page {safePage} of {totalPages}
-                      </span>
-                    </div>
-                  </Tip>
+                  <PaginationBar safePage={safePage} totalPages={totalPages} setCurrentPage={setCurrentPage} border="top" />
                 )}
               </>
             )}
@@ -697,6 +664,36 @@ function getPaginationPages(current: number, total: number): (number | '...')[] 
   if (end < total - 1) pages.push('...');
   pages.push(total);
   return pages;
+}
+
+function PaginationBar({ safePage, totalPages, setCurrentPage, border }: {
+  safePage: number; totalPages: number;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  border: 'top' | 'bottom';
+}) {
+  return (
+    <div
+      title="Browse all contacts before downloading"
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: 6, padding: '12px 20px',
+        borderTop: border === 'top' ? '1px solid #E2E8F0' : undefined,
+        borderBottom: border === 'bottom' ? '1px solid #E2E8F0' : undefined,
+        flexWrap: 'wrap',
+      }}
+    >
+      <button disabled={safePage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} style={paginationBtnStyle(false, safePage <= 1)}>Previous</button>
+      {getPaginationPages(safePage, totalPages).map((p, i) =>
+        p === '...' ? (
+          <span key={`ellipsis-${i}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: '0.85rem' }}>...</span>
+        ) : (
+          <button key={p} onClick={() => setCurrentPage(p as number)} style={paginationBtnStyle(safePage === p, false)}>{p}</button>
+        )
+      )}
+      <button disabled={safePage >= totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} style={paginationBtnStyle(false, safePage >= totalPages)}>Next</button>
+      <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: 8 }}>Page {safePage} of {totalPages}</span>
+    </div>
+  );
 }
 
 function colTooltip(col: string): string {
