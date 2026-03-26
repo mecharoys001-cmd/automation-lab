@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mailing List Builder</title>
+<!-- Sample data: sample-data.csv (Shopify CSV export with 79 columns) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117; --surface: #1a1d27; --surface2: #242836;
+  --border: #2e3347; --text: #e4e6f0; --text2: #8b8fa8;
+  --accent: #6c8cff; --accent2: #4a6ae0; --green: #3dd68c;
+  --red: #f06868; --orange: #f0a040; --radius: 10px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; line-height: 1.5; }
+.container { max-width: 960px; margin: 0 auto; }
+h1 { font-size: 1.6rem; font-weight: 700; }
+.logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; user-select: none; cursor: default; }
+.logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.subtitle { color: var(--text2); font-size: 0.85rem; margin-top: 2px; }
+
+/* Drop zone */
+.dropzone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 48px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); }
+.dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: var(--surface2); }
+.dropzone p { color: var(--text2); margin-top: 8px; font-size: 0.9rem; }
+.dropzone .big { font-size: 1.1rem; color: var(--text); font-weight: 500; }
+input[type="file"] { display: none; }
+
+/* Summary */
+.summary { background: var(--surface); border-radius: var(--radius); padding: 20px 24px; margin-top: 24px; display: none; }
+.summary h2 { font-size: 1.1rem; margin-bottom: 12px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stat { background: var(--surface2); border-radius: 8px; padding: 12px 16px; }
+.stat .label { font-size: 0.78rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat .value { font-size: 1.4rem; font-weight: 700; margin-top: 2px; }
+.stat .value.green { color: var(--green); }
+.stat .value.orange { color: var(--orange); }
+.stat .value.red { color: var(--red); }
+
+/* Buttons */
+.actions { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; display: none; }
+.btn { padding: 10px 20px; border-radius: 8px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--text2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Table */
+.table-wrap { background: var(--surface); border-radius: var(--radius); margin-top: 24px; overflow: hidden; display: none; }
+.table-wrap h2 { font-size: 1.1rem; padding: 16px 20px 0; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; padding: 10px 16px; color: var(--text2); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+td { padding: 8px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tr:hover td { background: var(--surface2); }
+
+/* Test results */
+.test-results { background: var(--surface); border-radius: var(--radius); padding: 20px 24px; margin-top: 24px; display: none; font-family: monospace; font-size: 0.82rem; max-height: 400px; overflow-y: auto; }
+.test-pass { color: var(--green); }
+.test-fail { color: var(--red); }
+.test-header { font-weight: 700; color: var(--accent); margin-top: 12px; }
+.test-header:first-child { margin-top: 0; }
+
+@media (max-width: 600px) {
+  body { padding: 12px; }
+  .dropzone { padding: 32px 16px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo" id="logo">
+    <div class="logo-icon">✉</div>
+    <div>
+      <h1>Mailing List Builder</h1>
+      <div class="subtitle">Shopify CSV → Constant Contact</div>
+    </div>
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <p class="big">Drop your Shopify CSV here</p>
+    <p>or click to browse</p>
+  </div>
+  <input type="file" id="fileInput" accept=".csv">
+
+  <div class="summary" id="summary"></div>
+  <div class="actions" id="actions">
+    <button class="btn btn-primary" id="btnClean">Download Clean CSV</button>
+    <button class="btn btn-outline" id="btnFlagged">Download Flagged Items</button>
+  </div>
+  <div class="table-wrap" id="tableWrap">
+    <h2 id="tableTitle">Preview — Clean Contacts</h2>
+    <div class="table-scroll" id="tableScroll"></div>
+  </div>
+  <div class="test-results" id="testResults"></div>
+</div>
+
+<script>
+// ── Core Processing Functions ──
+
+function parseName(billingName) {
+  const result = { firstName: '', lastName: '', flagged: false, flagReason: '' };
+  if (!billingName || !billingName.trim()) return result;
+
+  let segment = billingName.trim();
+  if (segment.includes(',')) {
+    const parts = segment.split(',');
+    segment = parts[parts.length - 1].trim();
+  }
+
+  const words = segment.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return result;
+  if (words.length === 1) {
+    result.firstName = words[0];
+    result.flagged = true;
+    result.flagReason = 'Single-word name segment: "' + segment + '" from "' + billingName + '"';
+    return result;
+  }
+  result.firstName = words[0];
+  result.lastName = words.slice(1).join(' ');
+  return result;
+}
+
+function cleanPhone(phone) {
+  if (!phone || !phone.trim()) return { formatted: '', flagged: false, flagReason: '' };
+  let digits = phone.trim().replace(/^\+/, '');
+  // Strip leading 1 country code if remaining would be 10 digits
+  if (digits.length === 11 && digits.startsWith('1')) {
+    digits = digits.substring(1);
+  }
+  if (digits.length !== 10 || !/^\d{10}$/.test(digits)) {
+    return { formatted: digits, flagged: true, flagReason: 'Non-10-digit phone: "' + phone + '"' };
+  }
+  const formatted = '(' + digits.substring(0,3) + ') ' + digits.substring(3,6) + '-' + digits.substring(6);
+  return { formatted, flagged: false, flagReason: '' };
+}
+
+function processCSV(csvText) {
+  const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+  const rows = parsed.data;
+  const stats = { totalRows: rows.length, afterNameFilter: 0, afterContactFilter: 0, afterDedup: 0, clean: 0, flagged: 0 };
+
+  // Step 1: Filter out empty/A Customer billing names
+  let filtered = rows.filter(r => {
+    const bn = (r['Billing Name'] || '').trim();
+    return bn && bn !== 'A Customer';
+  });
+  stats.afterNameFilter = filtered.length;
+
+  // Step 2: Filter out rows with BOTH empty email AND empty phone
+  filtered = filtered.filter(r => {
+    const email = (r['Email'] || '').trim();
+    const phone = (r['Phone'] || '').trim();
+    return email || phone;
+  });
+  stats.afterContactFilter = filtered.length;
+
+  // Step 3: Deduplicate by email first, then phone for email-less
+  const byEmail = new Map();
+  const noEmail = [];
+  for (const row of filtered) {
+    const email = (row['Email'] || '').trim().toLowerCase();
+    if (email) {
+      if (!byEmail.has(email)) byEmail.set(email, row);
+    } else {
+      noEmail.push(row);
+    }
+  }
+  const byPhone = new Map();
+  for (const row of noEmail) {
+    const phone = (row['Phone'] || '').trim();
+    if (!byPhone.has(phone)) byPhone.set(phone, row);
+  }
+  const deduped = [...byEmail.values(), ...byPhone.values()];
+  stats.afterDedup = deduped.length;
+
+  // Step 4: Parse names, clean phones, separate clean/flagged
+  const clean = [];
+  const flagged = [];
+
+  for (const row of deduped) {
+    const nameResult = parseName(row['Billing Name']);
+    const phoneResult = cleanPhone(row['Phone']);
+    const contact = {
+      'First Name': nameResult.firstName,
+      'Last Name': nameResult.lastName,
+      'Email Address': (row['Email'] || '').trim(),
+      'Phone Number': phoneResult.formatted,
+    };
+    if (nameResult.flagged || phoneResult.flagged) {
+      const reasons = [];
+      if (nameResult.flagged) reasons.push(nameResult.flagReason);
+      if (phoneResult.flagged) reasons.push(phoneResult.flagReason);
+      contact._flagReason = reasons.join('; ');
+      flagged.push(contact);
+    } else {
+      clean.push(contact);
+    }
+  }
+
+  stats.clean = clean.length;
+  stats.flagged = flagged.length;
+  return { clean, flagged, stats };
+}
+
+// ── CSV Generation ──
+
+function toCSV(contacts, includeFlagReason) {
+  const cols = ['First Name', 'Last Name', 'Email Address', 'Phone Number'];
+  if (includeFlagReason) cols.push('Flag Reason');
+  const rows = contacts.map(c => cols.map(col => {
+    const val = col === 'Flag Reason' ? (c._flagReason || '') : (c[col] || '');
+    return '"' + val.replace(/"/g, '""') + '"';
+  }).join(','));
+  return cols.join(',') + '\n' + rows.join('\n');
+}
+
+function downloadCSV(content, filename) {
+  const blob = new Blob([content], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── UI ──
+
+let currentResult = null;
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const summaryEl = document.getElementById('summary');
+const actionsEl = document.getElementById('actions');
+const tableWrap = document.getElementById('tableWrap');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+  if (!file.name.endsWith('.csv')) { alert('Please upload a CSV file.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentResult = processCSV(e.target.result);
+    renderResults(currentResult);
+  };
+  reader.readAsText(file);
+}
+
+function renderResults({ clean, flagged, stats }) {
+  summaryEl.style.display = 'block';
+  summaryEl.innerHTML = '<h2>Processing Summary</h2><div class="stat-grid">' +
+    stat('Total Rows', stats.totalRows) +
+    stat('After Name Filter', stats.afterNameFilter) +
+    stat('After Contact Filter', stats.afterContactFilter) +
+    stat('After Dedup', stats.afterDedup) +
+    stat('Clean Contacts', stats.clean, 'green') +
+    stat('Flagged for Review', stats.flagged, stats.flagged > 0 ? 'orange' : 'green') +
+    '</div>';
+
+  actionsEl.style.display = 'flex';
+  document.getElementById('btnClean').disabled = clean.length === 0;
+  document.getElementById('btnFlagged').disabled = flagged.length === 0;
+
+  renderTable(clean.slice(0, 20), 'Preview — Clean Contacts (first 20)');
+}
+
+function stat(label, value, color) {
+  return '<div class="stat"><div class="label">' + label + '</div><div class="value' + (color ? ' ' + color : '') + '">' + value + '</div></div>';
+}
+
+function renderTable(contacts, title) {
+  tableWrap.style.display = 'block';
+  document.getElementById('tableTitle').textContent = title;
+  if (contacts.length === 0) {
+    document.getElementById('tableScroll').innerHTML = '<p style="padding:16px;color:var(--text2)">No records</p>';
+    return;
+  }
+  const cols = ['First Name', 'Last Name', 'Email Address', 'Phone Number'];
+  let html = '<table><thead><tr>' + cols.map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+  for (const c of contacts) {
+    html += '<tr>' + cols.map(col => '<td>' + escHtml(c[col] || '') + '</td>').join('') + '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('tableScroll').innerHTML = html;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('btnClean').addEventListener('click', () => {
+  if (currentResult) downloadCSV(toCSV(currentResult.clean, false), 'clean-contacts.csv');
+});
+document.getElementById('btnFlagged').addEventListener('click', () => {
+  if (currentResult) downloadCSV(toCSV(currentResult.flagged, true), 'flagged-contacts.csv');
+});
+
+// ── Test Suite (Shift+Click logo) ──
+
+document.getElementById('logo').addEventListener('click', e => {
+  if (!e.shiftKey) return;
+  runTests();
+});
+
+function runTests() {
+  const el = document.getElementById('testResults');
+  el.style.display = 'block';
+  el.innerHTML = '';
+  let pass = 0, fail = 0;
+
+  function assert(name, actual, expected) {
+    const ok = JSON.stringify(actual) === JSON.stringify(expected);
+    if (ok) { pass++; log('<div class="test-pass">  ✓ ' + escHtml(name) + '</div>'); }
+    else { fail++; log('<div class="test-fail">  ✗ ' + escHtml(name) + ' — expected ' + escHtml(JSON.stringify(expected)) + ', got ' + escHtml(JSON.stringify(actual)) + '</div>'); }
+  }
+  function log(html) { el.innerHTML += html; }
+
+  // Name parsing tests
+  log('<div class="test-header">Name Parsing</div>');
+  let r = parseName('John Smith');
+  assert('Simple name', { f: r.firstName, l: r.lastName, fl: r.flagged }, { f: 'John', l: 'Smith', fl: false });
+
+  r = parseName('Chase, Paulette, Silas Aguirre');
+  assert('Family group - last segment', { f: r.firstName, l: r.lastName, fl: r.flagged }, { f: 'Silas', l: 'Aguirre', fl: false });
+
+  r = parseName('Alex, Emma, Owen, Audrey Alcoff');
+  assert('Large family group', { f: r.firstName, l: r.lastName, fl: r.flagged }, { f: 'Audrey', l: 'Alcoff', fl: false });
+
+  r = parseName('Elizabeth Wollenhaupt-Nimirowski');
+  assert('Hyphenated last name', { f: r.firstName, l: r.lastName, fl: r.flagged }, { f: 'Elizabeth', l: 'Wollenhaupt-Nimirowski', fl: false });
+
+  r = parseName('Ivey Kyler, Isadora, Lawson');
+  assert('Single-word last segment flagged', { f: r.firstName, fl: r.flagged }, { f: 'Lawson', fl: true });
+
+  r = parseName('');
+  assert('Empty name', { f: r.firstName, l: r.lastName }, { f: '', l: '' });
+
+  r = parseName('  Jane   Doe  ');
+  assert('Extra whitespace', { f: r.firstName, l: r.lastName }, { f: 'Jane', l: 'Doe' });
+
+  r = parseName('Mary Jane Watson');
+  assert('Three-word name', { f: r.firstName, l: r.lastName }, { f: 'Mary', l: 'Jane Watson' });
+
+  r = parseName('Anjalise, Zaida, Lucy Dua-Zamorano');
+  assert('Family with hyphenated surname', { f: r.firstName, l: r.lastName }, { f: 'Lucy', l: 'Dua-Zamorano' });
+
+  // Phone cleaning tests
+  log('<div class="test-header">Phone Cleaning</div>');
+  let p = cleanPhone('+18604889185');
+  assert('Standard +1 phone', { fmt: p.formatted, fl: p.flagged }, { fmt: '(860) 488-9185', fl: false });
+
+  p = cleanPhone('+12032609496');
+  assert('Another +1 phone', { fmt: p.formatted, fl: p.flagged }, { fmt: '(203) 260-9496', fl: false });
+
+  p = cleanPhone('18604889185');
+  assert('No plus, 11 digits with leading 1', { fmt: p.formatted, fl: p.flagged }, { fmt: '(860) 488-9185', fl: false });
+
+  p = cleanPhone('8604889185');
+  assert('10 digits, no country code', { fmt: p.formatted, fl: p.flagged }, { fmt: '(860) 488-9185', fl: false });
+
+  p = cleanPhone('+4412345678');
+  assert('Non-US number flagged', p.flagged, true);
+
+  p = cleanPhone('');
+  assert('Empty phone', { fmt: p.formatted, fl: p.flagged }, { fmt: '', fl: false });
+
+  p = cleanPhone('123');
+  assert('Short number flagged', p.flagged, true);
+
+  // Deduplication tests
+  log('<div class="test-header">Deduplication</div>');
+  const testCSV = Papa.unparse([
+    { 'Billing Name': 'John Smith', 'Email': 'john@test.com', 'Phone': '+18001234567' },
+    { 'Billing Name': 'John Smith', 'Email': 'JOHN@TEST.COM', 'Phone': '+18001234567' },
+    { 'Billing Name': 'Jane Doe', 'Email': '', 'Phone': '+18009876543' },
+    { 'Billing Name': 'Jane Again', 'Email': '', 'Phone': '+18009876543' },
+    { 'Billing Name': 'A Customer', 'Email': 'skip@test.com', 'Phone': '+18001111111' },
+    { 'Billing Name': 'No Contact', 'Email': '', 'Phone': '' },
+  ]);
+  const result = processCSV(testCSV);
+  assert('Dedup by email (case-insensitive)', result.stats.clean + result.stats.flagged, 2);
+  assert('A Customer filtered out', result.stats.afterNameFilter, 4);
+  assert('No-contact filtered out', result.stats.afterContactFilter, 3);
+  assert('Email dedup keeps first', result.clean[0]['First Name'], 'John');
+  assert('Phone dedup for email-less', result.stats.afterDedup, 2);
+
+  // Edge case: row with email not deduped against phone-only row
+  const testCSV2 = Papa.unparse([
+    { 'Billing Name': 'A One', 'Email': 'a@test.com', 'Phone': '+18001234567' },
+    { 'Billing Name': 'B Two', 'Email': '', 'Phone': '+18001234567' },
+  ]);
+  const r2 = processCSV(testCSV2);
+  assert('Same phone different email status = both kept', r2.stats.afterDedup, 2);
+
+  // Summary
+  log('<div class="test-header" style="margin-top:16px">Results: ' + pass + ' passed, ' + fail + ' failed</div>');
+}
+</script>
+</body>
+</html>
