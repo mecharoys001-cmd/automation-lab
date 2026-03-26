@@ -29,17 +29,7 @@ export default function SurveyBanner() {
             lineHeight: 1.7,
           }}
         >
-          Reach out to us at{" "}
-          <a
-            href="mailto:info@artsnwct.org"
-            style={{
-              color: "var(--color-teal)",
-              textDecoration: "none",
-              fontWeight: 600,
-            }}
-          >
-            info@artsnwct.org
-          </a>
+          We&apos;d love to hear from you.
         </p>
       </div>
     </section>

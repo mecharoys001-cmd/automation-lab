@@ -1,6 +1,7 @@
 import Hero from "@/components/Hero";
 import Stats from "@/components/Stats";
 import About from "@/components/About";
+import SavingsBar from "@/components/SavingsBar";
 import CaseStudies from "@/components/CaseStudies";
 import ToolsPreview from "@/components/ToolsPreview";
 import Roadmap from "@/components/Roadmap";
@@ -12,6 +13,7 @@ export default function Home() {
     <>
       <Hero />
       <About />
+      <SavingsBar />
       <CaseStudies />
       <ToolsPreview />
       <Roadmap />

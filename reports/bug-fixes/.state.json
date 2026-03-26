@@ -1,6 +1,6 @@
 {
-  "currentBug": null,
-  "startedAt": null,
-  "attempts": 0,
-  "lastError": null
+  "currentBug": "recyZ7KL18DL69PaX",
+  "startedAt": "2026-03-26T18:30:09.126Z",
+  "attempts": 1,
+  "lastError": "Command failed: claude -p --dangerously-skip-permissions \"Fix Airtable bug recyZ7KL18DL69PaX:\n\n**Priority:** Medium\n**Page:** Staff/Venues\n**Issue:** SPA page navigation times range from 1-3 seconds across admin pages. Staff/Venues is the slowest at ~3.4s with 1622 DOM elements for only 14 staff cards (~115 DOM elements per card). Event Templates is also slow at ~3s with 1256 DOM elements. Consider virtualization for list views and reducing DOM complexity per card component.\n\nQA NOTE (3/25/26): NOT FIXED. No evidence of render time improvements or virtualization.\n\nQA NOTE (2026-03-25): NOT FIXED. No evidence of render time improvements or virtualization.\n\n**Requirements:**\n1. Read existing code for the Staff/Venues page\n2. Implement the fix described in the issue\n3. Test that the build succeeds (npm run build)\n4. Report what you changed\n\n**DO NOT:**\n- Deploy to production\n- Mark as fixed in Airtable\n- Make unrelated changes\n\nWork in /home/ethan/.openclaw/workspace/automation-lab\n\"\n/bin/sh: 1: claude: not found\n"
 }

@@ -111,7 +111,7 @@ export default function Footer() {
               href="https://www.ethansbrewerton.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--color-coral)", fontWeight: 600, textDecoration: "none" }}
+              style={{ color: "#c8962e", fontWeight: 600, textDecoration: "none" }}
             >
               Ethan S. Brewerton
             </a>

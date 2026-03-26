@@ -8,7 +8,6 @@ const cases = [
     results: [
       { label: "Labor Savings", value: "30 hours/week", sub: "1,560 hours/year" },
       { label: "Cost Offset", value: "$31,200/year" },
-      { label: "Dev Time ROI", value: "$78/hour*" },
     ],
     stack: ["Zapier", "Givebutter", "Salesforce", "Quickbooks", "Gmail", "Slack", "Mailchimp", "Airtable", "Duda"],
   },
@@ -21,7 +20,6 @@ const cases = [
     results: [
       { label: "Labor Savings", value: "20 hours/month", sub: "240 hours/year" },
       { label: "Cost Offset", value: "$4,800/year" },
-      { label: "Dev Time ROI", value: "$240/hour*" },
     ],
     stack: ["Google Gemini 3\u2013 AI Studio", "Custom Python Application", "CivicLift"],
   },
@@ -34,7 +32,6 @@ const cases = [
     results: [
       { label: "Labor Savings", value: "3 hours/week", sub: "~150 hours/year" },
       { label: "Cost Offset", value: "$3,000/year" },
-      { label: "Dev Time ROI", value: "$750/hour*" },
     ],
     stack: ["Google Gemini 3\u2013 AI Studio", "CivicLift", "Mailchimp"],
   },
