@@ -9,28 +9,25 @@
 ───────────────────────────────────────────── */
 :root {
   /* Brand palette */
-  --primary:     #1282a2;   /* deep teal — primary brand */
-  --primary-dark:#00647e;   /* darker teal for hover */
-  --primary-container: #077f9e; /* stats bar bg */
-  --secondary:   #a13e2a;   /* coral/salmon accent */
-  --secondary-hover: #822715;
-  --tertiary:    #90339d;   /* purple accent for tools */
+  --color-teal:       #1282a2;
+  --color-teal-dark:  #0a6178;
+  --color-teal-light: #e6f4f8;
+  --color-coral:      #d4664e;
+  --color-coral-dark: #b8503c;
+  --color-navy:       #1a1a2e;
+  --color-navy-deep:  #141428;
 
   /* Text */
-  --text-dark:   #181836;
-  --text-body:   #3f484d;
-  --text-muted:  #6f797e;
-  --text-subtle: #999999;
+  --color-text:       #374151;
+  --color-text-muted: #64748b;
 
   /* Backgrounds */
-  --bg-white:    #ffffff;
-  --bg-surface:  #fcf8ff;
-  --bg-light:    #f5f2ff;
-  --bg-container:#efecff;
+  --color-bg:         #f8fafc;
+  --color-bg-alt:     #f1f5f9;
+  --color-card:       #ffffff;
 
   /* Borders */
-  --border:      #bec8ce;
-  --border-light:#e2dfff;
+  --color-border:     #e2e8f0;
 
   /* Spacing */
   --radius-sm:   4px;
@@ -75,8 +72,8 @@ html { scroll-behavior: smooth; }
 }
 
 body {
-  background: var(--bg-surface);
-  color: var(--text-body);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.7;
@@ -85,12 +82,12 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
-  color: var(--text-dark);
+  color: var(--color-navy);
   line-height: 1.25;
   font-weight: 700;
 }
 
-a { color: var(--primary); text-decoration: none; }
+a { color: var(--color-teal); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ─────────────────────────────────────────────
@@ -103,12 +100,12 @@ a:hover { text-decoration: underline; }
 }
 
 .section        { padding: 96px 24px; }
-.section-white  { background: var(--bg-white); }
-.section-light  { background: var(--bg-light); }
-.section-surface { background: var(--bg-surface); }
-.section-dark   { background: #181836; }
-.section-teal   { background: var(--primary); }
-.section-charcoal { background: #181836; }
+.section-white  { background: var(--color-card); }
+.section-light  { background: var(--color-bg-alt); }
+.section-surface { background: var(--color-bg); }
+.section-dark   { background: var(--color-navy-deep); }
+.section-teal   { background: var(--color-teal); }
+.section-charcoal { background: var(--color-navy-deep); }
 
 .section-header {
   text-align: center;
@@ -138,13 +135,13 @@ a:hover { text-decoration: underline; }
   font-size: 1.1rem;
   font-weight: 700;
   font-family: var(--font-headline);
-  color: var(--text-dark);
+  color: var(--color-navy);
 }
 
 .text-intro {
   font-size: 1.15rem;
   line-height: 1.75;
-  color: var(--text-body);
+  color: var(--color-text);
 }
 
 .label-overline {
@@ -153,7 +150,7 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-family: var(--font-body);
-  color: var(--primary);
+  color: var(--color-teal);
 }
 
 /* ─────────────────────────────────────────────
@@ -163,7 +160,7 @@ a:hover { text-decoration: underline; }
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  background: var(--primary-dark);
+  background: var(--color-teal-dark);
   transition: box-shadow 0.3s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
@@ -191,18 +188,18 @@ a:hover { text-decoration: underline; }
 
 .nav-link-mobile {
   display: block;
-  color: var(--text-body);
+  color: var(--color-text);
   font-size: 15px;
   font-weight: 600;
   font-family: var(--font-body);
   text-decoration: none;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--color-border);
   transition: color 0.2s;
 }
 
 .nav-link-mobile:hover {
-  color: var(--primary);
+  color: var(--color-teal);
   text-decoration: none;
 }
 
@@ -211,7 +208,7 @@ a:hover { text-decoration: underline; }
   position: fixed;
   top: 0; left: 0;
   height: 3px;
-  background: var(--secondary);
+  background: var(--color-coral);
   z-index: 9999;
   transition: width 0.1s linear;
 }
@@ -220,7 +217,7 @@ a:hover { text-decoration: underline; }
    HERO — light background
 ───────────────────────────────────────────── */
 .hero-section {
-  background: var(--bg-surface);
+  background: var(--color-bg);
   position: relative;
   overflow: hidden;
 }
@@ -245,7 +242,7 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(to right, var(--primary), var(--primary-container));
+  background: var(--color-teal);
   color: #ffffff;
   padding: 16px 32px;
   border-radius: var(--radius-pill);
@@ -270,7 +267,7 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--secondary);
+  background: var(--color-coral);
   color: #ffffff;
   padding: 16px 32px;
   border-radius: var(--radius-pill);
@@ -285,7 +282,7 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-secondary:hover {
-  background: var(--secondary-hover);
+  background: var(--color-coral-dark);
   box-shadow: var(--shadow-xl);
   transform: translateY(-2px);
   text-decoration: none;
@@ -297,7 +294,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  color: var(--primary);
+  color: var(--color-teal);
   padding: 16px 32px;
   border-radius: var(--radius-pill);
   font-weight: 700;
@@ -311,11 +308,11 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-white:hover {
-  background: #f0f9fa;
+  background: var(--color-teal-light);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
   text-decoration: none;
-  color: var(--primary);
+  color: var(--color-teal);
 }
 
 .btn-outline-white {
@@ -346,7 +343,7 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--primary);
+  background: var(--color-teal);
   color: #ffffff;
   padding: 16px 32px;
   border-radius: var(--radius-pill);
@@ -360,7 +357,7 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-teal:hover {
-  background: var(--primary-dark);
+  background: var(--color-teal-dark);
   transform: translateY(-1px);
   text-decoration: none;
   color: #ffffff;
@@ -370,7 +367,7 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--secondary);
+  background: var(--color-coral);
   color: #ffffff;
   padding: 16px 40px;
   border-radius: var(--radius-pill);
@@ -384,7 +381,7 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-survey:hover {
-  background: var(--secondary-hover);
+  background: var(--color-coral-dark);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   text-decoration: none;
@@ -395,8 +392,8 @@ a:hover { text-decoration: underline; }
    CARDS
 ───────────────────────────────────────────── */
 .card {
-  background: var(--bg-white);
-  border: 1px solid var(--border-light);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   transition: box-shadow 0.25s, transform 0.25s;
   box-shadow: var(--shadow-sm);
@@ -414,16 +411,16 @@ a:hover { text-decoration: underline; }
 }
 
 .card-stat {
-  background: var(--bg-light);
-  border: 1px solid var(--border-light);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 14px 10px;
   text-align: center;
 }
 
 .card-feature {
-  background: var(--bg-white);
-  border: 1px solid var(--border-light);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;
@@ -452,7 +449,7 @@ a:hover { text-decoration: underline; }
 
 .tag-teal {
   background: rgba(18, 130, 162, 0.1);
-  color: var(--primary);
+  color: var(--color-teal);
   border: 1px solid rgba(18, 130, 162, 0.25);
 }
 
@@ -464,7 +461,7 @@ a:hover { text-decoration: underline; }
 
 .tag-navy {
   background: rgba(24, 24, 54, 0.08);
-  color: var(--text-dark);
+  color: var(--color-navy);
   border: 1px solid rgba(24, 24, 54, 0.15);
 }
 
@@ -473,7 +470,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 5px;
   background: rgba(18, 130, 162, 0.1);
-  color: var(--primary);
+  color: var(--color-teal);
   border: 1px solid rgba(18, 130, 162, 0.25);
   border-radius: var(--radius-pill);
   padding: 3px 10px;
@@ -486,8 +483,8 @@ a:hover { text-decoration: underline; }
 
 .badge-soon {
   background: rgba(153,153,153,0.1);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   padding: 3px 10px;
   font-size: 11px;
@@ -498,12 +495,12 @@ a:hover { text-decoration: underline; }
 }
 
 .tech-tag {
-  background: var(--bg-light);
-  border: 1px solid var(--border-light);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 2px 8px;
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -511,7 +508,7 @@ a:hover { text-decoration: underline; }
    STATS BAR — teal background with white text
 ───────────────────────────────────────────── */
 .stats-bar {
-  background: var(--primary-container);
+  background: var(--color-teal);
   padding: 48px 24px;
 }
 
@@ -552,7 +549,7 @@ a:hover { text-decoration: underline; }
 ───────────────────────────────────────────── */
 .divider {
   height: 1px;
-  background: var(--border-light);
+  background: var(--color-border);
   margin: 0;
 }
 
@@ -565,7 +562,7 @@ a:hover { text-decoration: underline; }
   gap: 10px;
   margin-bottom: 8px;
   font-size: 13px;
-  color: var(--text-body);
+  color: var(--color-text);
   line-height: 1.6;
 }
 
@@ -575,7 +572,7 @@ a:hover { text-decoration: underline; }
   gap: 10px;
   margin-bottom: 8px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 
@@ -602,7 +599,7 @@ a:hover { text-decoration: underline; }
 }
 
 .footer-link:hover {
-  color: var(--secondary);
+  color: var(--color-coral);
   text-decoration: none;
 }
 

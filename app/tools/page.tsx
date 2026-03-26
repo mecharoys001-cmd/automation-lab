@@ -49,8 +49,8 @@ export default function ToolsPage() {
       style={{
         paddingTop: "80px",
         minHeight: "100vh",
-        backgroundColor: "#f8fafc",
-        fontFamily: "'Montserrat', sans-serif",
+        backgroundColor: "var(--color-bg)",
+        fontFamily: "var(--font-body)",
       }}
     >
       {/* Page Header */}
@@ -65,7 +65,7 @@ export default function ToolsPage() {
         <Link
           href="/"
           style={{
-            color: "#1282a2",
+            color: "var(--color-teal)",
             textDecoration: "none",
             fontSize: "13px",
             fontWeight: 600,
@@ -81,7 +81,7 @@ export default function ToolsPage() {
           style={{
             fontSize: "2.25rem",
             fontWeight: 800,
-            color: "#1a1a2e",
+            color: "var(--color-navy)",
             marginBottom: "0.75rem",
             letterSpacing: "-0.01em",
             lineHeight: 1.2,
@@ -91,7 +91,7 @@ export default function ToolsPage() {
         </h1>
         <p
           style={{
-            color: "#64748b",
+            color: "var(--color-text-muted)",
             fontSize: "1.05rem",
             lineHeight: 1.6,
           }}
@@ -119,9 +119,9 @@ export default function ToolsPage() {
           >
             <div
               style={{
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--color-card)",
                 borderRadius: "16px",
-                border: "1px solid #e8ecf1",
+                border: "1px solid var(--color-border)",
                 overflow: "hidden",
                 height: "100%",
                 display: "flex",
@@ -166,7 +166,7 @@ export default function ToolsPage() {
                       style={{
                         fontSize: "1.1rem",
                         fontWeight: 700,
-                        color: "#1a1a2e",
+                        color: "var(--color-navy)",
                         margin: 0,
                         lineHeight: 1.3,
                       }}
@@ -189,7 +189,7 @@ export default function ToolsPage() {
                 {/* Description */}
                 <p
                   style={{
-                    color: "#4b5563",
+                    color: "var(--color-text)",
                     fontSize: "0.9rem",
                     lineHeight: 1.65,
                     margin: 0,
@@ -205,8 +205,8 @@ export default function ToolsPage() {
                     <span
                       key={f}
                       style={{
-                        backgroundColor: "#f1f5f9",
-                        color: "#475569",
+                        backgroundColor: "var(--color-bg-alt)",
+                        color: "var(--color-text-muted)",
                         borderRadius: "6px",
                         padding: "3px 10px",
                         fontSize: "0.72rem",

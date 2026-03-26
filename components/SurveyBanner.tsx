@@ -3,7 +3,7 @@ export default function SurveyBanner() {
   return (
     <section
       style={{
-        background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
+        background: "linear-gradient(135deg, var(--color-teal) 0%, var(--color-teal-dark) 100%)",
         padding: "96px 24px",
         position: "relative",
         overflow: "hidden",

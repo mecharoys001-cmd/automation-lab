@@ -23,7 +23,7 @@ const cases = [
       { label: "Cost Offset",  value: "$4,800/yr",   sub: "Annual savings" },
     ],
     stack: ["Google Gemini AI Studio","Custom Python","CivicLift"],
-    accentRaw: "#90339d",
+    accentRaw: "#a244ae",
   },
   {
     year: "2025",
@@ -42,11 +42,11 @@ const cases = [
 
 export default function CaseStudies() {
   return (
-    <section id="case-studies" className="section" style={{ background: "var(--bg-light)", padding: "96px 24px" }}>
+    <section id="case-studies" className="section" style={{ background: "var(--color-bg-alt)", padding: "96px 24px" }}>
       <div className="container">
         <div className="section-header" data-reveal="fade">
           <h2 className="heading-section" style={{ fontStyle: "italic" }}>Real Impact, Real Savings</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", maxWidth: "540px", margin: "0 auto" }}>
+          <p style={{ color: "var(--color-text-muted)", fontSize: "1.1rem", maxWidth: "540px", margin: "0 auto" }}>
             Real automation projects with measurable results for the cultural sector.
           </p>
         </div>
@@ -86,8 +86,8 @@ export default function CaseStudies() {
                   <h3 className="heading-card" style={{ fontSize: "1.1rem", marginBottom: "8px", lineHeight: 1.4 }}>
                     {c.title}
                   </h3>
-                  <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                    Project Cost: <span style={{ color: c.amount === "In-Kind" ? "var(--text-muted)" : c.accentRaw, fontWeight: 600 }}>{c.amount === "In-Kind" ? "In-Kind" : c.amount}</span>
+                  <div style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
+                    Project Cost: <span style={{ color: c.amount === "In-Kind" ? "var(--color-text-muted)" : c.accentRaw, fontWeight: 600 }}>{c.amount === "In-Kind" ? "In-Kind" : c.amount}</span>
                   </div>
                 </div>
 
@@ -98,17 +98,17 @@ export default function CaseStudies() {
                       <div style={{ fontSize: "1rem", fontWeight: 900, color: c.accentRaw, fontFamily: "var(--font-body)" }}>
                         {r.value}
                       </div>
-                      <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginTop: "2px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                         {r.label}
                       </div>
-                      <div style={{ fontSize: "10px", color: "var(--text-subtle)", marginTop: "1px" }}>{r.sub}</div>
+                      <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginTop: "1px" }}>{r.sub}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Stack */}
                 <div>
-                  <div className="label-overline" style={{ fontSize: "10px", marginBottom: "8px", color: "var(--text-subtle)" }}>
+                  <div className="label-overline" style={{ fontSize: "10px", marginBottom: "8px", color: "var(--color-text-muted)" }}>
                     Tech Stack
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>

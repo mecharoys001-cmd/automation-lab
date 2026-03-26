@@ -9,7 +9,7 @@ const tools = [
     features: ["Fuzzy name matching", "Address normalization", "Smart record selection", "100% browser-based"],
     icon: "🧹",
     href: "/tools/csv-dedup",
-    accentRaw: "#90339d",
+    accentRaw: "#6366f1",
   },
   {
     id: "scheduler",

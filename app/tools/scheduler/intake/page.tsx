@@ -367,9 +367,14 @@ function IntakeForm() {
         }
 
         setSubmitState('success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (err) {
         setSubmitError(err instanceof Error ? err.message : 'An unexpected error occurred');
         setSubmitState('error');
+        // Scroll error banner into view so user sees the feedback
+        setTimeout(() => {
+          document.getElementById('submit-error-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
       }
     },
     [form, selectedSkills, selectedSlots, validate, honeypot, programId]
@@ -748,7 +753,7 @@ function IntakeForm() {
           </div>
 
           {/* ── Error Banner ────────────────────────────── */}
-          <div role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
+          <div id="submit-error-banner" role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
             {submitState === 'error' && submitError ? submitError : ''}
           </div>
 

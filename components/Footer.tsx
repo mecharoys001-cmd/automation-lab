@@ -50,7 +50,7 @@ function FooterLinkGroup({ heading, links }: { heading: string; links: { href: s
 
 export default function Footer() {
   return (
-    <footer style={{ background: "#181836", padding: "64px 24px 32px" }}>
+    <footer style={{ background: "var(--color-navy-deep)", padding: "64px 24px 32px" }}>
       <div className="container">
         <div
           style={{
@@ -111,7 +111,7 @@ export default function Footer() {
               href="https://www.ethansbrewerton.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--secondary)", fontWeight: 600, textDecoration: "none" }}
+              style={{ color: "var(--color-coral)", fontWeight: 600, textDecoration: "none" }}
             >
               Ethan S. Brewerton
             </a>

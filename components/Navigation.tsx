@@ -106,7 +106,7 @@ export default function Navigation() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div style={{ background: "#ffffff", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "8px 20px 16px" }}>
+          <div style={{ background: "var(--color-card)", borderTop: "1px solid var(--color-border)", padding: "8px 20px 16px" }}>
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="nav-link-mobile">
                 {link.label}
@@ -116,7 +116,7 @@ export default function Navigation() {
               href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ display: "block", color: "var(--primary)", padding: "12px 0", fontSize: "15px", fontWeight: 700, fontFamily: "var(--font-body)" }}
+              style={{ display: "block", color: "var(--color-teal)", padding: "12px 0", fontSize: "15px", fontWeight: 700, fontFamily: "var(--font-body)" }}
             >
               Take the Self-Assessment →
             </a>
