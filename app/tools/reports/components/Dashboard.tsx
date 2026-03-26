@@ -26,22 +26,27 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
     try {
       setShareStatus("shortening");
       const encoded = encodeShareData(data, fileName);
-      const longUrl = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
       
-      // Shorten via TinyURL (free, no auth)
-      let shortUrl: string;
+      // Store compressed data server-side, get short ID
+      let shareUrl: string;
       try {
-        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        const res = await fetch("/api/reports/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: encoded }),
+        });
         if (res.ok) {
-          shortUrl = await res.text();
+          const { id } = await res.json();
+          shareUrl = `${window.location.origin}/tools/reports?s=${id}`;
         } else {
-          shortUrl = longUrl; // Fallback to long URL
+          // Fallback to hash URL
+          shareUrl = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
         }
       } catch {
-        shortUrl = longUrl; // Fallback if TinyURL is down
+        shareUrl = `${window.location.origin}${window.location.pathname}#d=${encoded}`;
       }
       
-      await navigator.clipboard.writeText(shortUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setShareStatus("copied");
       setTimeout(() => setShareStatus("idle"), 3000);
     } catch (err) {

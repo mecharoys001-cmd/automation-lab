@@ -14,12 +14,32 @@ export default function ReportsPage() {
   const [dragOver, setDragOver] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
 
-  // On mount, check for shared data in URL hash
+  // On mount, check for shared data via ?s= (server-stored) or #d= (legacy hash)
   useEffect(() => {
-    const hash = window.location.hash.slice(1); // remove #
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get("s");
+
+    if (shareId) {
+      // Fetch from server
+      fetch(`/api/reports/share?id=${encodeURIComponent(shareId)}`)
+        .then((res) => res.ok ? res.json() : Promise.reject("Not found"))
+        .then(({ data: encoded }) => {
+          const result = decodeShareData(encoded);
+          if (result) {
+            setData(result.data);
+            setFileName(result.fileName);
+            setIsSharedView(true);
+          }
+        })
+        .catch(() => setError("Shared report not found or expired."));
+      return;
+    }
+
+    // Legacy: check URL hash
+    const hash = window.location.hash.slice(1);
     if (!hash || !hash.startsWith("d=")) return;
 
-    const encoded = hash.slice(2); // remove "d="
+    const encoded = hash.slice(2);
     const result = decodeShareData(encoded);
     if (result) {
       setData(result.data);
