@@ -4,11 +4,7 @@ const nextConfig: NextConfig = {
   // Enable experimental optimizations
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    // Subresource Integrity (SRI) – adds integrity + crossorigin attributes
-    // to every <script> tag Next.js emits, so browsers reject tampered bundles.
-    sri: {
-      algorithm: 'sha256',
-    },
+
   },
   
   async headers() {
