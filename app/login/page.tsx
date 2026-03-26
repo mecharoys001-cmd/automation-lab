@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || '/tools'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +25,7 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider: 'google',
-          redirectTo: window.location.origin + '/auth/callback',
+          redirectTo: window.location.origin + '/auth/callback?next=' + encodeURIComponent(next),
         }),
       })
       const data = await res.json()
@@ -53,7 +55,7 @@ export default function LoginPage() {
         setError(data.error || 'Sign in failed')
         setLoading(false)
       } else {
-        router.push('/tools')
+        router.push(next)
       }
     } catch {
       setError('Something went wrong. Please try again.')

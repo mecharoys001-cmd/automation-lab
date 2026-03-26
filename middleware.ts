@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
   if (!user && path.startsWith('/tools')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.searchParams.set('next', path)
     return NextResponse.redirect(url)
   }
 
