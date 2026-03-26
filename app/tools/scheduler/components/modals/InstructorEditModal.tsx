@@ -85,12 +85,14 @@ export function InstructorEditModal({
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
 
-  // Duplicate name warning (non-blocking)
-  const duplicateName = isNew && form.first_name.trim() && form.last_name.trim()
+  // Duplicate name warning (non-blocking) — checks on both add and edit
+  const duplicateName = form.first_name.trim() && form.last_name.trim()
     ? existingInstructors.some(
         (i) =>
           i.first_name.toLowerCase() === form.first_name.trim().toLowerCase() &&
-          i.last_name.toLowerCase() === form.last_name.trim().toLowerCase()
+          i.last_name.toLowerCase() === form.last_name.trim().toLowerCase() &&
+          // When editing, exclude the current instructor from the check
+          (!instructor || i.id !== instructor.id)
       )
     : false;
 

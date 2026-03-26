@@ -19,7 +19,7 @@ export async function PATCH(
     // Verify program access
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: instructor } = await (supabase.from('instructors') as any)
-      .select('program_id')
+      .select('program_id, first_name, last_name')
       .eq('id', id)
       .single();
 
@@ -61,6 +61,23 @@ export async function PATCH(
       }
     }
 
+    // Check for duplicate name (non-blocking warning)
+    let duplicateNameWarning: string | undefined;
+    const firstName = 'first_name' in body ? String(body.first_name).trim() : instructor.first_name;
+    const lastName = 'last_name' in body ? String(body.last_name).trim() : instructor.last_name;
+    if (firstName && lastName && ('first_name' in body || 'last_name' in body)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: dupes } = await (supabase.from('instructors') as any)
+        .select('id, first_name, last_name')
+        .eq('program_id', instructor.program_id)
+        .ilike('first_name', firstName)
+        .ilike('last_name', lastName)
+        .neq('id', id);
+      if (dupes && dupes.length > 0) {
+        duplicateNameWarning = `A staff member named "${firstName} ${lastName}" already exists`;
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('instructors') as any)
       .update(body)
@@ -72,7 +89,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ instructor: data });
+    return NextResponse.json({ instructor: data, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

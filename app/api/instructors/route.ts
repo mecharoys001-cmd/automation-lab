@@ -141,6 +141,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check for duplicate name (non-blocking warning)
+    let duplicateNameWarning: string | undefined;
+    if (body.first_name && body.last_name) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: dupes } = await (supabase.from('instructors') as any)
+        .select('id, first_name, last_name')
+        .eq('program_id', body.program_id)
+        .ilike('first_name', String(body.first_name).trim())
+        .ilike('last_name', String(body.last_name).trim());
+      if (dupes && dupes.length > 0) {
+        duplicateNameWarning = `A staff member named "${String(body.first_name).trim()} ${String(body.last_name).trim()}" already exists`;
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('instructors') as any)
       .insert(body)
@@ -151,7 +165,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ instructor: data }, { status: 201 });
+    return NextResponse.json({ instructor: data, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
