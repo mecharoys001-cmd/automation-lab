@@ -34,6 +34,12 @@ export default function ImpactDashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
   const totalHours = stats.reduce((sum, s) => sum + s.total_hours_saved, 0);
   const totalUses = stats.reduce((sum, s) => sum + s.total_uses, 0);
 
