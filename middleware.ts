@@ -20,7 +20,7 @@ function buildCspHeader(nonce: string): string {
     // ignored by browsers that support nonces (CSP Level 2+) but acts as a
     // fallback for older browsers.  'unsafe-eval' is required by Next.js in
     // development; consider removing it in production behind NODE_ENV check.
-    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval'`,
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com`,
     `img-src 'self' data: blob:`,
