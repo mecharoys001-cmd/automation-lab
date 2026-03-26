@@ -346,6 +346,7 @@ export default function MailingListBuilderPage() {
   const [fileName, setFileName] = useState('');
   const [testLogs, setTestLogs] = useState<TestLog[] | null>(null);
   const [showFlagged, setShowFlagged] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -356,6 +357,7 @@ export default function MailingListBuilderPage() {
       const text = e.target?.result as string;
       setResult(processCSV(text));
       setShowFlagged(false);
+      setCurrentPage(1);
       setTestLogs(null);
     };
     reader.readAsText(file);
@@ -375,10 +377,15 @@ export default function MailingListBuilderPage() {
   }, []);
 
   const cols = ['First Name', 'Last Name', 'Email Address', 'Phone Number'] as const;
-  const previewData = result ? (showFlagged ? result.flagged : result.clean).slice(0, 20) : [];
-  const previewLabel = showFlagged
-    ? `Flagged for Review (${result?.flagged.length ?? 0} total, showing first 20)`
-    : `Clean Contacts (${result?.clean.length ?? 0} total, showing first 20)`;
+  const ROWS_PER_PAGE = 50;
+  const allData = result ? (showFlagged ? result.flagged : result.clean) : [];
+  const totalPages = Math.max(1, Math.ceil(allData.length / ROWS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageData = allData.slice((safePage - 1) * ROWS_PER_PAGE, safePage * ROWS_PER_PAGE);
+  const rowOffset = (safePage - 1) * ROWS_PER_PAGE;
+  const sectionLabel = showFlagged
+    ? `Review Contacts (${result?.flagged.length ?? 0})`
+    : `Review Contacts (${result?.clean.length ?? 0})`;
 
   return (
     <div style={{ paddingTop: 64, minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: "'Montserrat', sans-serif" }}>
@@ -501,7 +508,7 @@ export default function MailingListBuilderPage() {
             {result.flagged.length > 0 && (
               <Tip text={showFlagged ? 'Switch to the clean contacts preview' : 'Switch to the flagged contacts preview'}>
                 <button
-                  onClick={() => setShowFlagged(v => !v)}
+                  onClick={() => { setShowFlagged(v => !v); setCurrentPage(1); }}
                   style={{
                     padding: '10px 20px', borderRadius: 8,
                     fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
@@ -519,48 +526,92 @@ export default function MailingListBuilderPage() {
           </div>
         )}
 
-        {/* Preview Table */}
+        {/* Contact Table */}
         {result && (
           <div style={{
             marginTop: 24, backgroundColor: '#fff', borderRadius: 12,
             border: '1px solid #E2E8F0', overflow: 'hidden',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}>
-            <div style={{ padding: '16px 20px 0' }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1a1a2e' }}>{previewLabel}</h2>
+            <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1a1a2e' }}>{sectionLabel}</h2>
+              {showFlagged && <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: 600 }}>Flagged</span>}
             </div>
-            {previewData.length === 0 ? (
+            {pageData.length === 0 ? (
               <p style={{ padding: 20, color: '#64748b' }}>No records</p>
             ) : (
-              <div style={{ overflowX: 'auto', marginTop: 8 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                      <Tip text="Row number in the preview"><th style={thStyle}>#</th></Tip>
-                      {cols.map(c => (
-                        <Tip key={c} text={colTooltip(c)}><th style={thStyle}>{c}</th></Tip>
-                      ))}
-                      {showFlagged && <Tip text="Reason this contact was flagged for review"><th style={thStyle}>Flag Reason</th></Tip>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.map((row, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.1s' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ''; }}
-                      >
-                        <td style={tdStyle}>{i + 1}</td>
-                        {cols.map(c => <td key={c} style={tdStyle}>{(row as unknown as Record<string, string>)[c] || '—'}</td>)}
-                        {showFlagged && (
-                          <td style={{ ...tdStyle, color: '#d97706', fontSize: '0.8rem', whiteSpace: 'normal', maxWidth: 300 }}>
-                            {row._flagReason}
-                          </td>
-                        )}
+              <>
+                <div style={{ overflowX: 'auto', marginTop: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                        <Tip text="Row number"><th style={thStyle}>#</th></Tip>
+                        {cols.map(c => (
+                          <Tip key={c} text={colTooltip(c)}><th style={thStyle}>{c}</th></Tip>
+                        ))}
+                        {showFlagged && <Tip text="Reason this contact was flagged for review"><th style={thStyle}>Flag Reason</th></Tip>}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {pageData.map((row, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.1s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ''; }}
+                        >
+                          <td style={tdStyle}>{rowOffset + i + 1}</td>
+                          {cols.map(c => <td key={c} style={tdStyle}>{(row as unknown as Record<string, string>)[c] || '—'}</td>)}
+                          {showFlagged && (
+                            <td style={{ ...tdStyle, color: '#d97706', fontSize: '0.8rem', whiteSpace: 'normal', maxWidth: 300 }}>
+                              {row._flagReason}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Tip text="Browse all contacts before downloading">
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: 6, padding: '16px 20px', borderTop: '1px solid #E2E8F0',
+                      flexWrap: 'wrap',
+                    }}>
+                      <button
+                        disabled={safePage <= 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        style={paginationBtnStyle(false, safePage <= 1)}
+                      >
+                        Previous
+                      </button>
+                      {getPaginationPages(safePage, totalPages).map((p, i) =>
+                        p === '...' ? (
+                          <span key={`ellipsis-${i}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: '0.85rem' }}>...</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p as number)}
+                            style={paginationBtnStyle(safePage === p, false)}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
+                      <button
+                        disabled={safePage >= totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        style={paginationBtnStyle(false, safePage >= totalPages)}
+                      >
+                        Next
+                      </button>
+                      <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: 8 }}>
+                        Page {safePage} of {totalPages}
+                      </span>
+                    </div>
+                  </Tip>
+                )}
+              </>
             )}
           </div>
         )}
@@ -623,6 +674,30 @@ const thStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   padding: '10px 20px', whiteSpace: 'nowrap', color: '#374151',
 };
+
+function paginationBtnStyle(active: boolean, disabled: boolean): React.CSSProperties {
+  return {
+    padding: '6px 12px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    border: '1px solid #e2e8f0',
+    backgroundColor: active ? '#3B82F6' : '#fff',
+    color: active ? '#fff' : disabled ? '#94a3b8' : '#374151',
+    opacity: disabled ? 0.6 : 1,
+    transition: 'background-color 0.15s',
+  };
+}
+
+function getPaginationPages(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push('...');
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push('...');
+  pages.push(total);
+  return pages;
+}
 
 function colTooltip(col: string): string {
   switch (col) {
