@@ -51,7 +51,13 @@ const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
 ];
 const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 12;
+
+/** Max skill pills to show before collapsing with "+N more". */
+const MAX_VISIBLE_SKILLS = 3;
+
+/** Availability color map for the compact SVG grid. */
+const AVAIL_COLORS = { full: '#10b981', partial: '#fbbf24', none: '#ef4444' } as const;
 
 /* ── Venue CSV Import config ───────────────────────────────── */
 
@@ -220,6 +226,55 @@ function CardGridSkeleton({ count = 6 }: { count?: number }) {
 
 /* ── Memoized Staff Card ──────────────────────────────────── */
 
+/** Compact SVG availability grid — replaces ~35 DOM elements with a single <svg>. */
+function AvailabilitySvg({ availability }: { availability: Instructor['availability_json'] }) {
+  const cellW = 14;
+  const cellH = 10;
+  const gap = 2;
+  const labelH = 12;
+  const colW = cellW + gap;
+  const width = AVAIL_DAYS.length * colW - gap;
+  const height = labelH + cellH * 2 + gap;
+
+  // Build tooltip summarising the whole week
+  const tipParts: string[] = [];
+  const rects: React.ReactElement[] = [];
+
+  AVAIL_DAYS.forEach((day, i) => {
+    const blocks = availability?.[day.key] ?? [];
+    const m = getTimePeriodAvailability(blocks, 8, 12);
+    const a = getTimePeriodAvailability(blocks, 12, 17);
+    const sym = (l: 'full' | 'partial' | 'none') => (l === 'full' ? '✓' : l === 'partial' ? '~' : '✗');
+    tipParts.push(`${day.label}: AM ${sym(m)}, PM ${sym(a)}`);
+    const x = i * colW;
+    rects.push(
+      <rect key={`${day.key}-m`} x={x} y={labelH} width={cellW} height={cellH} rx={2} fill={AVAIL_COLORS[m]} />,
+      <rect key={`${day.key}-a`} x={x} y={labelH + cellH + gap} width={cellW} height={cellH} rx={2} fill={AVAIL_COLORS[a]} />,
+    );
+  });
+
+  return (
+    <div>
+      <div className="text-xs font-medium text-slate-600 mb-2">Weekly Availability</div>
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        aria-label="Weekly availability grid"
+        role="img"
+      >
+        <title>{tipParts.join('\n')}</title>
+        {AVAIL_DAYS.map((day, i) => (
+          <text key={day.key} x={i * colW + cellW / 2} y={10} textAnchor="middle" fontSize={9} fill="#64748b" fontWeight={500}>
+            {day.label}
+          </text>
+        ))}
+        {rects}
+      </svg>
+    </div>
+  );
+}
+
 const StaffCard = memo(function StaffCard({
   inst,
   onOpenDetail,
@@ -232,6 +287,10 @@ const StaffCard = memo(function StaffCard({
   onSkillClick: (skill: string) => void;
 }) {
   const fullName = `${inst.first_name} ${inst.last_name}`;
+  const skills = inst.skills ?? [];
+  const visibleSkills = skills.slice(0, MAX_VISIBLE_SKILLS);
+  const overflowCount = skills.length - MAX_VISIBLE_SKILLS;
+
   return (
     <div
       onClick={() => onOpenDetail(inst)}
@@ -246,25 +305,15 @@ const StaffCard = memo(function StaffCard({
             size="md"
             bgColor={avatarColor(fullName)}
           />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[16px] font-bold text-slate-900 truncate">
-                {fullName}
-              </span>
-              <span
-                title={inst.is_active ? 'Currently active' : 'Currently inactive'}
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                  inst.is_active ? 'bg-emerald-500' : 'bg-red-500'
-                }`}
-              />
-            </div>
-          </div>
+          <span className="text-[16px] font-bold text-slate-900 truncate min-w-0">
+            {fullName}
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           {inst.on_call && (
             <span
               title="Available for last-minute substitutions"
-              className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 rounded-xl px-2.5 py-1 text-xs font-medium"
+              className="inline-flex items-center bg-emerald-100 text-emerald-800 rounded-xl px-2.5 py-1 text-xs font-medium"
             >
               On-Call
             </span>
@@ -281,33 +330,28 @@ const StaffCard = memo(function StaffCard({
         </div>
       </div>
 
-      {/* Contact Info */}
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-      <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
-        {inst.email && (
-          <ClickToCopy
-            text={inst.email}
-            label="email"
-            icon={Mail}
-            textClassName="text-xs text-blue-500 truncate"
-            buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-          />
-        )}
-        {inst.phone && (
-          <ClickToCopy
-            text={inst.phone}
-            label="phone"
-            icon={Phone}
-            textClassName="text-xs text-slate-600 truncate"
-            buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-          />
-        )}
-      </div>
+      {/* Contact Info — lightweight text with click-to-copy via card detail modal */}
+      {(inst.email || inst.phone) && (
+        <div className="flex flex-col gap-1">
+          {inst.email && (
+            <span className="flex items-center gap-1.5 text-xs text-blue-500 truncate">
+              <Mail className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
+              {inst.email}
+            </span>
+          )}
+          {inst.phone && (
+            <span className="flex items-center gap-1.5 text-xs text-slate-600 truncate">
+              <Phone className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
+              {inst.phone}
+            </span>
+          )}
+        </div>
+      )}
 
-      {/* Subject Pills */}
+      {/* Subject Pills — capped at MAX_VISIBLE_SKILLS */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-        {(inst.skills ?? []).map((skill) => {
+        {visibleSkills.map((skill) => {
           const s = SKILL_STYLES[skill];
           return (
             <Pill
@@ -321,37 +365,18 @@ const StaffCard = memo(function StaffCard({
             </Pill>
           );
         })}
-        {(!inst.skills || inst.skills.length === 0) && (
+        {overflowCount > 0 && (
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600">
+            +{overflowCount} more
+          </span>
+        )}
+        {skills.length === 0 && (
           <span className="text-[11px] text-slate-600">No event types listed</span>
         )}
       </div>
 
-      {/* Weekly Availability — compact inline */}
-      <div>
-        <div className="text-xs font-medium text-slate-600 mb-2">Weekly Availability</div>
-        <div className="flex justify-between">
-          {AVAIL_DAYS.map((day) => {
-            const blocks = inst.availability_json?.[day.key] ?? [];
-            const morningAvail = getTimePeriodAvailability(blocks, 8, 12);
-            const afternoonAvail = getTimePeriodAvailability(blocks, 12, 17);
-            const getAvailColor = (level: 'full' | 'partial' | 'none') =>
-              level === 'full' ? 'bg-emerald-500' : level === 'partial' ? 'bg-amber-400' : 'bg-red-500';
-            return (
-              <div
-                key={day.key}
-                title={`${day.label}: Morning ${morningAvail === 'full' ? '✓' : morningAvail === 'partial' ? '~' : '✗'}, Afternoon ${afternoonAvail === 'full' ? '✓' : afternoonAvail === 'partial' ? '~' : '✗'}`}
-                className="flex flex-col items-center gap-0.5"
-              >
-                <span className="text-[10px] font-medium text-slate-600">{day.label}</span>
-                <div className="flex flex-col gap-0.5">
-                  <span className={`w-2.5 h-2.5 ${getAvailColor(morningAvail)}`} />
-                  <span className={`w-2.5 h-2.5 ${getAvailColor(afternoonAvail)}`} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Weekly Availability — compact SVG (replaces ~35 DOM elements) */}
+      <AvailabilitySvg availability={inst.availability_json} />
 
       {/* View on Calendar Link */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
@@ -387,6 +412,10 @@ const VenueCard = memo(function VenueCard({
   venue: Venue;
   onSelect: (venue: Venue) => void;
 }) {
+  const subjects = venue.subjects ?? [];
+  const visibleSubjects = subjects.slice(0, 4);
+  const subjectOverflow = subjects.length - 4;
+
   return (
     <div
       onClick={() => onSelect(venue)}
@@ -394,21 +423,24 @@ const VenueCard = memo(function VenueCard({
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 160px' }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <p className="text-[16px] font-bold text-slate-900 truncate">{venue.name}</p>
-          <p className="text-sm text-slate-700">{venue.space_type}</p>
-        </div>
+      <div className="min-w-0">
+        <p className="text-[16px] font-bold text-slate-900 truncate">{venue.name}</p>
+        <p className="text-sm text-slate-700">{venue.space_type}</p>
       </div>
 
-      {/* Subjects */}
-      {venue.subjects && venue.subjects.length > 0 && (
+      {/* Subjects — capped at 4 */}
+      {visibleSubjects.length > 0 && (
         <div className="flex items-center flex-wrap gap-1">
-          {venue.subjects.map((s) => (
+          {visibleSubjects.map((s) => (
             <span key={s} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
               {s}
             </span>
           ))}
+          {subjectOverflow > 0 && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
+              +{subjectOverflow} more
+            </span>
+          )}
         </div>
       )}
 
