@@ -160,29 +160,29 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     // Respect minimized state during loading to avoid flashing the full panel
     if (minimized) {
       return (
-        <div className="fixed bottom-6 left-6 z-50">
+        <aside role="complementary" aria-label="Getting Started checklist" className="fixed bottom-6 left-6 z-50">
           <button
             disabled
             className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-full px-4 py-2.5 shadow-lg opacity-75"
           >
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
           </button>
-        </div>
+        </aside>
       );
     }
     return (
-      <div className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-full max-w-[380px]">
+      <aside role="complementary" aria-label="Getting Started checklist" className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-full max-w-[380px]">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         </div>
-      </div>
+      </aside>
     );
   }
 
   // Minimized view — small floating pill
   if (minimized) {
     return (
-      <div className="fixed bottom-6 left-6 z-50">
+      <aside role="complementary" aria-label="Getting Started checklist" className="fixed bottom-6 left-6 z-50">
         <Tooltip text="Expand Getting Started checklist">
           <button
             onClick={handleRestore}
@@ -192,12 +192,16 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
             <span className="text-sm font-medium">{completedCount}/{totalCount}</span>
           </button>
         </Tooltip>
-      </div>
+      </aside>
     );
   }
 
   return (
-    <div className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-[380px] overflow-hidden">
+    <aside
+      role="complementary"
+      aria-label="Getting Started checklist"
+      className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-[380px] overflow-hidden"
+    >
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-violet-500 px-5 py-4">
         <div className="flex items-start justify-between mb-3">
@@ -315,6 +319,6 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
           </p>
         </div>
       )}
-    </div>
+    </aside>
   );
 }

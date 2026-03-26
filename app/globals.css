@@ -60,21 +60,22 @@
 html { scroll-behavior: smooth; }
 
 /* ─────────────────────────────────────────────
-   ACCESSIBILITY — Focus Indicators
+   ACCESSIBILITY — Focus Indicators (WCAG 2.1 AA)
+   Universal :focus-visible ensures ALL interactive
+   elements show a visible focus ring for keyboard
+   users. !important overrides Tailwind outline-none,
+   @tailwindcss/forms resets, and inline utilities.
 ───────────────────────────────────────────── */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[role="button"]:focus-visible,
-[role="checkbox"]:focus-visible,
-[role="tab"]:focus-visible,
-[role="menuitem"]:focus-visible,
-[role="option"]:focus-visible,
-[tabindex]:focus-visible {
+:focus-visible {
   outline: 2px solid #3b82f6 !important;
   outline-offset: 2px !important;
+}
+
+/* High-contrast focus ring on dark backgrounds (sidebar, dark sections) */
+.bg-slate-800 :focus-visible,
+.bg-slate-900 :focus-visible,
+[class*="bg-gradient"] :focus-visible {
+  outline-color: #60a5fa !important; /* blue-400 for better contrast on dark */
 }
 
 body {
