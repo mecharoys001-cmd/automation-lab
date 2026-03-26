@@ -1,21 +1,22 @@
+#!/usr/bin/env tsx
 import { markAsFixed } from '../lib/airtable';
 
-const recordId = process.argv[2] || 'recR59MRuWLfEI1u2';
-
 async function main() {
-  console.log(`Marking ${recordId} as "ROY fix" in Airtable...`);
-  
-  const success = await markAsFixed(recordId);
+  const bugId = process.argv[2];
+  if (!bugId) {
+    console.error('Usage: tsx mark-bug-fixed.ts <record-id>');
+    process.exit(1);
+  }
+
+  console.log(`Marking bug ${bugId} as fixed...`);
+  const success = await markAsFixed(bugId);
   
   if (success) {
-    console.log(`✅ Successfully marked ${recordId} as "ROY fix"`);
+    console.log('✅ Bug marked as "ROY fix" in Airtable');
   } else {
-    console.error(`❌ Failed to mark ${recordId} as fixed`);
+    console.log('❌ Failed to mark bug as fixed');
     process.exit(1);
   }
 }
 
-main().catch((error) => {
-  console.error('Error:', error);
-  process.exit(1);
-});
+main().catch(console.error);

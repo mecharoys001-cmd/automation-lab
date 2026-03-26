@@ -77,11 +77,11 @@ const tools = [
 export default function ToolsPage() {
 
   return (
-    <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "#0f172a" }}>
+    <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "#f8fafc", fontFamily: "'Montserrat', sans-serif" }}>
       {/* Header */}
       <div
         style={{
-          borderBottom: "1px solid #1e293b",
+          borderBottom: "1px solid #e2e8f0",
           padding: "4rem 1.5rem",
           textAlign: "center",
           position: "relative",
@@ -98,7 +98,7 @@ export default function ToolsPage() {
             height: "400px",
             borderRadius: "50%",
             background:
-              "radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%)",
+              "radial-gradient(circle, rgba(18, 130, 162, 0.06) 0%, transparent 70%)",
           }}
         />
         <div style={{ position: "relative", zIndex: 1 }}>
@@ -119,7 +119,7 @@ export default function ToolsPage() {
           <div
             style={{
               fontSize: "12px",
-              color: "#10b981",
+              color: "#1282a2",
               fontWeight: 600,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
@@ -134,13 +134,14 @@ export default function ToolsPage() {
               fontWeight: 800,
               letterSpacing: "-0.02em",
               marginBottom: "1rem",
+              color: "#1a1a2e",
             }}
           >
             Automation Tools
           </h1>
           <p
             style={{
-              color: "#94a3b8",
+              color: "#475569",
               fontSize: "16px",
               maxWidth: "500px",
               margin: "0 auto",
@@ -164,128 +165,133 @@ export default function ToolsPage() {
         {tools.map((tool) => (
           <div
             key={tool.id}
-            className="card-glow"
             style={{
-              backgroundColor: "#111827",
+              backgroundColor: "#ffffff",
               borderRadius: "20px",
-              padding: "2.5rem",
-              border: `1px solid ${tool.accent}30`,
+              padding: "0",
+              border: "1px solid #e2e8f0",
               marginBottom: "2rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)",
+              overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-                gap: "1rem",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                <div
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    borderRadius: "14px",
-                    backgroundColor: `${tool.accent}20`,
-                    border: `1px solid ${tool.accent}30`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "28px",
-                  }}
-                >
-                  {tool.icon}
-                </div>
-                <div>
-                  <h2
-                    style={{
-                      fontSize: "22px",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                      color: '#ffffff',
-                    }}
-                  >
-                    {tool.name}
-                  </h2>
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
-                    Best for: {tool.usedBy}
-                  </div>
-                </div>
-              </div>
-              <span
+            {/* Accent bar on top */}
+            <div style={{ height: "4px", backgroundColor: tool.accent }} />
+            <div style={{ padding: "2.5rem" }}>
+              <div
                 style={{
-                  backgroundColor: `${tool.accent}20`,
-                  color: tool.accent,
-                  padding: "6px 14px",
-                  borderRadius: "100px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                  gap: "1rem",
+                  marginBottom: "1.5rem",
                 }}
               >
-                ● Live
-              </span>
-            </div>
-
-            <p
-              style={{
-                color: "#94a3b8",
-                fontSize: "15px",
-                lineHeight: 1.7,
-                marginBottom: "2rem",
-              }}
-            >
-              {tool.description}
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                marginBottom: "2rem",
-              }}
-            >
-              {tool.features.map((f) => (
+                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      borderRadius: "14px",
+                      backgroundColor: `${tool.accent}12`,
+                      border: `1px solid ${tool.accent}25`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "28px",
+                    }}
+                  >
+                    {tool.icon}
+                  </div>
+                  <div>
+                    <h2
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: 700,
+                        marginBottom: "4px",
+                        color: "#1a1a2e",
+                      }}
+                    >
+                      {tool.name}
+                    </h2>
+                    <div style={{ fontSize: "12px", color: "#64748b" }}>
+                      Best for: {tool.usedBy}
+                    </div>
+                  </div>
+                </div>
                 <span
-                  key={f}
                   style={{
-                    backgroundColor: `${tool.accent}10`,
+                    backgroundColor: `${tool.accent}12`,
                     color: tool.accent,
-                    border: `1px solid ${tool.accent}25`,
-                    borderRadius: "8px",
-                    padding: "5px 12px",
+                    padding: "6px 14px",
+                    borderRadius: "100px",
                     fontSize: "12px",
-                    fontWeight: 500,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                   }}
                 >
-                  {f}
+                  ● Live
                 </span>
-              ))}
-            </div>
+              </div>
 
-            <Link
-              href={tool.href}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                backgroundColor: tool.accent,
-                color: "#fff",
-                padding: "14px 28px",
-                borderRadius: "10px",
-                fontSize: "15px",
-                fontWeight: 600,
-                textDecoration: "none",
-                boxShadow: `0 0 20px ${tool.accent}30`,
-              }}
-            >
-              Open {tool.name} →
-            </Link>
+              <p
+                style={{
+                  color: "#475569",
+                  fontSize: "15px",
+                  lineHeight: 1.7,
+                  marginBottom: "2rem",
+                }}
+              >
+                {tool.description}
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  marginBottom: "2rem",
+                }}
+              >
+                {tool.features.map((f) => (
+                  <span
+                    key={f}
+                    style={{
+                      backgroundColor: `${tool.accent}0a`,
+                      color: tool.accent,
+                      border: `1px solid ${tool.accent}20`,
+                      borderRadius: "8px",
+                      padding: "5px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+
+              <Link
+                href={tool.href}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  backgroundColor: tool.accent,
+                  color: "#fff",
+                  padding: "14px 28px",
+                  borderRadius: "10px",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  boxShadow: `0 2px 8px ${tool.accent}30`,
+                }}
+              >
+                Open {tool.name} →
+              </Link>
+            </div>
           </div>
         ))}
 
@@ -294,13 +300,14 @@ export default function ToolsPage() {
           style={{
             textAlign: "center",
             padding: "3rem",
-            border: "1px dashed #1e293b",
+            border: "1px dashed #cbd5e1",
             borderRadius: "20px",
-            color: "#475569",
+            color: "#64748b",
+            backgroundColor: "#ffffff",
           }}
         >
           <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>🚧</div>
-          <div style={{ fontWeight: 600, marginBottom: "0.5rem", color: "#64748b" }}>
+          <div style={{ fontWeight: 600, marginBottom: "0.5rem", color: "#475569" }}>
             More tools coming soon
           </div>
           <div style={{ fontSize: "13px" }}>

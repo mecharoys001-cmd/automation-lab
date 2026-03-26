@@ -1,36 +1,29 @@
-import Airtable from 'airtable';
+#!/usr/bin/env tsx
+import { getIssue } from '../lib/airtable';
 
-const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN || '';
-const BASE_ID = 'appdyCFvZRVuCr4tb';
-const TABLE_NAME = 'App Feedback';
+async function main() {
+  const bugId = process.argv[2];
+  if (!bugId) {
+    console.error('Usage: tsx get-bug-details.ts <record-id>');
+    process.exit(1);
+  }
 
-const base = new Airtable({ apiKey: AIRTABLE_TOKEN }).base(BASE_ID);
-
-async function getBugDetails(recordId: string) {
-  const record = await base(TABLE_NAME).find(recordId);
-  
-  console.log('='.repeat(80));
-  console.log('BUG DETAILS');
-  console.log('='.repeat(80));
-  console.log(`ID: ${record.id}`);
-  console.log(`Priority: ${record.get('Priority')}`);
-  console.log(`Page: ${record.get('Page')}`);
-  console.log(`Modal Name: ${record.get('Modal Name') || 'N/A'}`);
-  console.log(`ROY Fix: ${record.get('ROY Fix') ? '✅' : '⬜'}`);
-  console.log(`Completed: ${record.get('Completed') ? '✅' : '⬜'}`);
-  console.log('\nFEEDBACK:');
-  console.log('-'.repeat(80));
-  console.log(record.get('Feedback'));
-  console.log('-'.repeat(80));
-  
-  const screenshots = record.get('Screenshot/Image') as any[];
-  if (screenshots && screenshots.length > 0) {
-    console.log('\nSCREENSHOTS:');
-    screenshots.forEach((s: any) => {
-      console.log(`- ${s.url}`);
-    });
+  const issue = await getIssue(bugId);
+  if (issue) {
+    console.log('=== BUG DETAILS ===');
+    console.log(`ID: ${issue.id}`);
+    console.log(`Priority: ${issue.priority}`);
+    console.log(`Page: ${issue.page}`);
+    console.log(`Modal: ${issue.modalName || 'N/A'}`);
+    console.log(`ROY Fix: ${issue.royFix ? 'Yes' : 'No'}`);
+    console.log(`\nFeedback:\n${issue.feedback}`);
+    if (issue.screenshot && issue.screenshot.length > 0) {
+      console.log(`\nScreenshots: ${issue.screenshot.length}`);
+      issue.screenshot.forEach((url, i) => console.log(`  ${i+1}. ${url}`));
+    }
+  } else {
+    console.error('Bug not found');
   }
 }
 
-const recordId = process.argv[2] || 'recTabWHCM1FzhzHG';
-getBugDetails(recordId);
+main().catch(console.error);

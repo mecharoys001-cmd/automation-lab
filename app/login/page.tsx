@@ -94,10 +94,10 @@ export default function LoginPage() {
     border: '1.5px solid #dde1ea',
     borderRadius: '8px',
     fontSize: '15px',
-    color: '#1a1a38',
+    color: '#1a1a2e',
     background: '#fafbfc',
     outline: 'none',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Montserrat', sans-serif",
     boxSizing: 'border-box',
   }
 
@@ -105,11 +105,12 @@ export default function LoginPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%)',
+        background: '#f8fafc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem 1rem',
+        fontFamily: "'Montserrat', sans-serif",
       }}
     >
       <div
@@ -118,7 +119,7 @@ export default function LoginPage() {
           maxWidth: '420px',
           background: '#fff',
           borderRadius: '16px',
-          boxShadow: '0 4px 32px rgba(26,26,56,0.10)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 24px rgba(0,0,0,0.08)',
           padding: '2.5rem 2rem',
         }}
       >
@@ -130,12 +131,13 @@ export default function LoginPage() {
                 width: '52px',
                 height: '52px',
                 borderRadius: '12px',
-                background: 'linear-gradient(135deg, #21b8bb, #a244ae)',
+                background: '#1282a2',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '24px',
                 margin: '0 auto 12px',
+                color: '#fff',
               }}
             >
               ⚡
@@ -146,7 +148,7 @@ export default function LoginPage() {
               fontFamily: "'Montserrat', sans-serif",
               fontWeight: 800,
               fontSize: '22px',
-              color: '#1a1a38',
+              color: '#1a1a2e',
               margin: '0 0 4px',
             }}
           >
@@ -155,7 +157,7 @@ export default function LoginPage() {
           <p
             style={{
               fontSize: '11px',
-              color: '#21b8bb',
+              color: '#1282a2',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               fontWeight: 600,
@@ -169,7 +171,7 @@ export default function LoginPage() {
               marginTop: '10px',
               color: '#555',
               fontSize: '14px',
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Montserrat', sans-serif",
             }}
           >
             Sign in to access your tools
@@ -186,7 +188,7 @@ export default function LoginPage() {
               color: '#276749',
               fontSize: '14px',
               textAlign: 'center',
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Montserrat', sans-serif",
             }}
           >
             ✅ Check your email to confirm your account, then sign in below.
@@ -207,10 +209,10 @@ export default function LoginPage() {
             border: '1.5px solid #dde1ea',
             borderRadius: '10px',
             background: oauthLoading ? '#f5f5f5' : '#fff',
-            color: '#1a1a38',
+            color: '#1a1a2e',
             fontSize: '15px',
             fontWeight: 600,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Montserrat', sans-serif",
             cursor: oauthLoading ? 'not-allowed' : 'pointer',
             transition: 'border-color 0.2s, box-shadow 0.2s',
             marginTop: signUpSuccess ? '16px' : 0,
@@ -235,7 +237,7 @@ export default function LoginPage() {
           }}
         >
           <div style={{ flex: 1, height: '1px', background: '#dde1ea' }} />
-          <span style={{ color: '#999', fontSize: '13px', fontFamily: "'Inter', sans-serif" }}>
+          <span style={{ color: '#999', fontSize: '13px', fontFamily: "'Montserrat', sans-serif" }}>
             — or —
           </span>
           <div style={{ flex: 1, height: '1px', background: '#dde1ea' }} />
@@ -268,7 +270,7 @@ export default function LoginPage() {
                 color: '#c0392b',
                 fontSize: '13px',
                 margin: 0,
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "'Montserrat', sans-serif",
                 background: '#fff5f5',
                 border: '1px solid #fca5a5',
                 borderRadius: '6px',
@@ -286,7 +288,7 @@ export default function LoginPage() {
               style={{
                 flex: 1,
                 padding: '12px',
-                background: 'linear-gradient(135deg, #21b8bb, #a244ae)',
+                background: '#1282a2',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '10px',
@@ -307,8 +309,8 @@ export default function LoginPage() {
                 flex: 1,
                 padding: '12px',
                 background: 'transparent',
-                color: '#a244ae',
-                border: '1.5px solid #a244ae',
+                color: '#1282a2',
+                border: '1.5px solid #1282a2',
                 borderRadius: '10px',
                 fontSize: '15px',
                 fontWeight: 700,
@@ -329,10 +331,10 @@ export default function LoginPage() {
             textAlign: 'center',
             fontSize: '13px',
             color: '#888',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Montserrat', sans-serif",
           }}
         >
-          <Link href="/" style={{ color: '#21b8bb', textDecoration: 'none', fontWeight: 600 }}>
+          <Link href="/" style={{ color: '#1282a2', textDecoration: 'none', fontWeight: 600 }}>
             ← Back to home
           </Link>
         </p>
