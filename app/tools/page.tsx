@@ -4,159 +4,202 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Tools | The Automation Lab",
   description:
-    "Free automation tools built for nonprofits by the NWCT Arts Council Automation Lab.",
+    "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
 };
 
 const tools = [
   {
     id: "csv-dedup",
     name: "CSV Deduplicator",
-    tagline: "Clean your mailing lists in seconds.",
     description:
-      "Upload a contacts CSV and get a cleaned file back instantly. Catches misspelled names, initials, and duplicates when they share the same address. Runs 100% in your browser. Your data never leaves your computer.",
-    features: ["Fuzzy name matching", "Address normalization", "Auto-detects columns", "100% browser-based"],
+      "Upload a mailing list or contacts CSV and get a cleaned file back instantly. Removes exact duplicates and fuzzy matches — catches misspelled names, initials, and concatenated names (like 'Ethan Brewerton', 'Ethen Brewerton', 'E Brewerton', and 'Ebrewerton') when they share the same address. Runs 100% in your browser; your data never leaves your computer.",
+    status: "live",
+    features: [
+      "Fuzzy name matching",
+      "Handles misspellings & initials",
+      "Address normalization",
+      "Smart record selection",
+      "Auto-detects columns",
+      "100% browser-based",
+      "No data uploaded",
+      "Download cleaned CSV",
+    ],
     icon: "🧹",
     href: "/tools/csv-dedup",
     accent: "#6366f1",
+    usedBy: "Nonprofits, arts orgs, event planners with mailing lists",
   },
   {
     id: "reports",
     name: "Transaction Reports",
-    tagline: "Instant dashboards from your Shopify data.",
     description:
-      "Upload a Shopify transaction CSV and get a visual dashboard with sales breakdowns, payment trends, and summary stats. Shareable interactive reports. No data uploaded to any server.",
-    features: ["Sales by category", "Payment analysis", "Time trend charts", "Shareable reports"],
+      "Upload your Shopify transaction CSV and get an instant visual dashboard. See sales breakdowns by type, payment method trends, net sales over time, and summary statistics. Runs 100% in your browser - no data uploaded.",
+    status: "live",
+    features: [
+      "Shopify CSV import",
+      "Sales by type breakdown",
+      "Payment method analysis",
+      "Time trend charts",
+      "Summary statistics",
+      "100% browser-based",
+      "No data uploaded",
+      "Instant results",
+    ],
     icon: "📊",
     href: "/tools/reports",
     accent: "#10b981",
+    usedBy: "Nonprofits and small businesses tracking Shopify sales",
   },
   {
     id: "scheduler",
     name: "Symphonix Scheduler",
-    tagline: "Automated scheduling for music programs.",
-    description:
-      "Generate sessions from templates, manage instructor availability, handle venue conflicts, and publish schedules with email notifications. Built for educational music program coordinators.",
-    features: ["Template scheduling", "Conflict detection", "Email notifications", "Calendar integration"],
     icon: "🎵",
-    href: "/tools/scheduler",
     accent: "#a244ae",
+    status: "live",
+    href: "/tools/scheduler",
+    usedBy: "Music program coordinators and education directors",
+    description:
+      "Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, track venues, and publish schedules with automated email notifications.",
+    features: [
+      "Template-based scheduling",
+      "Automated session generation",
+      "Instructor availability tracking",
+      "Multi-venue management",
+      "Conflict detection & resolution",
+      "Email notification system",
+      "School calendar integration",
+      "Tag & categorization system",
+      "Real-time schedule publishing",
+    ],
   },
 ];
 
 export default function ToolsPage() {
+
   return (
-    <div
-      style={{
-        paddingTop: "80px",
-        minHeight: "100vh",
-        backgroundColor: "var(--color-bg)",
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      {/* Page Header */}
+    <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "var(--color-bg)", fontFamily: "'Montserrat', sans-serif" }}>
+      {/* Header */}
       <div
         style={{
-          padding: "3.5rem 1.5rem 3rem",
+          borderBottom: "1px solid var(--color-border)",
+          padding: "4rem 1.5rem",
           textAlign: "center",
-          maxWidth: "640px",
-          margin: "0 auto",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Link
-          href="/"
+        <div
           style={{
-            color: "var(--color-teal)",
-            textDecoration: "none",
-            fontSize: "13px",
-            fontWeight: 600,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            marginBottom: "1.5rem",
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "400px",
+            height: "400px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(18, 130, 162, 0.06) 0%, transparent 70%)",
           }}
-        >
-          ← Back to Home
-        </Link>
-        <h1
-          style={{
-            fontSize: "2.25rem",
-            fontWeight: 800,
-            color: "var(--color-navy)",
-            marginBottom: "0.75rem",
-            letterSpacing: "-0.01em",
-            lineHeight: 1.2,
-          }}
-        >
-          Automation Tools
-        </h1>
-        <p
-          style={{
-            color: "var(--color-text-muted)",
-            fontSize: "1.05rem",
-            lineHeight: 1.6,
-          }}
-        >
-          Free, open-source tools built through the Automation Lab for nonprofits and small organizations.
-        </p>
+        />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <Link
+            href="/"
+            style={{
+              color: "var(--color-text-muted)",
+              textDecoration: "none",
+              fontSize: "13px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "2rem",
+            }}
+          >
+            ← Back to Automation Lab
+          </Link>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--color-teal)",
+              fontWeight: 600,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              marginBottom: "1rem",
+            }}
+          >
+            Open Source · Free to Use
+          </div>
+          <h1
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
+              marginBottom: "1rem",
+              color: "var(--color-navy)",
+            }}
+          >
+            Automation Tools
+          </h1>
+          <p
+            style={{
+              color: "var(--color-text)",
+              fontSize: "16px",
+              maxWidth: "500px",
+              margin: "0 auto",
+              lineHeight: 1.7,
+            }}
+          >
+            Practical tools built through the Automation Lab — free for any
+            nonprofit or organization to use.
+          </p>
+        </div>
       </div>
 
-      {/* Tools Grid */}
+      {/* Tools list */}
       <div
         style={{
-          maxWidth: "960px",
+          maxWidth: "1000px",
           margin: "0 auto",
-          padding: "0 1.5rem 4rem",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "1.5rem",
+          padding: "4rem 1.5rem",
         }}
       >
         {tools.map((tool) => (
-          <Link
+          <div
             key={tool.id}
-            href={tool.href}
-            style={{ textDecoration: "none", color: "inherit" }}
+            style={{
+              backgroundColor: "var(--color-card)",
+              borderRadius: "20px",
+              padding: "0",
+              border: "1px solid var(--color-border)",
+              marginBottom: "2rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)",
+              overflow: "hidden",
+            }}
           >
-            <div
-              style={{
-                backgroundColor: "var(--color-card)",
-                borderRadius: "16px",
-                border: "1px solid var(--color-border)",
-                overflow: "hidden",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                transition: "box-shadow 0.2s, transform 0.2s",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                cursor: "pointer",
-              }}
-              className="tool-card-hover"
-            >
-              {/* Accent bar */}
-              <div style={{ height: "4px", backgroundColor: tool.accent }} />
-
+            {/* Accent bar on top */}
+            <div style={{ height: "4px", backgroundColor: tool.accent }} />
+            <div style={{ padding: "2.5rem" }}>
               <div
                 style={{
-                  padding: "1.75rem",
                   display: "flex",
-                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
                   gap: "1rem",
-                  flex: 1,
+                  marginBottom: "1.5rem",
                 }}
               >
-                {/* Icon + Title */}
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
                   <div
                     style={{
-                      width: "48px",
-                      height: "48px",
-                      borderRadius: "12px",
-                      backgroundColor: `${tool.accent}10`,
+                      width: "56px",
+                      height: "56px",
+                      borderRadius: "14px",
+                      backgroundColor: `${tool.accent}12`,
+                      border: `1px solid ${tool.accent}25`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: "24px",
-                      flexShrink: 0,
+                      fontSize: "28px",
                     }}
                   >
                     {tool.icon}
@@ -164,79 +207,113 @@ export default function ToolsPage() {
                   <div>
                     <h2
                       style={{
-                        fontSize: "1.1rem",
+                        fontSize: "22px",
                         fontWeight: 700,
+                        marginBottom: "4px",
                         color: "var(--color-navy)",
-                        margin: 0,
-                        lineHeight: 1.3,
                       }}
                     >
                       {tool.name}
                     </h2>
-                    <div
-                      style={{
-                        fontSize: "0.8rem",
-                        color: tool.accent,
-                        fontWeight: 600,
-                        marginTop: "2px",
-                      }}
-                    >
-                      {tool.tagline}
+                    <div style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
+                      Best for: {tool.usedBy}
                     </div>
                   </div>
                 </div>
-
-                {/* Description */}
-                <p
+                <span
                   style={{
-                    color: "var(--color-text)",
-                    fontSize: "0.9rem",
-                    lineHeight: 1.65,
-                    margin: 0,
-                    flex: 1,
-                  }}
-                >
-                  {tool.description}
-                </p>
-
-                {/* Features */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {tool.features.map((f) => (
-                    <span
-                      key={f}
-                      style={{
-                        backgroundColor: "var(--color-bg-alt)",
-                        color: "var(--color-text-muted)",
-                        borderRadius: "6px",
-                        padding: "3px 10px",
-                        fontSize: "0.72rem",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {f}
-                    </span>
-                  ))}
-                </div>
-
-                {/* CTA */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
+                    backgroundColor: `${tool.accent}12`,
                     color: tool.accent,
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    marginTop: "0.25rem",
+                    padding: "6px 14px",
+                    borderRadius: "100px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                   }}
                 >
-                  Open Tool
-                  <span style={{ fontSize: "1.1rem" }}>→</span>
-                </div>
+                  ● Live
+                </span>
               </div>
+
+              <p
+                style={{
+                  color: "var(--color-text)",
+                  fontSize: "15px",
+                  lineHeight: 1.7,
+                  marginBottom: "2rem",
+                }}
+              >
+                {tool.description}
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  marginBottom: "2rem",
+                }}
+              >
+                {tool.features.map((f) => (
+                  <span
+                    key={f}
+                    style={{
+                      backgroundColor: `${tool.accent}0a`,
+                      color: tool.accent,
+                      border: `1px solid ${tool.accent}20`,
+                      borderRadius: "8px",
+                      padding: "5px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+
+              <Link
+                href={tool.href}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  backgroundColor: tool.accent,
+                  color: "#fff",
+                  padding: "14px 28px",
+                  borderRadius: "10px",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  boxShadow: `0 2px 8px ${tool.accent}30`,
+                }}
+              >
+                Open {tool.name} →
+              </Link>
             </div>
-          </Link>
+          </div>
         ))}
+
+        {/* Coming soon */}
+        <div
+          style={{
+            textAlign: "center",
+            padding: "3rem",
+            border: "1px dashed var(--color-border)",
+            borderRadius: "20px",
+            color: "var(--color-text-muted)",
+            backgroundColor: "var(--color-card)",
+          }}
+        >
+          <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>🚧</div>
+          <div style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--color-text)" }}>
+            More tools coming soon
+          </div>
+          <div style={{ fontSize: "13px" }}>
+            Email Newsletter Automator · Grant Tracker · Board Meeting Minutes Generator · and more
+          </div>
+        </div>
       </div>
     </div>
   );
