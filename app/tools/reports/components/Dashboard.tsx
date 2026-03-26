@@ -204,7 +204,7 @@ export default function Dashboard({ data, fileName, onReset, isSharedView, onEdi
       <div ref={reportRef} className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            Sales Analytics Report
+            Village Center of the Arts Sales Analytics
           </h2>
           <p className="mt-1 text-lg font-semibold text-blue-600 dark:text-blue-400">
             {data.dateRange.start} — {data.dateRange.end}
