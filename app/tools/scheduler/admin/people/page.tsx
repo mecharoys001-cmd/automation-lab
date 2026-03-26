@@ -1470,12 +1470,11 @@ export default function PeoplePage() {
     setDetailSessions([]);
     setLoadingDetailSessions(true);
     try {
-      const res = await fetch(`/api/instructor-sessions?instructor_id=${instructor.id}`);
-      if (res.ok) {
-        const { sessions } = (await res.json()) as { sessions: SessionRecord[] };
-        setDetailSessionCount(sessions.length);
-        setDetailSessions(sessions);
-      }
+      const data = await requestCache.fetch<{ sessions: SessionRecord[] }>(
+        `/api/instructor-sessions?instructor_id=${instructor.id}`
+      );
+      setDetailSessionCount(data.sessions.length);
+      setDetailSessions(data.sessions);
     } catch {
       setDetailSessionCount(null);
       setDetailSessions([]);

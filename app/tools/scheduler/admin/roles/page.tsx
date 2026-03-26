@@ -225,11 +225,11 @@ export default function RolesPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
+    requestCache.fetch<{ email?: string }>('/api/auth/me')
       .then((data) => {
         if (data?.email) setCurrentUserEmail(data.email.toLowerCase());
-      });
+      })
+      .catch(() => {});
   }, []);
 
   // Derive current user's role from admins list

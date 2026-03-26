@@ -24,8 +24,8 @@ type AnalyticsEvent = {
 };
 let eventQueue: AnalyticsEvent[] = [];
 let flushTimer: NodeJS.Timeout | null = null;
-const FLUSH_INTERVAL_MS = 5000;
-const MAX_QUEUE_SIZE = 20;
+const FLUSH_INTERVAL_MS = 15000;
+const MAX_QUEUE_SIZE = 50;
 
 function sendBatch(events: AnalyticsEvent[]) {
   if (events.length === 0) return;

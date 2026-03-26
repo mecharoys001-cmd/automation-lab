@@ -12,7 +12,7 @@ interface CacheEntry<T> {
 class RequestCache {
   private cache = new Map<string, CacheEntry<unknown>>();
   private pendingRequests = new Map<string, Promise<unknown>>();
-  private defaultTTL = 30000; // 30 seconds default cache for cross-page navigation
+  private defaultTTL = 120000; // 2 minutes default cache for cross-page navigation
 
   /**
    * Fetch with deduplication and caching
@@ -98,9 +98,9 @@ class RequestCache {
 // Singleton instance
 export const requestCache = new RequestCache();
 
-// Auto-cleanup every 30 seconds
+// Auto-cleanup every 60 seconds
 if (typeof window !== 'undefined') {
-  setInterval(() => requestCache.cleanup(), 30000);
+  setInterval(() => requestCache.cleanup(), 60000);
 }
 
 /**

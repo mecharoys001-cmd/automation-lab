@@ -472,18 +472,19 @@ export default function CalendarPage() {
 
   // ── Fetch entries ────────────────────────────────────────────
 
-  const fetchEntries = useCallback(async () => {
+  const fetchEntries = useCallback(async (invalidate = false) => {
     if (!selectedProgramId) {
       setEntries([]);
       setLoading(false);
       return;
     }
+    if (invalidate) requestCache.invalidate(/\/api\/calendar/);
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/calendar?program_id=${selectedProgramId}`);
-      if (!res.ok) throw new Error('Failed to load calendar entries');
-      const data = await res.json();
+      const data = await requestCache.fetch<{ entries?: SchoolCalendar[] }>(
+        `/api/calendar?program_id=${selectedProgramId}`
+      );
       setEntries(data.entries ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -533,7 +534,7 @@ export default function CalendarPage() {
         }
         throw new Error(body.error || `Failed to ${isDraft ? 'save draft' : 'publish'}`);
       }
-      await fetchEntries();
+      await fetchEntries(true);
       setIsDirty(false);
       setToast({
         message: isDraft
@@ -577,7 +578,7 @@ export default function CalendarPage() {
       if (!res.ok) {
         throw new Error(body.error || 'Generation failed');
       }
-      await fetchEntries();
+      await fetchEntries(true);
       setIsDirty(true);
       const count = body.sessions_created ?? 0;
       const unassigned = body.unassigned_count ?? 0;
@@ -714,7 +715,7 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error('Failed to create entry');
       setAddForm({ ...EMPTY_FORM });
       setShowAddForm(false);
-      await fetchEntries();
+      await fetchEntries(true);
       setIsDirty(true);
       setToast({ message: 'Calendar entry added', type: 'success', id: Date.now() });
     } catch (err) {
@@ -788,7 +789,7 @@ export default function CalendarPage() {
       // Reset original ref so cancelEdit doesn't trigger dirty warning
       editOriginalRef.current = { ...editForm };
       cancelEdit();
-      await fetchEntries();
+      await fetchEntries(true);
       setIsDirty(true);
       setToast({ message: 'Calendar entry updated', type: 'success', id: Date.now() });
     } catch (err) {
@@ -808,7 +809,7 @@ export default function CalendarPage() {
       const res = await fetch(`/api/calendar/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete entry');
       setDeletingId(null);
-      await fetchEntries();
+      await fetchEntries(true);
       setIsDirty(true);
       setToast({ message: 'Calendar entry deleted', type: 'success', id: Date.now() });
     } catch (err) {
@@ -959,7 +960,7 @@ export default function CalendarPage() {
           done++;
           if (total > 10) setBatchProgress({ done, total });
         }
-        await fetchEntries();
+        await fetchEntries(true);
         setIsDirty(true);
         setToast({ message: `${done} calendar entr${done !== 1 ? 'ies' : 'y'} cleared`, type: 'success', id: Date.now() });
       } else {
@@ -1000,7 +1001,7 @@ export default function CalendarPage() {
           done++;
           if (total > 10) setBatchProgress({ done, total });
         }
-        await fetchEntries();
+        await fetchEntries(true);
         setIsDirty(true);
         setToast({ message: `${done} calendar entr${done !== 1 ? 'ies' : 'y'} updated`, type: 'success', id: Date.now() });
       }
@@ -1812,7 +1813,7 @@ export default function CalendarPage() {
           }
           const result = await res.json();
           if (result.imported > 0) {
-            await fetchEntries();
+            await fetchEntries(true);
             setIsDirty(true);
             setToast({ message: `Imported ${result.imported} calendar entries`, type: 'success', id: Date.now() });
           }
