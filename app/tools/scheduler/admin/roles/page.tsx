@@ -18,6 +18,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import type { Admin, Instructor } from '@/types/database';
+import { requestCache } from '@/lib/requestCache';
 
 // ---------------------------------------------------------------------------
 // Types

@@ -17,6 +17,7 @@ import type {
   SessionTemplate, Instructor, Venue,
 } from '@/types/database';
 import { getSubjectColor } from '../../lib/subjectColors';
+import { requestCache } from '@/lib/requestCache';
 
 /* ── Constants ──────────────────────────────────────────────── */
 

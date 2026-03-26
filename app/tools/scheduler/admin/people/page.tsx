@@ -21,6 +21,7 @@ import { InstructorEditModal } from '../../components/modals/InstructorEditModal
 import { Modal, ModalButton } from '../../components/ui/Modal';
 import type { InstructorFormData } from '../../components/modals/InstructorEditModal';
 import type { CsvRow } from '@/lib/csvDedup';
+import { requestCache } from '@/lib/requestCache';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 import { SKILL_STYLES } from '../../lib/subjectColors';
 import { useProgram } from '../ProgramContext';

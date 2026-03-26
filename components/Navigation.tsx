@@ -58,7 +58,7 @@ export default function Navigation() {
                 letterSpacing: "-0.01em",
               }}
             >
-              Automation Lab
+              AUTOMATION LAB
             </div>
           </Link>
 

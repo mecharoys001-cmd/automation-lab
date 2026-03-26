@@ -12,7 +12,7 @@ interface CacheEntry<T> {
 class RequestCache {
   private cache = new Map<string, CacheEntry<unknown>>();
   private pendingRequests = new Map<string, Promise<unknown>>();
-  private defaultTTL = 5000; // 5 seconds default cache
+  private defaultTTL = 30000; // 30 seconds default cache for cross-page navigation
 
   /**
    * Fetch with deduplication and caching

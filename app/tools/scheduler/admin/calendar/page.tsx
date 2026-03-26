@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { Modal, ModalButton } from '../../components/ui/Modal';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
+import { requestCache } from '@/lib/requestCache';
 import {
   ChevronLeft,
   ChevronRight,
@@ -472,30 +473,22 @@ export default function CalendarPage() {
   // ── Fetch entries ────────────────────────────────────────────
 
   const fetchEntries = useCallback(async () => {
-    console.log('[FETCH] A. fetchEntries called, selectedProgramId:', selectedProgramId);
     if (!selectedProgramId) {
-      console.log('[FETCH] B. No selectedProgramId, returning early');
       setEntries([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     setError(null);
-    console.log('[FETCH] C. About to fetch from API');
     try {
       const res = await fetch(`/api/calendar?program_id=${selectedProgramId}`);
-      console.log('[FETCH] D. API response received, status:', res.status);
       if (!res.ok) throw new Error('Failed to load calendar entries');
       const data = await res.json();
-      console.log('[FETCH] E. Data parsed, entries count:', data.entries?.length ?? 0);
       setEntries(data.entries ?? []);
-      console.log('[FETCH] F. Entries state updated successfully');
     } catch (err) {
-      console.error('[FETCH] ERROR:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
-      console.log('[FETCH] G. fetchEntries completed');
     }
   }, [selectedProgramId]);
 
@@ -927,11 +920,10 @@ export default function CalendarPage() {
     // Fetch instructors if needed for staff exception
     if (action === 'instructor_exception' && batchInstructors.length === 0 && selectedProgramId) {
       try {
-        const res = await fetch(`/api/instructors?program_id=${selectedProgramId}&is_active=true`);
-        if (res.ok) {
-          const data = await res.json();
-          setBatchInstructors(data.instructors ?? []);
-        }
+        const data = await requestCache.fetch<{ instructors?: Instructor[] }>(
+          `/api/instructors?program_id=${selectedProgramId}&is_active=true`
+        );
+        setBatchInstructors(data.instructors ?? []);
       } catch {
         // Non-critical — user can still type an ID
       }

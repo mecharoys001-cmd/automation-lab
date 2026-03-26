@@ -4,7 +4,7 @@
 
 **Goal:** Add comprehensive activity tracking to the Automation Lab — login events, per-user tool usage, completion rates, time-on-tool, repeat usage metrics, error tracking — and surface it all in an admin activity feed on the Impact Dashboard.
 
-**Architecture:** Extend the existing `tool_usage` table with `user_email` population. Add a new `activity_log` table for login/session events. Enhance the client-side tracking helper to capture timing, completion, and errors. Build a tabbed Impact Dashboard with a real-time activity feed alongside the existing stats view.
+**Architecture:** Extend the existing `tool_usage` table with `user_email` population. Add a new `activity_log` table for login/session events. Enhance the client-side tracking helper to capture timing, completion, and errors. Build a tabbed Impact Dashboard with a real-time activity feed alongside the existing stats view. All tracking endpoints require authentication; user identity is always derived from the server session (never trusted from the client). Only aggregate public stats are exposed without auth.
 
 **Tech Stack:** Next.js (App Router), Supabase (Postgres + service client), existing RBAC middleware, TypeScript.
 
@@ -22,9 +22,10 @@ app/tools/admin/impact/ActivityFeed.tsx                       — Client compone
 app/tools/admin/impact/TabNav.tsx                             — Tab navigation: Stats | Activity Feed
 
 # Modified files
-app/api/auth/login/route.ts                                  — Log login event on successful email/password auth
-app/auth/callback/route.ts                                   — Log login event on successful OAuth callback
-app/api/usage/track/route.ts                                 — Populate user_email, add timing/completion/error fields
+middleware.ts                                                — Remove public exception for /tools/reports; all tools require auth
+app/api/auth/login/route.ts                                  — Log login event on successful email/password auth (server-side insert)
+app/auth/callback/route.ts                                   — Log login event on successful OAuth callback (server-side insert)
+app/api/usage/track/route.ts                                 — Require auth, populate user_email from session, add timing/completion/error
 app/api/usage/stats/route.ts                                 — Add repeat usage + completion rate stats
 lib/usage-tracking.ts                                        — Add startTimer(), completeUsage(), trackError()
 components/CsvDedupTool.tsx                                  — Instrument with start/complete/error tracking
@@ -32,6 +33,80 @@ app/tools/reports/page.tsx                                   — Instrument with
 app/tools/admin/impact/page.tsx                              — Add tab navigation
 app/tools/admin/impact/ImpactDashboard.tsx                   — Add completion rate + repeat user columns
 types/usage.ts                                               — Extend TrackUsagePayload with timing/status fields
+```
+
+---
+
+### Task 0: Security Hardening — Require Auth for All Tools + Protect APIs
+
+**Files:**
+- Modify: `middleware.ts`
+- Modify: `app/api/activity/log/route.ts` (created in Task 3 — include auth from the start)
+- Modify: `app/api/usage/track/route.ts`
+- Modify: `app/api/usage/summary/route.ts`
+
+The existing middleware allows unauthenticated access to `/tools/reports` and `/tools/scheduler/intake`. Now that we're collecting user emails, durations, IPs, and tool usage data, all tools should require login so we know WHO is using them. The public-facing homepage savings bar will still work because `/api/usage/summary` returns only anonymous aggregate numbers.
+
+**Security model:**
+- **All `/tools/*` routes** → require authenticated user (remove public exceptions for `/tools/reports`)
+- **`/tools/scheduler/intake`** → stays public (it's a form for external users, not a tool)
+- **`/api/usage/track`** → require authenticated user (captures user_email from session)
+- **`/api/usage/summary`** → stays public (only returns aggregate totals, no PII)
+- **`/api/usage/stats`** → admin only (already protected)
+- **`/api/usage/config`** → admin only (already protected)
+- **`/api/activity/log`** → server-side only; called from auth routes, not from client. Add origin validation or make it internal-only by checking a server secret.
+- **`/api/activity/feed`** → admin only (already in Task 4)
+- **`/tools/admin/*`** → admin only (already protected)
+- **All activity_log and tool_usage data** → accessed only via service client (RLS enabled, no public policies)
+
+- [ ] **Step 1: Remove the public exception for `/tools/reports`**
+
+In `middleware.ts`, remove or comment out:
+```typescript
+// DELETE THIS BLOCK:
+// ── Allow unauthenticated access to reports visualizer ─────────────────
+if (path.startsWith('/tools/reports')) {
+  return supabaseResponse
+}
+```
+
+This means `/tools/reports` will now redirect to `/login` for unauthenticated users, same as all other tools.
+
+- [ ] **Step 2: Make `/api/activity/log` internal-only**
+
+The activity log endpoint is called server-side from auth routes, not from the browser. Add a check for an internal header or simply make the insert happen inline in the auth routes (no separate API call needed). The safer approach: remove the public endpoint entirely and have auth routes insert directly via the service client. Task 3 will be updated to reflect this — the `/api/activity/log` route will require auth and only accept `tool_open` events from the client. Login events will be inserted directly by the auth routes.
+
+- [ ] **Step 3: Add rate limiting headers to tracking endpoints**
+
+Add a basic check to `/api/usage/track` to prevent abuse:
+```typescript
+// At the top of the POST handler:
+const rateLimitKey = user?.email || request.headers.get('x-forwarded-for') || 'unknown';
+// Store in metadata for downstream analysis; actual rate limiting can be added via Vercel Edge Config or middleware later
+```
+
+- [ ] **Step 4: Ensure `/api/usage/track` always captures `user_email` from the session**
+
+Never trust client-provided `user_email`. Always override with the authenticated session:
+```typescript
+// In the insert:
+user_email: user.email,  // From Supabase auth session, NOT from request body
+user_id: user.id,        // Same
+```
+
+- [ ] **Step 5: Verify no PII leaks in public endpoints**
+
+Confirm `/api/usage/summary` returns ONLY:
+```json
+{ "total_uses": 42, "total_hours_saved": 12.5 }
+```
+No user emails, no IP addresses, no individual events.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add middleware.ts
+git commit -m "security: require auth for all tools, protect tracking APIs"
 ```
 
 ---
@@ -180,37 +255,48 @@ git commit -m "feat: add activity and enhanced usage types"
 
 ---
 
-### Task 3: Activity Log API — Log Events
+### Task 3: Activity Log API — Auth-Protected Log Events
 
 **Files:**
 - Create: `app/api/activity/log/route.ts`
 
-- [ ] **Step 1: Create the log endpoint**
+This endpoint accepts only `tool_open` events from authenticated browser clients. Login events are inserted directly by auth routes (server-side, no API call) to prevent spoofing.
+
+- [ ] **Step 1: Create the auth-protected log endpoint**
 
 ```typescript
 // app/api/activity/log/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import type { ActivityEventType } from '@/types/activity';
 
-const VALID_EVENTS: ActivityEventType[] = ['login', 'logout', 'tool_open', 'tool_complete', 'tool_error'];
+// Only tool_open events accepted from client; login events are server-side only
+const CLIENT_ALLOWED_EVENTS = ['tool_open'];
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { event_type, user_email, user_id, tool_id, metadata } = body;
+    // REQUIRE authenticated user
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
 
-    if (!event_type || !VALID_EVENTS.includes(event_type)) {
+    const body = await request.json();
+    const { event_type, tool_id, metadata } = body;
+
+    if (!event_type || !CLIENT_ALLOWED_EVENTS.includes(event_type)) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
     }
 
     const svc = createServiceClient();
 
+    // NEVER trust client-provided user info — always use session
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (svc.from('activity_log') as any).insert({
       event_type,
-      user_email: user_email || null,
-      user_id: user_id || null,
+      user_email: user.email,        // From auth session, NOT request body
+      user_id: user.id,              // From auth session, NOT request body
       tool_id: tool_id || null,
       metadata: metadata || {},
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
@@ -234,7 +320,7 @@ export async function POST(request: NextRequest) {
 
 ```bash
 git add app/api/activity/log/route.ts
-git commit -m "feat: add POST /api/activity/log endpoint"
+git commit -m "feat: add auth-protected POST /api/activity/log endpoint"
 ```
 
 ---

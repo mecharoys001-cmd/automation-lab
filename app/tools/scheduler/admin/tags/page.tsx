@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { EmojiPicker } from '../../components/ui/EmojiPicker';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
+import { requestCache } from '@/lib/requestCache';
 
 // ── Toast Notification ───────────────────────────────────────
 
