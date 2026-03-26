@@ -18,6 +18,21 @@ async function requireSiteMasterAdmin() {
   return { user, error: null };
 }
 
+async function writeAuditLog(
+  supabase: ReturnType<typeof createServiceClient>,
+  entry: {
+    action: string;
+    target_admin_id: string | null;
+    target_email: string;
+    acting_user_email: string;
+    old_values: Record<string, unknown> | null;
+    new_values: Record<string, unknown> | null;
+  },
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('site_admin_audit_log') as any).insert(entry);
+}
+
 export async function GET() {
   try {
     const auth = await requireSiteMasterAdmin();
@@ -97,6 +112,15 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }));
 
+    await writeAuditLog(supabase, {
+      action: 'create',
+      target_admin_id: data.id,
+      target_email: insertPayload.google_email,
+      acting_user_email: auth.user!.email!,
+      old_values: null,
+      new_values: { role_level: insertPayload.role_level, display_name: insertPayload.display_name },
+    });
+
     return NextResponse.json({ admin: data }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
@@ -149,13 +173,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
+    // Fetch current state for audit log and last-master check
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prePatch } = await (supabase.from('site_admins') as any)
+      .select('google_email, role_level, display_name')
+      .eq('id', id)
+      .maybeSingle();
+
     // Prevent demoting the last master admin
     if ('role_level' in updatePayload && updatePayload.role_level !== 'master') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: current } = await (supabase.from('site_admins') as any)
-        .select('role_level')
-        .eq('id', id)
-        .maybeSingle();
+      const current = prePatch;
 
       if (current?.role_level === 'master') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,6 +217,15 @@ export async function PATCH(request: NextRequest) {
       changes: updatePayload,
       timestamp: new Date().toISOString(),
     }));
+
+    await writeAuditLog(supabase, {
+      action: 'update',
+      target_admin_id: id,
+      target_email: prePatch?.google_email ?? data.google_email,
+      acting_user_email: auth.user!.email!,
+      old_values: prePatch ? { role_level: prePatch.role_level, display_name: prePatch.display_name } : null,
+      new_values: updatePayload,
+    });
 
     return NextResponse.json({ admin: data });
   } catch (err) {
@@ -251,6 +287,15 @@ export async function DELETE(request: NextRequest) {
       role_level: existing?.role_level ?? null,
       timestamp: new Date().toISOString(),
     }));
+
+    await writeAuditLog(supabase, {
+      action: 'delete',
+      target_admin_id: id,
+      target_email: existing?.google_email ?? 'unknown',
+      acting_user_email: auth.user!.email!,
+      old_values: existing ? { role_level: existing.role_level, display_name: existing.display_name } : null,
+      new_values: null,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

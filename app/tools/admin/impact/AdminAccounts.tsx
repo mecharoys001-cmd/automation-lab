@@ -10,6 +10,16 @@ interface Admin {
   created_at: string;
 }
 
+interface AuditEntry {
+  id: string;
+  action: 'create' | 'update' | 'delete';
+  target_email: string;
+  acting_user_email: string;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export default function AdminAccounts() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +34,9 @@ export default function AdminAccounts() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   const fetchAdmins = useCallback(async () => {
     try {
@@ -41,6 +54,21 @@ export default function AdminAccounts() {
       setError(err instanceof Error ? err.message : 'Failed to fetch admins');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchAuditLog = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const res = await fetch('/api/site-admins/audit-log');
+      if (res.ok) {
+        const data = await res.json();
+        setAuditLog(data);
+      }
+    } catch {
+      // silently fail — audit log is supplemental
+    } finally {
+      setAuditLoading(false);
     }
   }, []);
 
@@ -69,6 +97,7 @@ export default function AdminAccounts() {
       setFormRole('standard');
       setShowAddForm(false);
       await fetchAdmins();
+      if (showAuditLog) fetchAuditLog();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Failed to add admin');
     } finally {
@@ -86,6 +115,7 @@ export default function AdminAccounts() {
       }
       setConfirmDeleteId(null);
       await fetchAdmins();
+      if (showAuditLog) fetchAuditLog();
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : 'Failed to remove admin');
     }
@@ -105,6 +135,7 @@ export default function AdminAccounts() {
       }
       setEditingRoleId(null);
       await fetchAdmins();
+      if (showAuditLog) fetchAuditLog();
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : 'Failed to update role');
     }
@@ -371,6 +402,99 @@ export default function AdminAccounts() {
           No site admin accounts found.
         </div>
       )}
+
+      {/* Audit Log Section */}
+      <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', marginTop: '0.5rem' }}>
+        <button
+          onClick={() => {
+            const next = !showAuditLog;
+            setShowAuditLog(next);
+            if (next && auditLog.length === 0) fetchAuditLog();
+          }}
+          style={{ ...btnSecondary, fontSize: '12px', padding: '6px 14px' }}
+        >
+          {showAuditLog ? 'Hide Audit Log' : 'View Audit Log'}
+        </button>
+
+        {showAuditLog && (
+          <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
+              Role Change History
+            </p>
+
+            {auditLoading && (
+              <div style={{ color: '#64748b', fontSize: '13px', padding: '1rem 0' }}>
+                Loading audit log...
+              </div>
+            )}
+
+            {!auditLoading && auditLog.length === 0 && (
+              <div style={{ ...cardStyle, textAlign: 'center', padding: '1.5rem', color: '#94a3b8', fontSize: '13px' }}>
+                No audit entries found.
+              </div>
+            )}
+
+            {!auditLoading && auditLog.map((entry) => {
+              const actionColors: Record<string, { bg: string; text: string }> = {
+                create: { bg: '#dcfce7', text: '#16a34a' },
+                update: { bg: '#dbeafe', text: '#2563eb' },
+                delete: { bg: '#fee2e2', text: '#dc2626' },
+              };
+              const colors = actionColors[entry.action] ?? { bg: '#f1f5f9', text: '#64748b' };
+
+              let description = '';
+              if (entry.action === 'create') {
+                const role = entry.new_values?.role_level ?? 'standard';
+                description = `Added ${entry.target_email} as ${role}`;
+              } else if (entry.action === 'update') {
+                const changes: string[] = [];
+                if (entry.old_values?.role_level !== entry.new_values?.role_level && entry.new_values?.role_level) {
+                  changes.push(`role: ${entry.old_values?.role_level ?? '?'} → ${entry.new_values.role_level}`);
+                }
+                if (entry.new_values?.display_name !== undefined && entry.old_values?.display_name !== entry.new_values?.display_name) {
+                  changes.push(`display name updated`);
+                }
+                if (entry.new_values?.google_email && entry.old_values?.google_email !== entry.new_values?.google_email) {
+                  changes.push(`email changed`);
+                }
+                description = `Updated ${entry.target_email}: ${changes.join(', ') || 'fields updated'}`;
+              } else if (entry.action === 'delete') {
+                const role = entry.old_values?.role_level ?? '';
+                description = `Removed ${entry.target_email}${role ? ` (was ${role})` : ''}`;
+              }
+
+              return (
+                <div key={entry.id} style={{ ...cardStyle, padding: '0.75rem 1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                        <span style={{
+                          padding: '1px 7px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          borderRadius: '3px',
+                          background: colors.bg,
+                          color: colors.text,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}>
+                          {entry.action}
+                        </span>
+                        <span style={{ fontSize: '13px', color: '#1a1a2e' }}>
+                          {description}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                        by {entry.acting_user_email} &middot; {new Date(entry.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
