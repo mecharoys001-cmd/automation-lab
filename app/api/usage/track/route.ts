@@ -3,29 +3,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { createClient } from '@/lib/supabase/server';
 
-const VALID_TOOL_IDS = ['csv-dedup', 'reports', 'scheduler'];
-
 export async function POST(request: NextRequest) {
   try {
-    // Require authenticated user (any role can track usage)
+    // Auth is optional — unauthenticated usage is still tracked
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
 
     const body = await request.json();
-    const { tool_id, content_hash, metadata } = body;
+    const { tool_id, content_hash, metadata, status, duration_seconds, error_message, usage_session_id } = body;
 
-    // Validate tool_id
-    if (!tool_id || !VALID_TOOL_IDS.includes(tool_id)) {
-      return NextResponse.json(
-        { error: 'Invalid or missing tool_id' },
-        { status: 400 }
-      );
+    if (!tool_id) {
+      return NextResponse.json({ error: 'tool_id is required' }, { status: 400 });
     }
 
     const svc = createServiceClient();
+
+    // Validate tool_id against tool_config table
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: toolConfig } = await (svc.from('tool_config') as any)
+      .select('tool_id')
+      .eq('tool_id', tool_id)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (!toolConfig) {
+      return NextResponse.json(
+        { error: 'Invalid or inactive tool_id' },
+        { status: 400 }
+      );
+    }
 
     // For CSV-based tools: check if this exact content was already tracked
     if (content_hash) {
@@ -43,11 +50,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert usage event
+    // Insert usage event — user_email/user_id come from session, NEVER from body
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (svc.from('tool_usage') as any).insert({
       tool_id,
       content_hash: content_hash || null,
+      user_email: user?.email || null,
+      user_id: user?.id || null,
+      status: status || 'completed',
+      duration_seconds: duration_seconds ?? null,
+      error_message: error_message || null,
+      usage_session_id: usage_session_id || null,
       metadata: metadata || {},
     });
 

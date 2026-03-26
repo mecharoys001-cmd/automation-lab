@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, ChevronDown, Download } from 'lucide-react';
 import { useProgram } from '../../ProgramContext';
+import { requestCache } from '@/lib/requestCache';
 import { Button } from '../../../components/ui/Button';
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { ReportsTabBar } from '../../../components/reports/ReportsTabBar';
@@ -156,8 +157,9 @@ export default function InstructorHoursPage() {
   const [allStaff, setAllStaff] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
   useEffect(() => {
     if (!programId) return;
-    fetch(`/api/instructors?program_id=${programId}&is_active=true`)
-      .then(r => r.json())
+    requestCache.fetch<{ instructors?: Array<{ id: string; first_name: string; last_name: string }> }>(
+      `/api/instructors?program_id=${programId}&is_active=true`
+    )
       .then(data => setAllStaff(data.instructors ?? []))
       .catch(() => {});
   }, [programId]);

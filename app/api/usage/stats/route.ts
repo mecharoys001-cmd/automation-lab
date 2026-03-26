@@ -45,6 +45,51 @@ export async function GET() {
         .limit(1)
         .maybeSingle();
 
+      // Unique users: distinct non-null user_email
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: userRows } = await (svc.from('tool_usage') as any)
+        .select('user_email')
+        .eq('tool_id', config.tool_id)
+        .not('user_email', 'is', null);
+
+      const allEmails = (userRows || []).map((r: { user_email: string }) => r.user_email);
+      const emailCounts = new Map<string, number>();
+      for (const email of allEmails) {
+        emailCounts.set(email, (emailCounts.get(email) || 0) + 1);
+      }
+      const uniqueUsers = emailCounts.size;
+      const repeatUsers = [...emailCounts.values()].filter(c => c >= 2).length;
+
+      // Completion rate: completed / (completed + error) * 100
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: completedCount } = await (svc.from('tool_usage') as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('tool_id', config.tool_id)
+        .eq('status', 'completed');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: errorCount } = await (svc.from('tool_usage') as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('tool_id', config.tool_id)
+        .eq('status', 'error');
+
+      const totalTerminal = (completedCount || 0) + (errorCount || 0);
+      const completionRate = totalTerminal > 0
+        ? Math.round(((completedCount || 0) / totalTerminal) * 1000) / 10
+        : 0;
+
+      // Average duration
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: durationRows } = await (svc.from('tool_usage') as any)
+        .select('duration_seconds')
+        .eq('tool_id', config.tool_id)
+        .not('duration_seconds', 'is', null);
+
+      const durations = (durationRows || []).map((r: { duration_seconds: number }) => r.duration_seconds);
+      const avgDuration = durations.length > 0
+        ? Math.round(durations.reduce((a: number, b: number) => a + b, 0) / durations.length)
+        : 0;
+
       const totalUses = count || 0;
       const totalMinutes = totalUses * config.minutes_per_use;
 
@@ -54,10 +99,16 @@ export async function GET() {
         minutes_per_use: config.minutes_per_use,
         tracking_method: config.tracking_method,
         description: config.description,
+        is_external: config.is_external,
+        tracking_notes: config.tracking_notes,
         total_uses: totalUses,
         total_minutes_saved: totalMinutes,
         total_hours_saved: Math.round((totalMinutes / 60) * 10) / 10,
         last_used: lastUsed?.created_at || null,
+        unique_users: uniqueUsers,
+        repeat_users: repeatUsers,
+        completion_rate: completionRate,
+        avg_duration_seconds: avgDuration,
       });
     }
 

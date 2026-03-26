@@ -225,10 +225,10 @@ export default function EventTemplatesPage() {
     if (!selectedProgramId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/templates?program_id=${selectedProgramId}&_t=${Date.now()}`);
-      if (!res.ok) throw new Error('Failed to fetch templates');
-      const { templates: data } = await res.json();
-      setTemplates(data ?? []);
+      const data = await requestCache.fetch<{ templates?: SessionTemplate[] }>(
+        `/api/templates?program_id=${selectedProgramId}`
+      );
+      setTemplates(data.templates ?? []);
     } catch {
       setToast({ message: 'Failed to load event templates', type: 'error', id: Date.now() });
     } finally {
@@ -239,18 +239,16 @@ export default function EventTemplatesPage() {
   const fetchLookups = useCallback(async () => {
     if (!selectedProgramId) return;
     try {
-      const [instRes, venueRes] = await Promise.all([
-        fetch(`/api/instructors?program_id=${selectedProgramId}&_t=${Date.now()}`),
-        fetch(`/api/venues?program_id=${selectedProgramId}&_t=${Date.now()}`),
+      const [instData, venueData] = await Promise.all([
+        requestCache.fetch<{ instructors?: Instructor[] }>(
+          `/api/instructors?program_id=${selectedProgramId}`
+        ),
+        requestCache.fetch<{ venues?: Venue[] }>(
+          `/api/venues?program_id=${selectedProgramId}`
+        ),
       ]);
-      if (instRes.ok) {
-        const d = await instRes.json();
-        setInstructors(d.instructors ?? d ?? []);
-      }
-      if (venueRes.ok) {
-        const d = await venueRes.json();
-        setVenues(d.venues ?? d ?? []);
-      }
+      setInstructors(instData.instructors ?? []);
+      setVenues(venueData.venues ?? []);
     } catch {
       // Non-critical, dropdowns will just be empty
     }
@@ -347,6 +345,7 @@ export default function EventTemplatesPage() {
       type: 'success',
       id: Date.now(),
     });
+    requestCache.invalidate(/\/api\/templates/);
     await fetchTemplates();
   };
 
@@ -360,6 +359,7 @@ export default function EventTemplatesPage() {
       }
       setDeleteConfirmId(null);
       setToast({ message: 'Event template deleted', type: 'success', id: Date.now() });
+      requestCache.invalidate(/\/api\/templates/);
       await fetchTemplates();
     } catch (err) {
       setToast({
@@ -421,6 +421,7 @@ export default function EventTemplatesPage() {
         type: 'error',
         id: Date.now(),
       });
+      requestCache.invalidate(/\/api\/templates/);
       await fetchTemplates();
     }
   }, [templates, fetchTemplates]);
@@ -636,6 +637,7 @@ export default function EventTemplatesPage() {
           }
           const result = await res.json();
           if (result.imported > 0) {
+            requestCache.invalidate(/\/api\/templates/);
             fetchTemplates();
             setToast({ message: `${result.imported} template(s) imported`, type: 'success', id: Date.now() });
           }

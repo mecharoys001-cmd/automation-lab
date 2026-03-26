@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Papa from "papaparse";
 import { parseCSVData } from "./lib/parseCSV";
 import { decodeShareData } from "./lib/share";
@@ -9,7 +9,7 @@ import type { DashboardData, ColumnMapping, CategoryProfile, PlatformId, RawCSVR
 import Dashboard from "./components/Dashboard";
 import ColumnMapper from "./components/ColumnMapper";
 import CategoryEditor from "./components/CategoryEditor";
-import { trackToolUsage, hashCSVContent } from "@/lib/usage-tracking";
+import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
 const PLATFORM_INSTRUCTIONS: Record<string, { title: string; steps: string[] }> = {
   shopify: {
@@ -66,6 +66,9 @@ export default function ReportsPage() {
 
   // Saved profile from localStorage
   const [savedProfileKey, setSavedProfileKey] = useState<string | null>(null);
+
+  // Usage tracking session
+  const toolSession = useRef<ReturnType<typeof startToolSession> | null>(null);
 
   // On mount, check for shared data
   useEffect(() => {
@@ -138,17 +141,32 @@ export default function ReportsPage() {
       }
 
       hashCSVContent(text).then((hash) => {
-        trackToolUsage("reports", {
-          contentHash: hash,
-          metadata: {
-            total_orders: parsed.totalOrders,
-            file_name: file.name,
-            platform: parsed.detectedPlatform,
-          },
-        });
+        if (toolSession.current) {
+          toolSession.current.complete({
+            contentHash: hash,
+            metadata: {
+              total_orders: parsed.totalOrders,
+              file_name: file.name,
+              platform: parsed.detectedPlatform,
+            },
+          });
+          toolSession.current = null;
+        } else {
+          trackToolUsage("reports", {
+            contentHash: hash,
+            metadata: {
+              total_orders: parsed.totalOrders,
+              file_name: file.name,
+              platform: parsed.detectedPlatform,
+            },
+          });
+        }
       });
     } catch (err) {
-      setError(`Failed to parse CSV: ${err instanceof Error ? err.message : "Unknown error"}`);
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      toolSession.current?.error(errorMsg);
+      toolSession.current = null;
+      setError(`Failed to parse CSV: ${errorMsg}`);
     }
   }, []);
 
@@ -160,6 +178,8 @@ export default function ReportsPage() {
     }
     setFileName(file.name);
     setIsSharedView(false);
+    // Start a new usage tracking session on file select
+    toolSession.current = startToolSession('reports');
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;

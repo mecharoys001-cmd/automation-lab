@@ -842,52 +842,44 @@ function CalendarDashboard() {
         setEvents(mappedEvents);
       }
 
-      // Fetch school calendar data
-      const calParams = new URLSearchParams({ program_id: selectedProgramId });
-      const calRes = await fetch(`/api/calendar?${calParams.toString()}`, { cache: 'no-store', signal });
-
-      if (calRes.ok) {
-        const calBody = await calRes.json();
-        if (Array.isArray(calBody.entries)) {
-          setSchoolCalendar(calBody.entries);
-        }
+      // Fetch school calendar data (cached across page navigations)
+      const calBody = await requestCache.fetch<{ entries?: typeof schoolCalendar }>(
+        `/api/calendar?program_id=${selectedProgramId}`
+      );
+      if (Array.isArray(calBody.entries)) {
+        setSchoolCalendar(calBody.entries);
       }
 
-      // Fetch all venues from DB (includes empty venues with no events).
-      const venueRes = await fetch(`/api/venues?program_id=${selectedProgramId}`, { cache: 'no-store', signal });
-
-      if (venueRes.ok) {
-        const venueBody = await venueRes.json();
-        if (Array.isArray(venueBody.venues)) {
-          const mappedVenues = venueBody.venues.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name }));
-          setDbVenues(mappedVenues);
-        }
-      } else {
-        console.warn('[Admin] Failed to fetch venues:', venueRes.status, venueRes.statusText);
+      // Fetch all venues from DB (cached across page navigations)
+      const venueBody = await requestCache.fetch<{ venues?: Array<{ id: string; name: string }> }>(
+        `/api/venues?program_id=${selectedProgramId}`
+      );
+      if (Array.isArray(venueBody.venues)) {
+        const mappedVenues = venueBody.venues.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name }));
+        setDbVenues(mappedVenues);
       }
 
-      // Fetch active event templates for the sidebar
-      const tplParams = new URLSearchParams({ program_id: selectedProgramId });
-      const tplRes = await fetch(`/api/templates?${tplParams.toString()}`, { cache: 'no-store', signal });
-      if (tplRes.ok) {
-        const tplBody = await tplRes.json();
-        if (Array.isArray(tplBody.templates)) {
-          setEventTemplates(
-            tplBody.templates
-              .filter((t: { is_active?: boolean }) => t.is_active !== false)
-              .map((t: Record<string, unknown>) => ({
-                id: t.id,
-                name: t.name,
-                required_skills: t.required_skills,
-                instructor_id: t.instructor_id,
-                venue_id: t.venue_id,
-                grade_groups: t.grade_groups ?? [],
-                duration_minutes: t.duration_minutes ?? 45,
-                venue: t.venue,
-                instructor: null, // Template API doesn't join instructor
-              })),
-          );
-        }
+      // Fetch active event templates for the sidebar (cached across page navigations)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tplBody = await requestCache.fetch<{ templates?: any[] }>(
+        `/api/templates?program_id=${selectedProgramId}`
+      );
+      if (Array.isArray(tplBody.templates)) {
+        setEventTemplates(
+          tplBody.templates
+            .filter((t) => t.is_active !== false)
+            .map((t) => ({
+              id: t.id as string,
+              name: t.name as string,
+              required_skills: t.required_skills,
+              instructor_id: t.instructor_id,
+              venue_id: t.venue_id,
+              grade_groups: t.grade_groups ?? [],
+              duration_minutes: t.duration_minutes ?? 45,
+              venue: t.venue,
+              instructor: null, // Template API doesn't join instructor
+            })),
+        );
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {

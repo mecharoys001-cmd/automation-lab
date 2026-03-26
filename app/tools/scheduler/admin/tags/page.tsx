@@ -183,6 +183,7 @@ export default function TagsPage() {
       const res = await fetch(`/api/seed/ensure-defaults?program_id=${selectedProgramId}`, { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      requestCache.invalidate(/\/api\/tags/);
       await fetchTags();
       showToast(json.added > 0 ? `Installed ${json.added} default venue tag(s)` : 'All defaults already installed', 'success');
     } catch (err) {
@@ -196,9 +197,9 @@ export default function TagsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tags?program_id=${selectedProgramId}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+      const json = await requestCache.fetch<{ tags?: Tag[]; sessionCounts?: Record<string, number> }>(
+        `/api/tags?program_id=${selectedProgramId}`
+      );
       setTags(json.tags ?? []);
       setSessionCounts(json.sessionCounts ?? {});
     } catch (err) {
@@ -303,6 +304,7 @@ export default function TagsPage() {
       }
 
       // Refresh tags list
+      requestCache.invalidate(/\/api\/tags/);
       await fetchTags();
 
       // Show results
@@ -368,6 +370,7 @@ export default function TagsPage() {
         throw new Error(json.error || `HTTP ${res.status}`);
       }
 
+      requestCache.invalidate(/\/api\/tags/);
       await fetchTags();
       showToast('Tag updated successfully', 'success');
       cancelEdit();
@@ -396,6 +399,7 @@ export default function TagsPage() {
         throw new Error(json.error || `HTTP ${res.status}`);
       }
 
+      requestCache.invalidate(/\/api\/tags/);
       await fetchTags();
       const suffix = force ? ' and removed from all sessions' : '';
       showToast(`Tag "${name}" deleted${suffix}`, 'success');
@@ -500,13 +504,14 @@ export default function TagsPage() {
       }
 
       // Refresh tags list
+      requestCache.invalidate(/\/api\/tags/);
       await fetchTags();
 
       // Show results
       if (successCount > 0 && failedTags.length === 0) {
         showToast(
-          successCount === 1 
-            ? `Tag "${tagNames[0]}" added to ${category}` 
+          successCount === 1
+            ? `Tag "${tagNames[0]}" added to ${category}`
             : `${successCount} tags added to ${category}`,
           'success'
         );
@@ -950,6 +955,7 @@ export default function TagsPage() {
           }
           const result = await res.json();
           if (result.imported > 0) {
+            requestCache.invalidate(/\/api\/tags/);
             fetchTags();
             showToast(`${result.imported} tag(s) imported`, 'success');
           }

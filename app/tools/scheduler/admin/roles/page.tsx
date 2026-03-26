@@ -246,12 +246,10 @@ export default function RolesPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [adminsRes, instructorsRes] = await Promise.all([
-        fetch('/api/admins'),
-        fetch(`/api/instructors?program_id=${selectedProgramId}`),
+      const [adminsData, instructorsData] = await Promise.all([
+        requestCache.fetch<{ admins?: Admin[] }>('/api/admins'),
+        requestCache.fetch<{ instructors?: Instructor[] }>(`/api/instructors?program_id=${selectedProgramId}`),
       ]);
-      const adminsData = await adminsRes.json();
-      const instructorsData = await instructorsRes.json();
       setAdmins(adminsData.admins ?? []);
       setInstructors(instructorsData.instructors ?? []);
     } catch {
@@ -350,6 +348,7 @@ export default function RolesPage() {
         }
       }
 
+      requestCache.invalidate(/\/api\/(admins|instructors)/);
       await fetchAll();
       closeAddModal();
       setToast({ message: `${form.name} added as ${ROLE_META[form.role].label}`, type: 'success', id: Date.now() });
@@ -433,6 +432,7 @@ export default function RolesPage() {
         }
       }
 
+      requestCache.invalidate(/\/api\/(admins|instructors)/);
       await fetchAll();
       setEditingId(null);
       setToast({ message: `${user.name} updated to ${ROLE_META[editRole].label}`, type: 'success', id: Date.now() });
@@ -479,6 +479,7 @@ export default function RolesPage() {
       setToast({ message: `${userToRemove.name} removed`, type: 'success', id: Date.now() });
     } catch (err) {
       // Rollback optimistic update on error
+      requestCache.invalidate(/\/api\/(admins|instructors)/);
       if (userToRemove.source === 'instructor') {
         // Refetch to restore the user
         fetchAll();

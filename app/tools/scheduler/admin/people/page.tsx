@@ -569,9 +569,9 @@ function VenueDetailModal({
   /* ── Space types from tags API ─── */
   const [spaceTypes, setSpaceTypes] = useState<string[]>([]);
   useEffect(() => {
-    fetch(`/api/tags?program_id=${selectedProgramId}`)
-      .then((r) => r.json())
-      .then((d) => {
+    requestCache.fetch<{ tags?: Array<{ category: string; name: string }> }>(
+      `/api/tags?program_id=${selectedProgramId}`
+    ).then((d) => {
         const types = (d.tags ?? [])
           .filter((t: { category: string }) => ['Space Types', 'Spaces Type', 'space types', 'Space Type'].includes(t.category))
           .map((t: { name: string }) => t.name);
@@ -1134,8 +1134,9 @@ function VenueCreateModal({
   // Fetch space types from tags
   const fetchSpaceTypes = useCallback(() => {
     setLoadingSpaceTypes(true);
-    fetch(`/api/tags?program_id=${selectedProgramId}`)
-      .then((res) => res.json())
+    requestCache.fetch<{ tags?: Array<{ category: string; name: string }> }>(
+      `/api/tags?program_id=${selectedProgramId}`
+    )
       .then((data) => {
         const types = (data.tags ?? [])
           .filter((t: { category: string }) => ['Space Types', 'Spaces Type', 'space types', 'Space Type'].includes(t.category))
@@ -1433,10 +1434,10 @@ export default function PeoplePage() {
   const fetchInstructors = useCallback(async () => {
     setLoadingAll(true);
     try {
-      const res = await fetch(`/api/instructors?program_id=${selectedProgramId}`);
-      if (!res.ok) throw new Error(`${res.status}`);
-      const { instructors } = (await res.json()) as { instructors: Instructor[] };
-      setAllInstructors(instructors);
+      const data = await requestCache.fetch<{ instructors: Instructor[] }>(
+        `/api/instructors?program_id=${selectedProgramId}`
+      );
+      setAllInstructors(data.instructors);
     } catch {
       setAllInstructors([]);
     } finally {
@@ -1447,10 +1448,10 @@ export default function PeoplePage() {
   const fetchVenues = useCallback(async () => {
     setLoadingVenues(true);
     try {
-      const res = await fetch(`/api/venues?program_id=${selectedProgramId}`);
-      if (!res.ok) throw new Error(`${res.status}`);
-      const { venues: data } = (await res.json()) as { venues: Venue[] };
-      setVenues(data);
+      const data = await requestCache.fetch<{ venues: Venue[] }>(
+        `/api/venues?program_id=${selectedProgramId}`
+      );
+      setVenues(data.venues);
     } catch {
       setVenues([]);
     } finally {
@@ -1494,6 +1495,7 @@ export default function PeoplePage() {
       });
       if (!res.ok) throw new Error('Failed to update status');
       const { instructor: updated } = (await res.json()) as { instructor: Instructor };
+      requestCache.invalidate(/\/api\/instructors/);
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
       setToast({ message: `Instructor ${updated.is_active ? 'activated' : 'made inactive'}`, type: 'success', id: Date.now() });
@@ -1515,6 +1517,7 @@ export default function PeoplePage() {
       });
       if (!res.ok) throw new Error('Failed to update on-call status');
       const { instructor: updated } = (await res.json()) as { instructor: Instructor };
+      requestCache.invalidate(/\/api\/instructors/);
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
       setToast({ message: updated.on_call ? 'Staff set as on-call' : 'Staff removed from on-call', type: 'success', id: Date.now() });
@@ -1536,6 +1539,7 @@ export default function PeoplePage() {
       });
       if (!res.ok) throw new Error('Failed to save venue');
       const { venue: updated } = (await res.json()) as { venue: Venue };
+      requestCache.invalidate(/\/api\/venues/);
       setVenues((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
       setSelectedVenue(null);
       setToast({ message: 'Venue saved successfully', type: 'success', id: Date.now() });
@@ -1559,6 +1563,7 @@ export default function PeoplePage() {
         }
         throw new Error(data.error || 'Failed to delete venue');
       }
+      requestCache.invalidate(/\/api\/venues/);
       setVenues((prev) => prev.filter((v) => v.id !== selectedVenue.id));
       setSelectedVenue(null);
       setToast({ message: 'Venue deleted', type: 'success', id: Date.now() });
@@ -1596,6 +1601,7 @@ export default function PeoplePage() {
         throw new Error(errData.error || `Failed to ${isNew ? 'create' : 'update'} instructor`);
       }
       const { instructor: saved } = (await res.json()) as { instructor: Instructor };
+      requestCache.invalidate(/\/api\/instructors/);
       if (isNew) {
         setAllInstructors((prev) => [saved, ...prev]);
       } else {
@@ -1619,6 +1625,7 @@ export default function PeoplePage() {
     try {
       const res = await fetch(`/api/instructors/${editingInstructor.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete staff');
+      requestCache.invalidate(/\/api\/instructors/);
       setAllInstructors((prev) => prev.filter((i) => i.id !== editingInstructor.id));
       if (selectedInstructor?.id === editingInstructor.id) setSelectedInstructor(null);
       setEditingInstructor(null);
@@ -2089,6 +2096,7 @@ export default function PeoplePage() {
           }
           const result = await res.json();
           if (result.imported > 0) {
+            requestCache.invalidate(/\/api\/venues/);
             fetchVenues();
             setToast({ message: `${result.imported} venue(s) imported`, type: 'success', id: Date.now() });
           }
@@ -2128,6 +2136,7 @@ export default function PeoplePage() {
           }
           const result = await res.json();
           if (result.imported > 0) {
+            requestCache.invalidate(/\/api\/instructors/);
             fetchInstructors();
             setToast({ message: `${result.imported} staff member(s) imported`, type: 'success', id: Date.now() });
           }

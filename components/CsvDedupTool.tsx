@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { parseCSV, toCSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
-import { trackToolUsage, hashCSVContent } from "@/lib/usage-tracking";
+import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
 const ACCENT = "#6366f1";
 
@@ -24,6 +24,7 @@ export default function CsvDedupTool() {
     result: null, error: null, fileName: "", dragging: false, rawCsv: "",
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const toolSession = useRef<ReturnType<typeof startToolSession> | null>(null);
 
   const loadFile = useCallback((file: File) => {
     if (!file.name.endsWith(".csv")) {
@@ -31,6 +32,9 @@ export default function CsvDedupTool() {
       return;
     }
     const reader = new FileReader();
+    // Start a new usage tracking session on file upload
+    toolSession.current = startToolSession('csv-dedup');
+
     reader.onload = e => {
       try {
         const text = e.target?.result as string;
@@ -43,6 +47,8 @@ export default function CsvDedupTool() {
           result: null, error: null, dragging: false,
         }));
       } catch {
+        toolSession.current?.error("Failed to parse CSV");
+        toolSession.current = null;
         setS(p => ({ ...p, error: "Failed to parse CSV. Check the file format.", dragging: false }));
       }
     };
@@ -60,15 +66,27 @@ export default function CsvDedupTool() {
     const result = deduplicate(s.rows, s.nameCol, s.addrCol);
     setS(p => ({ ...p, result, error: null }));
 
-    // Track usage: hash CSV to avoid counting re-uploads
+    // Complete the session with hash for dedup tracking
     hashCSVContent(s.rawCsv).then((hash) => {
-      trackToolUsage('csv-dedup', {
-        contentHash: hash,
-        metadata: {
-          total_rows: s.rows.length,
-          duplicates_found: result.removed,
-        },
-      });
+      if (toolSession.current) {
+        toolSession.current.complete({
+          contentHash: hash,
+          metadata: {
+            total_rows: s.rows.length,
+            duplicates_found: result.removed,
+          },
+        });
+        toolSession.current = null;
+      } else {
+        // Fallback for backward compat
+        trackToolUsage('csv-dedup', {
+          contentHash: hash,
+          metadata: {
+            total_rows: s.rows.length,
+            duplicates_found: result.removed,
+          },
+        });
+      }
     });
   };
 
