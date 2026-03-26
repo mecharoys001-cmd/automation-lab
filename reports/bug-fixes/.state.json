@@ -1,6 +1,6 @@
 {
-  "currentBug": "recQ9JMSi9KSJWi3a",
-  "startedAt": "2026-03-26T23:00:09.425Z",
-  "attempts": 2,
-  "lastError": "Command failed: claude -p --dangerously-skip-permissions \"Fix Airtable bug rec1W2HDYQRsiAAQX:\n\n**Priority:** Medium\n**Page:** Settings\n**Issue:** Phase 7 Security: All 14 external script tags lack Subresource Integrity (SRI) attributes. Without SRI, if the CDN or server hosting these scripts is compromised, modified scripts would execute without detection. Combined with the missing Content-Security-Policy, there is no defense-in-depth against script injection. Recommendation: Add integrity and crossorigin attributes to all script tags, and implement a Content-Security-Policy with script-src directives.\n\nQA NOTE (3/25/26): NOT FIXED. 0 of 15 script tags have SRI integrity attributes.\n\nQA NOTE (2026-03-25): NOT FIXED. 0 of 20 external scripts have integrity attributes (SRI).\n\n**Requirements:**\n1. Read existing code for the Settings page\n2. Implement the fix described in the issue\n3. Test that the build succeeds (npm run build)\n4. Report what you changed\n\n**DO NOT:**\n- Deploy to production\n- Mark as fixed in Airtable\n- Make unrelated changes\n\nWork in /home/ethan/.openclaw/workspace/automation-lab\n\"\nWarning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.\n"
+  "currentBug": null,
+  "startedAt": null,
+  "attempts": 0,
+  "lastError": null
 }

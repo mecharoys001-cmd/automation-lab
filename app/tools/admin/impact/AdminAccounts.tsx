@@ -318,7 +318,7 @@ export default function AdminAccounts() {
             <div style={{ flex: 1, minWidth: '200px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                 <span style={{ fontWeight: 700, fontSize: '14px', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
-                  {admin.display_name || admin.email}
+                  {admin.display_name || 'No name set'}
                 </span>
                 {editingRoleId === admin.id ? (
                   <select
@@ -361,7 +361,7 @@ export default function AdminAccounts() {
                 )}
               </div>
               <div style={{ fontSize: '13px', color: '#64748b' }}>
-                {admin.display_name ? admin.email : ''}
+                {admin.email}
               </div>
               <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
                 Added {new Date(admin.created_at).toLocaleDateString()}
