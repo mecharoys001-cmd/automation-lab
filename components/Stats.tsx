@@ -1,7 +1,7 @@
 const stats = [
-  { value: "3",      label: "Projects complete", sublabel: "2023-2025",        color: "var(--teal)" },
-  { value: "30 hrs", label: "Saved per week",    sublabel: "1,560 hrs/year",   color: "var(--teal)" },
-  { value: "$39K",   label: "Annual savings",    sublabel: "Across all projects", color: "var(--gold-light)" },
+  { value: "3",      label: "Projects Complete", sublabel: "2023-2025" },
+  { value: "30+",    label: "Hours Saved Weekly", sublabel: "1,560 hrs/year" },
+  { value: "$39K",   label: "Annual Savings",     sublabel: "Across all projects" },
 ];
 
 export default function Stats() {
@@ -12,25 +12,30 @@ export default function Stats() {
         style={{
           display: "flex",
           alignItems: "stretch",
-          justifyContent: "center",
+          justifyContent: "space-around",
           gap: 0,
           flexWrap: "wrap",
         }}
       >
         {stats.map((s, i) => (
-          <>
+          <div key={s.label}>
             <div
-              key={s.label}
-              style={{ textAlign: "center", flex: "1 1 180px", padding: "8px 28px" }}
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+                gap: 0,
+              }}
             >
-              <div className="stats-value" style={{ color: s.color }}>{s.value}</div>
-              <div className="stats-label">{s.label}</div>
-              <div className="stats-sub">{s.sublabel}</div>
+              <div style={{ textAlign: "center", padding: "8px 48px" }}>
+                <div className="stats-value">{s.value}</div>
+                <div className="stats-label">{s.label}</div>
+                <div className="stats-sub">{s.sublabel}</div>
+              </div>
+              {i < stats.length - 1 && (
+                <div className="stats-divider" />
+              )}
             </div>
-            {i < stats.length - 1 && (
-              <div key={`d-${i}`} className="stats-divider" />
-            )}
-          </>
+          </div>
         ))}
       </div>
     </section>

@@ -23,7 +23,7 @@ const cases = [
       { label: "Cost Offset",  value: "$4,800/yr",   sub: "Annual savings" },
     ],
     stack: ["Google Gemini AI Studio","Custom Python","CivicLift"],
-    accentRaw: "#68ccd1",
+    accentRaw: "#90339d",
   },
   {
     year: "2025",
@@ -36,18 +36,17 @@ const cases = [
       { label: "Cost Offset",  value: "$3,000/yr",   sub: "Annual savings" },
     ],
     stack: ["Google Gemini AI Studio","CivicLift","Mailchimp"],
-    accentRaw: "#a28231",
+    accentRaw: "#10b981",
   },
 ];
 
 export default function CaseStudies() {
   return (
-    <section id="case-studies" className="section section-light">
+    <section id="case-studies" className="section" style={{ background: "var(--bg-light)", padding: "96px 24px" }}>
       <div className="container">
         <div className="section-header" data-reveal="fade">
-          <div className="label-overline" style={{ marginBottom: "10px" }}>Proven Results</div>
-          <h2 className="heading-section">Case Studies</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "15px", maxWidth: "480px", margin: "0 auto" }}>
+          <h2 className="heading-section" style={{ fontStyle: "italic" }}>Real Impact, Real Savings</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", maxWidth: "540px", margin: "0 auto" }}>
             Real automation projects with measurable results for the cultural sector.
           </p>
         </div>
@@ -55,8 +54,8 @@ export default function CaseStudies() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "20px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "32px",
           }}
         >
           {cases.map((c, i) => (
@@ -69,10 +68,10 @@ export default function CaseStudies() {
             >
               <div className="card-accent-top" style={{ background: c.accentRaw }} />
 
-              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "18px", flex: 1 }}>
+              <div style={{ padding: "28px", display: "flex", flexDirection: "column", gap: "20px", flex: 1 }}>
                 {/* Header */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                     <span
                       className="tag"
                       style={{
@@ -84,19 +83,19 @@ export default function CaseStudies() {
                       {c.year}
                     </span>
                   </div>
-                  <h3 className="heading-card" style={{ fontSize: "15px", marginBottom: "6px", lineHeight: 1.4 }}>
+                  <h3 className="heading-card" style={{ fontSize: "1.1rem", marginBottom: "8px", lineHeight: 1.4 }}>
                     {c.title}
                   </h3>
-                  <div style={{ fontSize: "12px", color: "var(--text-subtle)" }}>
+                  <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                     Project Cost: <span style={{ color: c.amount === "In-Kind" ? "var(--text-muted)" : c.accentRaw, fontWeight: 600 }}>{c.amount === "In-Kind" ? "In-Kind" : c.amount}</span>
                   </div>
                 </div>
 
                 {/* Results */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "10px" }}>
                   {c.results.map((r) => (
                     <div key={r.label} className="card-stat">
-                      <div style={{ fontSize: "14px", fontWeight: 900, color: c.accentRaw, fontFamily: "'Montserrat', sans-serif" }}>
+                      <div style={{ fontSize: "1rem", fontWeight: 900, color: c.accentRaw, fontFamily: "var(--font-body)" }}>
                         {r.value}
                       </div>
                       <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -112,7 +111,7 @@ export default function CaseStudies() {
                   <div className="label-overline" style={{ fontSize: "10px", marginBottom: "8px", color: "var(--text-subtle)" }}>
                     Tech Stack
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {c.stack.map((t) => <span key={t} className="tech-tag">{t}</span>)}
                   </div>
                 </div>

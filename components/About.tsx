@@ -3,7 +3,7 @@ const principles = [
     icon: "🔍",
     title: "Research-Driven",
     desc: "Every tool we build is grounded in real nonprofit needs, identified through sector surveys and direct partnership.",
-    accentRaw: "#68ccd1",
+    accentRaw: "#1282a2",
   },
   {
     icon: "🤝",
@@ -15,57 +15,49 @@ const principles = [
     icon: "📦",
     title: "Reusable Infrastructure",
     desc: "Solutions that work for one organization are documented and packaged so others can adopt them.",
-    accentRaw: "#a28231",
+    accentRaw: "#1282a2",
   },
 ];
 
 export default function About() {
   return (
-    <section id="about" className="section section-white">
+    <section id="about" className="section" style={{ background: "var(--bg-surface)", padding: "96px 24px" }}>
       <div className="container">
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "56px",
+            gap: "64px",
             alignItems: "center",
           }}
         >
           {/* Text */}
           <div data-reveal="slide-left">
-            <div
-              className="label-overline"
-              style={{ marginBottom: "14px", display: "block" }}
-            >
-              About the Project
-            </div>
             <h2
               className="heading-section"
-              style={{ marginBottom: "20px", color: "var(--navy)" }}
+              style={{ marginBottom: "24px", color: "var(--text-dark)" }}
             >
-              Closing the AI Access Gap
+              Built on Principles
             </h2>
-            <p style={{ color: "var(--text-body)", lineHeight: 1.8, fontSize: "15px", marginBottom: "16px" }}>
+            <p style={{ color: "var(--text-body)", lineHeight: 1.8, fontSize: "1.1rem", marginBottom: "16px" }}>
               The Automation Lab is a pilot initiative by the NWCT Arts Council
               exploring how responsible, human-centered automation can reduce
               administrative burden and strengthen operational capacity for arts
               &amp; culture nonprofits in Northwest Connecticut.
             </p>
-            <p style={{ color: "var(--text-body)", lineHeight: 1.8, fontSize: "15px", marginBottom: "28px" }}>
-              Through discovery, pilot projects, and shared documentation, the
-              project identifies practical approaches that free up staff time for
-              mission-driven work while building reusable infrastructure for the
-              sector.
+            <p style={{ color: "var(--text-body)", lineHeight: 1.8, fontSize: "1.1rem", marginBottom: "32px" }}>
+              We believe automation should empower people, not replace them. Our
+              lab operates under a strict ethical framework.
             </p>
             <a
               href="https://irp.cdn-website.com/04efc271/files/uploaded/Theory+of+Change+_+Why+This+Matters+Now.pdf"
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: "var(--teal-dark)",
+                color: "var(--primary)",
                 fontWeight: 700,
-                fontSize: "14px",
-                fontFamily: "'Montserrat', sans-serif",
+                fontSize: "15px",
+                fontFamily: "var(--font-body)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
@@ -79,7 +71,7 @@ export default function About() {
           </div>
 
           {/* Cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {principles.map((card, i) => (
               <div
                 key={card.title}
@@ -90,19 +82,19 @@ export default function About() {
                 <div
                   className="icon-box"
                   style={{
-                    width: "42px", height: "42px",
-                    background: `${card.accentRaw}18`,
-                    border: `1px solid ${card.accentRaw}30`,
-                    fontSize: "20px",
-                    borderRadius: "var(--radius-md)",
+                    width: "48px", height: "48px",
+                    background: `${card.accentRaw}12`,
+                    border: `1px solid ${card.accentRaw}25`,
+                    fontSize: "22px",
+                    borderRadius: "50%",
                     flexShrink: 0,
                   }}
                 >
                   {card.icon}
                 </div>
                 <div>
-                  <div className="heading-card" style={{ marginBottom: "5px" }}>{card.title}</div>
-                  <div style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.65 }}>{card.desc}</div>
+                  <div className="heading-card" style={{ marginBottom: "6px" }}>{card.title}</div>
+                  <div style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.7 }}>{card.desc}</div>
                 </div>
               </div>
             ))}

@@ -1,55 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────
-   DESIGN TOKENS — matched to artsnwct.org
+   DESIGN TOKENS — Light theme (Stitch reference)
 ───────────────────────────────────────────── */
 :root {
-  /* Brand palette (exact from artsnwct.org CSS) */
-  --teal:        #68ccd1;   /* header bg on artsnwct.org */
-  --teal-mid:    #3c7fa2;   /* mid teal */
-  --teal-dark:   #1282a2;   /* link/accent teal */
-  --teal-light:  #b3d6d9;   /* light teal highlight */
-  --navy:        #1a1a38;   /* dark headings */
-  --navy-dark:   #1c2330;   /* stats/dark bar bg */
-  --gold:        #a28231;   /* accent gold */
-  --gold-light:  #c4a044;
-  --charcoal:    #333333;   /* footer bg */
+  /* Brand palette */
+  --primary:     #1282a2;   /* deep teal — primary brand */
+  --primary-dark:#00647e;   /* darker teal for hover */
+  --primary-container: #077f9e; /* stats bar bg */
+  --secondary:   #a13e2a;   /* coral/salmon accent */
+  --secondary-hover: #822715;
+  --tertiary:    #90339d;   /* purple accent for tools */
 
   /* Text */
-  --text-dark:   #1a1a38;
-  --text-body:   #4a4a4a;
-  --text-muted:  #666666;
+  --text-dark:   #181836;
+  --text-body:   #3f484d;
+  --text-muted:  #6f797e;
   --text-subtle: #999999;
 
   /* Backgrounds */
   --bg-white:    #ffffff;
-  --bg-light:    #f6f6f6;   /* exact from artsnwct.org */
-  --bg-teal:     #68ccd1;   /* hero section */
+  --bg-surface:  #fcf8ff;
+  --bg-light:    #f5f2ff;
+  --bg-container:#efecff;
 
   /* Borders */
-  --border:      #e2e2e2;
-  --border-mid:  #cccccc;
+  --border:      #bec8ce;
+  --border-light:#e2dfff;
 
   /* Spacing */
   --radius-sm:   4px;
-  --radius-md:   6px;
-  --radius-lg:   10px;
-  --radius-pill: 100px;
-  
-  /* Layout */
-  --nav-height:  68px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-pill: 9999px;
 
-  /* Shadows — subtle like artsnwct.org */
+  /* Layout */
+  --nav-height:  64px;
+
+  /* Shadows */
   --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
   --shadow-md:   0 2px 8px rgba(0,0,0,0.10);
   --shadow-lg:   0 4px 20px rgba(0,0,0,0.12);
+  --shadow-xl:   0 8px 32px rgba(0,0,0,0.16);
 
-  /* Gradients */
-  --gradient-teal: linear-gradient(135deg, #5bbdc2 0%, #68ccd1 50%, #7dd4d8 100%);
+  /* Fonts */
+  --font-headline: 'Playfair Display', serif;
+  --font-body:     'Montserrat', sans-serif;
 }
 
 /* ─────────────────────────────────────────────
@@ -61,125 +62,121 @@ html { scroll-behavior: smooth; }
 
 /* ─────────────────────────────────────────────
    ACCESSIBILITY — Focus Indicators (WCAG 2.1 AA)
-   Universal :focus-visible ensures ALL interactive
-   elements show a visible focus ring for keyboard
-   users. !important overrides Tailwind outline-none,
-   @tailwindcss/forms resets, and inline utilities.
 ───────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid #3b82f6 !important;
   outline-offset: 2px !important;
 }
 
-/* High-contrast focus ring on dark backgrounds (sidebar, dark sections) */
 .bg-slate-800 :focus-visible,
 .bg-slate-900 :focus-visible,
 [class*="bg-gradient"] :focus-visible {
-  outline-color: #60a5fa !important; /* blue-400 for better contrast on dark */
+  outline-color: #60a5fa !important;
 }
 
 body {
-  background: var(--bg-white);
+  background: var(--bg-surface);
   color: var(--text-body);
-  font-family: 'Open Sans', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Montserrat', system-ui, sans-serif;
+  font-family: var(--font-headline);
   color: var(--text-dark);
   line-height: 1.25;
   font-weight: 700;
 }
 
-a { color: var(--teal-dark); text-decoration: none; }
+a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ─────────────────────────────────────────────
    LAYOUT
 ───────────────────────────────────────────── */
 .container {
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
-.section        { padding: 60px 20px; }
+.section        { padding: 96px 24px; }
 .section-white  { background: var(--bg-white); }
 .section-light  { background: var(--bg-light); }
-.section-dark   { background: var(--navy-dark); }
-.section-teal   { background: var(--teal); }
-.section-charcoal { background: var(--charcoal); }
+.section-surface { background: var(--bg-surface); }
+.section-dark   { background: #181836; }
+.section-teal   { background: var(--primary); }
+.section-charcoal { background: #181836; }
 
 .section-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 48px;
 }
 
 /* ─────────────────────────────────────────────
    TYPOGRAPHY
 ───────────────────────────────────────────── */
 .heading-hero {
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 900;
-  line-height: 1.15;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.1;
   letter-spacing: -0.01em;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-headline);
 }
 
 .heading-section {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 800;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
   letter-spacing: -0.01em;
-  margin-bottom: 12px;
-  font-family: 'Montserrat', sans-serif;
+  margin-bottom: 16px;
+  font-family: var(--font-headline);
 }
 
 .heading-card {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-headline);
   color: var(--text-dark);
 }
 
 .text-intro {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   line-height: 1.75;
   color: var(--text-body);
 }
 
 .label-overline {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-family: 'Montserrat', sans-serif;
-  color: var(--teal-dark);
+  font-family: var(--font-body);
+  color: var(--primary);
 }
 
 /* ─────────────────────────────────────────────
-   NAVIGATION — matches artsnwct.org style
+   NAVIGATION — solid teal
 ───────────────────────────────────────────── */
 .nav-wrapper {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  background: rgba(255,255,255,0.97);
-  border-bottom: 1px solid var(--border);
+  background: var(--primary-dark);
   transition: box-shadow 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .nav-wrapper.scrolled {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
 .nav-link {
-  color: var(--text-body);
+  color: rgba(255,255,255,0.8);
   font-size: 14px;
-  font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-family: var(--font-body);
   text-decoration: none;
   padding: 4px 0;
   border-bottom: 2px solid transparent;
@@ -187,8 +184,8 @@ a:hover { text-decoration: underline; }
 }
 
 .nav-link:hover {
-  color: var(--teal-dark);
-  border-bottom-color: var(--teal);
+  color: #ffffff;
+  border-bottom-color: #ffffff;
   text-decoration: none;
 }
 
@@ -197,15 +194,15 @@ a:hover { text-decoration: underline; }
   color: var(--text-body);
   font-size: 15px;
   font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-body);
   text-decoration: none;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
   transition: color 0.2s;
 }
 
 .nav-link-mobile:hover {
-  color: var(--teal-dark);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -214,16 +211,16 @@ a:hover { text-decoration: underline; }
   position: fixed;
   top: 0; left: 0;
   height: 3px;
-  background: var(--teal);
+  background: var(--secondary);
   z-index: 9999;
   transition: width 0.1s linear;
 }
 
 /* ─────────────────────────────────────────────
-   HERO — teal background like artsnwct.org header
+   HERO — light background
 ───────────────────────────────────────────── */
 .hero-section {
-  background: var(--gradient-teal);
+  background: var(--bg-surface);
   position: relative;
   overflow: hidden;
 }
@@ -231,9 +228,6 @@ a:hover { text-decoration: underline; }
 .hero-pattern {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
   pointer-events: none;
 }
 
@@ -245,29 +239,55 @@ a:hover { text-decoration: underline; }
 }
 
 /* ─────────────────────────────────────────────
-   BUTTONS — matching artsnwct.org CTAs
+   BUTTONS
 ───────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--navy-dark);
+  background: linear-gradient(to right, var(--primary), var(--primary-container));
   color: #ffffff;
-  padding: 13px 28px;
-  border-radius: var(--radius-md);
+  padding: 16px 32px;
+  border-radius: var(--radius-pill);
   font-weight: 700;
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-family: var(--font-body);
   text-decoration: none;
   border: none;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-  letter-spacing: 0.02em;
+  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover {
-  background: #2a3548;
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--secondary);
+  color: #ffffff;
+  padding: 16px 32px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: var(--font-body);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:hover {
+  background: var(--secondary-hover);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
   text-decoration: none;
   color: #ffffff;
 }
@@ -277,12 +297,12 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  color: var(--teal-dark);
-  padding: 13px 28px;
-  border-radius: var(--radius-md);
+  color: var(--primary);
+  padding: 16px 32px;
+  border-radius: var(--radius-pill);
   font-weight: 700;
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-family: var(--font-body);
   text-decoration: none;
   border: none;
   cursor: pointer;
@@ -295,7 +315,7 @@ a:hover { text-decoration: underline; }
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
   text-decoration: none;
-  color: var(--teal-dark);
+  color: var(--primary);
 }
 
 .btn-outline-white {
@@ -304,11 +324,11 @@ a:hover { text-decoration: underline; }
   gap: 8px;
   background: transparent;
   color: #ffffff;
-  padding: 12px 26px;
-  border-radius: var(--radius-md);
+  padding: 15px 30px;
+  border-radius: var(--radius-pill);
   font-weight: 700;
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-family: var(--font-body);
   text-decoration: none;
   border: 2px solid rgba(255,255,255,0.6);
   cursor: pointer;
@@ -326,13 +346,13 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--teal);
-  color: var(--navy-dark);
-  padding: 13px 28px;
-  border-radius: var(--radius-md);
-  font-weight: 800;
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
+  background: var(--primary);
+  color: #ffffff;
+  padding: 16px 32px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: var(--font-body);
   text-decoration: none;
   border: none;
   cursor: pointer;
@@ -340,23 +360,23 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-teal:hover {
-  background: #5bbdc2;
+  background: var(--primary-dark);
   transform: translateY(-1px);
   text-decoration: none;
-  color: var(--navy-dark);
+  color: #ffffff;
 }
 
 .btn-survey {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: var(--navy-dark);
+  background: var(--secondary);
   color: #ffffff;
   padding: 16px 40px;
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  font-weight: 800;
-  font-family: 'Montserrat', sans-serif;
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-body);
   text-decoration: none;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
@@ -364,7 +384,7 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-survey:hover {
-  background: #2a3548;
+  background: var(--secondary-hover);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   text-decoration: none;
@@ -372,29 +392,30 @@ a:hover { text-decoration: underline; }
 }
 
 /* ─────────────────────────────────────────────
-   CARDS — simple/clean like artsnwct.org
+   CARDS
 ───────────────────────────────────────────── */
 .card {
   background: var(--bg-white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
   transition: box-shadow 0.25s, transform 0.25s;
+  box-shadow: var(--shadow-sm);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-4px);
 }
 
 .card-accent-top {
   height: 4px;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   margin: -1px -1px 0;
 }
 
 .card-stat {
   background: var(--bg-light);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   padding: 14px 10px;
   text-align: center;
@@ -402,9 +423,9 @@ a:hover { text-decoration: underline; }
 
 .card-feature {
   background: var(--bg-white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
   display: flex;
   gap: 16px;
   align-items: flex-start;
@@ -426,13 +447,13 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-body);
 }
 
 .tag-teal {
-  background: rgba(104, 204, 209, 0.15);
-  color: var(--teal-dark);
-  border: 1px solid rgba(104, 204, 209, 0.4);
+  background: rgba(18, 130, 162, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(18, 130, 162, 0.25);
 }
 
 .tag-gold {
@@ -442,23 +463,23 @@ a:hover { text-decoration: underline; }
 }
 
 .tag-navy {
-  background: rgba(26, 26, 56, 0.08);
-  color: var(--navy);
-  border: 1px solid rgba(26, 26, 56, 0.15);
+  background: rgba(24, 24, 54, 0.08);
+  color: var(--text-dark);
+  border: 1px solid rgba(24, 24, 54, 0.15);
 }
 
 .badge-live {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(104, 204, 209, 0.15);
-  color: var(--teal-dark);
-  border: 1px solid rgba(104, 204, 209, 0.35);
+  background: rgba(18, 130, 162, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(18, 130, 162, 0.25);
   border-radius: var(--radius-pill);
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-body);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -471,14 +492,14 @@ a:hover { text-decoration: underline; }
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-body);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .tech-tag {
   background: var(--bg-light);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: 2px 8px;
   font-size: 11px;
@@ -487,41 +508,42 @@ a:hover { text-decoration: underline; }
 }
 
 /* ─────────────────────────────────────────────
-   STATS BAR — dark section matching artsnwct.org
+   STATS BAR — teal background with white text
 ───────────────────────────────────────────── */
 .stats-bar {
-  background: var(--navy-dark);
-  padding: 50px 20px;
+  background: var(--primary-container);
+  padding: 48px 24px;
 }
 
 .stats-value {
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  font-weight: 900;
-  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  font-family: var(--font-headline);
+  color: #ffffff;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
 .stats-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
-  color: rgba(255,255,255,0.7);
+  font-family: var(--font-body);
+  color: rgba(255,255,255,0.9);
   margin-top: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .stats-sub {
   font-size: 12px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.5);
   margin-top: 2px;
 }
 
 .stats-divider {
   width: 1px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.2);
   align-self: stretch;
 }
 
@@ -530,7 +552,7 @@ a:hover { text-decoration: underline; }
 ───────────────────────────────────────────── */
 .divider {
   height: 1px;
-  background: var(--border);
+  background: var(--border-light);
   margin: 0;
 }
 
@@ -572,15 +594,15 @@ a:hover { text-decoration: underline; }
    FOOTER
 ───────────────────────────────────────────── */
 .footer-link {
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.6);
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   transition: color 0.2s;
 }
 
 .footer-link:hover {
-  color: var(--teal);
+  color: var(--secondary);
   text-decoration: none;
 }
 
@@ -614,7 +636,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* ─────────────────────────────────────────────
-   ANIMATIONS (hero only — on screen at load)
+   ANIMATIONS
 ───────────────────────────────────────────── */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -627,8 +649,8 @@ a:hover { text-decoration: underline; }
 }
 
 @keyframes pulseTeal {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(104,204,209,0.5); }
-  50%       { box-shadow: 0 0 0 6px rgba(104,204,209,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(18,130,162,0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(18,130,162,0); }
 }
 
 .animate-fade-up  { animation: fadeInUp 0.65s ease both; }
@@ -646,7 +668,7 @@ a:hover { text-decoration: underline; }
    RESPONSIVE
 ───────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .section { padding: 44px 16px; }
-  .section-header { margin-bottom: 28px; }
+  .section { padding: 56px 16px; }
+  .section-header { margin-bottom: 32px; }
   .stats-divider { display: none; }
 }

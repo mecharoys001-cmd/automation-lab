@@ -35,30 +35,35 @@ export default function Navigation() {
         style={{ paddingTop: 0 }}
       >
         <div
-          className="container"
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             height: "var(--nav-height)",
+            width: "100%",
+            maxWidth: "1200px",
+            margin: "0 auto",
+            padding: "0 32px",
           }}
         >
           {/* Logo */}
           <Link href="/" style={{ textDecoration: "none" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div style={{ fontWeight: 900, fontSize: "20px", color: "var(--navy)", fontFamily: "'Montserrat', sans-serif", lineHeight: 1, letterSpacing: "-0.01em" }}>
-                Automation Lab
-              </div>
-              <img
-                src="/images/nwct-logo.svg"
-                alt="NWCT Arts Council"
-                style={{ height: "18px", width: "auto" }}
-              />
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: "20px",
+                color: "#ffffff",
+                fontFamily: "var(--font-headline)",
+                lineHeight: 1,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Automation Lab
             </div>
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex" style={{ alignItems: "center", gap: "28px" }}>
+          <div className="hidden md:flex" style={{ alignItems: "center", gap: "32px" }}>
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} className="nav-link">
                 {link.label}
@@ -68,8 +73,21 @@ export default function Navigation() {
               href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary"
-              style={{ padding: "9px 18px", fontSize: "13px" }}
+              style={{
+                background: "rgba(255,255,255,0.1)",
+                color: "#ffffff",
+                padding: "10px 20px",
+                borderRadius: "var(--radius-pill)",
+                fontWeight: 700,
+                fontSize: "14px",
+                fontFamily: "var(--font-body)",
+                textDecoration: "none",
+                transition: "background 0.2s, transform 0.2s",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
             >
               Take the Self-Assessment
             </a>
@@ -79,7 +97,7 @@ export default function Navigation() {
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="md:hidden"
-            style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "var(--navy)", padding: "4px" }}
+            style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#ffffff", padding: "4px" }}
             aria-label="Toggle menu"
           >
             {menuOpen ? "✕" : "☰"}
@@ -88,7 +106,7 @@ export default function Navigation() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div style={{ background: "var(--bg-white)", borderTop: "1px solid var(--border)", padding: "8px 20px 16px" }}>
+          <div style={{ background: "#ffffff", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "8px 20px 16px" }}>
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="nav-link-mobile">
                 {link.label}
@@ -98,7 +116,7 @@ export default function Navigation() {
               href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ display: "block", color: "var(--teal-dark)", padding: "12px 0", fontSize: "15px", fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}
+              style={{ display: "block", color: "var(--primary)", padding: "12px 0", fontSize: "15px", fontWeight: 700, fontFamily: "var(--font-body)" }}
             >
               Take the Self-Assessment →
             </a>

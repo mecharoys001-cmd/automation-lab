@@ -22,24 +22,24 @@ function FooterLinkGroup({ heading, links }: { heading: string; links: { href: s
     <div>
       <div
         style={{
-          fontSize: "10px",
+          fontSize: "13px",
           fontWeight: 700,
-          letterSpacing: "0.12em",
+          letterSpacing: "0.1em",
           textTransform: "uppercase" as const,
-          color: "rgba(255,255,255,0.4)",
-          fontFamily: "'Montserrat', sans-serif",
-          marginBottom: "14px",
+          color: "#ffffff",
+          fontFamily: "var(--font-body)",
+          marginBottom: "16px",
         }}
       >
         {heading}
       </div>
       {links.map((link) =>
         link.external ? (
-          <div key={link.href} style={{ marginBottom: "8px" }}>
+          <div key={link.href} style={{ marginBottom: "10px" }}>
             <a href={link.href} target="_blank" rel="noopener noreferrer" className="footer-link">{link.label}</a>
           </div>
         ) : (
-          <div key={link.href} style={{ marginBottom: "8px" }}>
+          <div key={link.href} style={{ marginBottom: "10px" }}>
             <Link href={link.href} className="footer-link">{link.label}</Link>
           </div>
         )
@@ -50,7 +50,7 @@ function FooterLinkGroup({ heading, links }: { heading: string; links: { href: s
 
 export default function Footer() {
   return (
-    <footer className="section-charcoal" style={{ padding: "56px 20px 28px" }}>
+    <footer style={{ background: "#181836", padding: "64px 24px 32px" }}>
       <div className="container">
         <div
           style={{
@@ -58,40 +58,43 @@ export default function Footer() {
             justifyContent: "space-between",
             alignItems: "flex-start",
             flexWrap: "wrap",
-            gap: "32px",
-            marginBottom: "40px",
+            gap: "48px",
+            marginBottom: "48px",
+            maxWidth: "1200px",
+            margin: "0 auto 48px",
           }}
         >
           {/* Brand */}
           <div>
-            <div style={{ marginBottom: "4px" }}>
-              <div style={{ fontWeight: 900, fontSize: "24px", color: "#ffffff", fontFamily: "'Montserrat', sans-serif", marginBottom: "8px", letterSpacing: "-0.01em" }}>
-                Automation Lab
-              </div>
-              <img
-                src="/images/nwct-logo-white.svg"
-                alt="NWCT Arts Council"
-                style={{ height: "24px", width: "auto", marginBottom: "18px" }}
-              />
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: "24px",
+                color: "#ffffff",
+                fontFamily: "var(--font-headline)",
+                marginBottom: "16px",
+              }}
+            >
+              Automation Lab
             </div>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", lineHeight: 1.7, maxWidth: "280px" }}>
-              A pilot initiative exploring human-centered automation for arts &amp; culture nonprofits in Northwest Connecticut.
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", lineHeight: 1.7, maxWidth: "300px" }}>
+              A program of the NWCT Arts Council exploring the intersection of technology and creativity.
             </p>
           </div>
 
           {/* Link columns */}
           <div style={{ display: "flex", gap: "48px", flexWrap: "wrap" }}>
-            <FooterLinkGroup heading="Site" links={siteLinks} />
+            <FooterLinkGroup heading="Project" links={siteLinks} />
             <FooterLinkGroup heading="Tools" links={toolLinks} />
-            <FooterLinkGroup heading="Resources" links={resourceLinks} />
+            <FooterLinkGroup heading="Connect" links={resourceLinks} />
           </div>
         </div>
 
         {/* Bottom bar */}
         <div
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.08)",
-            paddingTop: "24px",
+            borderTop: "1px solid rgba(255,255,255,0.05)",
+            paddingTop: "32px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -99,16 +102,16 @@ export default function Footer() {
             gap: "12px",
           }}
         >
-          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)" }}>
+          <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)" }}>
             © 2026 NWCT Arts Council · Automation Lab
           </span>
-          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)" }}>
+          <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)" }}>
             Built by{" "}
             <a
               href="https://www.ethansbrewerton.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--teal)", fontWeight: 600, textDecoration: "none" }}
+              style={{ color: "var(--secondary)", fontWeight: 600, textDecoration: "none" }}
             >
               Ethan S. Brewerton
             </a>

@@ -1,27 +1,21 @@
-import Airtable from 'airtable';
+import { markAsFixed } from '../lib/airtable';
 
-const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN || '';
-const BASE_ID = 'appdyCFvZRVuCr4tb';
-const TABLE_NAME = 'App Feedback';
+const recordId = process.argv[2] || 'recR59MRuWLfEI1u2';
 
-const base = new Airtable({ apiKey: AIRTABLE_TOKEN }).base(BASE_ID);
-
-async function markAsFixed(recordId: string) {
-  try {
-    await base(TABLE_NAME).update(recordId, {
-      'ROY Fix': true
-    });
-    console.log(`✅ Bug ${recordId} marked as "ROY Fix"`);
-  } catch (error) {
-    console.error(`❌ Failed to mark bug as fixed:`, error);
+async function main() {
+  console.log(`Marking ${recordId} as "ROY fix" in Airtable...`);
+  
+  const success = await markAsFixed(recordId);
+  
+  if (success) {
+    console.log(`✅ Successfully marked ${recordId} as "ROY fix"`);
+  } else {
+    console.error(`❌ Failed to mark ${recordId} as fixed`);
     process.exit(1);
   }
 }
 
-const recordId = process.argv[2];
-if (!recordId) {
-  console.error('Usage: npx tsx scripts/mark-bug-fixed.ts <record-id>');
+main().catch((error) => {
+  console.error('Error:', error);
   process.exit(1);
-}
-
-markAsFixed(recordId);
+});

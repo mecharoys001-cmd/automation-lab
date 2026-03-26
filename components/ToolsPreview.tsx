@@ -9,7 +9,7 @@ const tools = [
     features: ["Fuzzy name matching", "Address normalization", "Smart record selection", "100% browser-based"],
     icon: "🧹",
     href: "/tools/csv-dedup",
-    accentRaw: "#6366f1",
+    accentRaw: "#90339d",
   },
   {
     id: "scheduler",
@@ -19,7 +19,7 @@ const tools = [
     features: ["Template-based scheduling", "Instructor availability", "Conflict detection", "Email notifications"],
     icon: "🎵",
     href: "/tools/scheduler",
-    accentRaw: "#a244ae",
+    accentRaw: "#1282a2",
   },
   {
     id: "reports",
@@ -35,17 +35,17 @@ const tools = [
 
 export default function ToolsPreview() {
   return (
-    <section id="tools" className="section section-light">
+    <section id="tools" className="section" style={{ background: "var(--bg-surface)", padding: "96px 24px" }}>
       <div className="container">
         <div className="section-header" data-reveal="fade">
-          <div className="label-overline" style={{ marginBottom: "10px" }}>Free Tools</div>
           <h2 className="heading-section">Tools Built for Nonprofits</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "15px", maxWidth: "480px", margin: "0 auto" }}>
+          <div style={{ width: "96px", height: "6px", background: "var(--secondary)", borderRadius: "var(--radius-pill)", margin: "0 auto 16px" }} />
+          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", maxWidth: "540px", margin: "0 auto" }}>
             Free, open tools developed through the Automation Lab, ready for your organization to use today.
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "32px" }}>
           {tools.map((tool, i) => (
             <div
               key={tool.id}
@@ -56,23 +56,22 @@ export default function ToolsPreview() {
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
+                borderTop: `4px solid ${tool.accentRaw}`,
               }}
             >
-              <div className="card-accent-top" style={{ background: tool.accentRaw }} />
-
-              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", flex: 1 }}>
+              <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "20px", flex: 1 }}>
                 {/* Header */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                    <span style={{ fontSize: "2rem" }}>{tool.icon}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <span style={{ fontSize: "2.5rem" }}>{tool.icon}</span>
                     <span className="badge-live">● Live</span>
                   </div>
-                  <h3 className="heading-card" style={{ fontSize: "16px", marginBottom: "8px" }}>{tool.name}</h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.65 }}>{tool.description}</p>
+                  <h3 className="heading-card" style={{ fontSize: "1.3rem", marginBottom: "10px" }}>{tool.name}</h3>
+                  <p style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.7 }}>{tool.description}</p>
                 </div>
 
                 {/* Features */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", flexGrow: 1 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", flexGrow: 1 }}>
                   {tool.features.map((f) => (
                     <span
                       key={f}
@@ -81,8 +80,8 @@ export default function ToolsPreview() {
                         color: tool.accentRaw,
                         border: `1px solid ${tool.accentRaw}25`,
                         borderRadius: "var(--radius-sm)",
-                        padding: "2px 8px",
-                        fontSize: "11px",
+                        padding: "3px 10px",
+                        fontSize: "12px",
                         fontWeight: 600,
                       }}
                     >
@@ -94,10 +93,19 @@ export default function ToolsPreview() {
                 {/* CTA */}
                 <Link
                   href={tool.href}
-                  className="btn-primary"
-                  style={{ justifyContent: "center", background: tool.accentRaw }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    color: tool.accentRaw,
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    fontFamily: "var(--font-body)",
+                    textDecoration: "none",
+                    transition: "gap 0.2s",
+                  }}
                 >
-                  Open Tool →
+                  Open Tool <span style={{ transition: "transform 0.2s" }}>→</span>
                 </Link>
               </div>
             </div>

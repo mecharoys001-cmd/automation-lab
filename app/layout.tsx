@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
+import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -7,8 +7,8 @@ import ScrollRevealProvider from "@/components/ScrollRevealProvider";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { LayoutShell } from "@/components/LayoutShell";
 
-const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 export const metadata: Metadata = {
   title: "The Automation Lab | NWCT Arts Council",
@@ -37,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${montserrat.variable}`}>
+      <body className={`${montserrat.variable} ${playfair.variable} ${montserrat.className}`}>
         <ScrollRevealProvider />
         <AnalyticsTracker />
         <LayoutShell

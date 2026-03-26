@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Automation Lab | NWCT Arts Council</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-on-surface": "#f2efff",
+              "on-background": "#181836",
+              "on-secondary": "#ffffff",
+              "primary": "#00647e",
+              "on-tertiary-fixed": "#36003e",
+              "surface-variant": "#e2dfff",
+              "secondary": "#a13e2a",
+              "on-secondary-fixed-variant": "#822715",
+              "tertiary-fixed-dim": "#fbabff",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#ffd6fd",
+              "surface-container-lowest": "#ffffff",
+              "outline": "#6f797e",
+              "on-primary-fixed-variant": "#004d62",
+              "surface-container-high": "#e8e5ff",
+              "on-tertiary": "#ffffff",
+              "inverse-primary": "#79d2f5",
+              "on-primary-container": "#fafdff",
+              "outline-variant": "#bec8ce",
+              "tertiary-container": "#ac4db8",
+              "surface-tint": "#006782",
+              "surface-container-highest": "#e2dfff",
+              "on-tertiary-fixed-variant": "#771785",
+              "primary-container": "#077f9e",
+              "on-surface-variant": "#3f484d",
+              "error-container": "#ffdad6",
+              "background": "#fcf8ff",
+              "primary-fixed": "#baeaff",
+              "primary-fixed-dim": "#79d2f5",
+              "on-secondary-container": "#721c0a",
+              "secondary-fixed": "#ffdad3",
+              "on-surface": "#181836",
+              "surface": "#fcf8ff",
+              "on-error-container": "#93000a",
+              "inverse-surface": "#2d2d4c",
+              "surface-container": "#efecff",
+              "tertiary": "#90339d",
+              "surface-container-low": "#f5f2ff",
+              "secondary-fixed-dim": "#ffb4a4",
+              "on-tertiary-container": "#fffbff",
+              "secondary-fixed": "#ffdad3",
+              "on-secondary-fixed": "#3e0500",
+              "on-primary-fixed": "#001f29",
+              "surface-dim": "#d8d6fe",
+              "on-error": "#ffffff",
+              "error": "#ba1a1a",
+              "surface-bright": "#fcf8ff"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif", "serif"],
+              "body": ["Manrope", "sans-serif"],
+              "label": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Manrope', sans-serif;
+        background-color: #fcf8ff;
+        color: #181836;
+      }
+      h1, h2, h3, .serif-font {
+        font-family: 'Noto Serif', serif;
+      }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-container selection:text-white">
+<!-- Section 1: TopNavBar -->
+<nav class="bg-[#00647e] dark:bg-[#004d61] docked full-width top-0 sticky z-50 shadow-lg dark:shadow-none transition-all duration-200">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-full mx-auto">
+<div class="text-xl font-bold text-white tracking-tight font-headline">Automation Lab</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-white border-b-2 border-white pb-1 font-bold font-label text-sm" href="#">About</a>
+<a class="text-white/80 font-medium hover:text-white transition-colors font-label text-sm" href="#">Case Studies</a>
+<a class="text-white/80 font-medium hover:text-white transition-colors font-label text-sm" href="#">Roadmap</a>
+<a class="text-white/80 font-medium hover:text-white transition-colors font-label text-sm" href="#">Team</a>
+<a class="text-white/80 font-medium hover:text-white transition-colors font-label text-sm" href="#">Tools</a>
+</div>
+<button class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-full font-label text-sm font-bold transition-all scale-95 hover:scale-100 active:scale-90">
+                Take the Self-Assessment
+            </button>
+</div>
+</nav>
+<!-- Section 2: Hero Section -->
+<header class="relative overflow-hidden bg-surface py-24 md:py-32">
+<div class="container mx-auto px-6 relative z-10">
+<div class="max-w-4xl">
+<h1 class="text-5xl md:text-7xl font-bold text-on-surface leading-[1.1] tracking-tight mb-8">
+                    Reducing Administrative Burden in the <span class="text-primary italic">Cultural Sector</span>
+</h1>
+<p class="text-xl md:text-2xl text-on-surface-variant leading-relaxed mb-12 max-w-2xl font-body">
+                    NWCT Arts Council is exploring responsible, human-centered automation to give artists and administrators their time back.
+                </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-gradient-to-r from-primary to-primary-container text-white px-8 py-4 rounded-full font-bold text-lg shadow-md hover:shadow-xl transition-all hover:-translate-y-1">
+                        Try Our Tools
+                    </button>
+<button class="bg-secondary hover:bg-on-secondary-fixed-variant text-white px-8 py-4 rounded-full font-bold text-lg shadow-md hover:shadow-xl transition-all hover:-translate-y-1">
+                        Take the Self-Assessment
+                    </button>
+</div>
+</div>
+</div>
+<!-- Decorative Background Element -->
+<div class="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">
+<svg class="w-full h-full" viewbox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<path d="M44.7,-76.4C58.3,-69.2,70.1,-57.4,77.6,-43.3C85.2,-29.2,88.5,-12.8,87.2,3.3C85.9,19.4,80,35.2,70.4,48.6C60.8,61.9,47.6,72.9,32.8,78.2C18,83.5,1.7,83.1,-14.8,79.8C-31.3,76.5,-48,70.3,-61.2,59.3C-74.4,48.3,-84.1,32.5,-87.3,15.7C-90.5,-1.1,-87.2,-18.9,-78.9,-34.2C-70.6,-49.5,-57.3,-62.3,-42.2,-68.8C-27.1,-75.3,-10.1,-75.4,4.2,-81.4C18.5,-87.4,31.1,-83.6,44.7,-76.4Z" fill="#00647e" transform="translate(100 100)"></path>
+</svg>
+</div>
+</header>
+<!-- Section 3: Stats Bar -->
+<section class="bg-primary-container py-12">
+<div class="container mx-auto px-6">
+<div class="flex flex-col md:flex-row justify-around items-center gap-12 text-white">
+<div class="text-center">
+<div class="text-5xl font-bold font-headline mb-2">3</div>
+<div class="text-sm font-label tracking-widest uppercase opacity-90">Projects Complete</div>
+</div>
+<div class="text-center">
+<div class="text-5xl font-bold font-headline mb-2">30+</div>
+<div class="text-sm font-label tracking-widest uppercase opacity-90">Hours Saved Weekly</div>
+</div>
+<div class="text-center">
+<div class="text-5xl font-bold font-headline mb-2">$39K</div>
+<div class="text-sm font-label tracking-widest uppercase opacity-90">Annual Savings</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Tools Built for Nonprofits -->
+<section class="py-24 bg-surface">
+<div class="container mx-auto px-6">
+<div class="mb-16">
+<h2 class="text-4xl md:text-5xl font-bold text-on-surface mb-4">Tools Built for Nonprofits</h2>
+<div class="w-24 h-1.5 bg-secondary rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Tool Card 1 -->
+<div class="group bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all border-t-4 border-tertiary">
+<div class="mb-6 text-tertiary">
+<span class="material-symbols-outlined text-4xl" data-icon="file_upload" style="font-variation-settings: 'FILL' 1;">file_upload</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">CSV Deduplicator</h3>
+<p class="text-on-surface-variant mb-8 line-height-1.6">Clean and merge your donor lists with precision automation. No more duplicate mailings.</p>
+<button class="flex items-center gap-2 text-tertiary font-bold group-hover:gap-4 transition-all">
+                        Open Tool <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Tool Card 2 -->
+<div class="group bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all border-t-4 border-magenta" style="border-top-color: #90339d;">
+<div class="mb-6 text-tertiary">
+<span class="material-symbols-outlined text-4xl" data-icon="calendar_month" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">Symphonix Scheduler</h3>
+<p class="text-on-surface-variant mb-8 line-height-1.6">Intelligent venue and rehearsal scheduling that resolves conflicts before they happen.</p>
+<button class="flex items-center gap-2 text-tertiary font-bold group-hover:gap-4 transition-all">
+                        Open Tool <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Tool Card 3 -->
+<div class="group bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all border-t-4 border-green-600">
+<div class="mb-6 text-green-600">
+<span class="material-symbols-outlined text-4xl" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">Transaction Reports</h3>
+<p class="text-on-surface-variant mb-8 line-height-1.6">Generate clean, audit-ready reports from multiple payment processors automatically.</p>
+<button class="flex items-center gap-2 text-green-600 font-bold group-hover:gap-4 transition-all">
+                        Open Tool <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 5: Case Studies -->
+<section class="py-24 bg-surface-container-low">
+<div class="container mx-auto px-6">
+<h2 class="text-4xl md:text-5xl font-bold text-on-surface mb-16 text-center italic">Real Impact, Real Savings</h2>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<!-- Case Study 1 -->
+<div class="flex flex-col">
+<div class="relative h-64 mb-6 rounded-2xl overflow-hidden group">
+<img alt="Process Automation" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Modern minimalist office desk with a clean laptop and organized paperwork representing efficient business process automation" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsqRTNw73XcGmIbHNfn9Yaa4v6xczyZ-SU-9a2XtvaEoYhnPWbrRZVB1NLIZIw8cRLwsvxZIsxs8vbse1wvsoPVpRHnH2ESe10o1d47nB4IT-yFfNr6D3RldPMUUkHg0aFhN3D2_bORJR349Ym7eP3Nf34rjDDWvgI6QibWLL78mMVurNTlC2aZy52z19vtxmIyasB_t9UVuBouZwmRzQIBztUli9RsMIFqBR4psSkhgIIaz8oKAQZFaggJToL9VQS51e5N4YnZCA"/>
+<div class="absolute inset-0 bg-primary/20 group-hover:bg-primary/0 transition-colors"></div>
+</div>
+<h4 class="text-2xl font-bold mb-2">Process Automation</h4>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="text-primary font-black text-xl">30 hrs/wk</span>
+<span class="text-on-surface-variant text-sm">Time Saved</span>
+</div>
+<p class="text-on-surface-variant">Streamlining regional grant applications using custom API bridges.</p>
+</div>
+<!-- Case Study 2 -->
+<div class="flex flex-col">
+<div class="relative h-64 mb-6 rounded-2xl overflow-hidden group">
+<img alt="Calendar Automation" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A stylized wall calendar with vibrant artistic markings and a clean digital overlay representing smart scheduling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmNhSdq_RcJIx_r4SbQ0aI4u3uYTrh1SInOXek-r9bZAX-yfHbOlBWCNq1uidN98KXck7dFT0EyLt_AxBOhfhDnWlQkib7AddvvVC3QXabZMBZVl1Q2X4y-XIqOpAUlveX2cKkKq_dvvLta2vn8iSmkj1rfu3-BDUPpdekrIBbiYmASaoB4yQv5uSzVM7suY1VOhHfBwSKTduQatWar3rAbwLldWrM5W60pM9Kw6qMIUOwtA-HLiLM6IxMmn9oCmiNirN11J9lyjs"/>
+<div class="absolute inset-0 bg-primary/20 group-hover:bg-primary/0 transition-colors"></div>
+</div>
+<h4 class="text-2xl font-bold mb-2">Calendar Automation</h4>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="text-primary font-black text-xl">$12K/yr</span>
+<span class="text-on-surface-variant text-sm">Admin Value</span>
+</div>
+<p class="text-on-surface-variant">Automated venue synchronization for over 40 local arts organizations.</p>
+</div>
+<!-- Case Study 3 -->
+<div class="flex flex-col">
+<div class="relative h-64 mb-6 rounded-2xl overflow-hidden group">
+<img alt="Newsletter Automation" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Digital interface showing email marketing analytics and creative content blocks with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAob_u8OqrTXnWKKtKMbxWK1O-E2d380DWP6nH3MOc4Nlvf71_vBoWYERIylUTWI9B1yEpz8f2VMA6uYSjVtBphMqc9BM2Z-6JPXTidyaEiEFR2Gi6idt42KzRctce-q_CqgP3Doi5IATYHLyQjZ53G5iljFA8iKraxEcrEZSyoy3cnDxzwyAFwhg1kxaFOnRDGF5tjIeHUGdLkMp9gyLE7brVemQcHYhepjvA9DePldsE06Qstw95GEbukNUjjjdojVM7OvaeG3zk"/>
+<div class="absolute inset-0 bg-primary/20 group-hover:bg-primary/0 transition-colors"></div>
+</div>
+<h4 class="text-2xl font-bold mb-2">Newsletter Automation</h4>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="text-primary font-black text-xl">$31K/yr</span>
+<span class="text-on-surface-variant text-sm">Resource Value</span>
+</div>
+<p class="text-on-surface-variant">Dynamic content pulling from community calendars directly into weekly blasts.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 6: Principles -->
+<section class="py-24 bg-surface">
+<div class="container mx-auto px-6">
+<div class="text-center max-w-3xl mx-auto mb-20">
+<h2 class="text-4xl font-bold mb-6">Built on Principles</h2>
+<p class="text-lg text-on-surface-variant">We believe automation should empower people, not replace them. Our lab operates under a strict ethical framework.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+<div class="text-center">
+<div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="science">science</span>
+</div>
+<h5 class="text-lg font-bold mb-3">Research-Driven</h5>
+<p class="text-on-surface-variant text-sm leading-relaxed">Every tool starts with deep ethnographic research into administrative pain points.</p>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="groups">groups</span>
+</div>
+<h5 class="text-lg font-bold mb-3">Human-Centered</h5>
+<p class="text-on-surface-variant text-sm leading-relaxed">UI/UX designed specifically for the varying technical literacy of the arts sector.</p>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="code">code</span>
+</div>
+<h5 class="text-lg font-bold mb-3">Open Source</h5>
+<p class="text-on-surface-variant text-sm leading-relaxed">All our custom code is public and free for any non-profit to fork and adapt.</p>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="public">public</span>
+</div>
+<h5 class="text-lg font-bold mb-3">Sector-Wide Impact</h5>
+<p class="text-on-surface-variant text-sm leading-relaxed">Focusing on solutions that benefit the collective rather than single organizations.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 7: Footer -->
+<footer class="bg-[#181836] dark:bg-black text-white w-full">
+<div class="flex flex-col md:flex-row justify-between items-center px-12 py-16 w-full max-w-7xl mx-auto">
+<div class="mb-8 md:mb-0">
+<div class="text-2xl font-black text-white font-headline">Automation Lab</div>
+<p class="mt-4 text-white/60 max-w-xs font-body text-sm leading-relaxed">
+                    A program of the NWCT Arts Council exploring the intersection of technology and creativity.
+                </p>
+</div>
+<div class="flex flex-col md:flex-row gap-12 text-center md:text-left">
+<div class="flex flex-col gap-4">
+<h6 class="font-bold text-white text-sm uppercase tracking-wider mb-2">Project</h6>
+<a class="text-white/60 hover:text-[#a13e2a] transition-colors font-body text-sm" href="#">Privacy Policy</a>
+<a class="text-white/60 hover:text-[#a13e2a] transition-colors font-body text-sm" href="#">Terms of Service</a>
+</div>
+<div class="flex flex-col gap-4">
+<h6 class="font-bold text-white text-sm uppercase tracking-wider mb-2">Connect</h6>
+<a class="text-white/60 hover:text-[#a13e2a] transition-colors font-body text-sm" href="#">Contact</a>
+<a class="text-white/60 hover:text-[#a13e2a] transition-colors font-body text-sm" href="#">Support</a>
+</div>
+</div>
+</div>
+<div class="border-t border-white/5 py-8 text-center px-12">
+<p class="text-white/40 text-xs font-label">© 2024 NWCT Arts Council. All rights reserved.</p>
+</div>
+</footer>
+</body></html>
