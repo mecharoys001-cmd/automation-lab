@@ -196,7 +196,7 @@ export default function ReportsPage() {
             )}
           </div>
         ) : (
-          <Dashboard data={data} fileName={fileName} onReset={reset} />
+          <Dashboard data={data} fileName={fileName} onReset={reset} isSharedView={isSharedView} />
         )}
       </div>
     </div>

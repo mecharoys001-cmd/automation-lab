@@ -15,9 +15,10 @@ interface Props {
   data: DashboardData;
   fileName: string;
   onReset: () => void;
+  isSharedView?: boolean;
 }
 
-export default function Dashboard({ data, fileName, onReset }: Props) {
+export default function Dashboard({ data, fileName, onReset, isSharedView }: Props) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "shortening" | "copied" | "error">("idle");
@@ -163,13 +164,15 @@ export default function Dashboard({ data, fileName, onReset }: Props) {
         >
           {exporting ? "⏳ Generating PDF..." : "📄 Export PDF"}
         </button>
-        <button
-          onClick={onReset}
-          className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
-          title="Upload a different file"
-        >
-          Upload New File
-        </button>
+        {!isSharedView && (
+          <button
+            onClick={onReset}
+            className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+            title="Upload a different file"
+          >
+            Upload New File
+          </button>
+        )}
       </div>
 
       {/* Everything below is captured for PDF */}
