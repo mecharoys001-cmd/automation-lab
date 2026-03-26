@@ -72,7 +72,9 @@ export default function ReportsPage() {
           history.replaceState(null, "", window.location.pathname);
         }
 
+        console.log('[usage-tracking] Tracking reports usage...');
         hashCSVContent(text).then((hash) => {
+          console.log('[usage-tracking] Hash generated:', hash.slice(0, 12));
           trackToolUsage('reports', {
             contentHash: hash,
             metadata: {
@@ -80,6 +82,8 @@ export default function ReportsPage() {
               file_name: file.name,
             },
           });
+        }).catch((err) => {
+          console.error('[usage-tracking] Hash failed:', err);
         });
       } catch (err) {
         setError(`Failed to parse CSV: ${err instanceof Error ? err.message : "Unknown error"}`);
