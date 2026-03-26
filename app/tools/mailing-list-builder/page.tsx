@@ -69,6 +69,79 @@ function unparseCSV(rows: Record<string, string>[]): string {
   return keys.join(',') + '\n' + rows.map(r => keys.map(k => escape(r[k] || '')).join(',')).join('\n');
 }
 
+// ── Column Detection ──
+
+const NAME_ALIASES = ['billing name', 'name', 'full name', 'contact name', 'customer name', 'customer'];
+const FIRST_NAME_ALIASES = ['first name', 'firstname', 'first'];
+const LAST_NAME_ALIASES = ['last name', 'lastname', 'last', 'surname', 'family name'];
+const EMAIL_ALIASES = ['email', 'email address', 'e-mail', 'e-mail address', 'customer email'];
+const PHONE_ALIASES = ['phone', 'phone number', 'telephone', 'phone #', 'mobile', 'cell', 'billing phone'];
+
+interface ColumnMapping {
+  mode: 'name' | 'first-last';
+  nameCol?: string;       // when mode === 'name'
+  firstNameCol?: string;  // when mode === 'first-last'
+  lastNameCol?: string;   // when mode === 'first-last'
+  emailCol: string;
+  phoneCol: string;
+}
+
+interface DetectionResult {
+  mapping: ColumnMapping | null;
+  partial: Partial<ColumnMapping>;
+  detectedLabels: Record<string, string>; // e.g. { Name: 'Billing Name', Email: 'Email' }
+}
+
+function findColumn(fields: string[], aliases: string[]): string | undefined {
+  const lower = fields.map(f => f.trim().toLowerCase());
+  for (const alias of aliases) {
+    const idx = lower.indexOf(alias);
+    if (idx !== -1) return fields[idx];
+  }
+  return undefined;
+}
+
+function detectColumns(fields: string[]): DetectionResult {
+  const trimmed = fields.map(f => f.trim());
+  const firstNameCol = findColumn(trimmed, FIRST_NAME_ALIASES);
+  const lastNameCol = findColumn(trimmed, LAST_NAME_ALIASES);
+  const nameCol = findColumn(trimmed, NAME_ALIASES);
+  const emailCol = findColumn(trimmed, EMAIL_ALIASES);
+  const phoneCol = findColumn(trimmed, PHONE_ALIASES);
+
+  const detectedLabels: Record<string, string> = {};
+  const partial: Partial<ColumnMapping> = {};
+
+  // Determine name mode
+  let nameResolved = false;
+  if (firstNameCol && lastNameCol) {
+    partial.mode = 'first-last';
+    partial.firstNameCol = firstNameCol;
+    partial.lastNameCol = lastNameCol;
+    detectedLabels['First Name'] = firstNameCol;
+    detectedLabels['Last Name'] = lastNameCol;
+    nameResolved = true;
+  } else if (nameCol) {
+    partial.mode = 'name';
+    partial.nameCol = nameCol;
+    detectedLabels['Name'] = nameCol;
+    nameResolved = true;
+  }
+
+  if (emailCol) { partial.emailCol = emailCol; detectedLabels['Email'] = emailCol; }
+  if (phoneCol) { partial.phoneCol = phoneCol; detectedLabels['Phone'] = phoneCol; }
+
+  // Full mapping if all detected
+  if (nameResolved && emailCol && phoneCol) {
+    const mapping: ColumnMapping = partial.mode === 'first-last'
+      ? { mode: 'first-last', firstNameCol: partial.firstNameCol!, lastNameCol: partial.lastNameCol!, emailCol, phoneCol }
+      : { mode: 'name', nameCol: partial.nameCol!, emailCol, phoneCol };
+    return { mapping, partial, detectedLabels };
+  }
+
+  return { mapping: null, partial, detectedLabels };
+}
+
 // ── Core Processing ──
 
 interface NameResult { firstName: string; lastName: string; flagged: boolean; flagReason: string }
@@ -113,42 +186,40 @@ function cleanPhone(phone: string): PhoneResult {
   return { formatted, flagged: false, flagReason: '' };
 }
 
-function processCSV(csvText: string): ProcessResult {
-  const parsed = parseCSV(csvText);
-  const rows = parsed.data;
-
-  // Validate required columns exist
-  const fields = parsed.fields.map(f => f.trim());
-  const missing: string[] = [];
-  if (!fields.includes('Billing Name')) missing.push('Billing Name');
-  if (!fields.includes('Email')) missing.push('Email');
-  if (!fields.includes('Phone')) missing.push('Phone');
-  if (missing.length > 0) {
-    return { clean: [], flagged: [], stats: { totalRows: rows.length, afterNameFilter: 0, afterContactFilter: 0, afterDedup: 0, clean: 0, flagged: 0 }, error: `Missing required column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}. Found columns: ${fields.slice(0, 10).join(', ')}${fields.length > 10 ? '...' : ''}` };
-  }
-
+function processCSVWithMapping(csvData: Record<string, string>[], mapping: ColumnMapping): ProcessResult {
+  const rows = csvData;
   const stats: Stats = { totalRows: rows.length, afterNameFilter: 0, afterContactFilter: 0, afterDedup: 0, clean: 0, flagged: 0 };
 
-  // Step 1: Filter empty/A Customer billing names
+  const getName = (r: Record<string, string>) => {
+    if (mapping.mode === 'first-last') {
+      return { first: (r[mapping.firstNameCol!] || '').trim(), last: (r[mapping.lastNameCol!] || '').trim() };
+    }
+    return null; // will use parseName
+  };
+  const getRawName = (r: Record<string, string>) => mapping.mode === 'name' ? (r[mapping.nameCol!] || '').trim() : '';
+  const getEmail = (r: Record<string, string>) => (r[mapping.emailCol] || '').trim();
+  const getPhone = (r: Record<string, string>) => (r[mapping.phoneCol] || '').trim();
+
+  // Step 1: Filter empty names and 'A Customer'
   let filtered = rows.filter(r => {
-    const bn = (r['Billing Name'] || '').trim();
+    if (mapping.mode === 'first-last') {
+      const n = getName(r)!;
+      return n.first || n.last;
+    }
+    const bn = getRawName(r);
     return bn && bn !== 'A Customer';
   });
   stats.afterNameFilter = filtered.length;
 
   // Step 2: Filter rows missing BOTH email AND phone
-  filtered = filtered.filter(r => {
-    const email = (r['Email'] || '').trim();
-    const phone = (r['Phone'] || '').trim();
-    return email || phone;
-  });
+  filtered = filtered.filter(r => getEmail(r) || getPhone(r));
   stats.afterContactFilter = filtered.length;
 
   // Step 3: Deduplicate by email, then phone for email-less
   const byEmail = new Map<string, Record<string, string>>();
   const noEmail: Record<string, string>[] = [];
   for (const row of filtered) {
-    const email = (row['Email'] || '').trim().toLowerCase();
+    const email = getEmail(row).toLowerCase();
     if (email) {
       if (!byEmail.has(email)) byEmail.set(email, row);
     } else {
@@ -157,7 +228,7 @@ function processCSV(csvText: string): ProcessResult {
   }
   const byPhone = new Map<string, Record<string, string>>();
   for (const row of noEmail) {
-    const phone = (row['Phone'] || '').trim();
+    const phone = getPhone(row);
     if (!byPhone.has(phone)) byPhone.set(phone, row);
   }
   const deduped = [...byEmail.values(), ...byPhone.values()];
@@ -168,17 +239,32 @@ function processCSV(csvText: string): ProcessResult {
   const flaggedList: Contact[] = [];
 
   for (const row of deduped) {
-    const nameResult = parseName(row['Billing Name']);
-    const phoneResult = cleanPhone(row['Phone']);
+    let firstName: string, lastName: string;
+    let nameFlagged = false, nameFlagReason = '';
+
+    if (mapping.mode === 'first-last') {
+      const n = getName(row)!;
+      firstName = n.first;
+      lastName = n.last;
+      // No name parsing needed — use values directly
+    } else {
+      const nameResult = parseName(getRawName(row));
+      firstName = nameResult.firstName;
+      lastName = nameResult.lastName;
+      nameFlagged = nameResult.flagged;
+      nameFlagReason = nameResult.flagReason;
+    }
+
+    const phoneResult = cleanPhone(getPhone(row));
     const contact: Contact = {
-      'First Name': nameResult.firstName,
-      'Last Name': nameResult.lastName,
-      'Email Address': (row['Email'] || '').trim(),
+      'First Name': firstName,
+      'Last Name': lastName,
+      'Email Address': getEmail(row),
       'Phone Number': phoneResult.formatted,
     };
-    if (nameResult.flagged || phoneResult.flagged) {
+    if (nameFlagged || phoneResult.flagged) {
       const reasons: string[] = [];
-      if (nameResult.flagged) reasons.push(nameResult.flagReason);
+      if (nameFlagged) reasons.push(nameFlagReason);
       if (phoneResult.flagged) reasons.push(phoneResult.flagReason);
       contact._flagReason = reasons.join('; ');
       flaggedList.push(contact);
@@ -190,6 +276,25 @@ function processCSV(csvText: string): ProcessResult {
   stats.clean = clean.length;
   stats.flagged = flaggedList.length;
   return { clean, flagged: flaggedList, stats };
+}
+
+// Legacy wrapper for tests that call processCSV(text)
+function processCSV(csvText: string): ProcessResult {
+  const parsed = parseCSV(csvText);
+  const fields = parsed.fields.map(f => f.trim());
+  const detection = detectColumns(fields);
+  if (!detection.mapping) {
+    const missing: string[] = [];
+    if (!detection.partial.mode) missing.push('Name (or First Name + Last Name)');
+    if (!detection.partial.emailCol) missing.push('Email');
+    if (!detection.partial.phoneCol) missing.push('Phone');
+    return {
+      clean: [], flagged: [],
+      stats: { totalRows: parsed.data.length, afterNameFilter: 0, afterContactFilter: 0, afterDedup: 0, clean: 0, flagged: 0 },
+      error: `Could not auto-detect column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}. Found columns: ${fields.slice(0, 10).join(', ')}${fields.length > 10 ? '...' : ''}`,
+    };
+  }
+  return processCSVWithMapping(parsed.data, detection.mapping);
 }
 
 // ── CSV Generation & Download ──
@@ -260,10 +365,10 @@ function runTests(): TestLog[] {
   function assert(name: string, actual: unknown, expected: unknown) {
     if (JSON.stringify(actual) === JSON.stringify(expected)) {
       pass++;
-      logs.push({ type: 'pass', text: '  ✓ ' + name });
+      logs.push({ type: 'pass', text: '  \u2713 ' + name });
     } else {
       fail++;
-      logs.push({ type: 'fail', text: '  ✗ ' + name + ' — expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(actual) });
+      logs.push({ type: 'fail', text: '  \u2717 ' + name + ' \u2014 expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(actual) });
     }
   }
 
@@ -343,8 +448,186 @@ function runTests(): TestLog[] {
   const r2 = processCSV(testCSV2);
   assert('Same phone different email status = both kept', r2.stats.afterDedup, 2);
 
+  // Column detection tests
+  logs.push({ type: 'header', text: 'Column Detection' });
+
+  let det = detectColumns(['Billing Name', 'Email', 'Phone']);
+  assert('Shopify columns detected', det.mapping !== null, true);
+  assert('Shopify mode = name', det.mapping?.mode, 'name');
+
+  det = detectColumns(['First Name', 'Last Name', 'Email Address', 'Phone Number']);
+  assert('First+Last columns detected', det.mapping !== null, true);
+  assert('First+Last mode', det.mapping?.mode, 'first-last');
+
+  det = detectColumns(['full name', 'e-mail', 'mobile']);
+  assert('Aliases detected', det.mapping !== null, true);
+
+  det = detectColumns(['Customer Name', 'Customer Email', 'Billing Phone']);
+  assert('Mixed aliases detected', det.mapping !== null, true);
+
+  det = detectColumns(['foo', 'bar', 'baz']);
+  assert('Unknown columns not detected', det.mapping, null);
+
+  // First+Last name processing test
+  const firstLastCSV = unparseCSV([
+    { 'First Name': 'John', 'Last Name': 'Smith', 'Email Address': 'john@test.com', 'Phone Number': '+18001234567' },
+    { 'First Name': 'Jane', 'Last Name': 'Doe', 'Email Address': 'jane@test.com', 'Phone Number': '+18009876543' },
+  ]);
+  const flParsed = parseCSV(firstLastCSV);
+  const flDet = detectColumns(flParsed.fields);
+  assert('First+Last CSV auto-detected', flDet.mapping !== null, true);
+  if (flDet.mapping) {
+    const flResult = processCSVWithMapping(flParsed.data, flDet.mapping);
+    assert('First+Last uses values directly', flResult.clean[0]['First Name'], 'John');
+    assert('First+Last last name', flResult.clean[0]['Last Name'], 'Smith');
+    assert('First+Last no flagging on names', flResult.stats.flagged, 0);
+  }
+
   logs.push({ type: 'header', text: 'Results: ' + pass + ' passed, ' + fail + ' failed' });
   return logs;
+}
+
+// ── Column Mapping UI ──
+
+function ColumnMappingUI({ fields, partial, onProcess }: {
+  fields: string[];
+  partial: Partial<ColumnMapping>;
+  onProcess: (mapping: ColumnMapping) => void;
+}) {
+  const [nameMode, setNameMode] = useState<'name' | 'first-last'>(partial.mode || 'name');
+  const [nameCol, setNameCol] = useState(partial.nameCol || '');
+  const [firstNameCol, setFirstNameCol] = useState(partial.firstNameCol || '');
+  const [lastNameCol, setLastNameCol] = useState(partial.lastNameCol || '');
+  const [emailCol, setEmailCol] = useState(partial.emailCol || '');
+  const [phoneCol, setPhoneCol] = useState(partial.phoneCol || '');
+
+  const canProcess = nameMode === 'first-last'
+    ? (firstNameCol && lastNameCol && emailCol && phoneCol)
+    : (nameCol && emailCol && phoneCol);
+
+  const handleProcess = () => {
+    if (!canProcess) return;
+    if (nameMode === 'first-last') {
+      onProcess({ mode: 'first-last', firstNameCol, lastNameCol, emailCol, phoneCol });
+    } else {
+      onProcess({ mode: 'name', nameCol, emailCol, phoneCol });
+    }
+  };
+
+  const selectStyle: React.CSSProperties = {
+    width: '100%', padding: '8px 12px', borderRadius: 8,
+    border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#374151',
+    backgroundColor: '#fff', outline: 'none',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: '0.8rem', fontWeight: 600, color: '#475569',
+    textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4,
+  };
+
+  return (
+    <div style={{
+      marginTop: 24, backgroundColor: '#fff', borderRadius: 12,
+      border: '1px solid #E2E8F0', padding: '24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    }}>
+      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
+        Column Mapping
+      </h2>
+      <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: 20, lineHeight: 1.5 }}>
+        Some columns couldn&apos;t be auto-detected. Please map each field to a column in your CSV.
+      </p>
+
+      {/* Name mode toggle */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={labelStyle}>Name Format</div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button
+            onClick={() => setNameMode('name')}
+            style={{
+              padding: '6px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
+              border: '1px solid #e2e8f0', cursor: 'pointer',
+              backgroundColor: nameMode === 'name' ? '#3B82F6' : '#fff',
+              color: nameMode === 'name' ? '#fff' : '#374151',
+            }}
+          >
+            Single Name Column
+          </button>
+          <button
+            onClick={() => setNameMode('first-last')}
+            style={{
+              padding: '6px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
+              border: '1px solid #e2e8f0', cursor: 'pointer',
+              backgroundColor: nameMode === 'first-last' ? '#3B82F6' : '#fff',
+              color: nameMode === 'first-last' ? '#fff' : '#374151',
+            }}
+          >
+            First + Last Name
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+        {nameMode === 'name' ? (
+          <div>
+            <div style={labelStyle}>Name</div>
+            <select value={nameCol} onChange={e => setNameCol(e.target.value)} style={selectStyle}>
+              <option value="">-- Select column --</option>
+              {fields.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+        ) : (
+          <>
+            <div>
+              <div style={labelStyle}>First Name</div>
+              <select value={firstNameCol} onChange={e => setFirstNameCol(e.target.value)} style={selectStyle}>
+                <option value="">-- Select column --</option>
+                {fields.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={labelStyle}>Last Name</div>
+              <select value={lastNameCol} onChange={e => setLastNameCol(e.target.value)} style={selectStyle}>
+                <option value="">-- Select column --</option>
+                {fields.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+        <div>
+          <div style={labelStyle}>Email</div>
+          <select value={emailCol} onChange={e => setEmailCol(e.target.value)} style={selectStyle}>
+            <option value="">-- Select column --</option>
+            {fields.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={labelStyle}>Phone</div>
+          <select value={phoneCol} onChange={e => setPhoneCol(e.target.value)} style={selectStyle}>
+            <option value="">-- Select column --</option>
+            {fields.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <button
+        disabled={!canProcess}
+        onClick={handleProcess}
+        style={{
+          marginTop: 20, padding: '10px 24px', borderRadius: 8, border: 'none',
+          fontSize: '0.9rem', fontWeight: 600,
+          cursor: canProcess ? 'pointer' : 'not-allowed',
+          backgroundColor: '#3B82F6', color: '#fff',
+          opacity: canProcess ? 1 : 0.5,
+          transition: 'background-color 0.15s',
+        }}
+        onMouseEnter={e => { if (canProcess) (e.target as HTMLElement).style.backgroundColor = '#2563EB'; }}
+        onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = '#3B82F6'; }}
+      >
+        Process CSV
+      </button>
+    </div>
+  );
 }
 
 // ── Main Page Component ──
@@ -358,6 +641,13 @@ export default function MailingListBuilderPage() {
   const [testLogs, setTestLogs] = useState<TestLog[] | null>(null);
   const [showFlagged, setShowFlagged] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [detectedLabels, setDetectedLabels] = useState<Record<string, string> | null>(null);
+
+  // Column mapping state
+  const [pendingData, setPendingData] = useState<Record<string, string>[] | null>(null);
+  const [pendingFields, setPendingFields] = useState<string[] | null>(null);
+  const [pendingPartial, setPendingPartial] = useState<Partial<ColumnMapping> | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -366,13 +656,53 @@ export default function MailingListBuilderPage() {
     const reader = new FileReader();
     reader.onload = e => {
       const text = e.target?.result as string;
-      setResult(processCSV(text));
+      const parsed = parseCSV(text);
+      const fields = parsed.fields.map(f => f.trim());
+      const detection = detectColumns(fields);
+
+      // Reset state
+      setTestLogs(null);
       setShowFlagged(false);
       setCurrentPage(1);
-      setTestLogs(null);
+      setPendingData(null);
+      setPendingFields(null);
+      setPendingPartial(null);
+
+      if (detection.mapping) {
+        // All columns auto-detected
+        setDetectedLabels(detection.detectedLabels);
+        setResult(processCSVWithMapping(parsed.data, detection.mapping));
+      } else {
+        // Need manual mapping
+        setDetectedLabels(null);
+        setResult(null);
+        setPendingData(parsed.data);
+        setPendingFields(parsed.fields);
+        setPendingPartial(detection.partial);
+      }
     };
     reader.readAsText(file);
   }, []);
+
+  const handleManualMapping = useCallback((mapping: ColumnMapping) => {
+    if (!pendingData) return;
+    const labels: Record<string, string> = {};
+    if (mapping.mode === 'first-last') {
+      labels['First Name'] = mapping.firstNameCol!;
+      labels['Last Name'] = mapping.lastNameCol!;
+    } else {
+      labels['Name'] = mapping.nameCol!;
+    }
+    labels['Email'] = mapping.emailCol;
+    labels['Phone'] = mapping.phoneCol;
+    setDetectedLabels(labels);
+    setResult(processCSVWithMapping(pendingData, mapping));
+    setPendingData(null);
+    setPendingFields(null);
+    setPendingPartial(null);
+    setShowFlagged(false);
+    setCurrentPage(1);
+  }, [pendingData]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -384,6 +714,10 @@ export default function MailingListBuilderPage() {
     if (e.shiftKey) {
       setTestLogs(runTests());
       setResult(null);
+      setPendingData(null);
+      setPendingFields(null);
+      setPendingPartial(null);
+      setDetectedLabels(null);
     }
   }, []);
 
@@ -423,10 +757,10 @@ export default function MailingListBuilderPage() {
           onClick={onTitleClick}
           style={{ fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem', color: '#1a1a2e', cursor: 'default', userSelect: 'none' }}
         >
-          ✉️ Mailing List Builder
+          Mailing List Builder
         </h1>
         <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.7, maxWidth: 600 }}>
-          Convert a Shopify customer export CSV into a clean, deduplicated Constant Contact mailing list.
+          Convert any contact list CSV into a clean, deduplicated Constant Contact mailing list.
           Names are parsed, phones formatted, and duplicates removed — all in your browser.
         </p>
       </div>
@@ -435,7 +769,7 @@ export default function MailingListBuilderPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 1.5rem 5rem' }}>
 
         {/* Drop Zone */}
-        <Tip text="Drop a Shopify CSV export here, or click to browse">
+        <Tip text="Drop a CSV file here, or click to browse">
           <div
             onClick={() => fileRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -450,15 +784,24 @@ export default function MailingListBuilderPage() {
             }}
           >
             <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#374151', marginBottom: 4 }}>
-              {fileName ? `✓ ${fileName}` : 'Drop your Shopify CSV here'}
+              {fileName ? `\u2713 ${fileName}` : 'Drop your CSV here'}
             </p>
             <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-              {fileName ? 'Drop another file to re-process' : 'or click to browse'}
+              {fileName ? 'Drop another file to re-process' : 'or click to browse — works with Shopify exports, Constant Contact lists, or any contact CSV'}
             </p>
           </div>
         </Tip>
         <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }}
           onChange={e => { if (e.target.files?.length) handleFile(e.target.files[0]); }} />
+
+        {/* Column Mapping UI (when auto-detection incomplete) */}
+        {pendingFields && pendingPartial && (
+          <ColumnMappingUI
+            fields={pendingFields}
+            partial={pendingPartial}
+            onProcess={handleManualMapping}
+          />
+        )}
 
         {/* Error */}
         {result?.error && (
@@ -466,15 +809,31 @@ export default function MailingListBuilderPage() {
             marginTop: 24, backgroundColor: '#FEF2F2', border: '1px solid #FECACA',
             borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 10, alignItems: 'flex-start',
           }}>
-            <span style={{ fontSize: 18 }}>❌</span>
+            <span style={{ fontSize: 18 }}>X</span>
             <div>
               <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>CSV Column Mismatch</p>
               <p style={{ fontSize: '0.82rem', color: '#B91C1C', lineHeight: 1.5 }}>{result.error}</p>
-              <p style={{ fontSize: '0.82rem', color: '#991B1B', marginTop: 8 }}>
-                This tool expects a Shopify CSV export with columns named exactly: <strong>Billing Name</strong>, <strong>Email</strong>, and <strong>Phone</strong>.
-                The columns can be in any order, and extra columns are ignored.
-              </p>
             </div>
+          </div>
+        )}
+
+        {/* Auto-detection banner */}
+        {result && !result.error && detectedLabels && (
+          <div style={{
+            marginTop: 24, backgroundColor: '#F0F9FF', border: '1px solid #BAE6FD',
+            borderRadius: 12, padding: '12px 16px',
+            display: 'flex', gap: 8, alignItems: 'center',
+            fontSize: '0.82rem', color: '#0369A1',
+          }}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>i</span>
+            <span>
+              Auto-detected columns: {Object.entries(detectedLabels).map(([field, col], i) => (
+                <span key={field}>
+                  {i > 0 && ', '}
+                  {field} <span style={{ color: '#0284C7', fontWeight: 600 }}>&rarr;</span> {col}
+                </span>
+              ))}
+            </span>
           </div>
         )}
 
@@ -512,7 +871,7 @@ export default function MailingListBuilderPage() {
                 onMouseEnter={e => { if (result.clean.length > 0) (e.target as HTMLElement).style.backgroundColor = '#2563EB'; }}
                 onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = '#3B82F6'; }}
               >
-                ↓ Download Clean CSV
+                Download Clean CSV
               </button>
             </Tip>
             <Tip text="Download flagged contacts with reasons for manual review">
@@ -531,7 +890,7 @@ export default function MailingListBuilderPage() {
                 onMouseEnter={e => { if (result.flagged.length > 0) (e.target as HTMLElement).style.backgroundColor = '#f8fafc'; }}
                 onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = '#fff'; }}
               >
-                ↓ Download Flagged CSV
+                Download Flagged CSV
               </button>
             </Tip>
             {result.flagged.length > 0 && (
@@ -548,7 +907,7 @@ export default function MailingListBuilderPage() {
                   onMouseEnter={e => { (e.target as HTMLElement).style.backgroundColor = '#f8fafc'; }}
                   onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = '#fff'; }}
                 >
-                  {showFlagged ? '← Show Clean' : '⚠ Show Flagged'}
+                  {showFlagged ? 'Show Clean' : 'Show Flagged'}
                 </button>
               </Tip>
             )}
@@ -592,7 +951,7 @@ export default function MailingListBuilderPage() {
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ''; }}
                         >
                           <td style={tdStyle}>{rowOffset + i + 1}</td>
-                          {cols.map(c => <td key={c} style={tdStyle}>{(row as unknown as Record<string, string>)[c] || '—'}</td>)}
+                          {cols.map(c => <td key={c} style={tdStyle}>{(row as unknown as Record<string, string>)[c] || '\u2014'}</td>)}
                           {showFlagged && (
                             <td style={{ ...tdStyle, color: '#d97706', fontSize: '0.8rem', whiteSpace: 'normal', maxWidth: 300 }}>
                               {row._flagReason}
@@ -619,7 +978,7 @@ export default function MailingListBuilderPage() {
             borderRadius: 12, padding: '16px 20px',
             display: 'flex', gap: 10, alignItems: 'flex-start',
           }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
+            <span style={{ fontSize: 18 }}>!</span>
             <div>
               <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#92400E', marginBottom: 4 }}>
                 {result.flagged.length} contact{result.flagged.length !== 1 ? 's' : ''} flagged for review
@@ -729,7 +1088,7 @@ function colTooltip(col: string): string {
   switch (col) {
     case 'First Name': return 'Parsed from the last comma-separated segment of Billing Name';
     case 'Last Name': return 'Remaining words after first name in the name segment';
-    case 'Email Address': return 'Email from the Shopify CSV, used for primary deduplication';
+    case 'Email Address': return 'Email from the CSV, used for primary deduplication';
     case 'Phone Number': return 'Formatted as (XXX) XXX-XXXX after stripping country code';
     default: return col;
   }
