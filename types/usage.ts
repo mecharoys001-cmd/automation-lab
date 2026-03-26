@@ -10,6 +10,11 @@ export interface ToolConfig {
   is_active: boolean;
   is_external: boolean;
   tracking_notes: string | null;
+  run_frequency: 'daily' | 'weekly' | 'monthly' | 'custom' | null;
+  run_interval_days: number | null;
+  first_run_date: string | null;
+  historical_runs: number;
+  next_run_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +37,10 @@ export interface ToolUsageStats {
   description: string | null;
   is_external?: boolean;
   tracking_notes?: string | null;
+  run_frequency?: string | null;
+  run_interval_days?: number | null;
+  first_run_date?: string | null;
+  next_run_date?: string | null;
   total_uses: number;
   total_minutes_saved: number;
   total_hours_saved: number;

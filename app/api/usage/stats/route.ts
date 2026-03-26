@@ -3,7 +3,64 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { getSiteAdmin, isSiteAdmin } from '@/lib/site-rbac';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ToolUsageStats } from '@/types/usage';
+
+function getIntervalDays(frequency: string, customDays?: number | null): number {
+  switch (frequency) {
+    case 'daily': return 1;
+    case 'weekly': return 7;
+    case 'monthly': return 30;
+    case 'custom': return customDays || 30;
+    default: return 30;
+  }
+}
+
+/** Auto-track: for external tools past their next_run_date, insert usage events and advance next_run_date. */
+async function autoTrackDueTools(svc: SupabaseClient) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: dueTools } = await (svc.from('tool_config') as any)
+    .select('*')
+    .eq('is_active', true)
+    .eq('is_external', true)
+    .not('run_frequency', 'is', null)
+    .not('next_run_date', 'is', null)
+    .lte('next_run_date', todayStr);
+
+  if (!dueTools || dueTools.length === 0) return;
+
+  for (const tool of dueTools) {
+    const intervalDays = getIntervalDays(tool.run_frequency, tool.run_interval_days);
+    let nextDate = new Date(tool.next_run_date);
+
+    // Insert a usage event for each missed run date up to today
+    const eventsToInsert = [];
+    while (nextDate <= today) {
+      eventsToInsert.push({
+        tool_id: tool.tool_id,
+        metadata: { auto_tracked: true },
+        created_at: nextDate.toISOString(),
+      });
+      nextDate.setDate(nextDate.getDate() + intervalDays);
+    }
+
+    if (eventsToInsert.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (svc.from('tool_usage') as any).insert(eventsToInsert);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (svc.from('tool_config') as any)
+        .update({
+          next_run_date: nextDate.toISOString().split('T')[0],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('tool_id', tool.tool_id);
+    }
+  }
+}
 
 export async function GET() {
   try {
@@ -19,6 +76,9 @@ export async function GET() {
     }
 
     const svc = createServiceClient();
+
+    // Auto-track any external tools that are past their next_run_date
+    await autoTrackDueTools(svc);
 
     // Get all tool configs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,6 +161,10 @@ export async function GET() {
         description: config.description,
         is_external: config.is_external,
         tracking_notes: config.tracking_notes,
+        run_frequency: config.run_frequency,
+        run_interval_days: config.run_interval_days,
+        first_run_date: config.first_run_date,
+        next_run_date: config.next_run_date,
         total_uses: totalUses,
         total_minutes_saved: totalMinutes,
         total_hours_saved: Math.round((totalMinutes / 60) * 10) / 10,

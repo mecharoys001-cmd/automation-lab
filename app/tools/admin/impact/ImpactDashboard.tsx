@@ -90,6 +90,10 @@ export default function ImpactDashboard() {
   const [newMinutes, setNewMinutes] = useState('0');
   const [newTrackingNotes, setNewTrackingNotes] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newRunFrequency, setNewRunFrequency] = useState('');
+  const [newCustomInterval, setNewCustomInterval] = useState('30');
+  const [newFirstRunDate, setNewFirstRunDate] = useState('');
+  const [newHistoricalRuns, setNewHistoricalRuns] = useState('0');
   const [addSaving, setAddSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -184,6 +188,10 @@ export default function ImpactDashboard() {
           description: newDescription || null,
           is_external: true,
           tracking_notes: newTrackingNotes || null,
+          run_frequency: newRunFrequency || null,
+          run_interval_days: newRunFrequency === 'custom' ? Number(newCustomInterval) || 30 : null,
+          first_run_date: newFirstRunDate || null,
+          historical_runs: Number(newHistoricalRuns) || 0,
         }),
       });
       if (!res.ok) {
@@ -198,6 +206,10 @@ export default function ImpactDashboard() {
       setNewMinutes('0');
       setNewTrackingNotes('');
       setNewDescription('');
+      setNewRunFrequency('');
+      setNewCustomInterval('30');
+      setNewFirstRunDate('');
+      setNewHistoricalRuns('0');
       fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add tool');
@@ -268,10 +280,32 @@ export default function ImpactDashboard() {
       <div key={s.tool_id} style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '16px', color: '#1a1a2e' }}>{s.display_name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 700, fontSize: '16px', color: '#1a1a2e' }}>{s.display_name}</span>
+              {s.run_frequency && (
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#6366f1',
+                  background: '#eef2ff',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  textTransform: 'capitalize',
+                }}>
+                  {s.run_frequency === 'custom' && s.run_interval_days
+                    ? `Every ${s.run_interval_days}d`
+                    : s.run_frequency}
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{s.description}</div>
             {s.tracking_notes && (
               <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', fontStyle: 'italic' }}>{s.tracking_notes}</div>
+            )}
+            {s.next_run_date && (
+              <div style={{ fontSize: '11px', color: '#1282a2', marginTop: '4px', fontWeight: 600 }}>
+                Next auto-run: {new Date(s.next_run_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </div>
             )}
           </div>
           <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -426,6 +460,10 @@ export default function ImpactDashboard() {
               description: c.description,
               is_external: true,
               tracking_notes: c.tracking_notes,
+              run_frequency: c.run_frequency,
+              run_interval_days: c.run_interval_days,
+              first_run_date: c.first_run_date,
+              next_run_date: c.next_run_date,
               total_uses: 0,
               total_minutes_saved: 0,
               total_hours_saved: 0,
@@ -541,6 +579,60 @@ export default function ImpactDashboard() {
               />
             </div>
 
+            {/* Recurring usage fields */}
+            <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a2e', marginBottom: '0.75rem' }}>
+                Recurring Usage (optional)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={labelStyle}>Run Frequency</label>
+                  <select
+                    value={newRunFrequency}
+                    onChange={(e) => setNewRunFrequency(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">None</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                {newRunFrequency === 'custom' && (
+                  <div>
+                    <label style={labelStyle}>Interval (days)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newCustomInterval}
+                      onChange={(e) => setNewCustomInterval(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+                )}
+                <div>
+                  <label style={labelStyle}>First Run Date</label>
+                  <input
+                    type="date"
+                    value={newFirstRunDate}
+                    onChange={(e) => setNewFirstRunDate(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Times Run So Far</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newHistoricalRuns}
+                    onChange={(e) => setNewHistoricalRuns(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => {
@@ -552,6 +644,10 @@ export default function ImpactDashboard() {
                   setNewMinutes('0');
                   setNewTrackingNotes('');
                   setNewDescription('');
+                  setNewRunFrequency('');
+                  setNewCustomInterval('30');
+                  setNewFirstRunDate('');
+                  setNewHistoricalRuns('0');
                 }}
                 style={{
                   padding: '8px 20px',
