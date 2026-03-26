@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const phases = [
   {
     number: 1,
@@ -58,23 +60,47 @@ export default function Roadmap() {
       id="roadmap"
       style={{
         background: "var(--color-bg-alt)",
-        padding: "96px 24px",
+        padding: "0 0 96px 0",
       }}
     >
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-        {/* Current Phase callout */}
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
+      {/* Research / Call for Participation - full-width split */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          maxWidth: "1200px",
+          margin: "0 auto 64px",
+          overflow: "hidden",
+          minHeight: "480px",
+        }}
+      >
+        {/* Left - full-bleed image */}
+        <div style={{ position: "relative", minHeight: "480px" }}>
+          <Image
+            src="/images/autolab/research-tablet.jpg"
+            alt="Hands holding tablet with bar chart"
+            fill
+            style={{ objectFit: "cover" }}
+          />
+        </div>
+
+        {/* Right - text content */}
+        <div
+          style={{
+            background: "#ffffff",
+            padding: "56px 48px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
           <span
             style={{
-              display: "inline-block",
-              fontSize: "0.75rem",
+              fontSize: "0.7rem",
               fontWeight: 700,
               textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "#ffffff",
-              background: "var(--color-teal)",
-              padding: "6px 18px",
-              borderRadius: "var(--radius-pill)",
+              letterSpacing: "0.15em",
+              color: "#9ca3af",
               marginBottom: "16px",
             }}
           >
@@ -86,8 +112,8 @@ export default function Roadmap() {
               fontFamily: "var(--font-headline)",
               fontSize: "clamp(1.8rem, 4vw, 2.4rem)",
               fontWeight: 700,
-              color: "var(--color-text)",
-              marginBottom: "16px",
+              color: "#1a1a1a",
+              marginBottom: "12px",
             }}
           >
             Research
@@ -98,8 +124,9 @@ export default function Roadmap() {
               fontFamily: "var(--font-headline)",
               fontSize: "1.2rem",
               fontWeight: 600,
-              color: "var(--color-text)",
-              marginBottom: "16px",
+              fontStyle: "italic",
+              color: "var(--color-teal)",
+              marginBottom: "20px",
             }}
           >
             Call for Nonprofit Participation
@@ -110,8 +137,7 @@ export default function Roadmap() {
               fontSize: "1.05rem",
               lineHeight: 1.8,
               color: "var(--color-text-muted)",
-              maxWidth: "640px",
-              margin: "0 auto 28px",
+              marginBottom: "24px",
             }}
           >
             The initiative is currently seeking feedback from arts &amp; culture
@@ -119,26 +145,53 @@ export default function Roadmap() {
             common pain points and opportunities for sector-wide capacity building.
           </p>
 
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
-            target="_blank"
-            rel="noopener noreferrer"
+          <p
             style={{
-              display: "inline-block",
-              padding: "14px 36px",
-              background: "var(--color-teal)",
-              color: "#ffffff",
-              fontFamily: "var(--font-headline)",
-              fontWeight: 700,
-              fontSize: "1rem",
-              borderRadius: "var(--radius-md)",
-              textDecoration: "none",
+              fontSize: "1.05rem",
+              lineHeight: 1.8,
+              color: "var(--color-text-muted)",
+              marginBottom: "28px",
             }}
           >
-            Take the Survey
-          </a>
-        </div>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontWeight: 700,
+                textDecoration: "underline",
+                color: "var(--color-text)",
+              }}
+            >
+              Please fill out this brief survey
+            </a>
+          </p>
 
+          <div>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-block",
+                padding: "14px 36px",
+                background: "var(--color-teal)",
+                color: "#ffffff",
+                fontFamily: "var(--font-headline)",
+                fontWeight: 700,
+                fontSize: "1rem",
+                borderRadius: "var(--radius-md)",
+                textDecoration: "none",
+              }}
+            >
+              Take the Survey
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Phase cards below */}
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px" }}>
         {/* Divider */}
         <div
           style={{

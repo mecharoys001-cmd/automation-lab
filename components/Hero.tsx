@@ -11,25 +11,16 @@ export default function Hero() {
         justifyContent: "center",
         textAlign: "center",
         overflow: "hidden",
+        background: "#ffffff",
       }}
     >
-      {/* Background image */}
+      {/* Wave background at bottom */}
       <Image
-        src="/images/autolab/hero-bg.jpg"
+        src="/images/autolab/wave-bg.jpg"
         alt=""
         fill
         priority
-        style={{ objectFit: "cover", objectPosition: "center" }}
-      />
-
-      {/* Dark overlay */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "rgba(0, 0, 0, 0.55)",
-          zIndex: 1,
-        }}
+        style={{ objectFit: "cover", objectPosition: "center bottom", opacity: 0.35 }}
       />
 
       {/* Content */}
@@ -39,7 +30,10 @@ export default function Hero() {
           zIndex: 2,
           maxWidth: "800px",
           padding: "40px 24px",
-          color: "#ffffff",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0",
         }}
       >
         <h1
@@ -51,51 +45,57 @@ export default function Hero() {
             lineHeight: 1.1,
             marginBottom: "24px",
             textTransform: "uppercase",
+            color: "#1a1a1a",
           }}
         >
           Automation Lab
         </h1>
 
+        {/* Gold/amber divider line */}
+        <div
+          style={{
+            width: "100px",
+            height: "3px",
+            background: "#c8962e",
+            marginBottom: "24px",
+          }}
+        />
+
         <p
           style={{
-            fontSize: "clamp(1.1rem, 2.5vw, 1.4rem)",
-            fontWeight: 400,
-            lineHeight: 1.6,
+            fontSize: "clamp(0.75rem, 1.5vw, 0.9rem)",
+            fontWeight: 500,
+            lineHeight: 1.8,
             maxWidth: "640px",
-            margin: "0 auto 32px",
+            marginBottom: "28px",
             fontFamily: "var(--font-body)",
-            color: "rgba(255,255,255,0.92)",
+            color: "#6b7280",
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
           }}
         >
           Reducing Administrative Burden in the Cultural Sector Through Technology
         </p>
 
-        <div
+        <p
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px",
-            flexWrap: "wrap",
+            fontSize: "0.95rem",
+            fontStyle: "italic",
+            color: "#9ca3af",
+            fontFamily: "var(--font-body)",
+            marginBottom: "16px",
           }}
         >
-          <span
-            style={{
-              fontSize: "1rem",
-              color: "rgba(255,255,255,0.8)",
-              fontFamily: "var(--font-body)",
-            }}
-          >
-            A pilot initiative by the
-          </span>
-          <Image
-            src="/images/autolab/nwct-logo-white.svg"
-            alt="NWCT Arts Council"
-            width={180}
-            height={50}
-            style={{ objectFit: "contain" }}
-          />
-        </div>
+          A pilot initiative by the
+        </p>
+
+        <Image
+          src="/images/autolab/nwct-logo.svg"
+          alt="NWCT Arts Council"
+          width={200}
+          height={56}
+          style={{ objectFit: "contain" }}
+        />
       </div>
     </section>
   );

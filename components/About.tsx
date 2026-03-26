@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function About() {
   return (
     <section
@@ -68,7 +70,7 @@ export default function About() {
             fontSize: "1.05rem",
             lineHeight: 1.85,
             color: "var(--color-text-muted)",
-            marginBottom: "56px",
+            marginBottom: "0",
             textAlign: "center",
           }}
         >
@@ -77,44 +79,59 @@ export default function About() {
           for mission-driven work while building reusable infrastructure for the
           sector.
         </p>
+      </div>
 
-        {/* Theory of Change sub-section */}
+      {/* Theory of Change - full-width split section */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          maxWidth: "1200px",
+          margin: "64px auto 0",
+          overflow: "hidden",
+          borderRadius: "var(--radius-lg)",
+          minHeight: "420px",
+        }}
+      >
+        {/* Left column - dark teal background */}
         <div
           style={{
-            borderTop: "1px solid var(--color-border)",
-            paddingTop: "48px",
+            background: "#1e3a4c",
+            padding: "56px 48px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
           }}
         >
           <h3
             style={{
               fontFamily: "var(--font-headline)",
-              fontSize: "1.4rem",
+              fontSize: "1.6rem",
               fontWeight: 700,
-              color: "var(--color-text)",
+              fontStyle: "italic",
+              color: "#ffffff",
               marginBottom: "24px",
-              textAlign: "center",
             }}
           >
             Our Theory of Change
           </h3>
 
-          <blockquote
+          <p
             style={{
-              fontSize: "1.1rem",
-              fontStyle: "italic",
+              fontSize: "1.05rem",
               lineHeight: 1.8,
-              color: "var(--color-text)",
-              textAlign: "center",
-              maxWidth: "620px",
-              margin: "0 auto 32px",
+              color: "rgba(255,255,255,0.9)",
+              marginBottom: "32px",
             }}
           >
-            &ldquo;We aim to help close the widening AI access gap and ensure
-            that arts &amp; culture nonprofits are not left behind&rdquo; as
-            technology advances.
-          </blockquote>
+            We aim to help close the widening AI access gap and{" "}
+            <strong style={{ color: "#ffffff" }}>
+              ensure that arts &amp; culture nonprofits are not left behind
+            </strong>{" "}
+            as technology advances.
+          </p>
 
-          <div style={{ textAlign: "center" }}>
+          <div>
             <a
               href="https://irp.cdn-website.com/04efc271/files/uploaded/Theory+of+Change+_+Why+This+Matters+Now.pdf"
               target="_blank"
@@ -122,18 +139,29 @@ export default function About() {
               style={{
                 display: "inline-block",
                 padding: "12px 32px",
-                background: "var(--color-teal)",
+                background: "transparent",
                 color: "#ffffff",
                 fontFamily: "var(--font-headline)",
                 fontWeight: 600,
                 fontSize: "0.95rem",
                 borderRadius: "var(--radius-md)",
                 textDecoration: "none",
+                border: "2px solid #ffffff",
               }}
             >
               Learn More
             </a>
           </div>
+        </div>
+
+        {/* Right column - full-bleed image */}
+        <div style={{ position: "relative", minHeight: "420px" }}>
+          <Image
+            src="/images/autolab/theory-code.jpg"
+            alt="Crab plush with code on monitor"
+            fill
+            style={{ objectFit: "cover" }}
+          />
         </div>
       </div>
     </section>
