@@ -111,7 +111,7 @@ export default function IntakePage() {
 
 function IntakeForm() {
   const searchParams = useSearchParams();
-  const urlProgramId = searchParams.get('program_id');
+  const urlProgramId = searchParams.get('program') ?? searchParams.get('program_id');
 
   const [form, setForm] = useState<FormData>({
     first_name: '',
@@ -135,6 +135,7 @@ function IntakeForm() {
   const [hasProgram, setHasProgram] = useState(false);
   const [programLoading, setProgramLoading] = useState(true);
   const [programId, setProgramId] = useState<string | null>(null);
+  const [programError, setProgramError] = useState<'none' | 'missing_param' | 'not_configured'>('none');
 
   useEffect(() => {
     // First fetch programs, then use the program ID to fetch tags

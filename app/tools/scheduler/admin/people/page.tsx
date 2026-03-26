@@ -1455,11 +1455,11 @@ export default function PeoplePage() {
               </p>
               <div className="flex items-center gap-3 flex-wrap">
                 <ClickToCopy
-                  text="https://tools.artsnwct.org/tools/scheduler/intake"
+                  text={`https://tools.artsnwct.org/tools/scheduler/intake${selectedProgramId ? `?program=${selectedProgramId}` : ''}`}
                   label="intake form link"
                 />
                 <a
-                  href="/tools/scheduler/intake"
+                  href={`/tools/scheduler/intake${selectedProgramId ? `?program=${selectedProgramId}` : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
