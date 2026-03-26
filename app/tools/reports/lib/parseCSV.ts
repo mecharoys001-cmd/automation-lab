@@ -3,110 +3,47 @@ import type {
   RawCSVRow,
   Order,
   LineItem,
-  TransactionCategory,
   DashboardData,
   CategoryBreakdown,
   DailyRevenue,
   PaymentMethodBreakdown,
   TopProduct,
-  CampEnrollmentRow,
+  CategoryDrilldownRow,
   FinancialStatusBreakdown,
+  PlatformId,
+  ColumnMapping,
+  CategoryProfile,
 } from "./types";
+import { detectPlatform, buildResolver } from "./platforms";
+import { selectBestProfile, applyCategories } from "./categorize";
 
-function num(val: string | undefined): number {
-  if (!val) return 0;
-  const n = parseFloat(val.replace(/[,$]/g, ""));
-  return isNaN(n) ? 0 : n;
-}
+// ─── Row → Order Normalization ──────────────────────────────
 
-export function detectCategory(name: string): TransactionCategory {
-  if (!name) return "Other";
-  const n = name.trim();
-  const lower = n.toLowerCase();
+function groupRowsIntoOrders(
+  rows: RawCSVRow[],
+  headers: string[],
+  platformId: PlatformId,
+  customMapping?: ColumnMapping
+): { orders: Order[]; detectedPlatform: PlatformId } {
+  const { profile } = detectPlatform(headers);
+  const r = buildResolver(profile, headers, customMapping);
 
-  // Summer Camps
-  if (/\b(FD|HD|SP)\s*#/i.test(n)) return "Summer Camps";
-
-  // Classes
-  const classKeywords = [
-    "pottery wheel",
-    "cartooning",
-    "mud puppies",
-    "sculpture",
-    "saturday clay",
-    "ewow",
-    "friday pottery",
-  ];
-  if (classKeywords.some((k) => lower.includes(k))) return "Classes";
-
-  // Open Studio
-  if (lower.includes("open studio")) return "Open Studio";
-
-  // Ceramics Retail
-  if (/^cer\s/i.test(n)) return "Ceramics Retail";
-
-  // Supplies
-  const supplyKeywords = [
-    "misc supplies",
-    "canvas",
-    "25 lb mid fire clay",
-    "high fire clay",
-  ];
-  if (supplyKeywords.some((k) => lower.includes(k))) return "Supplies";
-
-  // Events
-  const eventKeywords = [
-    "birthday party",
-    "birthday dep",
-    "ddn",
-    "clay play",
-    "date night",
-  ];
-  if (eventKeywords.some((k) => lower.includes(k))) return "Events";
-
-  // Donations
-  const donationKeywords = ["tag sale donation", "donation", "firing"];
-  if (donationKeywords.some((k) => lower.includes(k))) return "Donations";
-
-  // Local Artists
-  if (
-    lower.includes("local artists") ||
-    lower.includes("roberta baker") ||
-    /^patricia\s/i.test(n)
-  )
-    return "Local Artists";
-
-  // Professional Services
-  const profKeywords = [
-    "prof fee",
-    "special rate private lesson",
-    "pottery wheel lessons",
-    "special pottery",
-    "nceca shipping",
-  ];
-  if (profKeywords.some((k) => lower.includes(k))) return "Professional Services";
-
-  return "Other";
-}
-
-function groupRowsIntoOrders(rows: RawCSVRow[]): Order[] {
   const orderMap = new Map<string, { firstRow: RawCSVRow; lineItems: LineItem[] }>();
   const noNameOrders: { firstRow: RawCSVRow; lineItems: LineItem[] }[] = [];
 
   for (const row of rows) {
-    const orderName = (row.Name || "").trim();
-    const lineItemName = (row["Lineitem name"] || "").trim();
+    const orderName = r.str(row, "orderId");
+    const lineItemName = r.str(row, "itemName");
     const lineItem: LineItem | null = lineItemName
       ? {
           name: lineItemName,
-          quantity: Math.max(1, num(row["Lineitem quantity"])),
-          price: num(row["Lineitem price"]),
-          category: detectCategory(lineItemName),
+          quantity: Math.max(1, r.num(row, "itemQuantity")),
+          price: r.num(row, "itemPrice"),
+          category: "Other", // Will be set by categorization
         }
       : null;
 
     if (!orderName) {
-      // Row with no order name — treat as standalone
       if (lineItem) {
         noNameOrders.push({ firstRow: row, lineItems: [lineItem] });
       }
@@ -126,33 +63,37 @@ function groupRowsIntoOrders(rows: RawCSVRow[]): Order[] {
 
   const allEntries = [...orderMap.values(), ...noNameOrders];
 
-  return allEntries.map(({ firstRow, lineItems }) => ({
-    name: (firstRow.Name || "").trim(),
-    email: (firstRow.Email || "").trim(),
-    financialStatus: (firstRow["Financial Status"] || "").trim().toLowerCase(),
-    paidAt: (firstRow["Paid at"] || "").trim(),
-    currency: (firstRow.Currency || "USD").trim(),
-    subtotal: num(firstRow.Subtotal),
-    shipping: num(firstRow.Shipping),
-    taxes: num(firstRow.Taxes),
-    total: num(firstRow.Total),
-    discountAmount: num(firstRow["Discount Amount"]),
-    paymentMethod: (firstRow["Payment Method"] || "Unknown").trim(),
-    createdAt: (firstRow["Created at"] || "").trim(),
-    billingName: (firstRow["Billing Name"] || "").trim(),
-    notes: (firstRow.Notes || "").trim(),
-    vendor: (firstRow.Vendor || "").trim(),
-    outstandingBalance: num(firstRow["Outstanding Balance"]),
-    location: (firstRow.Location || "").trim(),
-    id: (firstRow.Id || "").trim(),
-    tags: (firstRow.Tags || "").trim(),
-    source: (firstRow.Source || "").trim(),
+  const orders = allEntries.map(({ firstRow, lineItems }) => ({
+    name: r.str(firstRow, "orderId"),
+    email: r.str(firstRow, "customerEmail"),
+    financialStatus: r.str(firstRow, "status").toLowerCase(),
+    paidAt: r.str(firstRow, "date"),
+    currency: r.str(firstRow, "currency") || "USD",
+    subtotal: r.num(firstRow, "subtotal"),
+    shipping: r.num(firstRow, "shipping"),
+    taxes: r.num(firstRow, "tax"),
+    total: r.num(firstRow, "orderTotal"),
+    discountAmount: r.num(firstRow, "discount"),
+    paymentMethod: r.str(firstRow, "paymentMethod") || "Unknown",
+    createdAt: r.str(firstRow, "date"),
+    billingName: r.str(firstRow, "customerName"),
+    notes: r.str(firstRow, "notes"),
+    vendor: r.str(firstRow, "vendor"),
+    outstandingBalance: r.num(firstRow, "outstandingBalance"),
+    location: r.str(firstRow, "location"),
+    id: r.str(firstRow, "orderId"),
+    tags: r.str(firstRow, "tags"),
+    source: "",
     lineItems,
   }));
+
+  return { orders, detectedPlatform: platformId };
 }
 
+// ─── Aggregation Functions ──────────────────────────────────
+
 function computeCategoryBreakdown(orders: Order[]): CategoryBreakdown[] {
-  const catMap = new Map<TransactionCategory, number>();
+  const catMap = new Map<string, number>();
   let grandTotal = 0;
 
   for (const order of orders) {
@@ -242,16 +183,17 @@ function computeTopProducts(orders: Order[]): TopProduct[] {
     .slice(0, 10);
 }
 
-function computeCampEnrollment(orders: Order[]): CampEnrollmentRow[] {
-  const campMap = new Map<
+function computeCategoryDrilldown(orders: Order[]): CategoryDrilldownRow[] {
+  const drillMap = new Map<
     string,
-    { enrollments: number; totalRevenue: number; paidRevenue: number; outstanding: number }
+    { category: string; enrollments: number; totalRevenue: number; paidRevenue: number; outstanding: number }
   >();
 
   for (const order of orders) {
     for (const li of order.lineItems) {
-      if (li.category !== "Summer Camps") continue;
-      const existing = campMap.get(li.name) || {
+      const key = `${li.category}::${li.name}`;
+      const existing = drillMap.get(key) || {
+        category: li.category,
         enrollments: 0,
         totalRevenue: 0,
         paidRevenue: 0,
@@ -264,7 +206,6 @@ function computeCampEnrollment(orders: Order[]): CampEnrollmentRow[] {
         existing.paidRevenue += rev;
       }
       if (order.outstandingBalance > 0) {
-        // Attribute proportional outstanding to this line item
         const orderLineTotal = order.lineItems.reduce(
           (s, l) => s + l.price * l.quantity,
           0
@@ -274,12 +215,15 @@ function computeCampEnrollment(orders: Order[]): CampEnrollmentRow[] {
             (rev / orderLineTotal) * order.outstandingBalance;
         }
       }
-      campMap.set(li.name, existing);
+      drillMap.set(key, existing);
     }
   }
 
-  return Array.from(campMap.entries())
-    .map(([program, data]) => ({ program, ...data }))
+  return Array.from(drillMap.entries())
+    .map(([key, data]) => ({
+      program: key.split("::")[1],
+      ...data,
+    }))
     .sort((a, b) => b.totalRevenue - a.totalRevenue);
 }
 
@@ -299,14 +243,33 @@ function computeFinancialStatus(orders: Order[]): FinancialStatusBreakdown[] {
     .sort((a, b) => b.amount - a.amount);
 }
 
-export function parseCSVData(csvText: string): DashboardData {
+// ─── Main Entry Point ───────────────────────────────────────
+
+export interface ParseOptions {
+  customMapping?: ColumnMapping;
+  categoryProfile?: CategoryProfile;
+}
+
+export function parseCSVData(csvText: string, options?: ParseOptions): DashboardData {
   const result = Papa.parse<RawCSVRow>(csvText, {
     header: true,
     skipEmptyLines: true,
     transformHeader: (h) => h.trim(),
   });
 
-  const orders = groupRowsIntoOrders(result.data);
+  const headers = result.meta.fields || [];
+  const { profile, platformId } = detectPlatform(headers);
+
+  const { orders: rawOrders, detectedPlatform } = groupRowsIntoOrders(
+    result.data,
+    headers,
+    platformId,
+    options?.customMapping
+  );
+
+  // Select and apply category profile
+  const categoryProfile = options?.categoryProfile || selectBestProfile(rawOrders);
+  const orders = applyCategories(rawOrders, categoryProfile);
 
   const nonRefunded = orders.filter((o) => o.financialStatus !== "refunded");
   const refunded = orders.filter((o) => o.financialStatus === "refunded");
@@ -319,19 +282,24 @@ export function parseCSVData(csvText: string): DashboardData {
     .reduce((s, o) => s + o.outstandingBalance, 0);
   const refundTotal = refunded.reduce((s, o) => s + Math.abs(o.total), 0);
 
-  // Compute date range from order dates
   const allDates = orders
     .map((o) => o.createdAt)
     .filter((d) => d)
     .map((d) => new Date(d).getTime())
     .filter((t) => !isNaN(t));
   const dateRange = {
-    start: allDates.length ? new Date(Math.min(...allDates)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Unknown",
-    end: allDates.length ? new Date(Math.max(...allDates)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Unknown",
+    start: allDates.length
+      ? new Date(Math.min(...allDates)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : "Unknown",
+    end: allDates.length
+      ? new Date(Math.max(...allDates)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : "Unknown",
   };
 
   return {
     orders,
+    detectedPlatform,
+    categoryProfile,
     dateRange,
     totalRevenue,
     totalOrders,
@@ -342,7 +310,7 @@ export function parseCSVData(csvText: string): DashboardData {
     dailyRevenue: computeDailyRevenue(orders),
     paymentMethods: computePaymentMethods(orders),
     topProducts: computeTopProducts(orders),
-    campEnrollment: computeCampEnrollment(orders),
+    categoryDrilldown: computeCategoryDrilldown(orders),
     financialStatus: computeFinancialStatus(orders),
   };
 }

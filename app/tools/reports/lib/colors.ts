@@ -1,36 +1,58 @@
 /**
  * Maximally distinct color palette for reports dashboard.
- * 10 colors spaced ~36° apart on the hue wheel, all tuned for dark backgrounds.
+ * 10 colors spaced ~36 apart on the hue wheel, all tuned for dark backgrounds.
  * No two colors share a similar hue.
  */
 
 // Primary category palette — max hue separation, no repeats
 export const CATEGORY_COLORS = [
-  "#f87171", // red (0°)
-  "#fb923c", // orange (30°)
-  "#facc15", // yellow (55°)
-  "#4ade80", // green (140°)
-  "#2dd4bf", // teal (170°)
-  "#38bdf8", // sky blue (200°)
-  "#818cf8", // indigo (235°)
-  "#c084fc", // purple (270°)
-  "#f472b6", // pink (330°)
-  "#a3e635", // lime (85°)
+  "#f87171", // red (0)
+  "#fb923c", // orange (30)
+  "#facc15", // yellow (55)
+  "#4ade80", // green (140)
+  "#2dd4bf", // teal (170)
+  "#38bdf8", // sky blue (200)
+  "#818cf8", // indigo (235)
+  "#c084fc", // purple (270)
+  "#f472b6", // pink (330)
+  "#a3e635", // lime (85)
+  "#fbbf24", // amber
+  "#34d399", // emerald
+  "#60a5fa", // blue
+  "#a78bfa", // violet
+  "#fb7185", // rose
 ] as const;
 
-// Named mapping for stacked charts (DailyTrend)
-export const CATEGORY_COLOR_MAP: Record<string, string> = {
-  "Summer Camps": CATEGORY_COLORS[0],
-  Classes: CATEGORY_COLORS[1],
-  "Open Studio": CATEGORY_COLORS[2],
-  "Ceramics Retail": CATEGORY_COLORS[3],
-  Supplies: CATEGORY_COLORS[4],
-  Events: CATEGORY_COLORS[5],
-  Donations: CATEGORY_COLORS[6],
-  "Local Artists": CATEGORY_COLORS[7],
-  "Professional Services": CATEGORY_COLORS[8],
-  Other: CATEGORY_COLORS[9],
-};
+/**
+ * Dynamically assign colors to categories.
+ * Uses colors from CategoryProfile rules when available,
+ * falls back to palette-based assignment.
+ */
+export function assignCategoryColors(categories: string[], ruleColors?: Record<string, string>): Record<string, string> {
+  const map: Record<string, string> = {};
+  let paletteIdx = 0;
+
+  for (const cat of categories) {
+    if (ruleColors?.[cat]) {
+      map[cat] = ruleColors[cat];
+    } else {
+      map[cat] = CATEGORY_COLORS[paletteIdx % CATEGORY_COLORS.length];
+      paletteIdx++;
+    }
+  }
+  return map;
+}
+
+/**
+ * Build a rule-color lookup from a CategoryProfile.
+ */
+export function buildRuleColorMap(rules: { name: string; color: string }[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const rule of rules) {
+    map[rule.name] = rule.color;
+  }
+  return map;
+}
 
 // Financial status — semantic colors, distinct from each other
 export const STATUS_COLORS: Record<string, string> = {

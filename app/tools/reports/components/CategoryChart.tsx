@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { CategoryBreakdown } from "../lib/types";
-import { CATEGORY_COLORS as COLORS, TOOLTIP_STYLE } from "../lib/colors";
+import { TOOLTIP_STYLE } from "../lib/colors";
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -20,9 +20,10 @@ function fmt(n: number): string {
 
 interface Props {
   data: CategoryBreakdown[];
+  colorMap: Record<string, string>;
 }
 
-export default function CategoryChart({ data }: Props) {
+export default function CategoryChart({ data, colorMap }: Props) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-md">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
@@ -43,8 +44,8 @@ export default function CategoryChart({ data }: Props) {
               label={false}
               labelLine={false}
             >
-              {data.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              {data.map((item) => (
+                <Cell key={item.category} fill={colorMap[item.category] || "#888"} />
               ))}
             </Pie>
             <Tooltip
@@ -59,14 +60,13 @@ export default function CategoryChart({ data }: Props) {
           </PieChart>
         </ResponsiveContainer>
       </div>
-      {/* Breakdown list — replaces in-chart labels */}
       <div className="mt-4 space-y-1.5">
-        {data.map((item, i) => (
+        {data.map((item) => (
           <div key={item.category} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <span
                 className="inline-block h-3 w-3 rounded-full"
-                style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                style={{ backgroundColor: colorMap[item.category] || "#888" }}
               />
               <span className="text-foreground">{item.category}</span>
             </div>

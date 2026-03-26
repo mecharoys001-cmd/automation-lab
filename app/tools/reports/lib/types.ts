@@ -1,50 +1,69 @@
+// ─── Raw CSV ────────────────────────────────────────────────
 export interface RawCSVRow {
-  Name: string;
-  Email: string;
-  "Financial Status": string;
-  "Paid at": string;
-  "Fulfillment Status": string;
-  Currency: string;
-  Subtotal: string;
-  Shipping: string;
-  Taxes: string;
-  Total: string;
-  "Discount Amount": string;
-  "Payment Method": string;
-  "Created at": string;
-  "Lineitem quantity": string;
-  "Lineitem name": string;
-  "Lineitem price": string;
-  "Lineitem requires shipping": string;
-  "Lineitem taxable": string;
-  "Billing Name": string;
-  Notes: string;
-  Vendor: string;
-  "Outstanding Balance": string;
-  Location: string;
-  Id: string;
-  Tags: string;
-  Source: string;
   [key: string]: string;
 }
 
-export type TransactionCategory =
-  | "Summer Camps"
-  | "Classes"
-  | "Open Studio"
-  | "Ceramics Retail"
-  | "Supplies"
-  | "Events"
-  | "Donations"
-  | "Local Artists"
-  | "Professional Services"
-  | "Other";
+// ─── Standard Fields (platform-agnostic) ────────────────────
+export type StandardField =
+  | "orderId"
+  | "orderTotal"
+  | "subtotal"
+  | "tax"
+  | "shipping"
+  | "discount"
+  | "paymentMethod"
+  | "status"
+  | "date"
+  | "itemName"
+  | "itemPrice"
+  | "itemQuantity"
+  | "customerName"
+  | "customerEmail"
+  | "vendor"
+  | "tags"
+  | "outstandingBalance"
+  | "currency"
+  | "location"
+  | "notes";
 
+// ─── Platform Detection ─────────────────────────────────────
+export interface PlatformProfile {
+  id: string;
+  name: string;
+  detect: (headers: string[]) => boolean;
+  columnMap: Partial<Record<StandardField, string | string[]>>;
+}
+
+export type PlatformId = "shopify" | "square" | "woocommerce" | "stripe" | "generic";
+
+// ─── Column Mapping ─────────────────────────────────────────
+export type ColumnMapping = Partial<Record<StandardField, string>>;
+
+// ─── Category System ────────────────────────────────────────
+export interface CategoryRule {
+  id: string;
+  name: string;
+  color: string;
+  keywords: string[];
+  vendors?: string[];
+  tags?: string[];
+  priceMin?: number;
+  priceMax?: number;
+}
+
+export interface CategoryProfile {
+  id: string;
+  name: string;
+  rules: CategoryRule[];
+  uncategorizedLabel: string;
+}
+
+// ─── Core Data Types ────────────────────────────────────────
 export interface LineItem {
   name: string;
   quantity: number;
   price: number;
-  category: TransactionCategory;
+  category: string;
 }
 
 export interface Order {
@@ -71,8 +90,9 @@ export interface Order {
   lineItems: LineItem[];
 }
 
+// ─── Dashboard Aggregates ───────────────────────────────────
 export interface CategoryBreakdown {
-  category: TransactionCategory;
+  category: string;
   revenue: number;
   percentage: number;
 }
@@ -80,7 +100,7 @@ export interface CategoryBreakdown {
 export interface DailyRevenue {
   date: string;
   total: number;
-  categories: Partial<Record<TransactionCategory, number>>;
+  categories: Record<string, number>;
 }
 
 export interface PaymentMethodBreakdown {
@@ -93,11 +113,12 @@ export interface TopProduct {
   name: string;
   quantity: number;
   revenue: number;
-  category: TransactionCategory;
+  category: string;
 }
 
-export interface CampEnrollmentRow {
+export interface CategoryDrilldownRow {
   program: string;
+  category: string;
   enrollments: number;
   totalRevenue: number;
   paidRevenue: number;
@@ -112,6 +133,8 @@ export interface FinancialStatusBreakdown {
 
 export interface DashboardData {
   orders: Order[];
+  detectedPlatform?: PlatformId;
+  categoryProfile?: CategoryProfile;
   dateRange: { start: string; end: string };
   totalRevenue: number;
   totalOrders: number;
@@ -122,6 +145,14 @@ export interface DashboardData {
   dailyRevenue: DailyRevenue[];
   paymentMethods: PaymentMethodBreakdown[];
   topProducts: TopProduct[];
-  campEnrollment: CampEnrollmentRow[];
+  categoryDrilldown: CategoryDrilldownRow[];
   financialStatus: FinancialStatusBreakdown[];
+}
+
+// ─── Saved Profile ──────────────────────────────────────────
+export interface SavedProfile {
+  platform: PlatformId;
+  columnMapping?: ColumnMapping;
+  categoryProfile: CategoryProfile;
+  lastUsed: string;
 }

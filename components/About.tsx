@@ -86,10 +86,8 @@ export default function About() {
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          maxWidth: "1200px",
-          margin: "64px auto 0",
+          margin: "64px -24px 0",
           overflow: "hidden",
-          borderRadius: "var(--radius-lg)",
           minHeight: "420px",
         }}
       >

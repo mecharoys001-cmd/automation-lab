@@ -9,8 +9,8 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import type { DailyRevenue, TransactionCategory } from "../lib/types";
-import { CATEGORY_COLOR_MAP as CATEGORY_COLORS, TOOLTIP_STYLE } from "../lib/colors";
+import type { DailyRevenue } from "../lib/types";
+import { TOOLTIP_STYLE } from "../lib/colors";
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -22,12 +22,13 @@ function fmt(n: number): string {
 
 interface Props {
   data: DailyRevenue[];
+  colorMap: Record<string, string>;
 }
 
-export default function DailyTrend({ data }: Props) {
-  const allCategories = new Set<TransactionCategory>();
+export default function DailyTrend({ data, colorMap }: Props) {
+  const allCategories = new Set<string>();
   for (const day of data) {
-    for (const cat of Object.keys(day.categories) as TransactionCategory[]) {
+    for (const cat of Object.keys(day.categories)) {
       if (day.categories[cat]! > 0) allCategories.add(cat);
     }
   }
@@ -82,19 +83,18 @@ export default function DailyTrend({ data }: Props) {
                 key={cat}
                 dataKey={cat}
                 stackId="revenue"
-                fill={CATEGORY_COLORS[cat] || "#888"}
+                fill={colorMap[cat] || "#888"}
               />
             ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
-      {/* Legend below chart to avoid overlap */}
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
         {Array.from(allCategories).map((cat) => (
           <div key={cat} className="flex items-center gap-1.5 text-xs text-foreground">
             <span
               className="inline-block h-2.5 w-2.5 rounded-sm"
-              style={{ backgroundColor: CATEGORY_COLORS[cat] || "#888" }}
+              style={{ backgroundColor: colorMap[cat] || "#888" }}
             />
             {cat}
           </div>

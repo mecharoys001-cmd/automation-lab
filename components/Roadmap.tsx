@@ -68,8 +68,7 @@ export default function Roadmap() {
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          maxWidth: "1200px",
-          margin: "0 auto 64px",
+          margin: "0 0 64px",
           overflow: "hidden",
           minHeight: "480px",
         }}

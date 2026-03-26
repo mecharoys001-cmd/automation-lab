@@ -1,10 +1,10 @@
 import pako from "pako";
-import type { DashboardData } from "./types";
+import type { DashboardData, CategoryProfile } from "./types";
 
 /** Strip the heavy `orders` array — we only need aggregated data for display */
 function toShareable(data: DashboardData, fileName: string) {
   return {
-    v: 1, // version for future compat
+    v: 2, // v2: includes category profile + drilldown
     fn: fileName,
     dr: data.dateRange,
     tr: data.totalRevenue,
@@ -16,15 +16,16 @@ function toShareable(data: DashboardData, fileName: string) {
     dv: data.dailyRevenue,
     pm: data.paymentMethods,
     tp: data.topProducts,
-    ce: data.campEnrollment,
+    cd: data.categoryDrilldown,
     fs: data.financialStatus,
+    dp: data.detectedPlatform,
+    cp: data.categoryProfile,
   };
 }
 
 export function encodeShareData(data: DashboardData, fileName: string): string {
   const json = JSON.stringify(toShareable(data, fileName));
   const compressed = pako.deflate(new TextEncoder().encode(json));
-  // Convert to base64url (URL-safe)
   let base64 = btoa(String.fromCharCode(...compressed));
   base64 = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   return base64;
@@ -32,7 +33,6 @@ export function encodeShareData(data: DashboardData, fileName: string): string {
 
 export function decodeShareData(hash: string): { data: DashboardData; fileName: string } | null {
   try {
-    // Restore base64 from base64url
     let base64 = hash.replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
 
@@ -44,12 +44,15 @@ export function decodeShareData(hash: string): { data: DashboardData; fileName: 
     const json = new TextDecoder().decode(decompressed);
     const obj = JSON.parse(json);
 
-    if (obj.v !== 1) return null;
+    // Support both v1 and v2
+    if (obj.v !== 1 && obj.v !== 2) return null;
 
     return {
       fileName: obj.fn,
       data: {
-        orders: [], // not included in share data
+        orders: [],
+        detectedPlatform: obj.dp,
+        categoryProfile: obj.cp,
         dateRange: obj.dr,
         totalRevenue: obj.tr,
         totalOrders: obj.to,
@@ -60,7 +63,11 @@ export function decodeShareData(hash: string): { data: DashboardData; fileName: 
         dailyRevenue: obj.dv,
         paymentMethods: obj.pm,
         topProducts: obj.tp,
-        campEnrollment: obj.ce,
+        // v2 uses categoryDrilldown; v1 used campEnrollment (backward compat)
+        categoryDrilldown: obj.cd || (obj.ce || []).map((row: any) => ({
+          ...row,
+          category: "Summer Camps",
+        })),
         financialStatus: obj.fs,
       },
     };
