@@ -1,6 +1,6 @@
 {
-  "currentBug": "rec1W2HDYQRsiAAQX",
-  "startedAt": "2026-03-26T21:30:15.682Z",
-  "attempts": 2,
-  "lastError": "Deployment failed"
+  "currentBug": null,
+  "startedAt": null,
+  "attempts": 0,
+  "lastError": null
 }

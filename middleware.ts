@@ -104,7 +104,7 @@ export async function middleware(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: siteAdmin } = await (svc.from('site_admins') as any)
       .select('role_level')
-      .eq('google_email', user.email)
+      .ilike('google_email', user.email)
       .maybeSingle()
 
     if (!siteAdmin) {
@@ -124,7 +124,7 @@ export async function middleware(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: siteAdmin } = await (svc.from('site_admins') as any)
       .select('role_level')
-      .eq('google_email', user.email)
+      .ilike('google_email', user.email)
       .maybeSingle()
 
     if (!siteAdmin) {

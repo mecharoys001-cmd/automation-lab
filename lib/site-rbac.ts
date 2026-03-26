@@ -23,7 +23,7 @@ export async function getSiteAdmin(userEmail: string | undefined): Promise<SiteA
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (svc.from('site_admins') as any)
     .select('role_level')
-    .eq('google_email', userEmail)
+    .ilike('google_email', userEmail)
     .maybeSingle();
 
   if (!data) return NOT_ADMIN;
