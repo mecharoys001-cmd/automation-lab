@@ -242,6 +242,28 @@ function IntakeForm() {
     isDragging.current = false;
   }, []);
 
+  // Keyboard handler for availability grid cells
+  const handleCellKeyDown = useCallback(
+    (key: string, dayIdx: number, slotIdx: number) => (e: React.KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        toggleSlot(key);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        let nextDay = dayIdx;
+        let nextSlot = slotIdx;
+        if (e.key === 'ArrowRight') nextDay = Math.min(dayIdx + 1, DAYS.length - 1);
+        else if (e.key === 'ArrowLeft') nextDay = Math.max(dayIdx - 1, 0);
+        else if (e.key === 'ArrowDown') nextSlot = Math.min(slotIdx + 1, TIME_SLOTS.length - 1);
+        else if (e.key === 'ArrowUp') nextSlot = Math.max(slotIdx - 1, 0);
+        const nextKey = `${DAYS[nextDay].key}-${TIME_SLOTS[nextSlot]}`;
+        const nextEl = document.querySelector<HTMLElement>(`[data-slot-key="${nextKey}"]`);
+        nextEl?.focus();
+      }
+    },
+    [toggleSlot]
+  );
+
   // Touch handlers for mobile drag-to-paint
   const handleTouchStart = useCallback(
     (key: string) => (e: React.TouchEvent) => {
@@ -660,38 +682,42 @@ function IntakeForm() {
               onTouchEnd={handleTouchEnd}
             >
               <div className="min-w-[480px]">
-                {/* Day headers */}
-                <div className="grid gap-px" style={{ gridTemplateColumns: '72px repeat(5, 1fr)' }}>
-                  <div /> {/* empty corner */}
-                  {DAYS.map((day) => (
-                    <div key={day.key} className="py-2 text-center text-xs font-medium text-muted-foreground">
-                      <span className="hidden sm:inline">{day.label}</span>
-                      <span className="sm:hidden">{day.short}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Time rows */}
-                <div className="grid gap-px rounded-lg border border-border overflow-hidden" style={{ gridTemplateColumns: '72px repeat(5, 1fr)' }}>
-                  {TIME_SLOTS.map((slot) => (
-                    <div key={slot} className="contents">
+                {/* Grid with headers and time rows */}
+                <div role="grid" aria-label="Weekly availability" className="grid gap-px rounded-lg border border-border overflow-hidden" style={{ gridTemplateColumns: '72px repeat(5, 1fr)' }}>
+                  {/* Day headers */}
+                  <div role="row" className="contents">
+                    <div role="columnheader" className="py-2 bg-card" /> {/* empty corner */}
+                    {DAYS.map((day) => (
+                      <div key={day.key} role="columnheader" className="py-2 text-center text-xs font-medium text-muted-foreground bg-card">
+                        <span className="hidden sm:inline">{day.label}</span>
+                        <span className="sm:hidden">{day.short}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {TIME_SLOTS.map((slot, slotIdx) => (
+                    <div key={slot} role="row" className="contents">
                       {/* Time label */}
-                      <div className="flex items-center justify-end pr-2 text-[10px] sm:text-xs text-muted-foreground bg-card h-7 sm:h-8 border-b border-border">
+                      <div role="rowheader" className="flex items-center justify-end pr-2 text-[10px] sm:text-xs text-muted-foreground bg-card h-7 sm:h-8 border-b border-border">
                         {formatTime(slot)}
                       </div>
                       {/* Day cells — no Tooltip wrapper to preserve CSS Grid layout */}
-                      {DAYS.map((day) => {
+                      {DAYS.map((day, dayIdx) => {
                         const key = `${day.key}-${slot}`;
                         const isSelected = selectedSlots.has(key);
                         return (
                           <div
                             key={key}
+                            role="gridcell"
+                            tabIndex={slotIdx === 0 && dayIdx === 0 ? 0 : -1}
+                            aria-checked={isSelected}
+                            aria-label={`${day.label} ${formatTime(slot)} – ${isSelected ? 'available' : 'unavailable'}`}
                             data-slot-key={key}
                             onMouseDown={handleCellMouseDown(key)}
                             onMouseEnter={handleCellMouseEnter(key)}
                             onTouchStart={handleTouchStart(key)}
+                            onKeyDown={handleCellKeyDown(key, dayIdx, slotIdx)}
                             title={`Toggle ${day.label} ${formatTime(slot)}`}
-                            className={`h-7 sm:h-8 border-b border-l border-border cursor-pointer select-none transition-colors ${
+                            className={`h-7 sm:h-8 border-b border-l border-border cursor-pointer select-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset focus-visible:z-10 ${
                               isSelected
                                 ? 'bg-green-500/60 hover:bg-green-500/50'
                                 : 'bg-background hover:bg-accent/40'
