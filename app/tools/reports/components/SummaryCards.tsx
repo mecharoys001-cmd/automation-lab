@@ -1,19 +1,14 @@
 "use client";
 
+import { makeCurrencyFormatter } from "../lib/currency";
+
 interface Props {
   totalRevenue: number;
   totalOrders: number;
   taxCollected: number;
   outstandingBalance: number;
   refundTotal: number;
-}
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
+  currency: string;
 }
 
 const cards = [
@@ -25,6 +20,7 @@ const cards = [
 ] as const;
 
 export default function SummaryCards(props: Props) {
+  const fmt = makeCurrencyFormatter(props.currency);
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
       {cards.map(({ key, label, icon, color }) => {

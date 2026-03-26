@@ -9,21 +9,16 @@ import {
 } from "recharts";
 import type { CategoryBreakdown } from "../lib/types";
 import { TOOLTIP_STYLE } from "../lib/colors";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-}
+import { makeCurrencyFormatter } from "../lib/currency";
 
 interface Props {
   data: CategoryBreakdown[];
   colorMap: Record<string, string>;
+  currency: string;
 }
 
-export default function CategoryChart({ data, colorMap }: Props) {
+export default function CategoryChart({ data, colorMap, currency }: Props) {
+  const fmt = makeCurrencyFormatter(currency);
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-md">
       <h3 className="mb-4 text-lg font-semibold text-foreground">

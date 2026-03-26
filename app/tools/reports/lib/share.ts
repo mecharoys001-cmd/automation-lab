@@ -19,6 +19,7 @@ function toShareable(data: DashboardData, fileName: string) {
     cd: data.categoryDrilldown,
     fs: data.financialStatus,
     dp: data.detectedPlatform,
+    dc: data.detectedCurrency,
     cp: data.categoryProfile,
   };
 }
@@ -52,6 +53,7 @@ export function decodeShareData(hash: string): { data: DashboardData; fileName: 
       data: {
         orders: [],
         detectedPlatform: obj.dp,
+        detectedCurrency: obj.dc || "USD",
         categoryProfile: obj.cp,
         dateRange: obj.dr,
         totalRevenue: obj.tr,

@@ -134,6 +134,7 @@ export interface FinancialStatusBreakdown {
 export interface DashboardData {
   orders: Order[];
   detectedPlatform?: PlatformId;
+  detectedCurrency: string;
   categoryProfile?: CategoryProfile;
   dateRange: { start: string; end: string };
   totalRevenue: number;

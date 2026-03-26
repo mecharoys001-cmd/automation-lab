@@ -16,6 +16,7 @@ import type {
 } from "./types";
 import { detectPlatform, buildResolver } from "./platforms";
 import { selectBestProfile, applyCategories } from "./categorize";
+import { detectCurrency } from "./currency";
 
 // ─── Row → Order Normalization ──────────────────────────────
 
@@ -271,6 +272,9 @@ export function parseCSVData(csvText: string, options?: ParseOptions): Dashboard
   const categoryProfile = options?.categoryProfile || selectBestProfile(rawOrders);
   const orders = applyCategories(rawOrders, categoryProfile);
 
+  // Detect currency from order data
+  const detectedCurrency = detectCurrency(orders.map((o) => o.currency));
+
   const nonRefunded = orders.filter((o) => o.financialStatus !== "refunded");
   const refunded = orders.filter((o) => o.financialStatus === "refunded");
 
@@ -299,6 +303,7 @@ export function parseCSVData(csvText: string, options?: ParseOptions): Dashboard
   return {
     orders,
     detectedPlatform,
+    detectedCurrency,
     categoryProfile,
     dateRange,
     totalRevenue,

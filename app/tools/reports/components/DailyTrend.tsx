@@ -11,21 +11,17 @@ import {
 } from "recharts";
 import type { DailyRevenue } from "../lib/types";
 import { TOOLTIP_STYLE } from "../lib/colors";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-  });
-}
+import { makeCurrencyFormatter, currencySymbol } from "../lib/currency";
 
 interface Props {
   data: DailyRevenue[];
   colorMap: Record<string, string>;
+  currency: string;
 }
 
-export default function DailyTrend({ data, colorMap }: Props) {
+export default function DailyTrend({ data, colorMap, currency }: Props) {
+  const fmt = makeCurrencyFormatter(currency, 0);
+  const sym = currencySymbol(currency);
   const allCategories = new Set<string>();
   for (const day of data) {
     for (const cat of Object.keys(day.categories)) {
@@ -57,7 +53,7 @@ export default function DailyTrend({ data, colorMap }: Props) {
             />
             <YAxis
               tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `${sym}${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.05)" }}

@@ -1,20 +1,15 @@
 "use client";
 
 import type { TopProduct } from "../lib/types";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-}
+import { makeCurrencyFormatter } from "../lib/currency";
 
 interface Props {
   data: TopProduct[];
+  currency: string;
 }
 
-export default function TopProducts({ data }: Props) {
+export default function TopProducts({ data, currency }: Props) {
+  const fmt = makeCurrencyFormatter(currency);
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-md">
       <h3 className="mb-4 text-lg font-semibold text-foreground">

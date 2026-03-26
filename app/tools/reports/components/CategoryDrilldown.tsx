@@ -2,20 +2,15 @@
 
 import { useState, useMemo } from "react";
 import type { CategoryDrilldownRow } from "../lib/types";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-}
+import { makeCurrencyFormatter } from "../lib/currency";
 
 interface Props {
   data: CategoryDrilldownRow[];
+  currency: string;
 }
 
-export default function CategoryDrilldown({ data }: Props) {
+export default function CategoryDrilldown({ data, currency }: Props) {
+  const fmt = makeCurrencyFormatter(currency);
   // Get unique categories sorted by total revenue
   const categories = useMemo(() => {
     const catRevenue = new Map<string, number>();

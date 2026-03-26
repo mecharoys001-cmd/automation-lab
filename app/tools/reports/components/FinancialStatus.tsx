@@ -9,14 +9,7 @@ import {
 } from "recharts";
 import type { FinancialStatusBreakdown } from "../lib/types";
 import { STATUS_COLORS, TOOLTIP_STYLE } from "../lib/colors";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-}
+import { makeCurrencyFormatter } from "../lib/currency";
 
 function statusLabel(s: string): string {
   return s
@@ -26,9 +19,11 @@ function statusLabel(s: string): string {
 
 interface Props {
   data: FinancialStatusBreakdown[];
+  currency: string;
 }
 
-export default function FinancialStatus({ data }: Props) {
+export default function FinancialStatus({ data, currency }: Props) {
+  const fmt = makeCurrencyFormatter(currency);
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-md">
       <h3 className="mb-4 text-lg font-semibold text-foreground">

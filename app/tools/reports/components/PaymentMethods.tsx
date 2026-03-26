@@ -12,20 +12,16 @@ import {
 } from "recharts";
 import type { PaymentMethodBreakdown } from "../lib/types";
 import { PAYMENT_COLORS as COLORS, TOOLTIP_STYLE } from "../lib/colors";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-}
+import { makeCurrencyFormatter, currencySymbol } from "../lib/currency";
 
 interface Props {
   data: PaymentMethodBreakdown[];
+  currency: string;
 }
 
-export default function PaymentMethods({ data }: Props) {
+export default function PaymentMethods({ data, currency }: Props) {
+  const fmt = makeCurrencyFormatter(currency);
+  const sym = currencySymbol(currency);
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-md">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
@@ -38,7 +34,7 @@ export default function PaymentMethods({ data }: Props) {
             <XAxis
               type="number"
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `${sym}${(v / 1000).toFixed(0)}k`}
             />
             <YAxis
               type="category"

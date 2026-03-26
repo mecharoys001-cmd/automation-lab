@@ -140,6 +140,8 @@ export default function Dashboard({ data, fileName, onReset, isSharedView, onEdi
     }
   }, [data.dateRange]);
 
+  const currency = data.detectedCurrency || "USD";
+
   const platformLabel = data.detectedPlatform
     ? PLATFORM_LABELS[data.detectedPlatform] || data.detectedPlatform
     : null;
@@ -226,21 +228,22 @@ export default function Dashboard({ data, fileName, onReset, isSharedView, onEdi
           taxCollected={data.taxCollected}
           outstandingBalance={data.outstandingBalance}
           refundTotal={data.refundTotal}
+          currency={currency}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <CategoryChart data={data.categoryBreakdown} colorMap={categoryColorMap} />
-          <FinancialStatus data={data.financialStatus} />
+          <CategoryChart data={data.categoryBreakdown} colorMap={categoryColorMap} currency={currency} />
+          <FinancialStatus data={data.financialStatus} currency={currency} />
         </div>
 
-        <DailyTrend data={data.dailyRevenue} colorMap={categoryColorMap} />
+        <DailyTrend data={data.dailyRevenue} colorMap={categoryColorMap} currency={currency} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <PaymentMethods data={data.paymentMethods} />
-          <TopProducts data={data.topProducts} />
+          <PaymentMethods data={data.paymentMethods} currency={currency} />
+          <TopProducts data={data.topProducts} currency={currency} />
         </div>
 
-        <CategoryDrilldown data={data.categoryDrilldown} />
+        <CategoryDrilldown data={data.categoryDrilldown} currency={currency} />
       </div>
     </div>
   );
