@@ -1,21 +1,21 @@
 /**
- * Harmonious color palette for reports dashboard.
- * Muted jewel tones that look great on dark backgrounds.
- * Ordered so adjacent categories have good contrast.
+ * Maximally distinct color palette for reports dashboard.
+ * 10 colors spaced ~36° apart on the hue wheel, all tuned for dark backgrounds.
+ * No two colors share a similar hue.
  */
 
-// Primary category palette — 10 colors, evenly spaced hues, consistent saturation/lightness
+// Primary category palette — max hue separation, no repeats
 export const CATEGORY_COLORS = [
-  "#6ee7b7", // mint (Summer Camps)
-  "#7dd3fc", // sky (Classes)
-  "#c4b5fd", // lavender (Open Studio)
-  "#fda4af", // rose (Ceramics Retail)
-  "#fcd34d", // gold (Supplies)
-  "#a5b4fc", // periwinkle (Events)
-  "#86efac", // spring green (Donations)
-  "#fdba74", // peach (Local Artists)
-  "#d8b4fe", // orchid (Professional Services)
-  "#99f6e4", // teal (Other)
+  "#f87171", // red (0°)
+  "#fb923c", // orange (30°)
+  "#facc15", // yellow (55°)
+  "#4ade80", // green (140°)
+  "#2dd4bf", // teal (170°)
+  "#38bdf8", // sky blue (200°)
+  "#818cf8", // indigo (235°)
+  "#c084fc", // purple (270°)
+  "#f472b6", // pink (330°)
+  "#a3e635", // lime (85°)
 ] as const;
 
 // Named mapping for stacked charts (DailyTrend)
@@ -32,25 +32,27 @@ export const CATEGORY_COLOR_MAP: Record<string, string> = {
   Other: CATEGORY_COLORS[9],
 };
 
-// Financial status — semantic colors (green=good, yellow=pending, red=problem)
+// Financial status — semantic colors, distinct from each other
 export const STATUS_COLORS: Record<string, string> = {
-  paid: "#6ee7b7",
-  pending: "#fcd34d",
-  partially_paid: "#fdba74",
-  refunded: "#fda4af",
-  authorized: "#7dd3fc",
-  voided: "#9ca3af",
-  unknown: "#6b7280",
+  paid: "#4ade80",       // green
+  pending: "#facc15",    // yellow
+  partially_paid: "#fb923c", // orange
+  refunded: "#f87171",   // red
+  authorized: "#38bdf8", // sky blue
+  voided: "#94a3b8",     // slate
+  unknown: "#64748b",    // dark slate
 };
 
-// Payment method colors
+// Payment method colors — pulled from opposite ends of the palette, no adjacents
 export const PAYMENT_COLORS = [
-  "#7dd3fc", // sky
-  "#c4b5fd", // lavender
-  "#6ee7b7", // mint
-  "#fcd34d", // gold
-  "#fda4af", // rose
-  "#a5b4fc", // periwinkle
+  "#38bdf8", // sky blue
+  "#f87171", // red
+  "#4ade80", // green
+  "#c084fc", // purple
+  "#facc15", // yellow
+  "#2dd4bf", // teal
+  "#fb923c", // orange
+  "#f472b6", // pink
 ] as const;
 
 // Tooltip styling constants
