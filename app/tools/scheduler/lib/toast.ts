@@ -1,6 +1,10 @@
 /**
  * Lightweight toast notifications using DOM injection.
  * No external dependencies required.
+ *
+ * Uses persistent ARIA live regions so screen readers are notified
+ * of dynamic content changes. Errors use role="alert" + aria-live="assertive";
+ * success/info use role="status" + aria-live="polite".
  */
 
 type ToastType = 'success' | 'error' | 'info';
@@ -20,16 +24,39 @@ const TOAST_ICONS: Record<ToastType, string> = {
     '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"/><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>',
 };
 
-export function showToast(message: string, type: ToastType = 'success') {
-  const el = document.createElement('div');
-  el.setAttribute('role', 'alert');
-  el.setAttribute('aria-live', 'assertive');
-  el.setAttribute('aria-atomic', 'true');
-  Object.assign(el.style, {
+/** Persistent live region containers keyed by aria-live value. */
+const liveRegions: Record<string, HTMLDivElement> = {};
+
+function getLiveRegion(level: 'polite' | 'assertive'): HTMLDivElement {
+  if (liveRegions[level]) return liveRegions[level];
+
+  const region = document.createElement('div');
+  region.setAttribute('aria-live', level);
+  region.setAttribute('aria-atomic', 'true');
+  region.setAttribute('role', level === 'assertive' ? 'alert' : 'status');
+  // Visually position the region but keep it in the DOM permanently
+  Object.assign(region.style, {
     position: 'fixed',
     bottom: '16px',
     right: '16px',
     zIndex: '99999',
+    pointerEvents: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '8px',
+  });
+  document.body.appendChild(region);
+  liveRegions[level] = region;
+  return region;
+}
+
+export function showToast(message: string, type: ToastType = 'success') {
+  const liveLevel = type === 'error' ? 'assertive' : 'polite';
+  const region = getLiveRegion(liveLevel);
+
+  const el = document.createElement('div');
+  Object.assign(el.style, {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
@@ -46,7 +73,7 @@ export function showToast(message: string, type: ToastType = 'success') {
     transition: 'opacity 0.2s ease, transform 0.2s ease',
   });
   el.innerHTML = `${TOAST_ICONS[type]}<span>${message}</span>`;
-  document.body.appendChild(el);
+  region.appendChild(el);
 
   // Animate in
   requestAnimationFrame(() => {

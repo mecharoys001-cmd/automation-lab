@@ -102,12 +102,19 @@ export function TimeRangeSelector({
         </select>
       </Tooltip>
 
-      {/* Error toast */}
-      {toastMessage && (
-        <div className="absolute top-full right-0 mt-2 z-50 whitespace-nowrap rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700 shadow-md">
-          {toastMessage}
-        </div>
-      )}
+      {/* Error toast — persistent live region with dynamic content */}
+      <div
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="absolute top-full right-0 mt-2 z-50"
+      >
+        {toastMessage && (
+          <div className="whitespace-nowrap rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700 shadow-md">
+            {toastMessage}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

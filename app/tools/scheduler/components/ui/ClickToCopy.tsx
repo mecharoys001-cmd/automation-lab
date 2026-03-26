@@ -50,15 +50,34 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** Show a floating toast confirmation at the bottom-right of the viewport. */
-function showCopyToast(label?: string) {
-  const toastDiv = document.createElement('div');
-  // Use inline styles to guarantee visibility regardless of Tailwind class availability
-  Object.assign(toastDiv.style, {
+/** Persistent live region for copy toast so screen readers detect content changes. */
+let copyLiveRegion: HTMLDivElement | null = null;
+
+function getCopyLiveRegion(): HTMLDivElement {
+  if (copyLiveRegion) return copyLiveRegion;
+
+  const region = document.createElement('div');
+  region.setAttribute('role', 'status');
+  region.setAttribute('aria-live', 'polite');
+  region.setAttribute('aria-atomic', 'true');
+  Object.assign(region.style, {
     position: 'fixed',
     bottom: '16px',
     right: '16px',
     zIndex: '99999',
+    pointerEvents: 'none',
+  });
+  document.body.appendChild(region);
+  copyLiveRegion = region;
+  return region;
+}
+
+/** Show a floating toast confirmation at the bottom-right of the viewport. */
+function showCopyToast(label?: string) {
+  const region = getCopyLiveRegion();
+  const toastDiv = document.createElement('div');
+  // Use inline styles to guarantee visibility regardless of Tailwind class availability
+  Object.assign(toastDiv.style, {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
@@ -78,7 +97,7 @@ function showCopyToast(label?: string) {
     </svg>
     <span>${label ? `Copied ${label}!` : 'Copied!'}</span>
   `;
-  document.body.appendChild(toastDiv);
+  region.appendChild(toastDiv);
 
   setTimeout(() => {
     toastDiv.classList.add('animate-fade-out');
