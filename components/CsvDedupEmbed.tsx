@@ -35,7 +35,7 @@ export default function CsvDedupEmbed() {
                 padding: "6px 14px", fontSize: "12px", color: "#64748b", fontFamily: "monospace",
               }}
             >
-              🔒 Runs locally in your browser — no data uploaded
+              🔒 Runs locally in your browser. No data uploaded.
             </div>
           </div>
           <div

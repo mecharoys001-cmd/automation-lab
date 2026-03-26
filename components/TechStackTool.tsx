@@ -198,7 +198,7 @@ export default function TechStackTool() {
             borderBottom: "1px solid #1e293b",
           }}>
             {mode === "connect"
-              ? selected ? "🔗 Now click a second tool — click again to toggle off" : "🔗 Click a tool to start a connection"
+              ? selected ? "🔗 Now click a second tool, or click again to toggle off" : "🔗 Click a tool to start a connection"
               : "🗑 Click any tool to remove it from the map"}
           </div>
         )}

@@ -60,7 +60,7 @@ export default function CsvDedupTool() {
     const result = deduplicate(s.rows, s.nameCol, s.addrCol);
     setS(p => ({ ...p, result, error: null }));
 
-    // Track usage — hash CSV to avoid counting re-uploads
+    // Track usage: hash CSV to avoid counting re-uploads
     hashCSVContent(s.rawCsv).then((hash) => {
       trackToolUsage('csv-dedup', {
         contentHash: hash,
@@ -200,7 +200,7 @@ export default function CsvDedupTool() {
             </div>
           ) : (
             <div style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "16px", padding: "2rem", textAlign: "center", color: "#64748b" }}>
-              ✅ No duplicates found — your list is clean!
+              ✅ No duplicates found. Your list is clean!
             </div>
           )}
 

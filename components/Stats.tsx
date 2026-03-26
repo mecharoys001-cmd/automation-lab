@@ -1,6 +1,6 @@
 const stats = [
   { value: "3",      label: "Projects Complete", sublabel: "2023-2025" },
-  { value: "30+",    label: "Hours Saved Weekly", sublabel: "1,560 hrs/year" },
+  { value: "30 hrs", label: "Saved per Week",      sublabel: "1,560 hrs/year" },
   { value: "$39K",   label: "Annual Savings",     sublabel: "Across all projects" },
 ];
 

@@ -41,7 +41,7 @@ export default function GasSetup({ storageKey, onUrl, connected }: GasSetupProps
             backgroundColor: connected ? '#10b981' : '#f59e0b',
             display: 'inline-block',
           }} />
-          {connected ? 'Connected to Google Sheets' : 'Offline mode — data saves locally'}
+          {connected ? 'Connected to Google Sheets' : 'Offline mode, data saves locally'}
         </span>
         <button
           onClick={() => setOpen(o => !o)}

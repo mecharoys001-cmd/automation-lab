@@ -217,7 +217,7 @@ export default function CampSchedulerEmbed() {
           >
             open it directly ↗
           </a>{" "}
-          — Google Apps Script apps may require sign-in on first use.
+          Google Apps Script apps may require sign-in on first use.
         </div>
       </div>
     </div>

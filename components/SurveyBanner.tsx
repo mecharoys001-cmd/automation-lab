@@ -55,7 +55,7 @@ export default function SurveyBanner() {
           rel="noopener noreferrer"
           className="btn-survey"
         >
-          Take the Survey →
+          Take the Self-Assessment →
         </a>
 
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginTop: "18px" }}>
