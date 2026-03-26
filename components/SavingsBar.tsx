@@ -45,10 +45,14 @@ export default function SavingsBar() {
       });
   }, []);
 
+  const toolSavings = hoursSaved !== null ? Math.round(hoursSaved * 20) : 0;
+
   const usesDisplay =
     totalUses !== null ? totalUses.toLocaleString() : "\u2014";
   const hoursDisplay =
-    hoursSaved !== null ? `${hoursSaved.toLocaleString()}+` : "\u2014";
+    hoursSaved !== null ? `${hoursSaved.toLocaleString()}` : "\u2014";
+  const savingsDisplay =
+    hoursSaved !== null ? `$${toolSavings.toLocaleString()}` : "\u2014";
 
   return (
     <section
@@ -84,10 +88,10 @@ export default function SavingsBar() {
 
         <div style={dividerStyle} />
 
-        {/* Operational Savings (static) */}
+        {/* Cost Savings from tool usage */}
         <div style={{ textAlign: "center" }}>
-          <div style={statStyle}>$39,000</div>
-          <div style={labelStyle}>Operational Savings / yr</div>
+          <div style={statStyle}>{savingsDisplay}</div>
+          <div style={labelStyle}>Cost Savings</div>
         </div>
       </div>
     </section>

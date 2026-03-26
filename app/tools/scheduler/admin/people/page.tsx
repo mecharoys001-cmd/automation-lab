@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -217,6 +217,233 @@ function CardGridSkeleton({ count = 6 }: { count?: number }) {
     </div>
   );
 }
+
+/* ── Memoized Staff Card ──────────────────────────────────── */
+
+const StaffCard = memo(function StaffCard({
+  inst,
+  onOpenDetail,
+  onEdit,
+  onSkillClick,
+}: {
+  inst: Instructor;
+  onOpenDetail: (inst: Instructor) => void;
+  onEdit: (inst: Instructor) => void;
+  onSkillClick: (skill: string) => void;
+}) {
+  const fullName = `${inst.first_name} ${inst.last_name}`;
+  return (
+    <div
+      onClick={() => onOpenDetail(inst)}
+      className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 220px' }}
+    >
+      {/* Card Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Avatar
+            initials={getInitials(inst.first_name, inst.last_name)}
+            size="md"
+            bgColor={avatarColor(fullName)}
+          />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[16px] font-bold text-slate-900 truncate">
+                {fullName}
+              </span>
+              <span
+                title={inst.is_active ? 'Currently active' : 'Currently inactive'}
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  inst.is_active ? 'bg-emerald-500' : 'bg-red-500'
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {inst.on_call && (
+            <span
+              title="Available for last-minute substitutions"
+              className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 rounded-xl px-2.5 py-1 text-xs font-medium"
+            >
+              On-Call
+            </span>
+          )}
+          <span
+            title={inst.is_active ? 'Active staff member' : 'Staff member is on leave'}
+            className={`inline-flex items-center gap-1.5 ${
+              inst.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+            } rounded-xl px-2.5 py-1 text-xs font-medium`}
+          >
+            <span className={`w-2 h-2 rounded-full ${inst.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+            {inst.is_active ? 'Active' : 'On Leave'}
+          </span>
+        </div>
+      </div>
+
+      {/* Contact Info */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+        {inst.email && (
+          <ClickToCopy
+            text={inst.email}
+            label="email"
+            icon={Mail}
+            textClassName="text-xs text-blue-500 truncate"
+            buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+          />
+        )}
+        {inst.phone && (
+          <ClickToCopy
+            text={inst.phone}
+            label="phone"
+            icon={Phone}
+            textClassName="text-xs text-slate-600 truncate"
+            buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+          />
+        )}
+      </div>
+
+      {/* Subject Pills */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+        {(inst.skills ?? []).map((skill) => {
+          const s = SKILL_STYLES[skill];
+          return (
+            <Pill
+              key={skill}
+              variant="skill"
+              bgColor={s?.bg ?? 'bg-slate-100'}
+              textColor={s?.text ?? 'text-slate-600'}
+              onClick={() => onSkillClick(skill)}
+            >
+              {s?.emoji ?? '🎵'} {skill}
+            </Pill>
+          );
+        })}
+        {(!inst.skills || inst.skills.length === 0) && (
+          <span className="text-[11px] text-slate-600">No event types listed</span>
+        )}
+      </div>
+
+      {/* Weekly Availability — compact inline */}
+      <div>
+        <div className="text-xs font-medium text-slate-600 mb-2">Weekly Availability</div>
+        <div className="flex justify-between">
+          {AVAIL_DAYS.map((day) => {
+            const blocks = inst.availability_json?.[day.key] ?? [];
+            const morningAvail = getTimePeriodAvailability(blocks, 8, 12);
+            const afternoonAvail = getTimePeriodAvailability(blocks, 12, 17);
+            const getAvailColor = (level: 'full' | 'partial' | 'none') =>
+              level === 'full' ? 'bg-emerald-500' : level === 'partial' ? 'bg-amber-400' : 'bg-red-500';
+            return (
+              <div
+                key={day.key}
+                title={`${day.label}: Morning ${morningAvail === 'full' ? '✓' : morningAvail === 'partial' ? '~' : '✗'}, Afternoon ${afternoonAvail === 'full' ? '✓' : afternoonAvail === 'partial' ? '~' : '✗'}`}
+                className="flex flex-col items-center gap-0.5"
+              >
+                <span className="text-[10px] font-medium text-slate-600">{day.label}</span>
+                <div className="flex flex-col gap-0.5">
+                  <span className={`w-2.5 h-2.5 ${getAvailColor(morningAvail)}`} />
+                  <span className={`w-2.5 h-2.5 ${getAvailColor(afternoonAvail)}`} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* View on Calendar Link */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <Link
+          href={`/tools/scheduler/admin?instructor=${inst.id}`}
+          title="Jump to calendar filtered to this staff member"
+          className="text-xs font-medium text-blue-500 hover:text-blue-600"
+        >
+          View on Calendar &rarr;
+        </Link>
+      </div>
+
+      {/* Edit Button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onEdit(inst); }}
+        aria-label={`Edit ${fullName}`}
+        title={`Edit ${fullName}`}
+        className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
+      >
+        <Edit2 className="w-3.5 h-3.5 text-slate-700" />
+      </button>
+    </div>
+  );
+});
+
+/* ── Memoized Venue Card ─────────────────────────────────── */
+
+const VenueCard = memo(function VenueCard({
+  venue,
+  onSelect,
+}: {
+  venue: Venue;
+  onSelect: (venue: Venue) => void;
+}) {
+  return (
+    <div
+      onClick={() => onSelect(venue)}
+      className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 160px' }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="min-w-0">
+          <p className="text-[16px] font-bold text-slate-900 truncate">{venue.name}</p>
+          <p className="text-sm text-slate-700">{venue.space_type}</p>
+        </div>
+      </div>
+
+      {/* Subjects */}
+      {venue.subjects && venue.subjects.length > 0 && (
+        <div className="flex items-center flex-wrap gap-1">
+          {venue.subjects.map((s) => (
+            <span key={s} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              {s}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Capacity */}
+      <div className="flex items-center gap-1.5" title={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>
+        <Users className="w-3.5 h-3.5 text-slate-600" />
+        <span className="text-[13px] text-slate-600">
+          Capacity: {venue.max_capacity ?? 'Unlimited'}
+        </span>
+      </div>
+
+      {/* View Schedule Link */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <Link
+          href={`/tools/scheduler/admin?venue=${venue.id}`}
+          title="View venue schedule on the calendar"
+          className="text-xs font-medium text-blue-500 hover:text-blue-600"
+        >
+          View Schedule &rarr;
+        </Link>
+      </div>
+
+      {/* Edit Button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onSelect(venue); }}
+        aria-label={`Edit ${venue.name}`}
+        title={`Edit ${venue.name}`}
+        className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
+      >
+        <Edit2 className="w-3.5 h-3.5 text-slate-700" />
+      </button>
+    </div>
+  );
+});
 
 /* ── Toast Notification ────────────────────────────────────── */
 
@@ -1566,167 +1793,15 @@ export default function PeoplePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {paginatedStaff.map((inst) => {
-                const fullName = `${inst.first_name} ${inst.last_name}`;
-                return (
-                  <div
-                    key={inst.id}
-                    onClick={() => openDetail(inst)}
-                    className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    {/* Card Header */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Avatar
-                          initials={getInitials(inst.first_name, inst.last_name)}
-                          size="md"
-                          bgColor={avatarColor(fullName)}
-                          tooltip={fullName}
-                        />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[16px] font-bold text-slate-900 truncate">
-                              {fullName}
-                            </span>
-                            <Tooltip text={inst.is_active ? 'Currently active' : 'Currently inactive'}>
-                              <span
-                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                  inst.is_active ? 'bg-emerald-500' : 'bg-red-500'
-                                }`}
-                              />
-                            </Tooltip>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {inst.on_call && (
-                          <Badge
-                            variant="status"
-                            color="green"
-                            tooltip="Available for last-minute substitutions"
-                          >
-                            On-Call
-                          </Badge>
-                        )}
-                        <Badge
-                          variant="status"
-                          color={inst.is_active ? 'green' : 'red'}
-                          dot
-                          tooltip={inst.is_active ? 'Active staff member' : 'Staff member is on leave'}
-                        >
-                          {inst.is_active ? 'Active' : 'On Leave'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Contact Info (click-to-copy) */}
-                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                    <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      {inst.email && (
-                        <ClickToCopy
-                          text={inst.email}
-                          label="email"
-                          icon={Mail}
-                          textClassName="text-xs text-blue-500 truncate"
-                          buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-                        />
-                      )}
-                      {inst.phone && (
-                        <ClickToCopy
-                          text={inst.phone}
-                          label="phone"
-                          icon={Phone}
-                          textClassName="text-xs text-slate-600 truncate"
-                          buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-                        />
-                      )}
-                    </div>
-
-                    {/* Subject Pills (click → filter calendar by tag) */}
-                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                    <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      {(inst.skills ?? []).map((skill) => {
-                        const s = SKILL_STYLES[skill];
-                        return (
-                          <Pill
-                            key={skill}
-                            variant="skill"
-                            bgColor={s?.bg ?? 'bg-slate-100'}
-                            textColor={s?.text ?? 'text-slate-600'}
-                            tooltip={`Click to view calendar filtered by ${skill}`}
-                            onClick={() => router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`)}
-                          >
-                            {s?.emoji ?? '🎵'} {skill}
-                          </Pill>
-                        );
-                      })}
-                      {(!inst.skills || inst.skills.length === 0) && (
-                        <span className="text-[11px] text-slate-600">No event types listed</span>
-                      )}
-                    </div>
-
-                    {/* Weekly Availability */}
-                    <div>
-                      <div className="text-xs font-medium text-slate-600 mb-2">Weekly Availability</div>
-                      <div className="flex justify-between">
-                        {AVAIL_DAYS.map((day) => {
-                        const blocks = inst.availability_json?.[day.key] ?? [];
-                        const morningAvail = getTimePeriodAvailability(blocks, 8, 12); // 8am-12pm
-                        const afternoonAvail = getTimePeriodAvailability(blocks, 12, 17); // 12pm-5pm
-                        
-                        const getAvailColor = (level: 'full' | 'partial' | 'none') => {
-                          if (level === 'full') return 'bg-emerald-500';
-                          if (level === 'partial') return 'bg-amber-400';
-                          return 'bg-red-500';
-                        };
-                        
-                        const tooltipText = `${day.label}: Morning ${morningAvail === 'full' ? '✓' : morningAvail === 'partial' ? '~' : '✗'}, Afternoon ${afternoonAvail === 'full' ? '✓' : afternoonAvail === 'partial' ? '~' : '✗'}`;
-                        
-                        return (
-                          <Tooltip key={day.key} text={tooltipText}>
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span className="text-[10px] font-medium text-slate-600">
-                                {day.label}
-                              </span>
-                              <div className="flex flex-col gap-0.5">
-                                {/* Morning square */}
-                                <span className={`w-2.5 h-2.5 ${getAvailColor(morningAvail)}`} />
-                                {/* Afternoon square */}
-                                <span className={`w-2.5 h-2.5 ${getAvailColor(afternoonAvail)}`} />
-                              </div>
-                            </div>
-                          </Tooltip>
-                        );
-                      })}
-                      </div>
-                    </div>
-
-                    {/* View on Calendar Link */}
-                    {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <Tooltip text="Jump to calendar filtered to this staff member">
-                        <Link
-                          href={`/tools/scheduler/admin?instructor=${inst.id}`}
-                          className="text-xs font-medium text-blue-500 hover:text-blue-600"
-                        >
-                          View on Calendar &rarr;
-                        </Link>
-                      </Tooltip>
-                    </div>
-
-                    {/* Edit Button */}
-                    <Tooltip text={`Edit ${inst.first_name} ${inst.last_name}`}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setEditingInstructor(inst); }}
-                        aria-label={`Edit ${inst.first_name} ${inst.last_name}`}
-                        className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 text-slate-700" />
-                      </button>
-                    </Tooltip>
-                  </div>
-                );
-              })}
+              {paginatedStaff.map((inst) => (
+                <StaffCard
+                  key={inst.id}
+                  inst={inst}
+                  onOpenDetail={openDetail}
+                  onEdit={setEditingInstructor}
+                  onSkillClick={handleSkillClick}
+                />
+              ))}
             </div>
           )}
 
