@@ -99,6 +99,17 @@ const tdClass = 'px-4 py-3 text-sm';
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Get allowed role options based on current user's role */
+function getAllowedRoleOptions(currentRole: AppRole | null): AppRole[] {
+  // Master Admin can assign any role
+  if (currentRole === 'master_admin') {
+    return ['master_admin', 'admin', 'editor', 'instructor'];
+  }
+  // Non-Master Admin users cannot grant Master Admin privileges
+  // They can only assign Admin, Editor, or Staff roles
+  return ['admin', 'editor', 'instructor'];
+}
+
 /** Map DB admin role_level to our unified role */
 function adminRoleToAppRole(roleLevel: string): AppRole {
   if (roleLevel === 'master') return 'master_admin';
@@ -219,6 +230,13 @@ export default function RolesPage() {
         if (data?.email) setCurrentUserEmail(data.email.toLowerCase());
       });
   }, []);
+
+  // Derive current user's role from admins list
+  const currentUserRole = useMemo((): AppRole | null => {
+    if (!currentUserEmail) return null;
+    const currentAdmin = admins.find(a => a.google_email.toLowerCase() === currentUserEmail);
+    return currentAdmin ? adminRoleToAppRole(currentAdmin.role_level) : null;
+  }, [currentUserEmail, admins]);
 
   // =========================================================================
   // Fetch
@@ -428,9 +446,9 @@ export default function RolesPage() {
 
   async function handleRemove() {
     if (!removeUser) return;
-    
+
     const userToRemove = removeUser;
-    
+
     // Optimistic update: immediately remove from UI and close modal
     if (userToRemove.source === 'instructor') {
       setInstructors((prev) => prev.filter((i) => i.id !== userToRemove.id));
@@ -606,10 +624,11 @@ export default function RolesPage() {
                             onChange={(e) => setEditRole(e.target.value as AppRole)}
                             className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                           >
-                            <option value="master_admin">Master Admin</option>
-                            <option value="admin">Admin</option>
-                            <option value="editor">Editor</option>
-                            <option value="instructor">Staff</option>
+                            {getAllowedRoleOptions(currentUserRole).map((roleValue) => (
+                              <option key={roleValue} value={roleValue}>
+                                {ROLE_META[roleValue].label}
+                              </option>
+                            ))}
                           </select>
                         ) : (
                           <Tooltip text={meta.description}>
@@ -731,10 +750,11 @@ export default function RolesPage() {
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as AppRole }))}
                     className={inputClass}
                   >
-                    <option value="master_admin">Master Admin — Full system access</option>
-                    <option value="admin">Admin — Manage schedules</option>
-                    <option value="editor">Editor — Edit schedules</option>
-                    <option value="instructor">Staff — View own schedule only</option>
+                    {getAllowedRoleOptions(currentUserRole).map((roleValue) => (
+                      <option key={roleValue} value={roleValue}>
+                        {ROLE_META[roleValue].label} — {ROLE_META[roleValue].description}
+                      </option>
+                    ))}
                   </select>
                 </Tooltip>
               </div>

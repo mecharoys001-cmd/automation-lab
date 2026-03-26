@@ -59,6 +59,33 @@ export async function requireAdmin(): Promise<AuthSuccess | AuthFailure> {
 
 // ── Permission helpers ──────────────────────────────────────────────────────
 
+/** Role hierarchy: master > standard > editor. Higher number = more privilege. */
+const ROLE_RANK: Record<RoleLevel, number> = {
+  master: 3,
+  standard: 2,
+  editor: 1,
+};
+
+/**
+ * Require the user's role_level to be at least `minRole`.
+ * Returns a 403 NextResponse if insufficient, or null if authorized.
+ */
+export function requireMinRole(
+  authUser: AuthUser,
+  minRole: RoleLevel,
+): NextResponse | null {
+  const userRank = ROLE_RANK[authUser.roleLevel] ?? 0;
+  const requiredRank = ROLE_RANK[minRole] ?? 0;
+
+  if (userRank < requiredRank) {
+    return NextResponse.json(
+      { error: `Forbidden: requires ${minRole}-level access or higher` },
+      { status: 403 },
+    );
+  }
+  return null;
+}
+
 /**
  * Only master admins can modify the admins table (create, update, delete admins).
  */

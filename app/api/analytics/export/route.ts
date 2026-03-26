@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { getOrgMembership } from '@/lib/rbac';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth check - admin only
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const membership = await getOrgMembership(user.email!);
-    if (membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const masterErr = requireMasterAdmin(auth.user);
+    if (masterErr) return masterErr;
 
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'json';

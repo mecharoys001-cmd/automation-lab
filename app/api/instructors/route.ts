@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireMasterAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -67,6 +67,10 @@ export async function DELETE() {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
+    // Global instructor deletion is destructive — restrict to master admins
+    const masterErr = requireMasterAdmin(auth.user);
+    if (masterErr) return masterErr;
+
     const supabase = createServiceClient();
 
     // Instructors are global (not program-scoped), so this deletes all.
@@ -96,6 +100,9 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const supabase = createServiceClient();
     const body = await request.json();

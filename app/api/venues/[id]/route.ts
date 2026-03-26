@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 export async function GET(
   _request: NextRequest,
@@ -58,6 +58,9 @@ export async function PATCH(
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const { id } = await params;
     const supabase = createServiceClient();
@@ -142,6 +145,9 @@ export async function DELETE(
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const { id } = await params;
     const supabase = createServiceClient();

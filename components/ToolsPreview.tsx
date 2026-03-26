@@ -1,38 +1,52 @@
-import Link from "next/link";
-
-const tools = [
-  {
-    id: "csv-dedup",
-    name: "CSV Deduplicator",
-    description:
-      "Clean your mailing lists instantly. Fuzzy matching catches misspelled names, initials, and duplicates. Runs 100% in your browser — your data never leaves your computer.",
-    features: ["Fuzzy name matching", "Address normalization", "Smart record selection", "100% browser-based"],
-    icon: "🧹",
-    href: "/tools/csv-dedup",
-    accentRaw: "#6366f1",
-  },
-  {
-    id: "scheduler",
-    name: "Symphonix Scheduler",
-    description:
-      "Automated scheduling platform for educational music programs. Generate sessions from templates, manage instructor availability, and publish schedules.",
-    features: ["Template-based scheduling", "Instructor availability", "Conflict detection", "Email notifications"],
-    icon: "🎵",
-    href: "/tools/scheduler",
-    accentRaw: "#1282a2",
-  },
-  {
-    id: "reports",
-    name: "Transaction Reports",
-    description:
-      "Upload your Shopify transaction CSV and get an instant visual dashboard with sales breakdowns, payment method trends, and summary statistics.",
-    features: ["Shopify CSV import", "Sales breakdown charts", "Payment method analysis", "100% browser-based"],
-    icon: "📊",
-    href: "/tools/reports",
-    accentRaw: "#10b981",
-  },
-];
-
 export default function ToolsPreview() {
-  return null;
+  return (
+    <section
+      id="video"
+      style={{
+        background: "#ffffff",
+        padding: "96px 24px",
+      }}
+    >
+      <div style={{ maxWidth: "860px", margin: "0 auto" }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-headline)",
+            fontSize: "clamp(1.4rem, 3vw, 1.8rem)",
+            fontWeight: 700,
+            color: "var(--color-text)",
+            textAlign: "center",
+            marginBottom: "40px",
+          }}
+        >
+          Print Calendar Automation (Before and After)
+        </h2>
+
+        <div
+          style={{
+            borderRadius: "var(--radius-lg)",
+            overflow: "hidden",
+            boxShadow: "var(--shadow-lg)",
+            background: "#000",
+          }}
+        >
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            poster="/images/autolab/calendar-thumbnail.jpg"
+            style={{
+              width: "100%",
+              display: "block",
+            }}
+          >
+            <source
+              src="https://vid.cdn-website.com/04efc271/videos/9zQDpktUQO2X1wIzOdeU_2025+Calendar+Automation+%281%29-v.mp4"
+              type="video/mp4"
+            />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    </section>
+  );
 }

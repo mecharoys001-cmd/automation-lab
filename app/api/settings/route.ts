@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 export async function GET() {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Settings contain sensitive config — restrict to master admins
+    const masterErr = requireMasterAdmin(auth.user);
+    if (masterErr) return masterErr;
 
     const supabase = createServiceClient();
 
@@ -33,6 +37,9 @@ export async function PUT(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const masterErr = requireMasterAdmin(auth.user);
+    if (masterErr) return masterErr;
 
     const supabase = createServiceClient();
     const body = await request.json();

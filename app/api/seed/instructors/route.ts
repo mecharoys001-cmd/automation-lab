@@ -16,6 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 // Availability presets (Mon-Fri variations)
 const FULL_WEEK = {
@@ -146,6 +147,12 @@ const INSTRUCTOR_DEFS: Array<{
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
+    const masterErr = requireMasterAdmin(auth.user);
+    if (masterErr) return masterErr;
+
     const supabase = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;

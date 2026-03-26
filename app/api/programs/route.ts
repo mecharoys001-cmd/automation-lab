@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from '../seed/default-tags';
-import { requireAdmin, getAccessibleProgramIds } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function GET() {
   try {
@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const supabase = createServiceClient();
     const body = await request.json();

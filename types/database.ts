@@ -9,7 +9,7 @@
 // Enum types (mirrors PostgreSQL ENUMs)
 // ============================================================
 
-export type RoleLevel = 'master' | 'standard';
+export type RoleLevel = 'master' | 'standard' | 'editor';
 
 export type CalendarStatusType =
   | 'no_school'

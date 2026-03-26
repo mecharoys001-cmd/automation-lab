@@ -1,65 +1,45 @@
 "use client";
+
 export default function SurveyBanner() {
   return (
     <section
+      id="contact"
       style={{
-        background: "linear-gradient(135deg, var(--color-teal) 0%, var(--color-teal-dark) 100%)",
-        padding: "96px 24px",
-        position: "relative",
-        overflow: "hidden",
+        background: "var(--color-bg-alt)",
+        padding: "64px 24px",
+        textAlign: "center",
       }}
     >
-      <div className="survey-grid-overlay" />
-
-      <div
-        className="animate-fade-up"
-        style={{
-          maxWidth: "680px",
-          margin: "0 auto",
-          textAlign: "center",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
         <h2
           style={{
-            fontSize: "clamp(2rem, 4vw, 3rem)",
-            fontWeight: 700,
-            marginBottom: "20px",
-            color: "#ffffff",
             fontFamily: "var(--font-headline)",
-            lineHeight: 1.2,
+            fontSize: "1.6rem",
+            fontWeight: 700,
+            color: "var(--color-text)",
+            marginBottom: "16px",
           }}
         >
-          Is Your Organization a Fit?
+          Have a Question?
         </h2>
-
         <p
           style={{
-            color: "rgba(255,255,255,0.9)",
-            fontSize: "1.1rem",
-            lineHeight: 1.8,
-            maxWidth: "540px",
-            margin: "0 auto 36px",
+            fontSize: "1.05rem",
+            color: "var(--color-text-muted)",
+            lineHeight: 1.7,
           }}
         >
-          We are currently seeking feedback from arts &amp; culture nonprofit
-          organizations in Northwest Connecticut. Fill out our brief survey to
-          share your experience and see if you might be a good match to partner
-          with us.
-        </p>
-
-        <a
-          href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-survey"
-        >
-          Take the Self-Assessment →
-        </a>
-
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginTop: "18px" }}>
-          Takes 5-10 minutes · Open to NWCT arts &amp; culture nonprofits
+          Reach out to us at{" "}
+          <a
+            href="mailto:info@artsnwct.org"
+            style={{
+              color: "var(--color-teal)",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            info@artsnwct.org
+          </a>
         </p>
       </div>
     </section>

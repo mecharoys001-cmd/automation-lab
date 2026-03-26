@@ -4,130 +4,121 @@ const team = [
   {
     name: "Steph Burr",
     role: "Project Manager",
-    bio: "Nonprofit leader with hands-on experience improving operations through technology, automation, and systems design. As Executive Director of the NWCT Arts Council, she has implemented workflows across fundraising, grants, and membership programs using a wide range of software platforms.",
-    highlights: ["Zapier Wizard's Guild member", "Executive Director, NWCT Arts Council", "Fundraising & grants automation"],
-    photo: "/images/team/steph.jpg",
-    accentColor: "#a244ae",
-    org: "artsnwct.org",
-    orgHref: "https://www.artsnwct.org",
+    photo: "/images/autolab/steph-burr.jpg",
+    bio: [
+      "Steph Burr is a nonprofit leader with hands-on experience improving operations through technology, automation, and systems design.",
+      "As Executive Director of the NWCT Arts Council, she has implemented workflows across fundraising, grants, and membership programs using a wide range of software platforms. She has extensive technical proficiency and is a member of the Zapier Wizard\u2019s Guild.",
+    ],
   },
   {
     name: "Ethan S. Brewerton",
     role: "Development Lead",
-    bio: "Creative technologist dedicated to operational efficiency. With two years of specialized experience in computational models and generative scripting, Ethan has mastered automating intricate, multi-step processes, applying that expertise to the nonprofit sector.",
-    highlights: ["Computational modeling & generative scripting", "Custom tool development", "AI workflow architecture"],
-    photo: "/images/team/ethan.png",
-    accentColor: "#21b8bb",
-    org: "ethansbrewerton.com",
-    orgHref: "https://www.ethansbrewerton.com",
+    photo: "/images/autolab/ethan-brewerton.png",
+    bio: [
+      "Ethan S. Brewerton is a creative technologist dedicated to operational efficiency. With two years of specialized experience in computational models and generative scripting, he has mastered the art of automating intricate, multi-step processes.",
+      "Previously using these skills to enhance hand made artistic production, Ethan now applies his automation expertise to the non-profit sector. He helps organizations modernize their operations by building custom tools that democratize access to technology, streamline daily tasks, and amplify overall impact.",
+    ],
   },
 ];
 
 export default function Team() {
   return (
-    <section id="team" className="section section-light">
-      <div className="container">
+    <section
+      id="team"
+      style={{
+        background: "#ffffff",
+        padding: "96px 24px",
+      }}
+    >
+      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
         {/* Header */}
-        <div className="section-header" data-reveal="fade">
-          <div className="label-overline" style={{ marginBottom: "10px" }}>Who We Are</div>
-          <h2 className="heading-section">Our Team</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "15px", maxWidth: "440px", margin: "0 auto" }}>
-            Two collaborators bridging nonprofit operations and modern technology.
-          </p>
-        </div>
+        <h2
+          style={{
+            fontFamily: "var(--font-headline)",
+            fontSize: "clamp(1.8rem, 4vw, 2.4rem)",
+            fontWeight: 700,
+            color: "var(--color-text)",
+            textAlign: "center",
+            marginBottom: "56px",
+          }}
+        >
+          Our Team
+        </h2>
 
+        {/* Team cards */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "20px",
-            maxWidth: "780px",
-            margin: "0 auto",
+            gap: "40px",
           }}
         >
           {team.map((member) => (
             <div
               key={member.name}
-              className="card"
-              data-reveal
               style={{
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
+                textAlign: "center",
               }}
             >
-              {/* Photo header */}
+              {/* Circular photo */}
               <div
                 style={{
-                  position: "relative",
-                  aspectRatio: "1 / 1",
+                  width: "180px",
+                  height: "180px",
+                  borderRadius: "50%",
                   overflow: "hidden",
-                  background: `linear-gradient(135deg, ${member.accentColor}15, ${member.accentColor}05)`,
+                  margin: "0 auto 24px",
+                  position: "relative",
+                  border: "4px solid var(--color-teal-light)",
                 }}
               >
                 <Image
                   src={member.photo}
                   alt={member.name}
                   fill
-                  style={{ objectFit: "contain", objectPosition: "center center" }}
-                  sizes="(max-width: 768px) 100vw, 400px"
+                  style={{ objectFit: "cover", objectPosition: "center" }}
+                  sizes="180px"
                 />
-                {/* Role badge */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "14px",
-                    right: "14px",
-                    backgroundColor: "rgba(28,35,48,0.75)",
-                    color: "#fff",
-                    padding: "5px 12px",
-                    borderRadius: "var(--radius-pill)",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
-                    fontFamily: "'Montserrat', sans-serif",
-                    backdropFilter: "blur(4px)",
-                  }}
-                >
-                  {member.role}
-                </div>
               </div>
 
-              {/* Content */}
-              <div style={{ padding: "1.75rem 2rem 2rem" }}>
-                <h3 className="heading-card" style={{ fontSize: "18px", marginBottom: "3px" }}>
-                  {member.name}
-                </h3>
-                <a
-                  href={member.orgHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {/* Name & role */}
+              <h3
+                style={{
+                  fontFamily: "var(--font-headline)",
+                  fontSize: "1.25rem",
+                  fontWeight: 700,
+                  color: "var(--color-text)",
+                  marginBottom: "4px",
+                }}
+              >
+                {member.name}
+              </h3>
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: "var(--color-teal)",
+                  marginBottom: "20px",
+                }}
+              >
+                {member.role}
+              </p>
+
+              {/* Bio */}
+              {member.bio.map((paragraph, i) => (
+                <p
+                  key={i}
                   style={{
-                    fontSize: "12px",
-                    color: "var(--teal-dark)",
-                    textDecoration: "none",
-                    fontWeight: 600,
-                    display: "inline-block",
-                    marginBottom: "16px",
+                    fontSize: "0.925rem",
+                    lineHeight: 1.8,
+                    color: "var(--color-text-muted)",
+                    textAlign: "left",
+                    marginBottom: i < member.bio.length - 1 ? "12px" : 0,
                   }}
                 >
-                  {member.org} ↗
-                </a>
-
-                <p style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.75, marginBottom: "20px" }}>
-                  {member.bio}
+                  {paragraph}
                 </p>
-
-                {/* Highlights */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
-                  {member.highlights.map((h) => (
-                    <div key={h} style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "13px", color: "var(--text-body)" }}>
-                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "var(--teal)", flexShrink: 0, display: "inline-block" }} />
-                      {h}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           ))}
         </div>

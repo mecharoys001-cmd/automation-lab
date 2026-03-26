@@ -136,8 +136,9 @@ export default function SettingsPage() {
   const [adminForm, setAdminForm] = useState<AdminFormData>(emptyAdminForm);
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
-  const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
+  const [deletingAdminId] = useState<string | null>(null);
   const deletingRef = useRef(false);
+  const [confirmRemoveAdmin, setConfirmRemoveAdmin] = useState<Admin | null>(null);
 
   // ---- Current user state (for RBAC + self-removal guard) ----
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -326,25 +327,48 @@ export default function SettingsPage() {
     }
   }
 
-  async function deleteAdmin(id: string) {
+  function requestDeleteAdmin(admin: Admin) {
     if (deletingRef.current) return;
-    const target = admins.find((a) => a.id === id);
-    if (target?.role_level === 'master' && admins.filter((a) => a.role_level === 'master').length <= 1) {
+    if (admin.role_level === 'master' && admins.filter((a) => a.role_level === 'master').length <= 1) {
       setAdminError('Cannot remove the last Master Admin.');
       return;
     }
-    if (!confirm('Remove this admin? They will lose access.')) return;
-    deletingRef.current = true;
-    setDeletingAdminId(id);
+    setConfirmRemoveAdmin(admin);
+  }
+
+  async function deleteAdmin(id: string) {
+    if (deletingRef.current) return;
+
+    const adminToRemove = admins.find((a) => a.id === id);
+    if (!adminToRemove) return;
+
+    // Optimistic update: immediately remove from UI and close modal
+    setAdmins((prev) => prev.filter((a) => a.id !== id));
+    setConfirmRemoveAdmin(null);
+    deletingRef.current = false;
+
+    // Show optimistic success (will be replaced if error occurs)
+    setToast({ message: `Removing ${adminToRemove.display_name || adminToRemove.google_email}...`, type: 'success', id: Date.now() });
+
+    // Make API call in background
     try {
       const res = await fetch(`/api/admins?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete admin');
-      setAdmins((prev) => prev.filter((a) => a.id !== id));
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to remove admin');
+      }
+
+      // Success - update toast
+      setToast({ message: `${adminToRemove.display_name || adminToRemove.google_email} removed`, type: 'success', id: Date.now() });
     } catch (err) {
-      setAdminError(err instanceof Error ? err.message : 'Failed to remove admin');
-    } finally {
-      deletingRef.current = false;
-      setDeletingAdminId(null);
+      // Rollback optimistic update on error
+      fetchAdmins();
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to remove admin. Please try again.',
+        type: 'error',
+        id: Date.now(),
+      });
     }
   }
 
@@ -818,7 +842,7 @@ export default function SettingsPage() {
                       ) : (
                         <Tooltip text="Remove this admin's access">
                           <button
-                            onClick={() => deleteAdmin(admin.id)}
+                            onClick={() => requestDeleteAdmin(admin)}
                             disabled={!!deletingAdminId}
                             aria-label={`Remove ${admin.display_name || admin.google_email}`}
                             className={btnDanger}
@@ -1395,6 +1419,57 @@ export default function SettingsPage() {
                   </button>
                 </Tooltip>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Admin Confirmation Modal */}
+      {confirmRemoveAdmin && (
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => !deletingRef.current && setConfirmRemoveAdmin(null)}>
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm rounded-xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 pt-5 pb-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-red-100">
+                  <AlertTriangle className="w-5 h-5 text-red-700" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-900">Remove Admin</h3>
+              </div>
+              {!deletingAdminId && (
+                <button onClick={() => setConfirmRemoveAdmin(null)} className="text-slate-700 hover:text-slate-600 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Are you sure you want to remove <strong>{confirmRemoveAdmin.display_name || confirmRemoveAdmin.google_email}</strong>?
+                They will lose all admin access.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+              <button
+                onClick={() => setConfirmRemoveAdmin(null)}
+                disabled={!!deletingAdminId}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 text-[13px] font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteAdmin(confirmRemoveAdmin.id)}
+                disabled={!!deletingAdminId}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {deletingAdminId === confirmRemoveAdmin.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                {deletingAdminId === confirmRemoveAdmin.id ? 'Removing...' : 'Yes, Remove'}
+              </button>
             </div>
           </div>
         </div>

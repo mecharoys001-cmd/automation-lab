@@ -11,9 +11,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notify } from '@/lib/notifications';
 import type { NotificationPayload } from '@/lib/notifications';
+import { requireAdmin, requireMinRole } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
+
     const payload: NotificationPayload = await request.json();
     const { recipientId, channel, templateKey, data } = payload;
 

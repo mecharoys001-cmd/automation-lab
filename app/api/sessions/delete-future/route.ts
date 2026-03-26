@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole } from '@/lib/api-auth';
 
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const sessionId = request.nextUrl.searchParams.get('session_id');
     if (!sessionId) {

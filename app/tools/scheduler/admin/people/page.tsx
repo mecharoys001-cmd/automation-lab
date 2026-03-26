@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Users, MapPin, Search, Plus, ChevronDown, X, Mail, Phone,
+  Users, MapPin, Search, Plus, ChevronDown, ChevronLeft, ChevronRight, X, Mail, Phone,
   Accessibility, Clock, Home, StickyNote, Edit2, Copy,
   Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload,
 } from 'lucide-react';
@@ -50,6 +50,8 @@ const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
   { key: 'sunday', short: 'Sun' },
 ];
 const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
+
+const ITEMS_PER_PAGE = 20;
 
 /* ── Venue CSV Import config ───────────────────────────────── */
 
@@ -1163,6 +1165,8 @@ export default function PeoplePage() {
   const [instructorImportOpen, setInstructorImportOpen] = useState(false);
   const [creatingVenue, setCreatingVenue] = useState(false);
   const [venueSearch, setVenueSearch] = useState('');
+  const [staffPage, setStaffPage] = useState(1);
+  const [venuePage, setVenuePage] = useState(1);
 
   /* ── Fetching ──────────────────────────────────────────── */
 
@@ -1426,6 +1430,20 @@ export default function PeoplePage() {
     return true;
   });
 
+  const staffTotalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const safeStaffPage = Math.min(staffPage, staffTotalPages);
+  const paginatedStaff = filtered.slice((safeStaffPage - 1) * ITEMS_PER_PAGE, safeStaffPage * ITEMS_PER_PAGE);
+
+  const venueTotalPages = Math.max(1, Math.ceil(filteredVenues.length / ITEMS_PER_PAGE));
+  const safeVenuePage = Math.min(venuePage, venueTotalPages);
+  const paginatedVenues = filteredVenues.slice((safeVenuePage - 1) * ITEMS_PER_PAGE, safeVenuePage * ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setStaffPage(1); }, [search, filterStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setVenuePage(1); }, [venueSearch]);
+
   /* ── Render ────────────────────────────────────────────── */
 
   return (
@@ -1548,7 +1566,7 @@ export default function PeoplePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((inst) => {
+              {paginatedStaff.map((inst) => {
                 const fullName = `${inst.first_name} ${inst.last_name}`;
                 return (
                   <div
@@ -1711,6 +1729,46 @@ export default function PeoplePage() {
               })}
             </div>
           )}
+
+          {/* Staff Pagination */}
+          {!loadingAll && filtered.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-3">
+              <span className="text-sm text-slate-600">
+                Showing {(safeStaffPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeStaffPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={safeStaffPage <= 1}
+                  onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4 text-slate-700" />
+                </button>
+                {Array.from({ length: staffTotalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setStaffPage(p)}
+                    className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
+                      p === safeStaffPage
+                        ? 'bg-blue-500 text-white'
+                        : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  disabled={safeStaffPage >= staffTotalPages}
+                  onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
+                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="w-4 h-4 text-slate-700" />
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ── Venues Section ──────────────────────────────── */}
@@ -1770,7 +1828,7 @@ export default function PeoplePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredVenues.map((venue) => (
+              {paginatedVenues.map((venue) => (
                 <div
                   key={venue.id}
                   onClick={() => setSelectedVenue(venue)}
@@ -1832,6 +1890,46 @@ export default function PeoplePage() {
                   </Tooltip>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Venue Pagination */}
+          {!loadingVenues && filteredVenues.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-3">
+              <span className="text-sm text-slate-600">
+                Showing {(safeVenuePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeVenuePage * ITEMS_PER_PAGE, filteredVenues.length)} of {filteredVenues.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={safeVenuePage <= 1}
+                  onClick={() => setVenuePage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4 text-slate-700" />
+                </button>
+                {Array.from({ length: venueTotalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setVenuePage(p)}
+                    className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
+                      p === safeVenuePage
+                        ? 'bg-blue-500 text-white'
+                        : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  disabled={safeVenuePage >= venueTotalPages}
+                  onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))}
+                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="w-4 h-4 text-slate-700" />
+                </button>
+              </div>
             </div>
           )}
         </section>

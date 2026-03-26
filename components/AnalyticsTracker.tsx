@@ -15,72 +15,71 @@ function getSessionId(): string {
 }
 
 // Batch queue for analytics events
-let eventQueue: Array<{
+type AnalyticsEvent = {
   event_type: 'page_view' | 'button_click' | 'form_submit';
   page_path: string;
   element_id?: string;
   element_text?: string;
   metadata?: Record<string, unknown>;
-}> = [];
+};
+let eventQueue: AnalyticsEvent[] = [];
 let flushTimer: NodeJS.Timeout | null = null;
+const FLUSH_INTERVAL_MS = 5000;
+const MAX_QUEUE_SIZE = 20;
 
-function flushEvents() {
-  if (eventQueue.length === 0) return;
-  
+function sendBatch(events: AnalyticsEvent[]) {
+  if (events.length === 0) return;
+
   const sessionId = getSessionId();
   if (!sessionId) return;
 
-  // Send all events in a single batch
-  const batch = eventQueue.splice(0, eventQueue.length);
-  
-  // For batching, we send them individually but fire-and-forget
-  // Could be optimized further with a batch endpoint
-  batch.forEach((event) => {
-    const payload = JSON.stringify({ session_id: sessionId, ...event });
-    const sent = navigator.sendBeacon?.('/api/analytics/track', new Blob([payload], { type: 'application/json' }));
-    if (!sent) {
-      fetch('/api/analytics/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload,
-        keepalive: true,
-      }).catch(() => { /* silent fail */ });
-    }
-  });
+  const payload = JSON.stringify(
+    events.map((e) => ({ session_id: sessionId, ...e }))
+  );
+  const blob = new Blob([payload], { type: 'application/json' });
+  const sent = navigator.sendBeacon?.('/api/analytics/track', blob);
+  if (!sent) {
+    fetch('/api/analytics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(() => { /* silent fail */ });
+  }
 }
 
-function trackEvent(event: {
-  event_type: 'page_view' | 'button_click' | 'form_submit';
-  page_path: string;
-  element_id?: string;
-  element_text?: string;
-  metadata?: Record<string, unknown>;
-}) {
-  // Batch clicks and form submits, but send page views immediately
-  if (event.event_type === 'page_view') {
-    const sessionId = getSessionId();
-    if (!sessionId) return;
-    const payload = JSON.stringify({ session_id: sessionId, ...event });
-    const sent = navigator.sendBeacon?.('/api/analytics/track', new Blob([payload], { type: 'application/json' }));
-    if (!sent) {
-      fetch('/api/analytics/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload,
-        keepalive: true,
-      }).catch(() => { /* silent fail */ });
-    }
-    return;
-  }
+function flushEvents() {
+  if (eventQueue.length === 0) return;
+  const batch = eventQueue.splice(0, eventQueue.length);
+  sendBatch(batch);
+}
 
-  // Queue other events and flush after 2 seconds of inactivity
-  eventQueue.push(event);
-  
-  if (flushTimer) clearTimeout(flushTimer);
+function scheduleFlush() {
+  if (flushTimer) return;
+  // Use requestIdleCallback to avoid blocking UI, fall back to setTimeout
+  const scheduleIdle =
+    typeof requestIdleCallback === 'function'
+      ? (cb: () => void) => requestIdleCallback(cb, { timeout: FLUSH_INTERVAL_MS })
+      : (cb: () => void) => setTimeout(cb, FLUSH_INTERVAL_MS);
+
   flushTimer = setTimeout(() => {
+    scheduleIdle(() => {
+      flushEvents();
+      flushTimer = null;
+    });
+  }, FLUSH_INTERVAL_MS) as unknown as NodeJS.Timeout;
+}
+
+function trackEvent(event: AnalyticsEvent) {
+  eventQueue.push(event);
+
+  // Flush immediately if queue is full, otherwise schedule
+  if (eventQueue.length >= MAX_QUEUE_SIZE) {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
     flushEvents();
-    flushTimer = null;
-  }, 2000);
+  } else {
+    scheduleFlush();
+  }
 }
 
 export default function AnalyticsTracker() {
@@ -112,13 +111,12 @@ export default function AnalyticsTracker() {
     trackEvent({ event_type: 'page_view', page_path: pathname });
   }, [pathname]);
 
-  // Track button clicks and form submissions via event delegation
+  // Track clicks only on elements that opt in with data-track
   const handleClick = useCallback((e: MouseEvent) => {
     if (!isAuthenticated.current) return;
     const target = e.target as HTMLElement;
 
-    // Find closest button or link with data-track attribute, or any button/a
-    const trackable = target.closest('[data-track]') || target.closest('button') || target.closest('a[href]');
+    const trackable = target.closest('[data-track]');
     if (!trackable) return;
 
     const elementId = trackable.getAttribute('data-track') || trackable.id || undefined;
@@ -147,9 +145,20 @@ export default function AnalyticsTracker() {
   useEffect(() => {
     document.addEventListener('click', handleClick, { capture: true });
     document.addEventListener('submit', handleSubmit, { capture: true });
+
+    // Flush remaining events when the page is unloading
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushEvents();
+    };
+    const handleUnload = () => flushEvents();
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleUnload);
+
     return () => {
       document.removeEventListener('click', handleClick, { capture: true });
       document.removeEventListener('submit', handleSubmit, { capture: true });
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleUnload);
     };
   }, [handleClick, handleSubmit]);
 

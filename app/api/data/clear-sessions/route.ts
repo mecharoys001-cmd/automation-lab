@@ -10,12 +10,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMasterAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Destructive: only master admins can clear sessions
+    const masterCheck = requireMasterAdmin(auth.user);
+    if (masterCheck) return masterCheck;
+
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 

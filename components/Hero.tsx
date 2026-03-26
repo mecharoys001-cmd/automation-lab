@@ -1,81 +1,100 @@
-"use client";
-import Link from "next/link";
+import Image from "next/image";
 
 export default function Hero() {
   return (
     <section
-      className="hero-section"
-      style={{ paddingTop: "calc(var(--nav-height) + 96px)", paddingBottom: "96px" }}
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        overflow: "hidden",
+      }}
     >
-      {/* Decorative blob */}
+      {/* Background image */}
+      <Image
+        src="/images/autolab/hero-bg.jpg"
+        alt=""
+        fill
+        priority
+        style={{ objectFit: "cover", objectPosition: "center" }}
+      />
+
+      {/* Dark overlay */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          right: 0,
-          width: "33%",
-          height: "100%",
-          opacity: 0.08,
-          pointerEvents: "none",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.55)",
+          zIndex: 1,
         }}
-      >
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
-          <path
-            d="M44.7,-76.4C58.3,-69.2,70.1,-57.4,77.6,-43.3C85.2,-29.2,88.5,-12.8,87.2,3.3C85.9,19.4,80,35.2,70.4,48.6C60.8,61.9,47.6,72.9,32.8,78.2C18,83.5,1.7,83.1,-14.8,79.8C-31.3,76.5,-48,70.3,-61.2,59.3C-74.4,48.3,-84.1,32.5,-87.3,15.7C-90.5,-1.1,-87.2,-18.9,-78.9,-34.2C-70.6,-49.5,-57.3,-62.3,-42.2,-68.8C-27.1,-75.3,-10.1,-75.4,4.2,-81.4C18.5,-87.4,31.1,-83.6,44.7,-76.4Z"
-            fill="var(--color-teal)"
-            transform="translate(100 100)"
-          />
-        </svg>
-      </div>
+      />
 
+      {/* Content */}
       <div
         style={{
           position: "relative",
-          zIndex: 1,
-          maxWidth: "900px",
-          padding: "0 24px",
-          margin: "0 auto",
+          zIndex: 2,
+          maxWidth: "800px",
+          padding: "40px 24px",
+          color: "#ffffff",
         }}
       >
         <h1
-          className="heading-hero animate-fade-up"
-          style={{ color: "var(--color-navy)", marginBottom: "32px", lineHeight: 1.1, letterSpacing: "-0.02em" }}
+          style={{
+            fontFamily: "var(--font-headline)",
+            fontSize: "clamp(3rem, 7vw, 5rem)",
+            fontWeight: 900,
+            letterSpacing: "0.04em",
+            lineHeight: 1.1,
+            marginBottom: "24px",
+            textTransform: "uppercase",
+          }}
         >
-          Reducing Administrative Burden in the{" "}
-          <span style={{ color: "var(--color-teal)", fontStyle: "italic" }}>Cultural Sector</span>
+          Automation Lab
         </h1>
 
         <p
-          className="animate-fade-up delay-100"
           style={{
-            fontSize: "1.25rem",
-            color: "var(--color-text)",
-            lineHeight: 1.7,
+            fontSize: "clamp(1.1rem, 2.5vw, 1.4rem)",
+            fontWeight: 400,
+            lineHeight: 1.6,
             maxWidth: "640px",
-            marginBottom: "48px",
+            margin: "0 auto 32px",
             fontFamily: "var(--font-body)",
+            color: "rgba(255,255,255,0.92)",
           }}
         >
-          NWCT Arts Council is exploring responsible, human-centered automation
-          to give artists and administrators their time back.
+          Reducing Administrative Burden in the Cultural Sector Through Technology
         </p>
 
-        {/* CTAs */}
         <div
-          className="animate-fade-up delay-200"
-          style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
         >
-          <Link href="/tools" className="btn-primary">
-            Try Our Tools
-          </Link>
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSctZRxGj5IGsjgKg-AVRtBKfAeWr1MS2tsdLUNkwYcrz7H4wA/viewform"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
+          <span
+            style={{
+              fontSize: "1rem",
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: "var(--font-body)",
+            }}
           >
-            Take the Self-Assessment
-          </a>
+            A pilot initiative by the
+          </span>
+          <Image
+            src="/images/autolab/nwct-logo-white.svg"
+            alt="NWCT Arts Council"
+            width={180}
+            height={50}
+            style={{ objectFit: "contain" }}
+          />
         </div>
       </div>
     </section>

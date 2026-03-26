@@ -75,6 +75,26 @@ const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const DAY_FULL_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+// Responsive breakpoints: Desktop 7-day, Tablet 3-day, Mobile 1-day
+function useVisibleDayCount(): number {
+  const [count, setCount] = useState(() => {
+    if (typeof window === 'undefined') return 7;
+    const w = window.innerWidth;
+    return w < 768 ? 1 : w < 1024 ? 3 : 7;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setCount(w < 768 ? 1 : w < 1024 ? 3 : 7);
+    };
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return count;
+}
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -483,6 +503,8 @@ export function WeekView({
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [dayOffset, setDayOffset] = useState(0); // offset within the week for sub-week views
+  const visibleDayCount = useVisibleDayCount();
 
   // Sync viewDate when parent changes currentDate externally
   useEffect(() => {
@@ -654,6 +676,21 @@ export function WeekView({
     [weekDates],
   );
 
+  // Reset dayOffset when visibleDayCount changes or when navigating to a new week
+  useEffect(() => {
+    setDayOffset(0);
+  }, [visibleDayCount, weekStart]);
+
+  // Visible subset of the week based on responsive breakpoint
+  const visibleDates = useMemo(
+    () => weekDates.slice(dayOffset, dayOffset + visibleDayCount),
+    [weekDates, dayOffset, visibleDayCount],
+  );
+  const visibleDateKeys = useMemo(
+    () => visibleDates.map(formatDateKey),
+    [visibleDates],
+  );
+
   const todayKey = formatDateKey(new Date());
 
   // Group events by date
@@ -674,11 +711,26 @@ export function WeekView({
   const totalHeight = hours.length * HOUR_HEIGHT;
 
   const navigate = useCallback((delta: number) => {
-    const next = new Date(viewDate);
-    next.setDate(next.getDate() + delta * 7);
-    setViewDate(next);
-    onDateChange?.(next);
-  }, [viewDate, onDateChange]);
+    if (visibleDayCount < 7) {
+      // Sub-week view: navigate within the week first, then jump weeks
+      const newOffset = dayOffset + delta * visibleDayCount;
+      if (newOffset >= 0 && newOffset + visibleDayCount <= 7) {
+        setDayOffset(newOffset);
+        return;
+      }
+      // Jump to next/prev week
+      const next = new Date(viewDate);
+      next.setDate(next.getDate() + delta * 7);
+      setViewDate(next);
+      onDateChange?.(next);
+      setDayOffset(delta > 0 ? 0 : Math.max(0, 7 - visibleDayCount));
+    } else {
+      const next = new Date(viewDate);
+      next.setDate(next.getDate() + delta * 7);
+      setViewDate(next);
+      onDateChange?.(next);
+    }
+  }, [viewDate, onDateChange, visibleDayCount, dayOffset]);
 
   const goToToday = useCallback(() => {
     const now = new Date();
@@ -686,11 +738,13 @@ export function WeekView({
     onDateChange?.(now);
   }, [onDateChange]);
 
-  // Format week range for header
-  const weekEndDate = weekDates[6];
+  // Format range label for visible dates
   const rangeLabel = useMemo(() => {
-    const s = weekDates[0];
-    const e = weekEndDate;
+    const s = visibleDates[0];
+    const e = visibleDates[visibleDates.length - 1];
+    if (visibleDayCount === 1) {
+      return `${DAY_FULL_LABELS[dayOffset]} ${MONTH_NAMES[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()}`;
+    }
     if (s.getMonth() === e.getMonth()) {
       return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${e.getDate()}, ${s.getFullYear()}`;
     }
@@ -698,7 +752,7 @@ export function WeekView({
       return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${s.getFullYear()}`;
     }
     return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
-  }, [weekDates, weekEndDate]);
+  }, [visibleDates, visibleDayCount, dayOffset]);
 
   // Handle template drop on a day column
   const handleTemplateDrop = useCallback((e: React.DragEvent, dayIdx: number) => {
@@ -722,12 +776,12 @@ export function WeekView({
         droppedVenueId = selectedVenues[0];
       }
 
-      onTemplateSelect(template, weekDateKeys[dayIdx], formatDecimalTo24h(snapped), droppedVenueId);
+      onTemplateSelect(template, visibleDateKeys[dayIdx], formatDecimalTo24h(snapped), droppedVenueId);
       return true;
     } catch {
       return false;
     }
-  }, [onTemplateSelect, dayStartHour, weekDateKeys, selectedVenues]);
+  }, [onTemplateSelect, dayStartHour, visibleDateKeys, selectedVenues]);
 
   // Callbacks for event block drag notifications
   const handleEventDragStart = useCallback((eventId: string, grabOffsetHours: number, duration: number, title: string, color: string, templateId?: string, venueId?: string) => {
@@ -850,9 +904,9 @@ export function WeekView({
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(7, minmax(100px, 1fr))`,
+            gridTemplateColumns: `${TIME_COL_WIDTH}px repeat(${visibleDayCount}, minmax(100px, 1fr))`,
             gridTemplateRows: `auto ${totalHeight}px`,
-            minWidth: `${TIME_COL_WIDTH + 7 * 100}px`,
+            minWidth: `${TIME_COL_WIDTH + visibleDayCount * 100}px`,
           }}
         >
           {/* Row 1, Col 1: Sticky empty corner above time gutter (sticky both axes) */}
@@ -861,17 +915,17 @@ export function WeekView({
             style={{ gridRow: 1 }}
           />
 
-          {/* Row 1, Cols 2-8: Sticky day headers (with optional lane sub-headers) */}
-          {weekDates.map((date, idx) => (
+          {/* Row 1, Cols 2+: Sticky day headers (with optional lane sub-headers) */}
+          {visibleDates.map((date, idx) => (
             <div
               key={`hdr-${idx}`}
               className={`sticky top-0 z-10 bg-white border-b border-slate-200 text-center box-border ${
-                idx < 6 ? 'border-r border-slate-100' : ''
+                idx < visibleDayCount - 1 ? 'border-r border-slate-100' : ''
               }`}
               style={{ gridRow: 1 }}
             >
               <div className="px-1.5 py-2">
-                <div className="text-[11px] font-semibold tracking-[1px] text-slate-700">{DAY_LABELS[idx]}</div>
+                <div className="text-[11px] font-semibold tracking-[1px] text-slate-700">{DAY_LABELS[dayOffset + idx]}</div>
                 <div className="text-lg font-semibold text-slate-800">{date.getDate()}</div>
               </div>
               {multiLane && (
@@ -909,9 +963,9 @@ export function WeekView({
             ))}
           </div>
 
-          {/* Row 2, Cols 2-8: Day columns */}
-          {weekDates.map((_, dayIdx) => {
-            const dateKey = weekDateKeys[dayIdx];
+          {/* Row 2, Cols 2+: Day columns */}
+          {visibleDates.map((_, dayIdx) => {
+            const dateKey = visibleDateKeys[dayIdx];
             const dayEvents = eventsByDate[dateKey] || [];
             const isToday = dateKey === todayKey;
             const isDragOver = dragOverCol === dayIdx;
@@ -924,7 +978,7 @@ export function WeekView({
             return (
               <div
                 key={dayIdx}
-                className={`relative box-border ${dayIdx < 6 ? 'border-r border-slate-100' : ''} ${
+                className={`relative box-border ${dayIdx < visibleDayCount - 1 ? 'border-r border-slate-100' : ''} ${
                   isToday ? 'bg-blue-50/30' : ''
                 } ${isDragOver ? 'bg-blue-50/50' : ''}`}
                 style={{ gridRow: 2, cursor: onEmptySlotClick ? 'crosshair' : undefined }}
@@ -1049,7 +1103,7 @@ export function WeekView({
                           const rawHour = dayStartHour + dropY / HOUR_HEIGHT - grabOffsetHours;
                           const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
                           const snappedEnd = snapTo15Min(snappedStart + duration);
-                          const newDate = weekDateKeys[dayIdx];
+                          const newDate = visibleDateKeys[dayIdx];
 
                           // Check if event's template has a fixed venue
                           const droppedEvent = events.find((ev) => ev.id === eventId);

@@ -1,118 +1,213 @@
 const cases = [
   {
     year: "2023",
-    title: "Arts Council Internal Process Automation",
+    title: "Arts Council \u2013 Internal Process Automation",
     funder: "Foundation for Community Health",
     amount: "$10,000",
     timeline: "1 year (400 hours)",
     results: [
-      { label: "Labor Saved",  value: "30 hrs/wk",   sub: "1,560 hrs/year" },
-      { label: "Cost Offset",  value: "$31,200/yr",  sub: "Annual savings" },
+      { label: "Labor Savings", value: "30 hours/week", sub: "1,560 hours/year" },
+      { label: "Cost Offset", value: "$31,200/year" },
+      { label: "Dev Time ROI", value: "$78/hour*" },
     ],
-    stack: ["Zapier","Givebutter","Salesforce","Quickbooks","Gmail","Slack","Mailchimp","Airtable","Duda"],
-    accentRaw: "#1282a2",
+    stack: ["Zapier", "Givebutter", "Salesforce", "Quickbooks", "Gmail", "Slack", "Mailchimp", "Airtable", "Duda"],
   },
   {
     year: "2025",
-    title: "Print Calendar Automation",
+    title: "Arts Council \u2013 Print Calendar Automation",
     funder: "Ethan Brewerton",
-    amount: "In-Kind",
+    amount: "In-Kind Development Time",
     timeline: "1 week (20 hours)",
     results: [
-      { label: "Labor Saved",  value: "20 hrs/mo",   sub: "240 hrs/year" },
-      { label: "Cost Offset",  value: "$4,800/yr",   sub: "Annual savings" },
+      { label: "Labor Savings", value: "20 hours/month", sub: "240 hours/year" },
+      { label: "Cost Offset", value: "$4,800/year" },
+      { label: "Dev Time ROI", value: "$240/hour*" },
     ],
-    stack: ["Google Gemini AI Studio","Custom Python","CivicLift"],
-    accentRaw: "#a244ae",
+    stack: ["Google Gemini 3\u2013 AI Studio", "Custom Python Application", "CivicLift"],
   },
   {
     year: "2025",
-    title: "Email Newsletter Automation",
+    title: "Arts Council \u2013 Email Newsletter Automation",
     funder: "Ethan Brewerton",
-    amount: "In-Kind",
+    amount: "In-Kind Development Time",
     timeline: "1 day (4 hours)",
     results: [
-      { label: "Labor Saved",  value: "3 hrs/wk",    sub: "~150 hrs/year" },
-      { label: "Cost Offset",  value: "$3,000/yr",   sub: "Annual savings" },
+      { label: "Labor Savings", value: "3 hours/week", sub: "~150 hours/year" },
+      { label: "Cost Offset", value: "$3,000/year" },
+      { label: "Dev Time ROI", value: "$750/hour*" },
     ],
-    stack: ["Google Gemini AI Studio","CivicLift","Mailchimp"],
-    accentRaw: "#10b981",
+    stack: ["Google Gemini 3\u2013 AI Studio", "CivicLift", "Mailchimp"],
   },
 ];
 
 export default function CaseStudies() {
   return (
-    <section id="case-studies" className="section" style={{ background: "var(--color-bg-alt)", padding: "96px 24px" }}>
-      <div className="container">
-        <div className="section-header" data-reveal="fade">
-          <h2 className="heading-section" style={{ fontStyle: "italic" }}>Real Impact, Real Savings</h2>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "1.1rem", maxWidth: "540px", margin: "0 auto" }}>
-            Real automation projects with measurable results for the cultural sector.
+    <section
+      id="case-studies"
+      style={{
+        background: "var(--color-bg-alt)",
+        padding: "96px 24px",
+      }}
+    >
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-headline)",
+              fontSize: "0.8rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: "var(--color-teal)",
+              marginBottom: "12px",
+            }}
+          >
+            Timeline: 2023 &ndash; 2025
           </p>
+          <h2
+            style={{
+              fontFamily: "var(--font-headline)",
+              fontSize: "clamp(1.8rem, 4vw, 2.4rem)",
+              fontWeight: 700,
+              color: "var(--color-text)",
+            }}
+          >
+            Case Studies
+          </h2>
         </div>
 
+        {/* Cards grid */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "32px",
+            gap: "28px",
           }}
         >
-          {cases.map((c, i) => (
+          {cases.map((c) => (
             <div
               key={c.title}
-              className="card"
-              data-reveal
-              data-delay={i * 110}
-              style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
+              style={{
+                background: "var(--color-card)",
+                borderRadius: "var(--radius-lg)",
+                boxShadow: "var(--shadow-sm)",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                border: "1px solid var(--color-border)",
+              }}
             >
-              <div className="card-accent-top" style={{ background: c.accentRaw }} />
+              {/* Accent bar */}
+              <div style={{ height: "4px", background: "var(--color-teal)" }} />
 
               <div style={{ padding: "28px", display: "flex", flexDirection: "column", gap: "20px", flex: 1 }}>
-                {/* Header */}
+                {/* Year + Title */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                    <span
-                      className="tag"
-                      style={{
-                        background: `${c.accentRaw}15`,
-                        color: c.accentRaw,
-                        border: `1px solid ${c.accentRaw}30`,
-                      }}
-                    >
-                      {c.year}
-                    </span>
-                  </div>
-                  <h3 className="heading-card" style={{ fontSize: "1.1rem", marginBottom: "8px", lineHeight: 1.4 }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      color: "var(--color-teal)",
+                      background: "var(--color-teal-light)",
+                      padding: "4px 12px",
+                      borderRadius: "var(--radius-pill)",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    {c.year}
+                  </span>
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-headline)",
+                      fontSize: "1.1rem",
+                      fontWeight: 700,
+                      color: "var(--color-text)",
+                      lineHeight: 1.4,
+                    }}
+                  >
                     {c.title}
                   </h3>
-                  <div style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
-                    Project Cost: <span style={{ color: c.amount === "In-Kind" ? "var(--color-text-muted)" : c.accentRaw, fontWeight: 600 }}>{c.amount === "In-Kind" ? "In-Kind" : c.amount}</span>
-                  </div>
+                </div>
+
+                {/* Meta */}
+                <div style={{ fontSize: "0.875rem", color: "var(--color-text-muted)", lineHeight: 1.8 }}>
+                  <div><strong>Funded by:</strong> {c.funder}</div>
+                  <div><strong>Funding Amount:</strong> {c.amount}</div>
+                  <div><strong>Project Timeline:</strong> {c.timeline}</div>
                 </div>
 
                 {/* Results */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "10px" }}>
-                  {c.results.map((r) => (
-                    <div key={r.label} className="card-stat">
-                      <div style={{ fontSize: "1rem", fontWeight: 900, color: c.accentRaw, fontFamily: "var(--font-body)" }}>
-                        {r.value}
+                <div>
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "var(--color-text-muted)",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Results
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {c.results.map((r) => (
+                      <div
+                        key={r.label}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "baseline",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        <span style={{ color: "var(--color-text-muted)" }}>{r.label}</span>
+                        <span style={{ fontWeight: 700, color: "var(--color-teal)" }}>
+                          {r.value}
+                          {r.sub && (
+                            <span style={{ fontWeight: 400, color: "var(--color-text-muted)", fontSize: "0.8rem", marginLeft: "4px" }}>
+                              ({r.sub})
+                            </span>
+                          )}
+                        </span>
                       </div>
-                      <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginTop: "2px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                        {r.label}
-                      </div>
-                      <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginTop: "1px" }}>{r.sub}</div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                {/* Stack */}
-                <div>
-                  <div className="label-overline" style={{ fontSize: "10px", marginBottom: "8px", color: "var(--color-text-muted)" }}>
+                {/* Tech Stack */}
+                <div style={{ marginTop: "auto" }}>
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "var(--color-text-muted)",
+                      marginBottom: "10px",
+                    }}
+                  >
                     Tech Stack
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {c.stack.map((t) => <span key={t} className="tech-tag">{t}</span>)}
+                    {c.stack.map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: "0.75rem",
+                          padding: "3px 10px",
+                          borderRadius: "var(--radius-pill)",
+                          background: "var(--color-bg-alt)",
+                          color: "var(--color-text-muted)",
+                          border: "1px solid var(--color-border)",
+                          fontFamily: "var(--font-body)",
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>

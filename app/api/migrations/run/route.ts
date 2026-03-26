@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 const PROJECT_REF = 'uxjdencafxnugkoewvwq';
 
@@ -58,6 +59,12 @@ async function checkColumnExists(
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
+    const masterErr = requireMasterAdmin(auth.user);
+    if (masterErr) return masterErr;
+
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 

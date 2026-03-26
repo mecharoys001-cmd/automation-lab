@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
+import type { RoleLevel } from '@/types/database';
+
+const VALID_ROLE_LEVELS: RoleLevel[] = ['master', 'standard', 'editor'];
 
 export async function GET() {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Only master admins can view the admin list (role management)
+    const masterCheck = requireMasterAdmin(auth.user);
+    if (masterCheck) return masterCheck;
 
     const supabase = createServiceClient();
 
@@ -49,9 +56,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Display name must be 100 characters or less' }, { status: 400 });
     }
 
+    // Validate role_level is a known value
+    const roleLevel = body.role_level ?? 'standard';
+    if (!VALID_ROLE_LEVELS.includes(roleLevel)) {
+      return NextResponse.json(
+        { error: `Invalid role_level: must be one of ${VALID_ROLE_LEVELS.join(', ')}` },
+        { status: 400 },
+      );
+    }
+
+    // Whitelist fields to prevent arbitrary column injection
+    const insertPayload = {
+      google_email: String(body.google_email).trim(),
+      display_name: body.display_name ? String(body.display_name).trim() : null,
+      role_level: roleLevel,
+    };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('admins') as any)
-      .insert(body)
+      .insert(insertPayload)
       .select()
       .single();
 
@@ -62,8 +85,8 @@ export async function POST(request: NextRequest) {
     console.log(JSON.stringify({
       audit: 'admin_role_change',
       action: 'create',
-      email: body.google_email,
-      role_level: body.role_level ?? 'standard',
+      email: insertPayload.google_email,
+      role_level: insertPayload.role_level,
       display_name: body.display_name ?? null,
       admin_id: data.id,
       timestamp: new Date().toISOString(),
@@ -108,9 +131,50 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Display name must be 100 characters or less' }, { status: 400 });
     }
 
+    // Validate role_level if provided
+    if ('role_level' in body && !VALID_ROLE_LEVELS.includes(body.role_level)) {
+      return NextResponse.json(
+        { error: `Invalid role_level: must be one of ${VALID_ROLE_LEVELS.join(', ')}` },
+        { status: 400 },
+      );
+    }
+
+    // Whitelist fields to prevent arbitrary column injection
+    const updatePayload: Record<string, unknown> = {};
+    if ('google_email' in body) updatePayload.google_email = String(body.google_email).trim();
+    if ('display_name' in body) updatePayload.display_name = body.display_name ? String(body.display_name).trim() : null;
+    if ('role_level' in body) updatePayload.role_level = body.role_level;
+
+    if (Object.keys(updatePayload).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Prevent demoting the last master admin
+    if ('role_level' in updatePayload && updatePayload.role_level !== 'master') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: current } = await (supabase.from('admins') as any)
+        .select('role_level')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (current?.role_level === 'master') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { count } = await (supabase.from('admins') as any)
+          .select('id', { count: 'exact', head: true })
+          .eq('role_level', 'master');
+
+        if ((count ?? 0) <= 1) {
+          return NextResponse.json(
+            { error: 'Cannot demote the last master admin' },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('admins') as any)
-      .update(body)
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -123,7 +187,7 @@ export async function PATCH(request: NextRequest) {
       audit: 'admin_role_change',
       action: 'update',
       admin_id: id,
-      changes: body,
+      changes: updatePayload,
       timestamp: new Date().toISOString(),
     }));
 
@@ -157,6 +221,21 @@ export async function DELETE(request: NextRequest) {
       .select('google_email, role_level, display_name')
       .eq('id', id)
       .maybeSingle();
+
+    // Prevent deletion of the last master admin
+    if (existing?.role_level === 'master') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count } = await (supabase.from('admins') as any)
+        .select('id', { count: 'exact', head: true })
+        .eq('role_level', 'master');
+
+      if ((count ?? 0) <= 1) {
+        return NextResponse.json(
+          { error: 'Cannot delete the last master admin' },
+          { status: 400 },
+        );
+      }
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('admins') as any)

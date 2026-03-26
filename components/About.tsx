@@ -1,100 +1,138 @@
-const principles = [
-  {
-    icon: "🔍",
-    title: "Research-Driven",
-    desc: "Every tool we build is grounded in real nonprofit needs, identified through sector surveys and direct partnership.",
-  },
-  {
-    icon: "🤝",
-    title: "Human-Centered",
-    desc: "Technology should reduce burden, not add complexity. We design with the humans using these tools at the center.",
-  },
-  {
-    icon: "📦",
-    title: "Reusable Infrastructure",
-    desc: "Solutions that work for one organization are documented and packaged so others can adopt them.",
-  },
-];
-
 export default function About() {
   return (
-    <section id="about" className="section" style={{ background: "var(--color-bg)", padding: "96px 24px" }}>
-      <div className="container">
-        <div
+    <section
+      id="about"
+      style={{
+        background: "#ffffff",
+        padding: "96px 24px",
+      }}
+    >
+      <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+        {/* Section heading */}
+        <h2
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "64px",
-            alignItems: "center",
+            fontFamily: "var(--font-headline)",
+            fontSize: "clamp(1.8rem, 4vw, 2.4rem)",
+            fontWeight: 700,
+            color: "var(--color-text)",
+            marginBottom: "32px",
+            textAlign: "center",
           }}
         >
-          {/* Text */}
-          <div data-reveal="slide-left">
-            <h2
-              className="heading-section"
-              style={{ marginBottom: "24px", color: "var(--color-navy)" }}
-            >
-              Built on Principles
-            </h2>
-            <p style={{ color: "var(--color-text)", lineHeight: 1.8, fontSize: "1.1rem", marginBottom: "16px" }}>
-              The Automation Lab is a pilot initiative by the NWCT Arts Council
-              exploring how responsible, human-centered automation can reduce
-              administrative burden and strengthen operational capacity for arts
-              &amp; culture nonprofits in Northwest Connecticut.
-            </p>
-            <p style={{ color: "var(--color-text)", lineHeight: 1.8, fontSize: "1.1rem", marginBottom: "32px" }}>
-              We believe automation should empower people, not replace them. Our
-              lab operates under a strict ethical framework.
-            </p>
+          About the Project
+        </h2>
+
+        {/* Divider */}
+        <div
+          style={{
+            width: "60px",
+            height: "3px",
+            background: "var(--color-teal)",
+            margin: "0 auto 40px",
+          }}
+        />
+
+        {/* Quote / intro */}
+        <blockquote
+          style={{
+            fontSize: "1.15rem",
+            fontStyle: "italic",
+            lineHeight: 1.8,
+            color: "var(--color-text)",
+            textAlign: "center",
+            maxWidth: "680px",
+            margin: "0 auto 32px",
+            padding: "0 16px",
+            borderLeft: "none",
+          }}
+        >
+          &ldquo;The Automation Lab is a research-driven pilot exploring how
+          responsible, human-centered automation can reduce administrative burden
+          and strengthen operational capacity.&rdquo;
+        </blockquote>
+
+        {/* Body paragraphs */}
+        <p
+          style={{
+            fontSize: "1.05rem",
+            lineHeight: 1.85,
+            color: "var(--color-text-muted)",
+            marginBottom: "20px",
+            textAlign: "center",
+          }}
+        >
+          The initiative targets arts &amp; culture nonprofits in Northwest Connecticut.
+        </p>
+        <p
+          style={{
+            fontSize: "1.05rem",
+            lineHeight: 1.85,
+            color: "var(--color-text-muted)",
+            marginBottom: "56px",
+            textAlign: "center",
+          }}
+        >
+          Through discovery, pilot projects, and shared documentation, the
+          endeavor aims to identify practical approaches that free up staff time
+          for mission-driven work while building reusable infrastructure for the
+          sector.
+        </p>
+
+        {/* Theory of Change sub-section */}
+        <div
+          style={{
+            borderTop: "1px solid var(--color-border)",
+            paddingTop: "48px",
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: "var(--font-headline)",
+              fontSize: "1.4rem",
+              fontWeight: 700,
+              color: "var(--color-text)",
+              marginBottom: "24px",
+              textAlign: "center",
+            }}
+          >
+            Our Theory of Change
+          </h3>
+
+          <blockquote
+            style={{
+              fontSize: "1.1rem",
+              fontStyle: "italic",
+              lineHeight: 1.8,
+              color: "var(--color-text)",
+              textAlign: "center",
+              maxWidth: "620px",
+              margin: "0 auto 32px",
+            }}
+          >
+            &ldquo;We aim to help close the widening AI access gap and ensure
+            that arts &amp; culture nonprofits are not left behind&rdquo; as
+            technology advances.
+          </blockquote>
+
+          <div style={{ textAlign: "center" }}>
             <a
               href="https://irp.cdn-website.com/04efc271/files/uploaded/Theory+of+Change+_+Why+This+Matters+Now.pdf"
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: "var(--color-teal)",
-                fontWeight: 700,
-                fontSize: "15px",
-                fontFamily: "var(--font-body)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                borderBottom: "2px solid color-mix(in srgb, var(--color-teal) 30%, transparent)",
-                paddingBottom: "2px",
+                display: "inline-block",
+                padding: "12px 32px",
+                background: "var(--color-teal)",
+                color: "#ffffff",
+                fontFamily: "var(--font-headline)",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                borderRadius: "var(--radius-md)",
                 textDecoration: "none",
               }}
             >
-              Read our Theory of Change →
+              Learn More
             </a>
-          </div>
-
-          {/* Cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {principles.map((card, i) => (
-              <div
-                key={card.title}
-                className="card-feature"
-                data-reveal
-                data-delay={i * 110}
-              >
-                <div
-                  className="icon-box"
-                  style={{
-                    width: "48px", height: "48px",
-                    background: "var(--color-teal-light)",
-                    border: "1px solid color-mix(in srgb, var(--color-teal) 25%, transparent)",
-                    fontSize: "22px",
-                    borderRadius: "50%",
-                    flexShrink: 0,
-                  }}
-                >
-                  {card.icon}
-                </div>
-                <div>
-                  <div className="heading-card" style={{ marginBottom: "6px" }}>{card.title}</div>
-                  <div style={{ color: "var(--color-text-muted)", fontSize: "14px", lineHeight: 1.7 }}>{card.desc}</div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

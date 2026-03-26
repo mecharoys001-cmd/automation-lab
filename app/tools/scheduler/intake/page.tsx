@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { AvailabilityJson, DayOfWeek } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
+import { showToast } from '../lib/toast';
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -367,10 +368,13 @@ function IntakeForm() {
         }
 
         setSubmitState('success');
+        showToast('Your information has been submitted successfully!', 'success');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (err) {
-        setSubmitError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+        setSubmitError(message);
         setSubmitState('error');
+        showToast(message, 'error');
         // Scroll error banner into view so user sees the feedback
         setTimeout(() => {
           document.getElementById('submit-error-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -748,13 +752,20 @@ function IntakeForm() {
           </div>
 
           {/* ── Validation summary ────────────────────── */}
-          <div role="alert" aria-live="assertive" className={Object.values(errors).some(Boolean) ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
+          <div role="alert" aria-live="assertive" className={Object.values(errors).some(Boolean) ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400' : ''}>
             {Object.values(errors).some(Boolean) && `Please fix ${Object.values(errors).filter(Boolean).length} error(s) above before submitting.`}
           </div>
 
           {/* ── Error Banner ────────────────────────────── */}
-          <div id="submit-error-banner" role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
-            {submitState === 'error' && submitError ? submitError : ''}
+          <div id="submit-error-banner" role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400' : ''}>
+            {submitState === 'error' && submitError ? (
+              <>
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                {submitError}
+              </>
+            ) : ''}
           </div>
 
           {/* ── Submit ──────────────────────────────────── */}

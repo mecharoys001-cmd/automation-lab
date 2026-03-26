@@ -1,11 +1,19 @@
 // app/api/usage/track/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { createClient } from '@/lib/supabase/server';
 
 const VALID_TOOL_IDS = ['csv-dedup', 'reports', 'scheduler'];
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated user (any role can track usage)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { tool_id, content_hash, metadata } = body;
 

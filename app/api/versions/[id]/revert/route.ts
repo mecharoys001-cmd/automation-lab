@@ -25,7 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { ScheduleSnapshot } from '@/types/database';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 export async function POST(
   _request: NextRequest,
@@ -34,6 +34,10 @@ export async function POST(
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Destructive: only master admins can revert to a previous version
+    const masterCheck = requireMasterAdmin(auth.user);
+    if (masterCheck) return masterCheck;
 
     const { id } = await params;
     const supabase = createServiceClient();

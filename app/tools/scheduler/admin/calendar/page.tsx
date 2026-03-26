@@ -436,6 +436,7 @@ export default function CalendarPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [confirmOverwrite, setConfirmOverwrite] = useState<{ action: 'draft' | 'published'; oldestVersion: number } | null>(null);
 
   // ── Batch selection state ────────────────────────────────────
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
@@ -519,64 +520,54 @@ export default function CalendarPage() {
 
   // ── Save / Publish / Generate handlers ──────────────────────
 
-  const handleSaveDraft = async () => {
-    console.log('[SAVE] 1. handleSaveDraft started');
-    setIsSaving(true);
-    console.log('[SAVE] 2. isSaving set to true');
+  const handleSaveVersion = async (status: 'draft' | 'published', allowOverwrite = false) => {
+    const isDraft = status === 'draft';
+    if (isDraft) setIsSaving(true); else setIsPublishing(true);
     try {
-      // Persist a full-year version snapshot via the versions API
       const year = new Date().getFullYear();
-      console.log('[SAVE] 3. Saving full-year version snapshot for', year);
-      const res = await fetch(`/api/versions/save?year=${year}`, {
+      const url = `/api/versions/save?year=${year}${allowOverwrite ? '&allow_overwrite=true' : ''}`;
+      const res = await fetch(url, {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'draft' }),
+        body: JSON.stringify({ status }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to save version');
+        if (body.code === 'SLOTS_FULL') {
+          setConfirmOverwrite({ action: status, oldestVersion: body.oldest_version_number });
+          return;
+        }
+        throw new Error(body.error || `Failed to ${isDraft ? 'save draft' : 'publish'}`);
       }
-      console.log('[SAVE] 4. Version saved, re-fetching entries');
       await fetchEntries();
-      console.log('[SAVE] 5. fetchEntries() completed successfully');
       setIsDirty(false);
-      console.log('[SAVE] 6. isDirty set to false');
-      setToast({ message: `Full-year schedule saved as draft (${year})`, type: 'success', id: Date.now() });
-    } catch (err) {
-      console.error('[SAVE] ERROR in catch block:', err);
-      setToast({ message: 'Failed to save draft. Please try again.', type: 'error', id: Date.now() });
-    } finally {
-      setIsSaving(false);
-      console.log('[SAVE] 7. Finally block - isSaving set to false');
-    }
-  };
-
-  const handlePublish = async () => {
-    setIsPublishing(true);
-    try {
-      const year = new Date().getFullYear();
-      const res = await fetch(`/api/versions/save?year=${year}`, {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'published' }),
+      setToast({
+        message: isDraft
+          ? `Full-year schedule saved as draft (${year})`
+          : `Full-year schedule published (${year})`,
+        type: 'success',
+        id: Date.now(),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to publish');
-      }
-      setIsDirty(false);
-      setToast({ message: `Full-year schedule published (${year})`, type: 'success', id: Date.now() });
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : 'Failed to publish schedule. Please try again.',
+        message: err instanceof Error ? err.message : `Failed to ${isDraft ? 'save draft' : 'publish'}. Please try again.`,
         type: 'error',
         id: Date.now(),
       });
     } finally {
-      setIsPublishing(false);
+      if (isDraft) setIsSaving(false); else setIsPublishing(false);
     }
+  };
+
+  const handleSaveDraft = () => handleSaveVersion('draft');
+  const handlePublish = () => handleSaveVersion('published');
+
+  const handleConfirmOverwrite = async () => {
+    if (!confirmOverwrite) return;
+    const { action } = confirmOverwrite;
+    setConfirmOverwrite(null);
+    await handleSaveVersion(action, true);
   };
 
   const handleGenerateSchedule = async () => {
@@ -1200,11 +1191,12 @@ export default function CalendarPage() {
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 py-8 space-y-8">
+        <h1 className="sr-only">School Calendar</h1>
         {/* ── Page Header ─────────────────────────────────────── */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</h1>
+              <p className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</p>
               <p className="text-sm text-slate-600 mt-1">
                 Manage blackout dates, early dismissals, and instructor exceptions.
               </p>
@@ -1285,7 +1277,7 @@ export default function CalendarPage() {
         {/* ── Inline add form ────────────────────────────────── */}
         {showAddForm && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">New Calendar Entry</h3>
+            <h2 className="text-sm font-semibold text-slate-900 mb-4">New Calendar Entry</h2>
             {renderFormFields(
               addForm,
               setAddForm,
@@ -1842,6 +1834,43 @@ export default function CalendarPage() {
       {toast && (
         <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
       )}
+
+      {/* Version Slot Overwrite Confirmation Modal */}
+      <Modal
+        open={!!confirmOverwrite}
+        onClose={() => setConfirmOverwrite(null)}
+        title="All version slots are full"
+        width={480}
+        footer={
+          confirmOverwrite ? (
+            <>
+              <ModalButton variant="secondary" onClick={() => setConfirmOverwrite(null)}>
+                Cancel
+              </ModalButton>
+              <ModalButton
+                variant="danger"
+                onClick={handleConfirmOverwrite}
+              >
+                Overwrite Oldest Version
+              </ModalButton>
+            </>
+          ) : undefined
+        }
+      >
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            All 5 version slots for {new Date().getFullYear()} are in use. Saving will <strong>permanently overwrite</strong> the
+            oldest version (v{confirmOverwrite?.oldestVersion}).
+          </p>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <strong>This cannot be undone.</strong> If you need to keep all existing versions, consider
+              deleting one first from the Versions page.
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
