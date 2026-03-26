@@ -75,7 +75,7 @@ interface NameResult { firstName: string; lastName: string; flagged: boolean; fl
 interface PhoneResult { formatted: string; flagged: boolean; flagReason: string }
 interface Contact { 'First Name': string; 'Last Name': string; 'Email Address': string; 'Phone Number': string; _flagReason?: string }
 interface Stats { totalRows: number; afterNameFilter: number; afterContactFilter: number; afterDedup: number; clean: number; flagged: number }
-interface ProcessResult { clean: Contact[]; flagged: Contact[]; stats: Stats }
+interface ProcessResult { clean: Contact[]; flagged: Contact[]; stats: Stats; error?: string }
 
 function parseName(billingName: string): NameResult {
   const result: NameResult = { firstName: '', lastName: '', flagged: false, flagReason: '' };
@@ -116,6 +116,17 @@ function cleanPhone(phone: string): PhoneResult {
 function processCSV(csvText: string): ProcessResult {
   const parsed = parseCSV(csvText);
   const rows = parsed.data;
+
+  // Validate required columns exist
+  const fields = parsed.fields.map(f => f.trim());
+  const missing: string[] = [];
+  if (!fields.includes('Billing Name')) missing.push('Billing Name');
+  if (!fields.includes('Email')) missing.push('Email');
+  if (!fields.includes('Phone')) missing.push('Phone');
+  if (missing.length > 0) {
+    return { clean: [], flagged: [], stats: { totalRows: rows.length, afterNameFilter: 0, afterContactFilter: 0, afterDedup: 0, clean: 0, flagged: 0 }, error: `Missing required column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}. Found columns: ${fields.slice(0, 10).join(', ')}${fields.length > 10 ? '...' : ''}` };
+  }
+
   const stats: Stats = { totalRows: rows.length, afterNameFilter: 0, afterContactFilter: 0, afterDedup: 0, clean: 0, flagged: 0 };
 
   // Step 1: Filter empty/A Customer billing names
@@ -449,8 +460,26 @@ export default function MailingListBuilderPage() {
         <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }}
           onChange={e => { if (e.target.files?.length) handleFile(e.target.files[0]); }} />
 
+        {/* Error */}
+        {result?.error && (
+          <div style={{
+            marginTop: 24, backgroundColor: '#FEF2F2', border: '1px solid #FECACA',
+            borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 10, alignItems: 'flex-start',
+          }}>
+            <span style={{ fontSize: 18 }}>❌</span>
+            <div>
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>CSV Column Mismatch</p>
+              <p style={{ fontSize: '0.82rem', color: '#B91C1C', lineHeight: 1.5 }}>{result.error}</p>
+              <p style={{ fontSize: '0.82rem', color: '#991B1B', marginTop: 8 }}>
+                This tool expects a Shopify CSV export with columns named exactly: <strong>Billing Name</strong>, <strong>Email</strong>, and <strong>Phone</strong>.
+                The columns can be in any order, and extra columns are ignored.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
-        {result && (
+        {result && !result.error && (
           <div style={{ marginTop: 24 }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1a1a2e', marginBottom: 12 }}>Processing Summary</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
@@ -467,7 +496,7 @@ export default function MailingListBuilderPage() {
         )}
 
         {/* Actions */}
-        {result && (
+        {result && !result.error && (
           <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
             <Tip text="Download clean contacts as CSV for Constant Contact import">
               <button
@@ -527,7 +556,7 @@ export default function MailingListBuilderPage() {
         )}
 
         {/* Contact Table */}
-        {result && (
+        {result && !result.error && (
           <div style={{
             marginTop: 24, backgroundColor: '#fff', borderRadius: 12,
             border: '1px solid #E2E8F0', overflow: 'hidden',
