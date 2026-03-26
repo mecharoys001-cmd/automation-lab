@@ -27,13 +27,13 @@ export default function AdminAccounts() {
 
   const fetchAdmins = useCallback(async () => {
     try {
-      const res = await fetch('/api/admins');
+      const res = await fetch('/api/site-admins');
       if (res.status === 403) {
         setForbidden(true);
         setLoading(false);
         return;
       }
-      if (!res.ok) throw new Error('Failed to fetch admins');
+      if (!res.ok) throw new Error('Failed to fetch site admins');
       const data = await res.json();
       setAdmins(data);
       setError(null);
@@ -51,7 +51,7 @@ export default function AdminAccounts() {
     setSubmitting(true);
     setFormError(null);
     try {
-      const res = await fetch('/api/admins', {
+      const res = await fetch('/api/site-admins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -62,7 +62,7 @@ export default function AdminAccounts() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to add admin');
+        throw new Error(data.error || 'Failed to add site admin');
       }
       setFormEmail('');
       setFormDisplayName('');
@@ -79,10 +79,10 @@ export default function AdminAccounts() {
   const handleDelete = async (id: string) => {
     setActionError(null);
     try {
-      const res = await fetch(`/api/admins?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/site-admins?id=${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to remove admin');
+        throw new Error(data.error || 'Failed to remove site admin');
       }
       setConfirmDeleteId(null);
       await fetchAdmins();
@@ -94,7 +94,7 @@ export default function AdminAccounts() {
   const handleRoleChange = async (id: string, newRole: 'master' | 'standard') => {
     setActionError(null);
     try {
-      const res = await fetch(`/api/admins?id=${id}`, {
+      const res = await fetch(`/api/site-admins?id=${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role_level: newRole }),
@@ -163,7 +163,7 @@ export default function AdminAccounts() {
           Access Restricted
         </h3>
         <p style={{ color: '#64748b', marginTop: '0.5rem', fontSize: '14px' }}>
-          Admin account management requires master admin privileges.
+          Site admin account management requires site master admin privileges.
         </p>
       </div>
     );
@@ -188,15 +188,23 @@ export default function AdminAccounts() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
-          {admins.length} admin account{admins.length !== 1 ? 's' : ''}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: '15px', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
+            Site Admin Accounts
+          </p>
+          {!showAddForm && (
+            <button style={btnPrimary} onClick={() => setShowAddForm(true)}>
+              + Add Site Admin
+            </button>
+          )}
+        </div>
+        <p style={{ margin: 0, color: '#94a3b8', fontSize: '12px' }}>
+          These accounts have access to the Impact Dashboard and site-wide analytics. Scheduler admin accounts are managed separately.
         </p>
-        {!showAddForm && (
-          <button style={btnPrimary} onClick={() => setShowAddForm(true)}>
-            + Add Admin
-          </button>
-        )}
+        <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+          {admins.length} site admin account{admins.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
       {/* Action error banner */}
@@ -216,7 +224,7 @@ export default function AdminAccounts() {
       {showAddForm && (
         <form onSubmit={handleAdd} style={{ ...cardStyle, border: '2px dashed #1282a2', background: '#f0fdfa' }}>
           <h4 style={{ margin: '0 0 1rem', fontWeight: 700, fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e', fontSize: '14px' }}>
-            New Admin Account
+            New Site Admin Account
           </h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div>
@@ -263,7 +271,7 @@ export default function AdminAccounts() {
           )}
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
             <button type="submit" disabled={submitting} style={{ ...btnPrimary, opacity: submitting ? 0.6 : 1 }}>
-              {submitting ? 'Adding...' : 'Add Admin'}
+              {submitting ? 'Adding...' : 'Add Site Admin'}
             </button>
             <button type="button" onClick={() => { setShowAddForm(false); setFormError(null); }} style={btnSecondary}>
               Cancel
@@ -360,7 +368,7 @@ export default function AdminAccounts() {
 
       {admins.length === 0 && (
         <div style={{ ...cardStyle, textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '14px' }}>
-          No admin accounts found.
+          No site admin accounts found.
         </div>
       )}
     </div>

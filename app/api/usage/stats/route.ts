@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { getOrgMembership, isAdmin } from '@/lib/rbac';
+import { getSiteAdmin, isSiteAdmin } from '@/lib/site-rbac';
 import type { ToolUsageStats } from '@/types/usage';
 
 export async function GET() {
@@ -13,8 +13,8 @@ export async function GET() {
     if (!user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const membership = await getOrgMembership(user.email);
-    if (!isAdmin(membership)) {
+    const siteAdmin = await getSiteAdmin(user.email);
+    if (!isSiteAdmin(siteAdmin)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

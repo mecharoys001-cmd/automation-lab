@@ -102,12 +102,12 @@ export async function middleware(request: NextRequest) {
     const svc = createServiceClient()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: admin } = await (svc.from('admins') as any)
+    const { data: siteAdmin } = await (svc.from('site_admins') as any)
       .select('role_level')
       .eq('google_email', user.email)
       .maybeSingle()
 
-    if (!admin) {
+    if (!siteAdmin) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools'
       const redirect = NextResponse.redirect(url)
@@ -122,12 +122,12 @@ export async function middleware(request: NextRequest) {
     const svc = createServiceClient()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: admin } = await (svc.from('admins') as any)
+    const { data: siteAdmin } = await (svc.from('site_admins') as any)
       .select('role_level')
       .eq('google_email', user.email)
       .maybeSingle()
 
-    if (!admin) {
+    if (!siteAdmin) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools'
       const redirect = NextResponse.redirect(url)

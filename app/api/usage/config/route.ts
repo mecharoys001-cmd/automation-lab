@@ -2,14 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { getOrgMembership, isAdmin } from '@/lib/rbac';
+import { getSiteAdmin, isSiteAdmin } from '@/lib/site-rbac';
 
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return null;
-  const membership = await getOrgMembership(user.email);
-  if (!isAdmin(membership)) return null;
+  const siteAdmin = await getSiteAdmin(user.email);
+  if (!isSiteAdmin(siteAdmin)) return null;
   return user;
 }
 

@@ -751,3 +751,113 @@ Warning: no stdin data received in 3s, proceeding without it. If piping from a s
    Feedback: Phase 7 Security: All 14 external script tags lack Subresource Integrity (SRI) attributes. Without S...
 
 🔧 Attempting to fix rec1W2HDYQRsiAAQX...
+✅ Fix applied successfully
+   Changes: 2
+🚀 Deploying fix for rec1W2HDYQRsiAAQX...
+📦 Validating build...
+🔍 Running pre-deploy checks...
+📦 Building project...
+✅ Build successful
+✅ Changes detected
+app/api/classes/route.ts:25:    console.log('[GET /api/classes] returning', data?.length ?? 0, 'classes');
+app/api/seed/route.ts:188:    console.log('Templates created:', templates.length);
+app/api/tags/[id]/route.ts:37:    console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
+app/api/tags/[id]/route.ts:62:    console.log('[PATCH /api/tags] updateData:', JSON.stringify(updateData));
+app/api/tags/[id]/route.ts:75:    console.log('[PATCH /api/tags] supabase response:', JSON.stringify({ data, error }));
+app/api/tags/[id]/route.ts:106:    console.log('[PATCH /api/tags] final response tag:', JSON.stringify(data));
+app/api/tags/route.ts:35:    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+app/api/admins/route.ts:85:    console.log(JSON.stringify({
+app/api/admins/route.ts:186:    console.log(JSON.stringify({
+app/api/admins/route.ts:249:    console.log(JSON.stringify({
+app/api/templates/route.ts:21:    console.log('[Templates API] GET request for program:', programId);
+app/api/templates/route.ts:45:    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
+app/tools/scheduler/admin/calendar/page.tsx:192:  console.log('[TOAST] Toast rendered:', toast.message, 'type:', toast.type);
+app/tools/scheduler/admin/page.tsx:581:          console.log('Cancel event:', event.title);
+app/tools/scheduler/admin/page.tsx:585:          console.log('Suggest replacements for:', event.title);
+app/tools/scheduler/admin/page.tsx:589:          console.log('Duplicate event:', event.title);
+app/tools/scheduler/admin/page.tsx:593:          console.log('Delete event:', event.title);
+app/tools/scheduler/admin/page.tsx:634:      console.log('[handleEventDrop] Called with:', {
+app/tools/scheduler/admin/page.tsx:653:          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+app/tools/scheduler/admin/page.tsx:668:      console.log('[handleEventDrop] PATCH body:', patchBody);
+app/tools/scheduler/admin/page.tsx:682:          console.log('[handleEventDrop] PATCH success for', eventId);
+app/tools/scheduler/admin/page.tsx:819:      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
+app/tools/scheduler/admin/page.tsx:838:        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+app/tools/scheduler/admin/page.tsx:886:        console.log(`[${fetchId}] Aborted`);
+app/tools/scheduler/admin/page.tsx:898:    console.log('[useEffect] Triggering fetchSessions due to dependency change');
+app/tools/scheduler/admin/page.tsx:902:      console.log('[useEffect] Cleanup: aborting previous fetch');
+app/tools/scheduler/admin/roles/page.tsx:376:    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
+app/tools/scheduler/admin/roles/page.tsx:378:      console.log('[SAVE_EDIT] Roles match, cancelling edit');
+app/tools/scheduler/admin/roles/page.tsx:385:    console.log('[SAVE_EDIT] wasInstructor:', wasInstructor, 'becomingInstructor:', becomingInstructor);
+app/tools/scheduler/components/calendar/DayView.tsx:320:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/DayView.tsx:331:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/YearView.tsx:522:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/YearView.tsx:532:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/MonthView.tsx:266:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/MonthView.tsx:277:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:137:  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+app/tools/scheduler/components/calendar/WeekView.tsx:223:    console.log('[DRAG START]', {
+app/tools/scheduler/components/calendar/WeekView.tsx:578:    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
+app/tools/scheduler/components/calendar/WeekView.tsx:583:    console.log('Hover leave');
+app/tools/scheduler/components/calendar/WeekView.tsx:646:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/WeekView.tsx:657:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:1129:                          console.log('[DROP] Event drop:', {
+app/tools/scheduler/components/calendar/WeekView.tsx:1187:                  console.log('Render hover state', hoverState);
+⚠️  Warning: console.log statements found (non-commented)
+✅ Validation passed
+
+💾 Committing changes...
+❌ Commit failed: Error: Command failed: git commit -m "fix(Settings): Phase 7 Security: All 14 external script tags lack [rec1W2HDYQRsiAAQX]
+
+Changes:
+- Delegated to Claude Code
+- Output: ## Summary of changes
+
+**File changed:** `next.config.ts`
+
+**What was done:**
+- Added `experimental.sri` with `algorithm: 'sha256'` to the Next.js config. This makes Next.js automatically add `integri...
+
+Airtable: rec1W2HDYQRsiAAQX"
+/bin/sh: 12: Syntax error: EOF in backquote substitution
+
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:519:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:519:28)
+    at Pipe.<anonymous> (node:net:346:12) {
+  code: 2,
+  killed: false,
+  signal: null,
+  cmd: 'git commit -m "fix(Settings): Phase 7 Security: All 14 external script tags lack [rec1W2HDYQRsiAAQX]\n' +
+    '\n' +
+    'Changes:\n' +
+    '- Delegated to Claude Code\n' +
+    '- Output: ## Summary of changes\n' +
+    '\n' +
+    '**File changed:** `next.config.ts`\n' +
+    '\n' +
+    '**What was done:**\n' +
+    "- Added `experimental.sri` with `algorithm: 'sha256'` to the Next.js config. This makes Next.js automatically add `integri...\n" +
+    '\n' +
+    'Airtable: rec1W2HDYQRsiAAQX"',
+  stdout: '',
+  stderr: '/bin/sh: 12: Syntax error: EOF in backquote substitution\n'
+}
+❌ Deploy failed for rec1W2HDYQRsiAAQX: Error: Commit failed
+    at deployFix (/home/ethan/.openclaw/workspace/automation-lab/scripts/deploy-fix.ts:141:13)
+    at async attemptFix (/home/ethan/.openclaw/workspace/automation-lab/scripts/auto-bug-fixer-v2.ts:112:24)
+    at async main (/home/ethan/.openclaw/workspace/automation-lab/scripts/auto-bug-fixer-v2.ts:188:18)
+❌ Fix attempt failed: Deployment failed
+📄 Report written: 2026-03-26T21-34-36-419Z_rec1W2HDYQRsiAAQX.md
+
+❌ Failed to fix rec1W2HDYQRsiAAQX (attempt 2/3)
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 6
+   High: 0
+   Medium: 2
+   Low: 4
+
