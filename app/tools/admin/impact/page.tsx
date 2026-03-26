@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import ImpactDashboard from './ImpactDashboard';
 import ActivityFeed from './ActivityFeed';
+import AdminAccounts from './AdminAccounts';
 
-type Tab = 'stats' | 'feed';
+type Tab = 'stats' | 'feed' | 'accounts';
 
 export default function ImpactPage() {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
@@ -12,6 +13,7 @@ export default function ImpactPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'stats', label: 'Impact Stats' },
     { key: 'feed', label: 'Activity Feed' },
+    { key: 'accounts', label: 'Admin Accounts' },
   ];
 
   return (
@@ -51,7 +53,9 @@ export default function ImpactPage() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'stats' ? <ImpactDashboard /> : <ActivityFeed />}
+        {activeTab === 'stats' && <ImpactDashboard />}
+        {activeTab === 'feed' && <ActivityFeed />}
+        {activeTab === 'accounts' && <AdminAccounts />}
       </div>
     </div>
   );

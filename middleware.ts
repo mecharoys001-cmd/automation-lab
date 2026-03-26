@@ -2,7 +2,53 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { withSecureCookies } from '@/lib/supabase/cookie-options'
 
+// ---------------------------------------------------------------------------
+// CSP nonce helpers – defense-in-depth against script injection (SRI + CSP)
+// ---------------------------------------------------------------------------
+
+function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  const binary = String.fromCharCode(...bytes)
+  return btoa(binary)
+}
+
+function buildCspHeader(nonce: string): string {
+  return [
+    `default-src 'self'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `font-src 'self' https://fonts.gstatic.com`,
+    `img-src 'self' data: blob:`,
+    `connect-src 'self' https://*.supabase.co`,
+    `frame-ancestors 'none'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+  ].join('; ')
+}
+
+function applySecurityHeaders(response: NextResponse, nonce: string) {
+  response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+}
+
+// ---------------------------------------------------------------------------
+// Middleware
+// ---------------------------------------------------------------------------
+
 export async function middleware(request: NextRequest) {
+  const nonce = generateNonce()
+  const path = request.nextUrl.pathname
+
+  // ── Non-tools routes: just apply security headers, no auth ─────────────
+  if (!path.startsWith('/tools')) {
+    const response = NextResponse.next({ request })
+    applySecurityHeaders(response, nonce)
+    return response
+  }
+
+  // ── /tools routes: Supabase auth + RBAC + security headers ─────────────
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -28,15 +74,15 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const path = request.nextUrl.pathname
-
   // ── Allow unauthenticated access to scheduler intake form ──────────────
   if (path.startsWith('/tools/scheduler/intake')) {
+    applySecurityHeaders(supabaseResponse, nonce)
     return supabaseResponse
   }
 
   // ── Allow unauthenticated access to reports visualizer ─────────────────
   if (path.startsWith('/tools/reports')) {
+    applySecurityHeaders(supabaseResponse, nonce)
     return supabaseResponse
   }
 
@@ -45,7 +91,9 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', path)
-    return NextResponse.redirect(url)
+    const redirect = NextResponse.redirect(url)
+    applySecurityHeaders(redirect, nonce)
+    return redirect
   }
 
   // ── RBAC for analytics admin ───────────────────────────────────────────
@@ -62,7 +110,9 @@ export async function middleware(request: NextRequest) {
     if (!admin) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools'
-      return NextResponse.redirect(url)
+      const redirect = NextResponse.redirect(url)
+      applySecurityHeaders(redirect, nonce)
+      return redirect
     }
   }
 
@@ -80,7 +130,9 @@ export async function middleware(request: NextRequest) {
     if (!admin) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools'
-      return NextResponse.redirect(url)
+      const redirect = NextResponse.redirect(url)
+      applySecurityHeaders(redirect, nonce)
+      return redirect
     }
   }
 
@@ -117,22 +169,36 @@ export async function middleware(request: NextRequest) {
     if (!isAdmin && !isInstructor) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools'
-      return NextResponse.redirect(url)
+      const redirect = NextResponse.redirect(url)
+      applySecurityHeaders(redirect, nonce)
+      return redirect
     }
 
     // Instructors trying to access /admin → redirect to /portal
     if (!isAdmin && path.startsWith('/tools/scheduler/admin')) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools/scheduler/portal'
-      return NextResponse.redirect(url)
+      const redirect = NextResponse.redirect(url)
+      applySecurityHeaders(redirect, nonce)
+      return redirect
     }
 
     // Admins trying to access /portal → let them through (admins can see everything)
   }
 
+  applySecurityHeaders(supabaseResponse, nonce)
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/tools', '/tools/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - api routes (handled by route handlers, not pages)
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|api/).*)',
+  ],
 }
