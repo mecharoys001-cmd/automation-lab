@@ -672,3 +672,9 @@ a:hover { text-decoration: underline; }
   .section-header { margin-bottom: 32px; }
   .stats-divider { display: none; }
 }
+
+/* Tool card hover */
+.tool-card-hover:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+  transform: translateY(-2px);
+}

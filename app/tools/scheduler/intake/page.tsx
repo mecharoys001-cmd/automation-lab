@@ -372,7 +372,7 @@ function IntakeForm() {
         setSubmitState('error');
       }
     },
-    [form, selectedSkills, selectedSlots, validate]
+    [form, selectedSkills, selectedSlots, validate, honeypot, programId]
   );
 
   const resetForm = useCallback(() => {
