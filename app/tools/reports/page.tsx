@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Papa from "papaparse";
 import { parseCSVData } from "./lib/parseCSV";
 import { decodeShareData } from "./lib/share";
-import { detectPlatform } from "./lib/platforms";
+import { detectPlatform, suggestMappings } from "./lib/platforms";
 import type { DashboardData, ColumnMapping, CategoryProfile, PlatformId, RawCSVRow } from "./lib/types";
 import Dashboard from "./components/Dashboard";
 import ColumnMapper from "./components/ColumnMapper";
@@ -177,8 +177,17 @@ export default function ReportsPage() {
       const { platformId } = detectPlatform(headers);
 
       if (platformId === "generic") {
-        // Unknown format — show column mapper
-        setViewState("column-mapper");
+        // Unknown format — try auto-mapping via fuzzy header matching
+        const suggested = suggestMappings(headers);
+        // If we have at least an order total OR item price + a date, go straight to dashboard
+        const hasAmount = !!(suggested.orderTotal || suggested.itemPrice);
+        const hasDate = !!suggested.date;
+        if (hasAmount && hasDate) {
+          processCSV(text, file, suggested);
+        } else {
+          // Can't auto-detect enough — show column mapper as fallback
+          setViewState("column-mapper");
+        }
       } else {
         // Known platform — process directly
         processCSV(text, file);

@@ -99,35 +99,66 @@ export function suggestMappings(headers: string[]): ColumnMapping {
   const mapping: ColumnMapping = {};
   const lower = headers.map((h) => h.toLowerCase());
 
+  // Exact match patterns (highest priority)
   const patterns: { field: StandardField; keywords: string[] }[] = [
-    { field: "orderId", keywords: ["order id", "order number", "order #", "order no", "name", "id", "transaction id"] },
-    { field: "orderTotal", keywords: ["total", "order total", "amount", "gross", "net total"] },
-    { field: "subtotal", keywords: ["subtotal", "sub total", "sub-total"] },
-    { field: "tax", keywords: ["tax", "taxes", "tax amount", "sales tax"] },
-    { field: "shipping", keywords: ["shipping", "shipping amount", "delivery"] },
-    { field: "discount", keywords: ["discount", "discount amount", "coupon"] },
-    { field: "paymentMethod", keywords: ["payment method", "payment type", "tender", "payment"] },
-    { field: "status", keywords: ["status", "financial status", "order status", "payment status"] },
-    { field: "date", keywords: ["date", "created at", "order date", "paid at", "transaction date", "created"] },
-    { field: "itemName", keywords: ["item", "product", "lineitem name", "product name", "item name", "description"] },
-    { field: "itemPrice", keywords: ["price", "lineitem price", "item price", "unit price", "amount"] },
-    { field: "itemQuantity", keywords: ["quantity", "qty", "lineitem quantity", "item quantity"] },
-    { field: "customerName", keywords: ["customer", "billing name", "customer name", "name", "buyer"] },
-    { field: "customerEmail", keywords: ["email", "customer email", "buyer email"] },
-    { field: "vendor", keywords: ["vendor", "supplier", "brand"] },
-    { field: "tags", keywords: ["tags", "labels", "categories"] },
-    { field: "outstandingBalance", keywords: ["outstanding", "balance", "outstanding balance", "amount due"] },
-    { field: "currency", keywords: ["currency", "currency code"] },
-    { field: "location", keywords: ["location", "store", "store location"] },
-    { field: "notes", keywords: ["notes", "memo", "comments"] },
+    { field: "orderId", keywords: ["order id", "order number", "order #", "order no", "transaction id", "invoice number", "invoice #", "receipt number"] },
+    { field: "orderTotal", keywords: ["total", "order total", "grand total", "net total", "gross amount", "gross sales"] },
+    { field: "subtotal", keywords: ["subtotal", "sub total", "sub-total", "net amount", "net sales"] },
+    { field: "tax", keywords: ["tax", "taxes", "tax amount", "sales tax", "vat", "gst"] },
+    { field: "shipping", keywords: ["shipping", "shipping amount", "delivery", "freight"] },
+    { field: "discount", keywords: ["discount", "discount amount", "coupon", "promo"] },
+    { field: "paymentMethod", keywords: ["payment method", "payment type", "tender", "tender type", "payment"] },
+    { field: "status", keywords: ["status", "financial status", "order status", "payment status", "state"] },
+    { field: "date", keywords: ["date", "created at", "order date", "paid at", "transaction date", "created", "timestamp", "time", "sale date"] },
+    { field: "itemName", keywords: ["item", "product", "lineitem name", "product name", "item name", "description", "product/service", "line item", "sku name"] },
+    { field: "itemPrice", keywords: ["price", "lineitem price", "item price", "unit price", "rate", "unit amount"] },
+    { field: "itemQuantity", keywords: ["quantity", "qty", "lineitem quantity", "item quantity", "units", "count"] },
+    { field: "customerName", keywords: ["customer", "billing name", "customer name", "buyer", "client", "sold to", "bill to"] },
+    { field: "customerEmail", keywords: ["email", "customer email", "buyer email", "e-mail"] },
+    { field: "vendor", keywords: ["vendor", "supplier", "brand", "merchant"] },
+    { field: "tags", keywords: ["tags", "labels", "categories", "category", "type", "product type"] },
+    { field: "outstandingBalance", keywords: ["outstanding", "balance", "outstanding balance", "amount due", "due"] },
+    { field: "currency", keywords: ["currency", "currency code", "cur"] },
+    { field: "location", keywords: ["location", "store", "store location", "branch", "outlet"] },
+    { field: "notes", keywords: ["notes", "memo", "comments", "remarks"] },
   ];
 
+  // Pass 1: exact match on full header name
   for (const { field, keywords } of patterns) {
     if (mapping[field]) continue;
     for (const kw of keywords) {
       const idx = lower.indexOf(kw);
       if (idx !== -1) {
         mapping[field] = headers[idx];
+        break;
+      }
+    }
+  }
+
+  // Pass 2: partial/contains match for unmapped fields
+  // Also use data-type heuristics: "amount" → orderTotal or itemPrice
+  const used = new Set(Object.values(mapping));
+  const partials: { field: StandardField; contains: string[] }[] = [
+    { field: "orderId", contains: ["order", "invoice", "receipt", "transaction"] },
+    { field: "orderTotal", contains: ["total", "amount", "gross", "revenue"] },
+    { field: "date", contains: ["date", "time", "created", "when"] },
+    { field: "itemName", contains: ["item", "product", "description", "service", "line"] },
+    { field: "itemPrice", contains: ["price", "rate", "cost", "unit"] },
+    { field: "itemQuantity", contains: ["qty", "quantity", "units", "count"] },
+    { field: "customerName", contains: ["customer", "buyer", "client", "name"] },
+    { field: "customerEmail", contains: ["email", "e-mail"] },
+    { field: "tax", contains: ["tax", "vat", "gst"] },
+    { field: "paymentMethod", contains: ["payment", "tender", "method"] },
+    { field: "status", contains: ["status", "state"] },
+  ];
+
+  for (const { field, contains } of partials) {
+    if (mapping[field]) continue;
+    for (let i = 0; i < lower.length; i++) {
+      if (used.has(headers[i])) continue;
+      if (contains.some((c) => lower[i].includes(c))) {
+        mapping[field] = headers[i];
+        used.add(headers[i]);
         break;
       }
     }

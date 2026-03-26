@@ -1632,9 +1632,9 @@ export default function PeoplePage() {
     }
   }, [selectedProgramId]);
 
-  /* ── Derived state ─────────────────────────────────────── */
+  /* ── Derived state (memoized) ─────────────────────────── */
 
-  const filteredVenues = venues.filter((v) => {
+  const filteredVenues = useMemo(() => venues.filter((v) => {
     if (venueSearch.trim()) {
       const q = venueSearch.toLowerCase();
       const name = (v.name ?? '').toLowerCase();
@@ -1642,9 +1642,9 @@ export default function PeoplePage() {
       return name.includes(q) || spaceType.includes(q);
     }
     return true;
-  });
+  }), [venues, venueSearch]);
 
-  const filtered = allInstructors.filter((inst) => {
+  const filtered = useMemo(() => allInstructors.filter((inst) => {
     if (filterStatus === 'active' && !inst.is_active) return false;
     if (filterStatus === 'inactive' && inst.is_active) return false;
     if (search.trim()) {
@@ -1655,15 +1655,26 @@ export default function PeoplePage() {
       return name.includes(q) || email.includes(q) || skills.includes(q);
     }
     return true;
-  });
+  }), [allInstructors, filterStatus, search]);
 
   const staffTotalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safeStaffPage = Math.min(staffPage, staffTotalPages);
-  const paginatedStaff = filtered.slice((safeStaffPage - 1) * ITEMS_PER_PAGE, safeStaffPage * ITEMS_PER_PAGE);
+  const paginatedStaff = useMemo(() =>
+    filtered.slice((safeStaffPage - 1) * ITEMS_PER_PAGE, safeStaffPage * ITEMS_PER_PAGE),
+    [filtered, safeStaffPage],
+  );
 
   const venueTotalPages = Math.max(1, Math.ceil(filteredVenues.length / ITEMS_PER_PAGE));
   const safeVenuePage = Math.min(venuePage, venueTotalPages);
-  const paginatedVenues = filteredVenues.slice((safeVenuePage - 1) * ITEMS_PER_PAGE, safeVenuePage * ITEMS_PER_PAGE);
+  const paginatedVenues = useMemo(() =>
+    filteredVenues.slice((safeVenuePage - 1) * ITEMS_PER_PAGE, safeVenuePage * ITEMS_PER_PAGE),
+    [filteredVenues, safeVenuePage],
+  );
+
+  // Stable callback for skill clicks from StaffCard
+  const handleSkillClick = useCallback((skill: string) => {
+    router.push(`/tools/scheduler/admin?tag=${encodeURIComponent(skill)}`);
+  }, [router]);
 
   // Reset to page 1 when filters change
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1904,66 +1915,11 @@ export default function PeoplePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {paginatedVenues.map((venue) => (
-                <div
+                <VenueCard
                   key={venue.id}
-                  onClick={() => setSelectedVenue(venue)}
-                  className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  {/* Header: Name + Type Badge */}
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                      <p className="text-[16px] font-bold text-slate-900 truncate">
-                        {venue.name}
-                      </p>
-                      <p className="text-sm text-slate-700">{venue.space_type}</p>
-                    </div>
-                  </div>
-
-                  {/* Subjects */}
-                  {venue.subjects && venue.subjects.length > 0 && (
-                    <div className="flex items-center flex-wrap gap-1">
-                      {venue.subjects.map((s) => (
-                        <span key={s} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Capacity */}
-                  <Tooltip text={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-slate-600" />
-                      <span className="text-[13px] text-slate-600">
-                        Capacity: {venue.max_capacity ?? 'Unlimited'}
-                      </span>
-                    </div>
-                  </Tooltip>
-
-                  {/* View Schedule Link */}
-                  {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <Tooltip text="View venue schedule on the calendar">
-                      <Link
-                        href={`/tools/scheduler/admin?venue=${venue.id}`}
-                        className="text-xs font-medium text-blue-500 hover:text-blue-600"
-                      >
-                        View Schedule &rarr;
-                      </Link>
-                    </Tooltip>
-                  </div>
-
-                  {/* Edit Button */}
-                  <Tooltip text={`Edit ${venue.name}`}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedVenue(venue); }}
-                      aria-label={`Edit ${venue.name}`}
-                      className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Edit2 className="w-3.5 h-3.5 text-slate-700" />
-                    </button>
-                  </Tooltip>
-                </div>
+                  venue={venue}
+                  onSelect={setSelectedVenue}
+                />
               ))}
             </div>
           )}
