@@ -7,6 +7,8 @@ type AvatarSize = 'sm' | 'md' | 'lg';
 interface AvatarProps {
   initials: string;
   name?: string;
+  /** Optional photo URL — rendered with loading="lazy" for performance */
+  photoUrl?: string;
   size?: AvatarSize;
   bgColor?: string;
   className?: string;
@@ -19,10 +21,17 @@ const sizeMap: Record<AvatarSize, { container: string; text: string }> = {
   lg: { container: 'w-10 h-10', text: 'text-sm' },
 };
 
-export function Avatar({ initials, size = 'md', bgColor = 'bg-blue-500', className = '', tooltip }: AvatarProps) {
+export function Avatar({ initials, photoUrl, size = 'md', bgColor = 'bg-blue-500', className = '', tooltip }: AvatarProps) {
   const s = sizeMap[size];
 
-  const el = (
+  const el = photoUrl ? (
+    <img
+      src={photoUrl}
+      alt={initials}
+      loading="lazy"
+      className={`${s.container} rounded-full object-cover flex-shrink-0 ${className}`}
+    />
+  ) : (
     <div
       className={`${s.container} rounded-full ${bgColor} flex items-center justify-center flex-shrink-0 ${className}`}
     >

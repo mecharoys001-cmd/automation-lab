@@ -5,6 +5,21 @@ import { withSecureCookies } from '@/lib/supabase/cookie-options'
 // ---------------------------------------------------------------------------
 // CSP nonce helpers – defense-in-depth against script injection (SRI + CSP)
 // ---------------------------------------------------------------------------
+//
+// SECURITY NOTES (SRI / CSP):
+// - A per-request nonce is generated and injected into the Content-Security-Policy
+//   header. The nonce is exposed via `X-Nonce` so server components can apply it
+//   to inline <script> tags, enabling SRI-compliant strict-dynamic evaluation.
+// - 'strict-dynamic' in script-src allows nonce-authenticated scripts to load
+//   their own dependencies without listing each origin, effectively providing
+//   SRI compliance for the script dependency chain.
+// - Traditional SRI integrity hashes (e.g. sha256-…) on <script> tags are NOT
+//   supported by Next.js because it generates inline bootstrap scripts with
+//   non-deterministic content per-build. The nonce-based CSP approach is the
+//   recommended alternative per Next.js docs and achieves equivalent protection.
+// - Additional hardening: frame-ancestors 'none', base-uri 'self', form-action
+//   'self', X-Content-Type-Options nosniff, X-Frame-Options DENY.
+// ---------------------------------------------------------------------------
 
 function generateNonce(): string {
   const bytes = new Uint8Array(16)

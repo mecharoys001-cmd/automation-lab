@@ -522,6 +522,8 @@ function IntakeForm() {
         )}
 
         <form onSubmit={handleSubmit} aria-labelledby="intake-form-heading" noValidate>
+          {/* Disable all form fields when no valid program is configured */}
+          <fieldset disabled={!hasProgram && !programLoading} className="contents">
           {/* Honeypot — hidden from humans, caught by bots */}
           <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <label htmlFor="website">Website</label>
@@ -863,6 +865,7 @@ function IntakeForm() {
               </button>
             </Tooltip>
           </div>
+          </fieldset>
         </form>
       </div>
     </main>

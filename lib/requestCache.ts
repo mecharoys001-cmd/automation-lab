@@ -104,12 +104,24 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Hook for React components to use cached fetch
+ * Hook for React components to use cached fetch.
+ *
+ * This provides SWR-like API call deduplication and caching:
+ * - Concurrent requests to the same URL are deduplicated (single-flight)
+ * - Responses are cached for `defaultTTL` (2 minutes) to avoid refetching
+ *   during navigation between pages
+ * - `invalidate(pattern)` busts matching cache entries after mutations
+ * - `revalidate(url)` forces a fresh fetch, bypassing the cache
  */
 export function useCachedFetch() {
   return {
     fetch: requestCache.fetch.bind(requestCache),
     invalidate: requestCache.invalidate.bind(requestCache),
     clear: requestCache.clear.bind(requestCache),
+    /** Force a fresh fetch, bypassing cache (SWR-style revalidation) */
+    revalidate: async <T>(url: string, options?: RequestInit): Promise<T> => {
+      requestCache.invalidate(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      return requestCache.fetch<T>(url, options);
+    },
   };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, memo } from 'react';
+import { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,6 +19,7 @@ import { AvailabilityEditor, isHourAvailable, formatHourLabel } from '../../comp
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import { InstructorEditModal } from '../../components/modals/InstructorEditModal';
 import { Modal, ModalButton } from '../../components/ui/Modal';
+import { VirtualizedCardGrid } from '../../components/ui/VirtualizedCardGrid';
 import type { InstructorFormData } from '../../components/modals/InstructorEditModal';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
@@ -52,7 +53,7 @@ const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
 ];
 const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 10;
 
 /** Max skill pills to show before collapsing with "+N more". */
 const MAX_VISIBLE_SKILLS = 3;
@@ -1386,6 +1387,14 @@ function VenueCreateModal({
 export default function PeoplePage() {
   const router = useRouter();
   const { programs, selectedProgramId } = useProgram();
+
+  // Performance measurement: track render times for this page
+  useEffect(() => {
+    performance.mark('people-page-mounted');
+    return () => {
+      performance.mark('people-page-unmounted');
+    };
+  }, []);
   const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
   const [allInstructors, setAllInstructors] = useState<Instructor[]>([]);
   const [loadingAll, setLoadingAll] = useState(true);
@@ -1456,6 +1465,16 @@ export default function PeoplePage() {
     fetchInstructors();
     fetchVenues();
   }, [fetchInstructors, fetchVenues]);
+
+  // Performance: measure time from mount to data ready
+  useEffect(() => {
+    if (!loadingAll && !loadingVenues) {
+      performance.mark('people-page-data-ready');
+      try {
+        performance.measure('people-page-load-time', 'people-page-mounted', 'people-page-data-ready');
+      } catch { /* marks may not exist yet on first render */ }
+    }
+  }, [loadingAll, loadingVenues]);
 
   const openDetail = useCallback(async (instructor: Instructor) => {
     setSelectedInstructor(instructor);
@@ -1566,7 +1585,42 @@ export default function PeoplePage() {
     }
   }, [selectedVenue]);
 
-  const handleSaveInstructor = useCallback(async (data: InstructorFormData) => {
+  // Duplicate name detection — warns (but doesn't block) when another staff
+  // member already has the same first + last name.
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const pendingSaveRef = useRef<InstructorFormData | null>(null);
+
+  const checkDuplicateName = useCallback(
+    (data: InstructorFormData): string | null => {
+      const first = data.first_name.trim().toLowerCase();
+      const last = data.last_name.trim().toLowerCase();
+      const match = allInstructors.find(
+        (i) =>
+          i.first_name.toLowerCase() === first &&
+          i.last_name.toLowerCase() === last &&
+          i.id !== editingInstructor?.id,
+      );
+      if (match) {
+        return `A staff member named "${match.first_name} ${match.last_name}" already exists. Save anyway?`;
+      }
+      return null;
+    },
+    [allInstructors, editingInstructor],
+  );
+
+  const handleSaveInstructor = useCallback(async (data: InstructorFormData, skipDuplicateCheck = false) => {
+    // Check for duplicate name before saving
+    if (!skipDuplicateCheck) {
+      const warning = checkDuplicateName(data);
+      if (warning) {
+        setDuplicateWarning(warning);
+        pendingSaveRef.current = data;
+        return;
+      }
+    }
+    setDuplicateWarning(null);
+    pendingSaveRef.current = null;
+
     setSavingInstructor(true);
     const isNew = !editingInstructor;
     try {
@@ -1609,7 +1663,18 @@ export default function PeoplePage() {
     } finally {
       setSavingInstructor(false);
     }
-  }, [editingInstructor, selectedInstructor, selectedProgramId]);
+  }, [editingInstructor, selectedInstructor, selectedProgramId, checkDuplicateName]);
+
+  const confirmDuplicateSave = useCallback(() => {
+    if (pendingSaveRef.current) {
+      handleSaveInstructor(pendingSaveRef.current, true);
+    }
+  }, [handleSaveInstructor]);
+
+  const cancelDuplicateSave = useCallback(() => {
+    setDuplicateWarning(null);
+    pendingSaveRef.current = null;
+  }, []);
 
   const handleDeleteInstructor = useCallback(async () => {
     if (!editingInstructor) return;
@@ -1835,26 +1900,27 @@ export default function PeoplePage() {
                 : 'No staff match your filters.'}
             </div>
           ) : (
-            <div
-              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-              role="list"
-              aria-label={`Staff members – page ${safeStaffPage} of ${staffTotalPages}`}
-              data-paginated="true"
-              data-total-items={filtered.length}
-              data-page-size={ITEMS_PER_PAGE}
-              data-current-page={safeStaffPage}
-              data-rendered-items={paginatedStaff.length}
-            >
-              {paginatedStaff.map((inst) => (
+            <VirtualizedCardGrid
+              items={paginatedStaff}
+              keyExtractor={(inst) => inst.id}
+              renderItem={(inst) => (
                 <StaffCard
-                  key={inst.id}
                   inst={inst}
                   onOpenDetail={openDetail}
                   onEdit={setEditingInstructor}
                   onSkillClick={handleSkillClick}
                 />
-              ))}
-            </div>
+              )}
+              placeholderHeight={220}
+              ariaLabel={`Staff members – page ${safeStaffPage} of ${staffTotalPages}`}
+              containerProps={{
+                'data-paginated': 'true',
+                'data-total-items': filtered.length,
+                'data-page-size': ITEMS_PER_PAGE,
+                'data-current-page': safeStaffPage,
+                'data-rendered-items': paginatedStaff.length,
+              }}
+            />
           )}
 
           {/* Pagination controls */}
@@ -1953,24 +2019,25 @@ export default function PeoplePage() {
                 : 'No venues match your search.'}
             </div>
           ) : (
-            <div
-              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-              role="list"
-              aria-label={`Venues – page ${safeVenuePage} of ${venueTotalPages}`}
-              data-paginated="true"
-              data-total-items={filteredVenues.length}
-              data-page-size={ITEMS_PER_PAGE}
-              data-current-page={safeVenuePage}
-              data-rendered-items={paginatedVenues.length}
-            >
-              {paginatedVenues.map((venue) => (
+            <VirtualizedCardGrid
+              items={paginatedVenues}
+              keyExtractor={(venue) => venue.id}
+              renderItem={(venue) => (
                 <VenueCard
-                  key={venue.id}
                   venue={venue}
                   onSelect={setSelectedVenue}
                 />
-              ))}
-            </div>
+              )}
+              placeholderHeight={160}
+              ariaLabel={`Venues – page ${safeVenuePage} of ${venueTotalPages}`}
+              containerProps={{
+                'data-paginated': 'true',
+                'data-total-items': filteredVenues.length,
+                'data-page-size': ITEMS_PER_PAGE,
+                'data-current-page': safeVenuePage,
+                'data-rendered-items': paginatedVenues.length,
+              }}
+            />
           )}
 
           {/* Pagination controls */}
@@ -2041,6 +2108,21 @@ export default function PeoplePage() {
           onClose={() => { setEditingInstructor(null); setShowCreateModal(false); }}
           existingInstructors={allInstructors}
         />
+      )}
+
+      {/* ── Duplicate Name Warning Modal ─────────────────── */}
+      {duplicateWarning && (
+        <Modal open={true} onClose={cancelDuplicateSave} title="Duplicate Name Detected" width="420px" footer={
+          <>
+            <ModalButton onClick={cancelDuplicateSave}>Cancel</ModalButton>
+            <ModalButton variant="primary" onClick={confirmDuplicateSave}>Save Anyway</ModalButton>
+          </>
+        }>
+          <div className="px-6 py-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-slate-700" data-testid="duplicate-name-warning">{duplicateWarning}</p>
+          </div>
+        </Modal>
       )}
 
       {/* ── Venue Create Modal ─────────────────────────────── */}
