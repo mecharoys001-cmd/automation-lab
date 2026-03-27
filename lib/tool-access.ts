@@ -121,13 +121,18 @@ export async function getUserAccessibleToolIds(
 
   // Get tools from suites the user belongs to
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: suiteTools } = await (svc.from('tool_suite_members') as any)
-    .select('suite_id, tool_suite_tools(tool_id)')
+  const { data: memberships } = await (svc.from('tool_suite_members') as any)
+    .select('suite_id')
     .ilike('user_email', email);
 
-  for (const membership of suiteTools ?? []) {
-    for (const st of membership.tool_suite_tools ?? []) {
-      toolIds.add(st.tool_id);
+  if (memberships && memberships.length > 0) {
+    const suiteIds = memberships.map((m: { suite_id: string }) => m.suite_id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: stRows } = await (svc.from('tool_suite_tools') as any)
+      .select('tool_id')
+      .in('suite_id', suiteIds);
+    for (const row of stRows ?? []) {
+      toolIds.add(row.tool_id);
     }
   }
 
@@ -166,14 +171,26 @@ export async function checkSuiteAccess(
 ): Promise<boolean> {
   const svc = createServiceClient();
 
+  // Get suites the user belongs to
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (svc.from('tool_suite_members') as any)
-    .select('id, tool_suite_tools!inner(tool_id)')
-    .ilike('user_email', email)
-    .eq('tool_suite_tools.tool_id', toolId)
-    .limit(1);
+  const { data: memberships } = await (svc.from('tool_suite_members') as any)
+    .select('suite_id')
+    .ilike('user_email', email);
 
-  return (data ?? []).length > 0;
+  if (!memberships || memberships.length === 0) return false;
+
+  const suiteIds = memberships.map((m: { suite_id: string }) => m.suite_id);
+
+  // Check if any of those suites contain this tool
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: match } = await (svc.from('tool_suite_tools') as any)
+    .select('id')
+    .in('suite_id', suiteIds)
+    .eq('tool_id', toolId)
+    .limit(1)
+    .maybeSingle();
+
+  return !!match;
 }
 
 /**

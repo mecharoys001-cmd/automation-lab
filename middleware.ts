@@ -144,14 +144,24 @@ export async function middleware(request: NextRequest) {
         if (!access) {
           // Check suite membership — user may belong to a suite containing this tool
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: suiteMember } = await (svc.from('tool_suite_members') as any)
-            .select('id, tool_suite_tools!inner(tool_id)')
+          // Check suite membership: get user's suites, then check if any contain this tool
+          const { data: userMemberships } = await (svc.from('tool_suite_members') as any)
+            .select('suite_id')
             .ilike('user_email', user.email!)
-            .eq('tool_suite_tools.tool_id', toolSlug)
-            .limit(1)
-            .maybeSingle()
 
-          if (!suiteMember) {
+          let hasSuiteAccess = false
+          if (userMemberships && userMemberships.length > 0) {
+            const sIds = userMemberships.map((m: { suite_id: string }) => m.suite_id)
+            const { data: suiteToolMatch } = await (svc.from('tool_suite_tools') as any)
+              .select('id')
+              .in('suite_id', sIds)
+              .eq('tool_id', toolSlug)
+              .limit(1)
+              .maybeSingle()
+            hasSuiteAccess = !!suiteToolMatch
+          }
+
+          if (!hasSuiteAccess) {
             const url = request.nextUrl.clone()
             url.pathname = '/tools'
             const redirect = NextResponse.redirect(url)
