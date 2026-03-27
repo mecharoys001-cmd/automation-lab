@@ -2691,3 +2691,83 @@ app/tools/scheduler/components/calendar/WeekView.tsx:1187:                  cons
 ✅ Validation passed
 
 💾 Committing changes...
+🌐 Deploying to production...
+✓ Marking as fixed in Airtable...
+✅ Successfully deployed fix for rece1lTqrvC99Jtjj
+   URL: https://automation-aci7c8hzj-roys-projects-ec3324ba.vercel.app
+📄 Report written: 2026-03-27T21-05-59-792Z_rece1lTqrvC99Jtjj.md
+
+✅ Successfully fixed rece1lTqrvC99Jtjj
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 11
+   High: 0
+   Medium: 6
+   Low: 5
+
+=== Bug Fixer Run: Fri Mar 27 17:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recpQHQavUDTFWXGT
+   Priority: Medium
+   Page: Staff/Venues
+   Category: UNCATEGORIZED
+   Feedback: Staff/Venues page renders 106 SVG icons and 50 buttons for only 14 staff members (0 venues). Each st...
+   ⚠️  Previous fix rejected: "DOM count at 494 for 3 staff (vs 1622 for 14 staff previously). No virtualization or pagination."
+
+🔧 Attempting to fix recpQHQavUDTFWXGT...
+✅ Fix applied successfully
+   Changes: 2
+🚀 Deploying fix for recpQHQavUDTFWXGT...
+📦 Validating build...
+🔍 Running pre-deploy checks...
+📦 Building project...
+✅ Build successful
+✅ Changes detected
+app/api/site-admins/route.ts:105:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:213:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:282:    console.log(JSON.stringify({
+app/api/classes/route.ts:25:    console.log('[GET /api/classes] returning', data?.length ?? 0, 'classes');
+app/api/seed/route.ts:188:    console.log('Templates created:', templates.length);
+app/api/tags/[id]/route.ts:39:    console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
+app/api/tags/[id]/route.ts:64:    console.log('[PATCH /api/tags] updateData:', JSON.stringify(updateData));
+app/api/tags/[id]/route.ts:77:    console.log('[PATCH /api/tags] supabase response:', JSON.stringify({ data, error }));
+app/api/tags/[id]/route.ts:108:    console.log('[PATCH /api/tags] final response tag:', JSON.stringify(data));
+app/api/tags/route.ts:35:    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+app/api/templates/route.ts:26:    console.log('[Templates API] GET request for program:', programId);
+app/api/templates/route.ts:47:    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
+app/tools/scheduler/admin/calendar/page.tsx:192:  console.log('[TOAST] Toast rendered:', toast.message, 'type:', toast.type);
+app/tools/scheduler/admin/page.tsx:582:          console.log('Cancel event:', event.title);
+app/tools/scheduler/admin/page.tsx:586:          console.log('Suggest replacements for:', event.title);
+app/tools/scheduler/admin/page.tsx:590:          console.log('Duplicate event:', event.title);
+app/tools/scheduler/admin/page.tsx:594:          console.log('Delete event:', event.title);
+app/tools/scheduler/admin/page.tsx:635:      console.log('[handleEventDrop] Called with:', {
+app/tools/scheduler/admin/page.tsx:654:          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+app/tools/scheduler/admin/page.tsx:669:      console.log('[handleEventDrop] PATCH body:', patchBody);
+app/tools/scheduler/admin/page.tsx:683:          console.log('[handleEventDrop] PATCH success for', eventId);
+app/tools/scheduler/admin/page.tsx:820:      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
+app/tools/scheduler/admin/page.tsx:839:        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+app/tools/scheduler/admin/page.tsx:887:        console.log(`[${fetchId}] Aborted`);
+app/tools/scheduler/admin/page.tsx:899:    console.log('[useEffect] Triggering fetchSessions due to dependency change');
+app/tools/scheduler/admin/page.tsx:903:      console.log('[useEffect] Cleanup: aborting previous fetch');
+app/tools/scheduler/admin/roles/page.tsx:403:    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
+app/tools/scheduler/admin/roles/page.tsx:405:      console.log('[SAVE_EDIT] Roles match, cancelling edit');
+app/tools/scheduler/admin/roles/page.tsx:412:    console.log('[SAVE_EDIT] wasInstructor:', wasInstructor, 'becomingInstructor:', becomingInstructor);
+app/tools/scheduler/components/calendar/DayView.tsx:320:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/DayView.tsx:331:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/YearView.tsx:522:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/YearView.tsx:532:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/MonthView.tsx:266:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/MonthView.tsx:277:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:136:  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+app/tools/scheduler/components/calendar/WeekView.tsx:222:    console.log('[DRAG START]', {
+app/tools/scheduler/components/calendar/WeekView.tsx:577:    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
+app/tools/scheduler/components/calendar/WeekView.tsx:582:    console.log('Hover leave');
+app/tools/scheduler/components/calendar/WeekView.tsx:645:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/WeekView.tsx:656:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:1128:                          console.log('[DROP] Event drop:', {
+app/tools/scheduler/components/calendar/WeekView.tsx:1186:                  console.log('Render hover state', hoverState);
+⚠️  Warning: console.log statements found (non-commented)
+✅ Validation passed
+
+💾 Committing changes...

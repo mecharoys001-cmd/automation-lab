@@ -1847,7 +1847,16 @@ export default function PeoplePage() {
                 : 'No staff match your filters.'}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+              data-paginated="true"
+              data-page-size={ITEMS_PER_PAGE}
+              data-total-items={filtered.length}
+              data-current-page={safeStaffPage}
+              data-total-pages={staffTotalPages}
+              role="list"
+              aria-label={`Staff members, page ${safeStaffPage} of ${staffTotalPages}`}
+            >
               {paginatedStaff.map((inst) => (
                 <StaffCard
                   key={inst.id}
@@ -1861,43 +1870,45 @@ export default function PeoplePage() {
           )}
 
           {/* Staff Pagination */}
-          {!loadingAll && filtered.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between pt-3">
+          {!loadingAll && filtered.length > 0 && (
+            <nav className="flex items-center justify-between pt-3" aria-label="Staff pagination">
               <span className="text-sm text-slate-600">
                 Showing {(safeStaffPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeStaffPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
               </span>
-              <div className="flex items-center gap-1">
-                <button
-                  disabled={safeStaffPage <= 1}
-                  onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
-                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-4 h-4 text-slate-700" />
-                </button>
-                {Array.from({ length: staffTotalPages }, (_, i) => i + 1).map((p) => (
+              {staffTotalPages > 1 && (
+                <div className="flex items-center gap-1">
                   <button
-                    key={p}
-                    onClick={() => setStaffPage(p)}
-                    className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
-                      p === safeStaffPage
-                        ? 'bg-blue-500 text-white'
-                        : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
+                    disabled={safeStaffPage <= 1}
+                    onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
                   >
-                    {p}
+                    <ChevronLeft className="w-4 h-4 text-slate-700" />
                   </button>
-                ))}
-                <button
-                  disabled={safeStaffPage >= staffTotalPages}
-                  onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
-                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="w-4 h-4 text-slate-700" />
-                </button>
-              </div>
-            </div>
+                  {Array.from({ length: staffTotalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setStaffPage(p)}
+                      className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
+                        p === safeStaffPage
+                          ? 'bg-blue-500 text-white'
+                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    disabled={safeStaffPage >= staffTotalPages}
+                    onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
+                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4 text-slate-700" />
+                  </button>
+                </div>
+              )}
+            </nav>
           )}
         </section>
 
@@ -1957,7 +1968,16 @@ export default function PeoplePage() {
                 : 'No venues match your search.'}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+              data-paginated="true"
+              data-page-size={ITEMS_PER_PAGE}
+              data-total-items={filteredVenues.length}
+              data-current-page={safeVenuePage}
+              data-total-pages={venueTotalPages}
+              role="list"
+              aria-label={`Venues, page ${safeVenuePage} of ${venueTotalPages}`}
+            >
               {paginatedVenues.map((venue) => (
                 <VenueCard
                   key={venue.id}
@@ -1969,43 +1989,45 @@ export default function PeoplePage() {
           )}
 
           {/* Venue Pagination */}
-          {!loadingVenues && filteredVenues.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between pt-3">
+          {!loadingVenues && filteredVenues.length > 0 && (
+            <nav className="flex items-center justify-between pt-3" aria-label="Venue pagination">
               <span className="text-sm text-slate-600">
                 Showing {(safeVenuePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeVenuePage * ITEMS_PER_PAGE, filteredVenues.length)} of {filteredVenues.length}
               </span>
-              <div className="flex items-center gap-1">
-                <button
-                  disabled={safeVenuePage <= 1}
-                  onClick={() => setVenuePage((p) => Math.max(1, p - 1))}
-                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-4 h-4 text-slate-700" />
-                </button>
-                {Array.from({ length: venueTotalPages }, (_, i) => i + 1).map((p) => (
+              {venueTotalPages > 1 && (
+                <div className="flex items-center gap-1">
                   <button
-                    key={p}
-                    onClick={() => setVenuePage(p)}
-                    className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
-                      p === safeVenuePage
-                        ? 'bg-blue-500 text-white'
-                        : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
+                    disabled={safeVenuePage <= 1}
+                    onClick={() => setVenuePage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
                   >
-                    {p}
+                    <ChevronLeft className="w-4 h-4 text-slate-700" />
                   </button>
-                ))}
-                <button
-                  disabled={safeVenuePage >= venueTotalPages}
-                  onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))}
-                  className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="w-4 h-4 text-slate-700" />
-                </button>
-              </div>
-            </div>
+                  {Array.from({ length: venueTotalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setVenuePage(p)}
+                      className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
+                        p === safeVenuePage
+                          ? 'bg-blue-500 text-white'
+                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    disabled={safeVenuePage >= venueTotalPages}
+                    onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))}
+                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4 text-slate-700" />
+                  </button>
+                </div>
+              )}
+            </nav>
           )}
         </section>
       </div>
