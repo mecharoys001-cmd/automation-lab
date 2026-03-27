@@ -25,7 +25,30 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ admins: data ?? [] });
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validAdmins: typeof data = [];
+    const invalidIds: string[] = [];
+    for (const a of data ?? []) {
+      if (a.google_email && EMAIL_RE.test(a.google_email)) {
+        validAdmins.push(a);
+      } else {
+        invalidIds.push(a.id);
+      }
+    }
+
+    // Purge invalid-email rows so they don't linger in the database
+    if (invalidIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('admin_programs') as any)
+        .delete()
+        .in('admin_id', invalidIds);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('admins') as any)
+        .delete()
+        .in('id', invalidIds);
+    }
+
+    return NextResponse.json({ admins: validAdmins });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

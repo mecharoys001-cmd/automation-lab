@@ -76,6 +76,15 @@ export default function AdminAccounts() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedEmail = formEmail.trim();
+    if (!trimmedEmail) {
+      setFormError('Email is required.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
     setSubmitting(true);
     setFormError(null);
     try {
@@ -83,7 +92,7 @@ export default function AdminAccounts() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formEmail,
+          email: trimmedEmail,
           display_name: formDisplayName || undefined,
           role_level: formRole,
         }),

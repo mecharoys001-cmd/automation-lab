@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, parseDate, formatDate } from '@/lib/scheduler/utils';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,9 +33,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 
+    // Enforce program-level access
+    let accessibleProgramIds: string[] | null = null;
     if (programId && programId !== 'all') {
       const accessErr = await requireProgramAccess(auth.user, programId);
       if (accessErr) return accessErr;
+    } else {
+      // No specific program requested — restrict to programs this admin can access
+      accessibleProgramIds = await getAccessibleProgramIds(auth.user);
     }
 
     const instructorEmail = searchParams.get('instructor_email');
@@ -92,7 +97,11 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true })
         .order('start_time', { ascending: true });
 
-      if (programId && programId !== 'all') q = q.eq('program_id', programId);
+      if (programId && programId !== 'all') {
+        q = q.eq('program_id', programId);
+      } else if (accessibleProgramIds !== null) {
+        q = q.in('program_id', accessibleProgramIds);
+      }
       if (instructorId) q = q.eq('instructor_id', instructorId);
       if (date) q = q.eq('date', date);
       if (startDate && endDate) q = q.gte('date', startDate).lte('date', endDate);

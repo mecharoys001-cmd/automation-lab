@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,12 +47,19 @@ export async function GET(request: NextRequest) {
       resolvedId = (instructor as { id: string }).id;
     }
 
+    // Restrict to programs this admin can access
+    const accessibleIds = await getAccessibleProgramIds(auth.user);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
       .select('*, venue:venues(*), program:programs(*)')
       .eq('instructor_id', resolvedId)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
+
+    if (accessibleIds !== null) {
+      query = query.in('program_id', accessibleIds);
+    }
 
     if (status) {
       query = query.eq('status', status);

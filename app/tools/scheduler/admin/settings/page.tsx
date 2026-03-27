@@ -735,7 +735,7 @@ export default function SettingsPage() {
 
         {/* Inline form */}
         {showAdminForm && (
-          <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-5 space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); saveAdmin(); }} className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-5 space-y-4" noValidate>
             <h3 className="text-sm font-semibold text-slate-900">New Admin</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -744,6 +744,7 @@ export default function SettingsPage() {
                   <input
                     id="scheduler-admin-email"
                     type="email"
+                    required
                     aria-required="true"
                     value={adminForm.google_email}
                     onChange={(e) => setAdminForm((f) => ({ ...f, google_email: e.target.value }))}
@@ -789,17 +790,17 @@ export default function SettingsPage() {
             )}
             <div className="flex gap-2">
               <Tooltip text="Save this admin and grant access">
-                <button onClick={saveAdmin} disabled={adminSaving} className={btnPrimary}>
+                <button type="submit" disabled={adminSaving} className={btnPrimary}>
                   {adminSaving ? 'Saving...' : 'Add Admin'}
                 </button>
               </Tooltip>
               <Tooltip text="Discard changes">
-                <button onClick={cancelAdminForm} className={btnSecondary}>
+                <button type="button" onClick={cancelAdminForm} className={btnSecondary}>
                   Cancel
                 </button>
               </Tooltip>
             </div>
-          </div>
+          </form>
         )}
 
         {/* Admins table */}

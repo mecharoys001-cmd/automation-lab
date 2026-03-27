@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireMinRole } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +18,17 @@ export async function POST(request: NextRequest) {
         { error: 'session_id and tag_id are required' },
         { status: 400 }
       );
+    }
+
+    // Verify program access via the session's program
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sess } = await (supabase.from('sessions') as any)
+      .select('program_id')
+      .eq('id', body.session_id)
+      .single();
+    if (sess?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, sess.program_id);
+      if (accessErr) return accessErr;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,6 +69,17 @@ export async function DELETE(request: NextRequest) {
         { error: 'session_id and tag_id are required' },
         { status: 400 }
       );
+    }
+
+    // Verify program access via the session's program
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sess } = await (supabase.from('sessions') as any)
+      .select('program_id')
+      .eq('id', body.session_id)
+      .single();
+    if (sess?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, sess.program_id);
+      if (accessErr) return accessErr;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

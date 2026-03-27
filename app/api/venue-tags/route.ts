@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireMinRole } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +18,17 @@ export async function POST(request: NextRequest) {
         { error: 'venue_id and tag_id are required' },
         { status: 400 }
       );
+    }
+
+    // Verify program access via the venue's program
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: venue } = await (supabase.from('venues') as any)
+      .select('program_id')
+      .eq('id', body.venue_id)
+      .single();
+    if (venue?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, venue.program_id);
+      if (accessErr) return accessErr;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,6 +69,17 @@ export async function DELETE(request: NextRequest) {
         { error: 'venue_id and tag_id are required' },
         { status: 400 }
       );
+    }
+
+    // Verify program access via the venue's program
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: venue } = await (supabase.from('venues') as any)
+      .select('program_id')
+      .eq('id', body.venue_id)
+      .single();
+    if (venue?.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, venue.program_id);
+      if (accessErr) return accessErr;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

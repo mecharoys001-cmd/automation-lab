@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { requireAdmin, requireMinRole } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 const MAX_BATCH_SIZE = 5000;
 
@@ -40,8 +40,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the caller has access to the programs these sessions belong to
+    const accessibleIds = await getAccessibleProgramIds(auth.user);
+
     const allowedFields = ['date', 'start_time', 'end_time', 'notes'];
     const supabase = createServiceClient();
+
+    // If non-master admin, verify all target sessions belong to accessible programs
+    if (accessibleIds !== null) {
+      const sessionIds = updates.map((u: { id: string }) => u.id).filter(Boolean);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: sessions } = await (supabase.from('sessions') as any)
+        .select('id, program_id')
+        .in('id', sessionIds);
+
+      const unauthorized = (sessions ?? []).find(
+        (s: { program_id: string }) => s.program_id && !accessibleIds.includes(s.program_id),
+      );
+      if (unauthorized) {
+        return NextResponse.json(
+          { error: 'Forbidden: you do not have access to one or more sessions in this batch' },
+          { status: 403 },
+        );
+      }
+    }
 
     let updated = 0;
     let failed = 0;
