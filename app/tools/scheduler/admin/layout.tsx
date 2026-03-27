@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
+import { ToastContainer } from '../components/ui/ToastContainer';
 
 const OnboardingChecklist = dynamic(
   () => import('../components/OnboardingChecklist').then((m) => m.OnboardingChecklist),
@@ -217,6 +218,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Onboarding Checklist (bottom-right corner) — per-program */}
       {showOnboarding && <OnboardingChecklist onClose={handleCloseOnboarding} />}
+
+      {/* Persistent ARIA live regions for toast notifications */}
+      <ToastContainer />
     </div>
   );
 }

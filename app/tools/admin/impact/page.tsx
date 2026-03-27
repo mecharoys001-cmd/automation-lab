@@ -5,8 +5,9 @@ import ImpactDashboard from './ImpactDashboard';
 import ActivityFeed from './ActivityFeed';
 import AdminAccounts from './AdminAccounts';
 import ToolAccess from './ToolAccess';
+import SuiteManagement from './SuiteManagement';
 
-type Tab = 'stats' | 'feed' | 'accounts' | 'access';
+type Tab = 'stats' | 'feed' | 'accounts' | 'access' | 'suites';
 
 export default function ImpactPage() {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
@@ -16,6 +17,7 @@ export default function ImpactPage() {
     { key: 'feed', label: 'Activity Feed' },
     { key: 'accounts', label: 'Admin Accounts' },
     { key: 'access', label: 'Tool Access' },
+    { key: 'suites', label: 'Suites' },
   ];
 
   return (
@@ -59,6 +61,7 @@ export default function ImpactPage() {
         {activeTab === 'feed' && <ActivityFeed />}
         {activeTab === 'accounts' && <AdminAccounts />}
         {activeTab === 'access' && <ToolAccess />}
+        {activeTab === 'suites' && <SuiteManagement />}
       </div>
     </div>
   );

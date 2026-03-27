@@ -178,8 +178,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── RBAC for impact/usage admin ──────────────────────────────────────
-  if (user && path.startsWith('/tools/admin')) {
+  // ── RBAC for suite-manager (managers, not just site admins) ──────────
+  if (user && path.startsWith('/tools/admin/suite-manager')) {
+    // The server component does its own manager check and renders an
+    // appropriate "no access" message, so we just need to ensure the user
+    // is authenticated (already guaranteed above). Let it through.
+  }
+  // ── RBAC for impact/usage admin (all other /tools/admin/* pages) ────
+  else if (user && path.startsWith('/tools/admin')) {
     const { createServiceClient } = await import('@/lib/supabase-service')
     const svc = createServiceClient()
 

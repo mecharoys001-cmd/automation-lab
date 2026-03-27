@@ -52,6 +52,11 @@ function getLiveRegion(level: 'polite' | 'assertive'): HTMLDivElement {
 }
 
 export function showToast(message: string, type: ToastType = 'success') {
+  // Dispatch custom event for the React ToastContainer (ARIA live regions)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
+  }
+
   const liveLevel = type === 'error' ? 'assertive' : 'polite';
   const region = getLiveRegion(liveLevel);
 
