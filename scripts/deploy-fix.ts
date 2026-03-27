@@ -44,11 +44,19 @@ ${changes.map(c => `- ${c}`).join('\n')}
 
 Airtable: ${bug.id}`;
 
+    // Escape dangerous characters for shell
+    const safeMsg = commitMsg
+      .replace(/\\/g, '\\\\')  // Backslashes
+      .replace(/"/g, '\\"')     // Double quotes
+      .replace(/`/g, '\\`')     // Backticks
+      .replace(/\$/g, '\\$')    // Dollar signs
+      .replace(/!/g, '\\!');    // Exclamation marks
+
     await execAsync('git add -A', {
       cwd: '/home/ethan/.openclaw/workspace/automation-lab',
     });
     
-    await execAsync(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`, {
+    await execAsync(`git commit -m "${safeMsg}"`, {
       cwd: '/home/ethan/.openclaw/workspace/automation-lab',
     });
     

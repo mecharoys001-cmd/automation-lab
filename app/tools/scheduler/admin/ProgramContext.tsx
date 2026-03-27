@@ -14,10 +14,8 @@ interface ProgramContextValue {
   updateWizardState: (wizardCompleted: boolean, wizardStep: number) => Promise<void>;
 }
 
-// Intentional: program ID is stored in localStorage to persist the user's
-// selected program across page reloads. This is non-sensitive data (a UUID)
-// and is validated against the fetched programs list before use.
-const STORAGE_KEY = 'symphonix-selected-program';
+// Program ID is persisted in an httpOnly cookie via /api/selected-program
+// so it is not readable by third-party scripts on the page.
 
 const ProgramContext = createContext<ProgramContextValue>({
   programs: [],
@@ -42,8 +40,17 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
       const progs: Program[] = data.programs ?? [];
       setPrograms(progs);
 
-      // Restore from localStorage or pick first
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+      // Restore from httpOnly cookie via server endpoint, or pick first
+      let stored: string | null = null;
+      try {
+        const cookieRes = await fetch('/api/selected-program');
+        if (cookieRes.ok) {
+          const cookieData = await cookieRes.json();
+          stored = cookieData.selectedProgramId ?? null;
+        }
+      } catch {
+        // Cookie endpoint unavailable — fall through to default
+      }
       const validStored = stored && progs.some((p) => p.id === stored);
 
       if (validStored) {
@@ -60,15 +67,21 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchPrograms();
+    // One-time migration: remove the old localStorage key so the program ID
+    // is no longer readable by third-party scripts on the page.
+    try { localStorage.removeItem('symphonix-selected-program'); } catch { /* noop */ }
   }, [fetchPrograms]);
 
   const handleSetProgramId = useCallback((id: string) => {
     setSelectedProgramId(id);
-    try {
-      localStorage.setItem(STORAGE_KEY, id);
-    } catch {
-      // localStorage may be unavailable
-    }
+    // Persist to httpOnly cookie via server endpoint
+    fetch('/api/selected-program', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ programId: id }),
+    }).catch(() => {
+      // Best-effort persistence
+    });
   }, []);
 
   const selectedProgram = programs.find((p) => p.id === selectedProgramId) ?? null;
