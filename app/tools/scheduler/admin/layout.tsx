@@ -26,18 +26,39 @@ import {
   Menu,
 } from 'lucide-react';
 
-const adminNavItems = [
+import type { RoleLevel } from '@/types/database';
+
+interface AdminNavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  tooltip: string;
+  /** Minimum role_level required to see this item. Defaults to 'editor' (all admins). */
+  minRole?: RoleLevel;
+}
+
+const ROLE_RANK: Record<RoleLevel, number> = { master: 3, standard: 2, editor: 1 };
+
+const adminNavItems: AdminNavItem[] = [
   { href: '/admin', label: 'Calendar', icon: LayoutDashboard, tooltip: 'Calendar' },
   { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Event Templates' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Tags' },
   { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Staff & Venues' },
   { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar' },
-  { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'Reports' },
-  { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Versions' },
-  { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import Data' },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Settings' },
-  { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Role Management' },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'Reports', minRole: 'standard' },
+  { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Versions', minRole: 'standard' },
+  { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import Data', minRole: 'standard' },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Settings', minRole: 'master' },
+  { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Role Management', minRole: 'master' },
 ];
+
+function getNavItemsForRole(roleLevel: RoleLevel): AdminNavItem[] {
+  const userRank = ROLE_RANK[roleLevel] ?? 0;
+  return adminNavItems.filter((item) => {
+    const requiredRank = ROLE_RANK[item.minRole ?? 'editor'] ?? 0;
+    return userRank >= requiredRank;
+  });
+}
 
 function SidebarProgramSelector() {
   const { programs, selectedProgramId, setSelectedProgramId, loading } = useProgram();
@@ -90,6 +111,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { selectedProgram, selectedProgramId } = useProgram();
   const [user, setUser] = useState<UserProfile | undefined>();
+  const [roleLevel, setRoleLevel] = useState<RoleLevel>('editor');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const prevProgramIdRef = useRef<string | null>(null);
@@ -133,15 +155,17 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     fetch('/api/auth/me')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!data?.email) return;
-        const fullName = data.email.split('@')[0] || 'User';
+        if (!data?.google_email) return;
+        const fullName = data.display_name || data.google_email.split('@')[0] || 'User';
         const parts = fullName.trim().split(/\s+/);
         const initials =
           parts.length >= 2
             ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
             : fullName.slice(0, 2).toUpperCase();
-        const role = data.role_level || data.role || 'Administrator';
-        setUser({ name: fullName, initials, role });
+        const rl = (data.role_level as RoleLevel) || 'editor';
+        setRoleLevel(rl);
+        const roleLabel = rl === 'master' ? 'Master Admin' : rl === 'standard' ? 'Admin' : 'Editor';
+        setUser({ name: fullName, initials, role: roleLabel });
       });
   }, []);
 
@@ -164,7 +188,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       </a>
       {/* Dark sidebar with program selector */}
       <Sidebar
-        navItems={adminNavItems}
+        navItems={getNavItemsForRole(roleLevel)}
         header={<SidebarProgramSelector />}
         onLogout={handleLogout}
         user={user}

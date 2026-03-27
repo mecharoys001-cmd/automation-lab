@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -32,6 +32,9 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('start_date');

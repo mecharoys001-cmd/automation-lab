@@ -8,17 +8,24 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { requireAdmin } from '@/lib/api-auth';
 
 const COOKIE_NAME = 'symphonix-selected-program';
 const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const cookieStore = await cookies();
   const value = cookieStore.get(COOKIE_NAME)?.value ?? null;
   return NextResponse.json({ selectedProgramId: value });
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { programId } = await request.json();
 
   if (typeof programId !== 'string' || programId.length === 0) {

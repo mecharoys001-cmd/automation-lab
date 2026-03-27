@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
+
     const id = req.nextUrl.searchParams.get("id");
     if (!id) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });

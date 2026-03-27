@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { runScheduler } from '@/lib/scheduler';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 export const maxDuration = 60;
 
@@ -37,6 +37,10 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Schedule generation is destructive (clears drafts) — require standard+
+    const roleErr = requireMinRole(auth.user, 'standard');
+    if (roleErr) return roleErr;
 
     // Parse request body
     const body = await request.json();

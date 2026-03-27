@@ -234,6 +234,37 @@ export async function middleware(request: NextRequest) {
       return redirect
     }
 
+    // ── Role-level enforcement for admin sub-pages ──────────────────────
+    // Enforce minimum role requirements at the page level (defense-in-depth
+    // alongside API-level checks). This prevents lower-privilege admins from
+    // even loading pages they can't use.
+    if (isAdmin && path.startsWith('/tools/scheduler/admin')) {
+      const roleLevel = admin.role_level as string
+      const ROLE_RANK: Record<string, number> = { master: 3, standard: 2, editor: 1 }
+      const userRank = ROLE_RANK[roleLevel] ?? 0
+
+      // Pages requiring master admin (rank 3)
+      const masterPages = ['/tools/scheduler/admin/settings', '/tools/scheduler/admin/roles']
+      // Pages requiring standard admin (rank 2)
+      const standardPages = [
+        '/tools/scheduler/admin/reports',
+        '/tools/scheduler/admin/versions',
+        '/tools/scheduler/admin/import',
+      ]
+
+      const needsMaster = masterPages.some(p => path === p || path.startsWith(p + '/'))
+      const needsStandard = standardPages.some(p => path === p || path.startsWith(p + '/'))
+
+      if ((needsMaster && userRank < 3) || (needsStandard && userRank < 2)) {
+        // Redirect insufficient role to the calendar (default admin page)
+        const url = request.nextUrl.clone()
+        url.pathname = '/tools/scheduler/admin'
+        const redirect = NextResponse.redirect(url)
+        applySecurityHeaders(redirect, nonce)
+        return redirect
+      }
+    }
+
     // Admins trying to access /portal → let them through (admins can see everything)
   }
 

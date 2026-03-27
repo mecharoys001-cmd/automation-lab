@@ -225,9 +225,9 @@ export default function RolesPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    requestCache.fetch<{ email?: string }>('/api/auth/me')
+    requestCache.fetch<{ google_email?: string }>('/api/auth/me')
       .then((data) => {
-        if (data?.email) setCurrentUserEmail(data.email.toLowerCase());
+        if (data?.google_email) setCurrentUserEmail(data.google_email.toLowerCase());
       })
       .catch(() => {});
   }, []);
