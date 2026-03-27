@@ -12,11 +12,11 @@ interface Props {
 }
 
 const cards = [
-  { key: "totalRevenue", label: "Total Revenue", icon: "💰", color: "text-emerald-400" },
-  { key: "totalOrders", label: "Total Orders", icon: "📦", color: "text-blue-400" },
-  { key: "taxCollected", label: "Tax Collected", icon: "🏛️", color: "text-amber-400" },
-  { key: "outstandingBalance", label: "Outstanding Balance", icon: "⏳", color: "text-orange-400" },
-  { key: "refundTotal", label: "Refund Total", icon: "↩️", color: "text-red-400" },
+  { key: "totalRevenue", label: "Total Revenue", icon: "💰", color: "text-emerald-700" },
+  { key: "totalOrders", label: "Total Orders", icon: "📦", color: "text-blue-700" },
+  { key: "taxCollected", label: "Tax Collected", icon: "🏛️", color: "text-amber-700" },
+  { key: "outstandingBalance", label: "Outstanding Balance", icon: "⏳", color: "text-orange-700" },
+  { key: "refundTotal", label: "Refund Total", icon: "↩️", color: "text-red-700" },
 ] as const;
 
 export default function SummaryCards(props: Props) {

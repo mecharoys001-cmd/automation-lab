@@ -92,8 +92,8 @@ export default function CategoryDrilldown({ data, currency }: Props) {
                 <td className="py-2 pr-4 font-medium text-foreground">{row.program}</td>
                 <td className="py-2 pr-4 text-right text-foreground">{row.enrollments}</td>
                 <td className="py-2 pr-4 text-right text-foreground">{fmt(row.totalRevenue)}</td>
-                <td className="py-2 pr-4 text-right text-emerald-400">{fmt(row.paidRevenue)}</td>
-                <td className="py-2 text-right text-orange-400">
+                <td className="py-2 pr-4 text-right text-emerald-700">{fmt(row.paidRevenue)}</td>
+                <td className="py-2 text-right text-orange-700">
                   {row.outstanding > 0 ? fmt(row.outstanding) : "—"}
                 </td>
               </tr>
@@ -103,8 +103,8 @@ export default function CategoryDrilldown({ data, currency }: Props) {
                 <td className="py-2 pr-4 text-foreground">Total</td>
                 <td className="py-2 pr-4 text-right text-foreground">{totals.enrollments}</td>
                 <td className="py-2 pr-4 text-right text-foreground">{fmt(totals.totalRevenue)}</td>
-                <td className="py-2 pr-4 text-right text-emerald-400">{fmt(totals.paidRevenue)}</td>
-                <td className="py-2 text-right text-orange-400">
+                <td className="py-2 pr-4 text-right text-emerald-700">{fmt(totals.paidRevenue)}</td>
+                <td className="py-2 text-right text-orange-700">
                   {totals.outstanding > 0 ? fmt(totals.outstanding) : "—"}
                 </td>
               </tr>

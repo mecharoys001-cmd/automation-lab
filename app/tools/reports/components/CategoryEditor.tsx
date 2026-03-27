@@ -186,7 +186,7 @@ export default function CategoryEditor({ orders, profile: initialProfile, onAppl
                   {rule && (
                     <button
                       onClick={(e) => { e.stopPropagation(); removeRule(rule.id); }}
-                      className="text-red-400 hover:text-red-300"
+                      className="text-red-700 hover:text-red-800"
                       title="Remove this category"
                     >
                       ✕

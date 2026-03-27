@@ -94,6 +94,11 @@ export default function ImpactDashboard() {
   const [editExtTrackingNotes, setEditExtTrackingNotes] = useState('');
   const [editExtSaving, setEditExtSaving] = useState(false);
 
+  // Seed Historical Runs state
+  const [seedCount, setSeedCount] = useState('0');
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedSuccess, setSeedSuccess] = useState('');
+
   // Delete confirmation state
   const [deletingTool, setDeletingTool] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -201,7 +206,40 @@ export default function ImpactDashboard() {
     setEditExtFirstRunDate(s.first_run_date || '');
     setEditExtDescription(s.description || '');
     setEditExtTrackingNotes(s.tracking_notes || '');
+    setSeedCount('0');
+    setSeedSuccess('');
     setEditExtTool(s.tool_id);
+  }
+
+  async function seedRuns(toolId: string) {
+    const count = Number(seedCount);
+    if (!count || count <= 0) return;
+    setSeedLoading(true);
+    setSeedSuccess('');
+    try {
+      const res = await fetch('/api/usage/config/seed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tool_id: toolId,
+          count,
+          first_run_date: editExtFirstRunDate || null,
+          run_frequency: editExtRunFrequency || null,
+          run_interval_days: editExtRunFrequency === 'custom' ? Number(editExtCustomInterval) || 30 : null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Seed failed');
+      }
+      const data = await res.json();
+      setSeedSuccess(`Successfully seeded ${data.events_seeded} historical events.`);
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to seed runs');
+    } finally {
+      setSeedLoading(false);
+    }
   }
 
   async function saveExtTool(toolId: string) {
@@ -411,6 +449,50 @@ export default function ImpactDashboard() {
         <div style={{ marginTop: '1rem' }}>
           <label style={labelStyle}>Tracking Notes</label>
           <textarea value={editExtTrackingNotes} onChange={(e) => setEditExtTrackingNotes(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        </div>
+
+        {/* Backfill Historical Usage */}
+        <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a2e', marginBottom: '4px' }}>
+            Backfill Historical Usage
+          </div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.75rem' }}>
+            Add past usage events based on the tool&apos;s run frequency
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Times Run So Far</label>
+            <input
+              type="number"
+              min="0"
+              value={seedCount}
+              onChange={(e) => { setSeedCount(e.target.value); setSeedSuccess(''); }}
+              style={{ ...inputStyle, width: '100px', textAlign: 'center' }}
+            />
+            <button
+              onClick={() => seedRuns(s.tool_id)}
+              disabled={seedLoading || !Number(seedCount) || Number(seedCount) <= 0 || !editExtRunFrequency || !editExtFirstRunDate}
+              style={{
+                padding: '8px 16px', borderRadius: '6px', border: 'none',
+                background: (!Number(seedCount) || Number(seedCount) <= 0 || !editExtRunFrequency || !editExtFirstRunDate) ? '#cbd5e1' : '#6366f1',
+                color: '#ffffff', fontSize: '13px', fontWeight: 600,
+                cursor: (!Number(seedCount) || Number(seedCount) <= 0 || !editExtRunFrequency || !editExtFirstRunDate) ? 'not-allowed' : 'pointer',
+                fontFamily: "'Montserrat', sans-serif",
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {seedLoading ? 'Seeding...' : 'Seed Runs'}
+            </button>
+          </div>
+          {!editExtRunFrequency || !editExtFirstRunDate ? (
+            <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px' }}>
+              Set a run frequency and first run date above to enable seeding.
+            </div>
+          ) : null}
+          {seedSuccess && (
+            <div style={{ fontSize: '12px', color: '#10b981', marginTop: '6px', fontWeight: 600 }}>
+              {seedSuccess}
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '1.25rem', justifyContent: 'flex-end' }}>

@@ -37,7 +37,7 @@ export default function TopProducts({ data, currency }: Props) {
                   </span>
                 </td>
                 <td className="py-2 pr-4 text-right text-foreground">{item.quantity}</td>
-                <td className="py-2 text-right font-medium text-emerald-400">
+                <td className="py-2 text-right font-medium text-emerald-700">
                   {fmt(item.revenue)}
                 </td>
               </tr>

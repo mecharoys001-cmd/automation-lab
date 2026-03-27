@@ -65,7 +65,7 @@ export default function ColumnMapper({ headers, onConfirm, onCancel }: Props) {
               className="w-44 shrink-0 text-sm text-foreground"
               title={`Map a CSV column to: ${label}`}
             >
-              {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+              {label}{required && <span className="text-red-700 ml-0.5">*</span>}
             </label>
             <select
               value={mapping[field] || ""}

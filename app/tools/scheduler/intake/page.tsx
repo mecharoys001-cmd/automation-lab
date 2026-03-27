@@ -402,7 +402,7 @@ function IntakeForm() {
         <div className="mx-auto max-w-2xl px-4 py-16 sm:py-24">
           <div className="rounded-xl border border-border bg-card p-8 text-center shadow-lg">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-              <svg className="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
@@ -649,7 +649,7 @@ function IntakeForm() {
             <div className="flex items-start justify-between mb-1 gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/20 shrink-0">
-                  <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -752,12 +752,12 @@ function IntakeForm() {
           </div>
 
           {/* ── Validation summary ────────────────────── */}
-          <div role="alert" aria-live="assertive" className={Object.values(errors).some(Boolean) ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400' : ''}>
+          <div role="alert" aria-live="assertive" className={Object.values(errors).some(Boolean) ? 'mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
             {Object.values(errors).some(Boolean) && `Please fix ${Object.values(errors).filter(Boolean).length} error(s) above before submitting.`}
           </div>
 
           {/* ── Error Banner ────────────────────────────── */}
-          <div id="submit-error-banner" role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400' : ''}>
+          <div id="submit-error-banner" role="alert" aria-live="assertive" className={submitState === 'error' && submitError ? 'mb-6 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700' : ''}>
             {submitState === 'error' && submitError ? (
               <>
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

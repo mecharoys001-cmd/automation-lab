@@ -403,7 +403,7 @@ export default function ReportsPage() {
             </div>
 
             {error && (
-              <div className="mt-4 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="mt-4 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
