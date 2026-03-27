@@ -31,33 +31,82 @@ async function autoTrackDueTools(svc: SupabaseClient) {
     .not('next_run_date', 'is', null)
     .lte('next_run_date', todayStr);
 
-  if (!dueTools || dueTools.length === 0) return;
+  // --- Phase 1: advance tools that already have a next_run_date ---
+  if (dueTools && dueTools.length > 0) {
+    for (const tool of dueTools) {
+      const intervalDays = getIntervalDays(tool.run_frequency, tool.run_interval_days);
+      let nextDate = new Date(tool.next_run_date);
 
-  for (const tool of dueTools) {
-    const intervalDays = getIntervalDays(tool.run_frequency, tool.run_interval_days);
-    let nextDate = new Date(tool.next_run_date);
+      // Insert a usage event for each missed run date up to today
+      const eventsToInsert = [];
+      while (nextDate <= today) {
+        eventsToInsert.push({
+          tool_id: tool.tool_id,
+          metadata: { auto_tracked: true },
+          created_at: nextDate.toISOString(),
+        });
+        nextDate.setDate(nextDate.getDate() + intervalDays);
+      }
 
-    // Insert a usage event for each missed run date up to today
-    const eventsToInsert = [];
-    while (nextDate <= today) {
-      eventsToInsert.push({
-        tool_id: tool.tool_id,
-        metadata: { auto_tracked: true },
-        created_at: nextDate.toISOString(),
-      });
-      nextDate.setDate(nextDate.getDate() + intervalDays);
+      if (eventsToInsert.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (svc.from('tool_usage') as any).insert(eventsToInsert);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (svc.from('tool_config') as any)
+          .update({
+            next_run_date: nextDate.toISOString().split('T')[0],
+            updated_at: new Date().toISOString(),
+          })
+          .eq('tool_id', tool.tool_id);
+      }
     }
+  }
 
-    if (eventsToInsert.length > 0) {
+  // --- Phase 2: backfill tools that have first_run_date + run_frequency but 0 usage events ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: backfillCandidates } = await (svc.from('tool_config') as any)
+    .select('*')
+    .eq('is_active', true)
+    .eq('is_external', true)
+    .not('run_frequency', 'is', null)
+    .not('first_run_date', 'is', null);
+
+  if (backfillCandidates && backfillCandidates.length > 0) {
+    for (const tool of backfillCandidates) {
+      // Check if this tool has any usage events at all
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (svc.from('tool_usage') as any).insert(eventsToInsert);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (svc.from('tool_config') as any)
-        .update({
-          next_run_date: nextDate.toISOString().split('T')[0],
-          updated_at: new Date().toISOString(),
-        })
+      const { count } = await (svc.from('tool_usage') as any)
+        .select('*', { count: 'exact', head: true })
         .eq('tool_id', tool.tool_id);
+
+      if ((count || 0) > 0) continue;
+
+      const intervalDays = getIntervalDays(tool.run_frequency, tool.run_interval_days);
+      let runDate = new Date(tool.first_run_date);
+      runDate.setHours(0, 0, 0, 0);
+
+      const eventsToInsert = [];
+      while (runDate <= today) {
+        eventsToInsert.push({
+          tool_id: tool.tool_id,
+          metadata: { auto_tracked: true, backfilled: true },
+          created_at: runDate.toISOString(),
+        });
+        runDate.setDate(runDate.getDate() + intervalDays);
+      }
+
+      if (eventsToInsert.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (svc.from('tool_usage') as any).insert(eventsToInsert);
+        // runDate is now the next future date — set it as next_run_date
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (svc.from('tool_config') as any)
+          .update({
+            next_run_date: runDate.toISOString().split('T')[0],
+            updated_at: new Date().toISOString(),
+          })
+          .eq('tool_id', tool.tool_id);
+      }
     }
   }
 }
