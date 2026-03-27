@@ -2785,3 +2785,14 @@ app/tools/scheduler/components/calendar/WeekView.tsx:1186:                  cons
    Medium: 5
    Low: 5
 
+=== Bug Fixer Run: Fri Mar 27 18:00:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recyZ7KL18DL69PaX
+   Priority: Medium
+   Page: Staff/Venues
+   Category: UNCATEGORIZED
+   Feedback: SPA page navigation times range from 1-3 seconds across admin pages. Staff/Venues is the slowest at ...
+   ⚠️  Previous fix rejected: "No evidence of render time improvements or virtualization."
+
+🔧 Attempting to fix recyZ7KL18DL69PaX...
