@@ -17,6 +17,14 @@ export interface ToolAccessRow {
   granted_at: string;
 }
 
+export interface UserSuite {
+  suite_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  role: string;
+}
+
 /**
  * Check if a user has access to a specific tool.
  * Public tools: always accessible.
@@ -57,7 +65,17 @@ export async function checkToolAccess(
     .ilike('user_email', email)
     .maybeSingle();
 
-  return { hasAccess: !!access, visibility };
+  if (access) {
+    return { hasAccess: true, visibility };
+  }
+
+  // Check suite membership
+  const suiteAccess = await checkSuiteAccess(email, toolId);
+  if (suiteAccess) {
+    return { hasAccess: true, visibility };
+  }
+
+  return { hasAccess: false, visibility };
 }
 
 /**
@@ -91,7 +109,7 @@ export async function getUserAccessibleToolIds(
     (publicTools ?? []).map((t: { tool_id: string }) => t.tool_id),
   );
 
-  // Get granted restricted/hidden tools
+  // Get granted restricted/hidden tools (direct grants)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: grantedAccess } = await (svc.from('tool_access') as any)
     .select('tool_id')
@@ -99,6 +117,18 @@ export async function getUserAccessibleToolIds(
 
   for (const row of grantedAccess ?? []) {
     toolIds.add(row.tool_id);
+  }
+
+  // Get tools from suites the user belongs to
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: suiteTools } = await (svc.from('tool_suite_members') as any)
+    .select('suite_id, tool_suite_tools(tool_id)')
+    .ilike('user_email', email);
+
+  for (const membership of suiteTools ?? []) {
+    for (const st of membership.tool_suite_tools ?? []) {
+      toolIds.add(st.tool_id);
+    }
   }
 
   return Array.from(toolIds) as string[];
@@ -124,4 +154,74 @@ export async function getToolAccessList(
   }
 
   return data ?? [];
+}
+
+/**
+ * Check if a user has access to a tool via suite membership.
+ * Joins tool_suite_members with tool_suite_tools to find a match.
+ */
+export async function checkSuiteAccess(
+  email: string,
+  toolId: string,
+): Promise<boolean> {
+  const svc = createServiceClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (svc.from('tool_suite_members') as any)
+    .select('id, tool_suite_tools!inner(tool_id)')
+    .ilike('user_email', email)
+    .eq('tool_suite_tools.tool_id', toolId)
+    .limit(1);
+
+  return (data ?? []).length > 0;
+}
+
+/**
+ * Get all suites a user belongs to, with their role in each.
+ */
+export async function getUserSuites(
+  email: string,
+): Promise<UserSuite[]> {
+  const svc = createServiceClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (svc.from('tool_suite_members') as any)
+    .select('suite_id, role, tool_suites(name, slug, description)')
+    .ilike('user_email', email);
+
+  if (error) {
+    console.error('[tool-access] getUserSuites error:', error);
+    return [];
+  }
+
+  return (data ?? []).map(
+    (row: { suite_id: string; role: string; tool_suites: { name: string; slug: string; description: string | null } }) => ({
+      suite_id: row.suite_id,
+      name: row.tool_suites.name,
+      slug: row.tool_suites.slug,
+      description: row.tool_suites.description,
+      role: row.role,
+    }),
+  );
+}
+
+/**
+ * Get all tool_ids that belong to a suite.
+ */
+export async function getSuiteToolIds(
+  suiteId: string,
+): Promise<string[]> {
+  const svc = createServiceClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (svc.from('tool_suite_tools') as any)
+    .select('tool_id')
+    .eq('suite_id', suiteId);
+
+  if (error) {
+    console.error('[tool-access] getSuiteToolIds error:', error);
+    return [];
+  }
+
+  return (data ?? []).map((row: { tool_id: string }) => row.tool_id);
 }

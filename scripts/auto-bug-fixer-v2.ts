@@ -157,22 +157,37 @@ async function main() {
     process.exit(0);
   }
   
+  // Check for validation failures
+  const qaPattern = /QA NOTE \(2026-03-\d{2}\): NOT FIXED\. ([^\n]+)/g;
+  const qaMatches = [...bug.feedback.matchAll(qaPattern)];
+  const hasRecentValidationFailure = qaMatches.length > 0;
+  
   console.log(`🐛 Processing bug: ${bug.id}`);
   console.log(`   Priority: ${bug.priority}`);
   console.log(`   Page: ${bug.page || 'Unknown'}`);
   console.log(`   Category: ${categorizeBug(bug.id)}`);
-  console.log(`   Feedback: ${bug.feedback.substring(0, 100)}...\n`);
+  console.log(`   Feedback: ${bug.feedback.substring(0, 100)}...`);
+  
+  if (hasRecentValidationFailure) {
+    const mostRecent = qaMatches[qaMatches.length - 1][1];
+    console.log(`   ⚠️  Previous fix rejected: "${mostRecent}"`);
+  }
+  console.log('');
   
   // Track work
   await startWork(bug.id);
   
   // Check if this bug should be marked as already fixed
+  // BUT: if validation agent rejected it, it's NOT actually fixed
   const category = categorizeBug(bug.id);
-  if (category === 'ALREADY_FIXED') {
+  if (category === 'ALREADY_FIXED' && !hasRecentValidationFailure) {
     await handleAlreadyFixed(bug);
     await completeWork();
     await generateDashboard();
     process.exit(0);
+  } else if (category === 'ALREADY_FIXED' && hasRecentValidationFailure) {
+    console.log(`⚠️  Bug was marked "already fixed" but validation rejected it`);
+    console.log(`   Treating as needs-fix instead\n`);
   }
   
   // Check attempt count

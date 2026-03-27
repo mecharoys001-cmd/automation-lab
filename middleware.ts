@@ -137,11 +137,22 @@ export async function middleware(request: NextRequest) {
           .maybeSingle()
 
         if (!access) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/tools'
-          const redirect = NextResponse.redirect(url)
-          applySecurityHeaders(redirect, nonce)
-          return redirect
+          // Check suite membership — user may belong to a suite containing this tool
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: suiteMember } = await (svc.from('tool_suite_members') as any)
+            .select('id, tool_suite_tools!inner(tool_id)')
+            .ilike('user_email', user.email!)
+            .eq('tool_suite_tools.tool_id', toolSlug)
+            .limit(1)
+            .maybeSingle()
+
+          if (!suiteMember) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/tools'
+            const redirect = NextResponse.redirect(url)
+            applySecurityHeaders(redirect, nonce)
+            return redirect
+          }
         }
       }
     }

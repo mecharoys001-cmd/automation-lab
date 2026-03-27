@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { getUserAccessibleToolIds } from "@/lib/tool-access";
+import { getUserAccessibleToolIds, getUserSuites, getSuiteToolIds } from "@/lib/tool-access";
+import type { UserSuite } from "@/lib/tool-access";
 import { getSiteAdmin, isSiteAdmin } from "@/lib/site-rbac";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -108,11 +109,22 @@ export default async function ToolsPage() {
 
   let accessibleToolIds: string[] | null = null;
   let isAdmin = false;
+  let userSuites: UserSuite[] = [];
+  let suiteToolMap: Record<string, string[]> = {};
 
   if (user?.email) {
     const adminInfo = await getSiteAdmin(user.email);
     isAdmin = isSiteAdmin(adminInfo);
     accessibleToolIds = await getUserAccessibleToolIds(user.email);
+
+    // Fetch suites and their tool IDs
+    userSuites = await getUserSuites(user.email);
+    if (userSuites.length > 0) {
+      const entries = await Promise.all(
+        userSuites.map(async (s) => [s.suite_id, await getSuiteToolIds(s.suite_id)] as const),
+      );
+      suiteToolMap = Object.fromEntries(entries);
+    }
   }
 
   // Filter tools: if we have an access list, only show accessible tools
@@ -120,6 +132,41 @@ export default async function ToolsPage() {
   const visibleTools = accessibleToolIds
     ? tools.filter((t) => accessibleToolIds!.includes(t.id))
     : tools;
+
+  // Build a reverse map: toolId -> suite name (for badge display)
+  const toolSuiteNameMap: Record<string, string> = {};
+  for (const suite of userSuites) {
+    for (const toolId of suiteToolMap[suite.suite_id] ?? []) {
+      toolSuiteNameMap[toolId] = suite.name;
+    }
+  }
+
+  // Group tools by suite
+  const hasSuites = userSuites.length > 0;
+  type ToolGroup = { label: string | null; accent: string | null; tools: typeof visibleTools };
+  let toolGroups: ToolGroup[] = [];
+
+  if (hasSuites) {
+    // Collect tool IDs that belong to any suite
+    const allSuiteToolIds = new Set(Object.values(suiteToolMap).flat());
+    const ungrouped = visibleTools.filter((t) => !allSuiteToolIds.has(t.id));
+    const grouped: ToolGroup[] = [];
+
+    if (ungrouped.length > 0) {
+      grouped.push({ label: null, accent: null, tools: ungrouped });
+    }
+
+    for (const suite of userSuites) {
+      const ids = suiteToolMap[suite.suite_id] ?? [];
+      const suiteTools = visibleTools.filter((t) => ids.includes(t.id));
+      if (suiteTools.length > 0) {
+        grouped.push({ label: suite.name, accent: suiteTools[0]?.accent ?? null, tools: suiteTools });
+      }
+    }
+    toolGroups = grouped;
+  } else {
+    toolGroups = [{ label: null, accent: null, tools: visibleTools }];
+  }
 
   // For admin badges, fetch visibility from tool_config
   let visibilityMap: Record<string, string> = {};
@@ -225,7 +272,40 @@ export default async function ToolsPage() {
           padding: "4rem 1.5rem",
         }}
       >
-        {visibleTools.map((tool) => (
+        {toolGroups.map((group, gi) => (
+          <div key={group.label ?? "__ungrouped"}>
+            {group.label && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "1.5rem",
+                  marginTop: gi > 0 ? "3rem" : 0,
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "var(--color-text-muted)",
+                    margin: 0,
+                  }}
+                >
+                  {group.label}
+                </h3>
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    backgroundColor: "var(--color-border)",
+                  }}
+                />
+              </div>
+            )}
+        {group.tools.map((tool) => (
           <div
             key={tool.id}
             style={{
@@ -283,7 +363,22 @@ export default async function ToolsPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  {toolSuiteNameMap[tool.id] && (
+                    <span
+                      style={{
+                        backgroundColor: "#eff6ff",
+                        color: "#3b82f6",
+                        padding: "4px 10px",
+                        borderRadius: "100px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {toolSuiteNameMap[tool.id]}
+                    </span>
+                  )}
                   {isAdmin && visibilityMap[tool.id] && visibilityMap[tool.id] !== "public" && (
                     <span
                       style={{
@@ -389,6 +484,8 @@ export default async function ToolsPage() {
                 Open {tool.name} →
               </Link>
             </div>
+          </div>
+        ))}
           </div>
         ))}
 

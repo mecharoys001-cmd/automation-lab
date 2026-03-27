@@ -123,25 +123,61 @@ export async function addLazyLoadingToImages(bug: Bug): Promise<FixResult> {
 }
 
 /**
+ * Extract QA validation feedback from bug description
+ */
+function extractQAFeedback(feedback: string): string[] {
+  const qaPattern = /QA NOTE \([^)]+\): NOT FIXED\. ([^\n]+)/g;
+  const matches: string[] = [];
+  let match;
+  
+  while ((match = qaPattern.exec(feedback)) !== null) {
+    matches.push(match[1]);
+  }
+  
+  return matches;
+}
+
+/**
  * Delegate complex fixes to Claude Code
  */
 export async function delegateToClaudeCode(bug: Bug): Promise<FixResult> {
+  const qaFeedback = extractQAFeedback(bug.feedback);
+  const hasValidationFailures = qaFeedback.length > 0;
+  
+  let validationSection = '';
+  if (hasValidationFailures) {
+    const mostRecent = qaFeedback[qaFeedback.length - 1];
+    validationSection = `
+
+**⚠️ VALIDATION AGENT REJECTED PREVIOUS FIX:**
+"${mostRecent}"
+
+**This means:**
+- Previous fix attempt did NOT resolve the issue
+- You must address this specific validation failure
+- The validation agent will test your fix
+- Only mark complete when this specific issue is resolved
+`;
+  }
+  
   const taskPrompt = `Fix Airtable bug ${bug.id}:
 
 **Priority:** ${bug.priority}
 **Page:** ${bug.page}
-**Issue:** ${bug.feedback}
-
+**Issue:** ${bug.feedback.split('QA NOTE')[0].trim()}
+${validationSection}
 **Requirements:**
 1. Read existing code for the ${bug.page} page
-2. Implement the fix described in the issue
+2. ${hasValidationFailures ? 'Address the SPECIFIC validation failure above' : 'Implement the fix described in the issue'}
 3. Test that the build succeeds (npm run build)
-4. Report what you changed
+4. Verify your fix actually resolves the issue
+5. Report what you changed
 
 **DO NOT:**
 - Deploy to production
 - Mark as fixed in Airtable
 - Make unrelated changes
+- Assume code that exists is working
 
 Work in /home/ethan/.openclaw/workspace/automation-lab
 `.replace(/"/g, '\\"');

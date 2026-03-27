@@ -260,12 +260,20 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Explicitly remove admin_programs rows first to avoid relying on
+    // Explicitly remove admin_programs rows first to avoid relying solely on
     // CASCADE which can be slow when the cross-join backfill created many rows.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('admin_programs') as any)
+    const { error: apError } = await (supabase.from('admin_programs') as any)
       .delete()
       .eq('admin_id', id);
+
+    if (apError) {
+      console.error('admin_programs delete failed:', apError.message);
+      return NextResponse.json(
+        { error: 'Failed to clean up admin program associations' },
+        { status: 500 },
+      );
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('admins') as any)

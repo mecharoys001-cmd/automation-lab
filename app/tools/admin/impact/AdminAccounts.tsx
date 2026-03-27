@@ -32,6 +32,7 @@ export default function AdminAccounts() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
@@ -115,9 +116,18 @@ export default function AdminAccounts() {
   };
 
   const handleDelete = async (id: string) => {
+    if (deletingId) return;
     setActionError(null);
+    setDeletingId(id);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
-      const res = await fetch(`/api/site-admins?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/site-admins?id=${id}`, {
+        method: 'DELETE',
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to remove site admin');
@@ -126,7 +136,13 @@ export default function AdminAccounts() {
       await fetchAdmins();
       if (showAuditLog) fetchAuditLog();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Failed to remove admin');
+      clearTimeout(timeout);
+      const message = err instanceof DOMException && err.name === 'AbortError'
+        ? 'Remove request timed out. Please try again.'
+        : err instanceof Error ? err.message : 'Failed to remove admin';
+      setActionError(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -379,16 +395,20 @@ export default function AdminAccounts() {
             <div>
               {confirmDeleteId === admin.id ? (
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>Remove?</span>
+                  <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>
+                    {deletingId === admin.id ? 'Removing...' : 'Remove?'}
+                  </span>
                   <button
                     onClick={() => handleDelete(admin.id)}
-                    style={{ ...btnPrimary, background: '#dc2626', padding: '5px 12px', fontSize: '12px' }}
+                    disabled={!!deletingId}
+                    style={{ ...btnPrimary, background: '#dc2626', padding: '5px 12px', fontSize: '12px', opacity: deletingId ? 0.6 : 1 }}
                   >
-                    Yes
+                    {deletingId === admin.id ? 'Removing...' : 'Yes'}
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(null)}
-                    style={{ ...btnSecondary, padding: '5px 12px', fontSize: '12px' }}
+                    disabled={!!deletingId}
+                    style={{ ...btnSecondary, padding: '5px 12px', fontSize: '12px', opacity: deletingId ? 0.6 : 1 }}
                   >
                     No
                   </button>
@@ -396,7 +416,8 @@ export default function AdminAccounts() {
               ) : (
                 <button
                   onClick={() => { setConfirmDeleteId(admin.id); setActionError(null); }}
-                  style={{ ...btnSecondary, color: '#ef4444', padding: '5px 12px', fontSize: '12px' }}
+                  disabled={!!deletingId}
+                  style={{ ...btnSecondary, color: '#ef4444', padding: '5px 12px', fontSize: '12px', opacity: deletingId ? 0.6 : 1 }}
                 >
                   Remove
                 </button>
