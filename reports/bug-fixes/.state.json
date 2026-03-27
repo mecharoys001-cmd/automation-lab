@@ -1,6 +1,6 @@
 {
-  "currentBug": "rec1VVh3gFc6kRDJF",
-  "startedAt": "2026-03-27T03:30:10.040Z",
-  "attempts": 2,
-  "lastError": "Command failed: claude -p --dangerously-skip-permissions \"Fix Airtable bug rec1VVh3gFc6kRDJF:\n\n**Priority:** High\n**Page:** Settings\n**Issue:** Phase 7 Security: Any unauthenticated user can access any program's data by changing the program_id parameter. Tested by requesting /api/templates?program_id={other_program_id} and /api/tags?program_id={other_program_id} with credentials omitted. Both returned full data (13KB of templates, 3.7KB of tags) for a program the requester has no relationship to. There is no authorization boundary between programs. Recommendation: Validate that the authenticated user has access to the requested program_id before returning data.\n\nQA NOTE (3/25/26): PARTIALLY FIXED. Unauthenticated API calls now return HTML shell instead of JSON data. Cross-program access with authenticated sessions still needs role-based validation.\n\nQA NOTE (2026-03-25): NOT FIXED. Cross-program data access concern persists; localStorage-based program selection is client-side only.\n\nQA NOTE (2026-03-26): NOT FIXED. Cross-program data access concern persists; no role-based validation for authenticated sessions accessing other programs' data.\n\n**Requirements:**\n1. Read existing code for the Settings page\n2. Implement the fix described in the issue\n3. Test that the build succeeds (npm run build)\n4. Report what you changed\n\n**DO NOT:**\n- Deploy to production\n- Mark as fixed in Airtable\n- Make unrelated changes\n\nWork in /home/ethan/.openclaw/workspace/automation-lab\n\"\nWarning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.\n"
+  "currentBug": "recR59MRuWLfEI1u2",
+  "startedAt": "2026-03-27T04:00:15.601Z",
+  "attempts": 1,
+  "lastError": null
 }
