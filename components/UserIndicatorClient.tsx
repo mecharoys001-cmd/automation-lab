@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-export default function UserIndicatorClient({ email }: { email: string | null }) {
+export default function UserIndicatorClient({ email, isAdmin = false }: { email: string | null; isAdmin?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -105,6 +105,34 @@ export default function UserIndicatorClient({ email }: { email: string | null })
               {email}
             </div>
           </div>
+          {isAdmin && (
+            <a
+              href="/tools/admin/impact"
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "10px 16px",
+                background: "none",
+                border: "none",
+                textAlign: "left",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "var(--color-teal, #1282a2)",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                textDecoration: "none",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "var(--color-bg-alt, #f1f5f9)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "none")
+              }
+            >
+              ⚡ Impact Dashboard
+            </a>
+          )}
           <button
             onClick={handleSignOut}
             style={{

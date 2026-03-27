@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useRef, useImperativeHandle, forwardRef, useCallback, useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -59,6 +59,8 @@ export interface SessionCalendarHandle {
   goToDay: (date: string) => void;
 }
 
+const NARROW_BREAKPOINT = 768;
+
 const SessionCalendar = forwardRef<SessionCalendarHandle, SessionCalendarProps>(function SessionCalendar({
   events = [],
   onEventClick,
@@ -67,6 +69,22 @@ const SessionCalendar = forwardRef<SessionCalendarHandle, SessionCalendarProps>(
   onEventDrop,
 }, ref) {
   const calendarRef = useRef<FullCalendar>(null);
+  const [isNarrow, setIsNarrow] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < NARROW_BREAKPOINT : false,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${NARROW_BREAKPOINT - 1}px)`);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsNarrow(e.matches);
+      const api = calendarRef.current?.getApi();
+      if (api) {
+        api.changeView(e.matches ? 'timeGridDay' : 'timeGridWeek');
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   /**
    * Auto-scroll logic: finds the earliest event on the given date and scrolls
@@ -139,15 +157,15 @@ const SessionCalendar = forwardRef<SessionCalendarHandle, SessionCalendarProps>(
   }, [autoScrollToFirstEvent]);
 
   return (
-    <div className="fc-dark-theme">
+    <div className="fc-dark-theme overflow-x-auto">
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView={isNarrow ? 'timeGridDay' : 'timeGridWeek'}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'timeGridWeek,timeGridDay,dayGridMonth',
+          right: isNarrow ? 'timeGridDay,dayGridMonth' : 'timeGridWeek,timeGridDay,dayGridMonth',
         }}
         editable={true}
         selectable={true}

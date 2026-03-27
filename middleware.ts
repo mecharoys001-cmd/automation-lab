@@ -14,13 +14,15 @@ function generateNonce(): string {
 }
 
 function buildCspHeader(nonce: string): string {
+  const isDev = process.env.NODE_ENV === 'development';
   return [
     `default-src 'self'`,
-    // 'nonce-…' lets Next.js inline bootstrap scripts run; 'unsafe-inline' is
-    // ignored by browsers that support nonces (CSP Level 2+) but acts as a
-    // fallback for older browsers.  'unsafe-eval' is required by Next.js in
-    // development; consider removing it in production behind NODE_ENV check.
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
+    // 'nonce-…' lets Next.js inline bootstrap scripts run.  'strict-dynamic'
+    // allows nonce-authenticated scripts to load their own dependencies (SRI
+    // compliance).  'unsafe-inline' is ignored by CSP Level 2+ browsers when a
+    // nonce is present but acts as a fallback for older browsers.  'unsafe-eval'
+    // is required by Next.js HMR in development only.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''} 'unsafe-inline'`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com`,
     `img-src 'self' data: blob:`,
@@ -35,6 +37,9 @@ function applySecurityHeaders(response: NextResponse, nonce: string) {
   response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
+  // Expose the nonce so server components / _document can read it for inline
+  // script tags (SRI compliance).  This header is NOT visible to client JS.
+  response.headers.set('X-Nonce', nonce)
 }
 
 // ---------------------------------------------------------------------------
@@ -137,11 +142,22 @@ export async function middleware(request: NextRequest) {
           .maybeSingle()
 
         if (!access) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/tools'
-          const redirect = NextResponse.redirect(url)
-          applySecurityHeaders(redirect, nonce)
-          return redirect
+          // Check suite membership — user may belong to a suite containing this tool
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: suiteMember } = await (svc.from('tool_suite_members') as any)
+            .select('id, tool_suite_tools!inner(tool_id)')
+            .ilike('user_email', user.email!)
+            .eq('tool_suite_tools.tool_id', toolSlug)
+            .limit(1)
+            .maybeSingle()
+
+          if (!suiteMember) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/tools'
+            const redirect = NextResponse.redirect(url)
+            applySecurityHeaders(redirect, nonce)
+            return redirect
+          }
         }
       }
     }
@@ -167,8 +183,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── RBAC for impact/usage admin ──────────────────────────────────────
-  if (user && path.startsWith('/tools/admin')) {
+  // ── RBAC for suite-manager (managers, not just site admins) ──────────
+  if (user && path.startsWith('/tools/admin/suite-manager')) {
+    // The server component does its own manager check and renders an
+    // appropriate "no access" message, so we just need to ensure the user
+    // is authenticated (already guaranteed above). Let it through.
+  }
+  // ── RBAC for impact/usage admin (all other /tools/admin/* pages) ────
+  else if (user && path.startsWith('/tools/admin')) {
     const { createServiceClient } = await import('@/lib/supabase-service')
     const svc = createServiceClient()
 
@@ -245,11 +267,18 @@ export async function middleware(request: NextRequest) {
 
       // Pages requiring master admin (rank 3)
       const masterPages = ['/tools/scheduler/admin/settings', '/tools/scheduler/admin/roles']
-      // Pages requiring standard admin (rank 2)
+      // Pages requiring standard admin (rank 2) — editors can only access
+      // the calendar view; all management pages require standard+
       const standardPages = [
         '/tools/scheduler/admin/reports',
         '/tools/scheduler/admin/versions',
         '/tools/scheduler/admin/import',
+        '/tools/scheduler/admin/event-templates',
+        '/tools/scheduler/admin/tags',
+        '/tools/scheduler/admin/people',
+        '/tools/scheduler/admin/calendar',
+        '/tools/scheduler/admin/classes',
+        '/tools/scheduler/admin/exceptions',
       ]
 
       const needsMaster = masterPages.some(p => path === p || path.startsWith(p + '/'))

@@ -77,18 +77,17 @@ const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const DAY_FULL_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 // Responsive breakpoints: Desktop 7-day, Tablet 3-day, Mobile 1-day
+function getVisibleDayCount(width: number): number {
+  return width < 640 ? 1 : width < 1024 ? 3 : 7;
+}
+
 function useVisibleDayCount(): number {
-  const [count, setCount] = useState(() => {
-    if (typeof window === 'undefined') return 7;
-    const w = window.innerWidth;
-    return w < 768 ? 1 : w < 1024 ? 3 : 7;
-  });
+  // Always start with 7 on server to avoid hydration mismatch
+  const [count, setCount] = useState(7);
 
   useEffect(() => {
-    const update = () => {
-      const w = window.innerWidth;
-      setCount(w < 768 ? 1 : w < 1024 ? 3 : 7);
-    };
+    const update = () => setCount(getVisibleDayCount(window.innerWidth));
+    update(); // Set correct count on mount
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);

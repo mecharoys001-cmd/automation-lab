@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, parseDate, formatDate } from '@/lib/scheduler/utils';
-import { requireAdmin, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -161,6 +161,10 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Editors can edit existing sessions but not create new ones
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const supabase = createServiceClient();
     const body = await request.json();

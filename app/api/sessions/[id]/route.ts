@@ -33,6 +33,23 @@ export async function PATCH(
 
     const body = await request.json();
 
+    // Editors can only modify a restricted set of session fields (scheduling
+    // details & assignments). Structural changes like program_id or
+    // template_id require standard-level access.
+    if (auth.user.roleLevel === 'editor') {
+      const EDITOR_ALLOWED_FIELDS = new Set([
+        'instructor_id', 'status', 'date', 'start_time', 'end_time',
+        'venue_id', 'name', 'notes', 'tag_names',
+      ]);
+      const disallowed = Object.keys(body).filter(k => !EDITOR_ALLOWED_FIELDS.has(k));
+      if (disallowed.length > 0) {
+        return NextResponse.json(
+          { error: `Editors cannot modify: ${disallowed.join(', ')}. Contact an Admin for structural changes.` },
+          { status: 403 },
+        );
+      }
+    }
+
     // Validate required fields if being updated
     if ('name' in body && (!body.name || !String(body.name).trim())) {
       return NextResponse.json(

@@ -5,6 +5,27 @@ import type { RoleLevel } from '@/types/database';
 
 const VALID_ROLE_LEVELS: RoleLevel[] = ['master', 'standard', 'editor'];
 
+/** Persist a role-change audit entry into the activity_log table. */
+async function logRoleAudit(
+  supabase: ReturnType<typeof createServiceClient>,
+  action: 'create' | 'update' | 'delete',
+  changedByEmail: string,
+  targetEmail: string,
+  metadata: Record<string, unknown>,
+) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('activity_log') as any).insert({
+      event_type: `role_${action}`,
+      user_email: changedByEmail,
+      tool_id: 'scheduler',
+      metadata: { target_email: targetEmail, ...metadata },
+    });
+  } catch (err) {
+    console.error('[role-audit] Failed to write audit log:', err);
+  }
+}
+
 export async function GET() {
   try {
     const auth = await requireAdmin();
@@ -105,15 +126,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(JSON.stringify({
-      audit: 'admin_role_change',
-      action: 'create',
-      email: insertPayload.google_email,
-      role_level: insertPayload.role_level,
+    await logRoleAudit(supabase, 'create', auth.user.email, insertPayload.google_email, {
+      new_role: insertPayload.role_level,
       display_name: body.display_name ?? null,
       admin_id: data.id,
-      timestamp: new Date().toISOString(),
-    }));
+    });
 
     return NextResponse.json({ admin: data }, { status: 201 });
   } catch (err) {
@@ -206,13 +223,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(JSON.stringify({
-      audit: 'admin_role_change',
-      action: 'update',
+    await logRoleAudit(supabase, 'update', auth.user.email, data.google_email, {
       admin_id: id,
       changes: updatePayload,
-      timestamp: new Date().toISOString(),
-    }));
+    });
 
     return NextResponse.json({ admin: data });
   } catch (err) {
@@ -260,12 +274,20 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Explicitly remove admin_programs rows first to avoid relying on
+    // Explicitly remove admin_programs rows first to avoid relying solely on
     // CASCADE which can be slow when the cross-join backfill created many rows.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('admin_programs') as any)
+    const { error: apError } = await (supabase.from('admin_programs') as any)
       .delete()
       .eq('admin_id', id);
+
+    if (apError) {
+      console.error('admin_programs delete failed:', apError.message);
+      return NextResponse.json(
+        { error: 'Failed to clean up admin program associations' },
+        { status: 500 },
+      );
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('admins') as any)
@@ -276,14 +298,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(JSON.stringify({
-      audit: 'admin_role_change',
-      action: 'delete',
+    await logRoleAudit(supabase, 'delete', auth.user.email, existing?.google_email ?? 'unknown', {
       admin_id: id,
-      email: existing?.google_email ?? null,
-      role_level: existing?.role_level ?? null,
-      timestamp: new Date().toISOString(),
-    }));
+      old_role: existing?.role_level ?? null,
+      display_name: existing?.display_name ?? null,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

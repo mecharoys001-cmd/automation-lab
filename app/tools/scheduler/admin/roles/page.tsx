@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import {
@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   GraduationCap,
+  History,
 } from 'lucide-react';
 import type { Admin, Instructor } from '@/types/database';
 import { requestCache } from '@/lib/requestCache';
@@ -225,6 +226,11 @@ export default function RolesPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [currentUserRoleLevel, setCurrentUserRoleLevel] = useState<string | null>(null);
 
+  // ---- Audit log ----
+  const [auditEntries, setAuditEntries] = useState<{ id: string; event_type: string; user_email: string; metadata: Record<string, unknown>; created_at: string }[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const auditFetched = useRef(false);
+
   useEffect(() => {
     requestCache.fetch<{ google_email?: string; role_level?: string }>('/api/auth/me')
       .then((data) => {
@@ -264,6 +270,25 @@ export default function RolesPage() {
   useEffect(() => {
     if (selectedProgramId) fetchAll();
   }, [fetchAll]);
+
+  const fetchAuditLog = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const res = await fetch('/api/admins/audit-log');
+      if (res.ok) {
+        const data = await res.json();
+        setAuditEntries(data.entries ?? []);
+      }
+    } catch { /* ignore */ }
+    finally { setAuditLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (!auditFetched.current) {
+      auditFetched.current = true;
+      fetchAuditLog();
+    }
+  }, [fetchAuditLog]);
 
   // =========================================================================
   // Unified user list
@@ -351,6 +376,7 @@ export default function RolesPage() {
 
       requestCache.invalidate(/\/api\/(admins|instructors)/);
       await fetchAll();
+      fetchAuditLog();
       closeAddModal();
       setToast({ message: `${form.name} added as ${ROLE_META[form.role].label}`, type: 'success', id: Date.now() });
     } catch (err) {
@@ -435,6 +461,7 @@ export default function RolesPage() {
 
       requestCache.invalidate(/\/api\/(admins|instructors)/);
       await fetchAll();
+      fetchAuditLog();
       setEditingId(null);
       setToast({ message: `${user.name} updated to ${ROLE_META[editRole].label}`, type: 'success', id: Date.now() });
     } catch {
@@ -477,6 +504,7 @@ export default function RolesPage() {
       }
 
       // Success - update toast
+      fetchAuditLog();
       setToast({ message: `${userToRemove.name} removed`, type: 'success', id: Date.now() });
     } catch (err) {
       // Rollback optimistic update on error
@@ -703,6 +731,60 @@ export default function RolesPage() {
                           </div>
                         )}
                       </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* ================================================================= */}
+      {/* Audit Log                                                          */}
+      {/* ================================================================= */}
+      <section className={cardBodyClass}>
+        <div className="flex items-center gap-2 mb-4">
+          <History className="w-4 h-4 text-slate-600" />
+          <h2 className={sectionTitleClass}>Role Change History</h2>
+        </div>
+        {auditLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-8 animate-pulse bg-slate-100 rounded-lg" />
+            ))}
+          </div>
+        ) : auditEntries.length === 0 ? (
+          <p className="text-sm text-slate-700 py-4 text-center">No role changes recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th scope="col" className={thClass}>Date</th>
+                  <th scope="col" className={thClass}>Action</th>
+                  <th scope="col" className={thClass}>Changed By</th>
+                  <th scope="col" className={thClass}>Target User</th>
+                  <th scope="col" className={thClass}>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditEntries.map((entry) => {
+                  const meta = entry.metadata ?? {};
+                  const actionLabel = entry.event_type === 'role_create' ? 'Added' : entry.event_type === 'role_update' ? 'Updated' : 'Removed';
+                  const actionColor = entry.event_type === 'role_create' ? 'text-emerald-600' : entry.event_type === 'role_update' ? 'text-blue-600' : 'text-red-600';
+                  const details = entry.event_type === 'role_create'
+                    ? `Role: ${meta.new_role ?? '—'}`
+                    : entry.event_type === 'role_update'
+                    ? `Changed: ${JSON.stringify(meta.changes ?? {})}`
+                    : `Was: ${meta.old_role ?? '—'}`;
+                  return (
+                    <tr key={entry.id} className="border-b border-slate-100">
+                      <td className={`${tdClass} text-slate-600 whitespace-nowrap`}>{new Date(entry.created_at).toLocaleString()}</td>
+                      <td className={`${tdClass} font-medium ${actionColor}`}>{actionLabel}</td>
+                      <td className={`${tdClass} text-slate-600`}>{entry.user_email}</td>
+                      <td className={`${tdClass} text-slate-900`}>{(meta.target_email as string) ?? '—'}</td>
+                      <td className={`${tdClass} text-slate-600 text-xs`}>{details}</td>
                     </tr>
                   );
                 })}

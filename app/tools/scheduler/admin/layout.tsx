@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { ProgramProvider, useProgram } from './ProgramContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Tooltip } from '../components/ui/Tooltip';
+import { ToastContainer } from '../components/ui/ToastContainer';
 
 const OnboardingChecklist = dynamic(
   () => import('../components/OnboardingChecklist').then((m) => m.OnboardingChecklist),
@@ -41,10 +42,10 @@ const ROLE_RANK: Record<RoleLevel, number> = { master: 3, standard: 2, editor: 1
 
 const adminNavItems: AdminNavItem[] = [
   { href: '/admin', label: 'Calendar', icon: LayoutDashboard, tooltip: 'Calendar' },
-  { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Event Templates' },
-  { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Tags' },
-  { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Staff & Venues' },
-  { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar' },
+  { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Event Templates', minRole: 'standard' },
+  { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Tags', minRole: 'standard' },
+  { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Staff & Venues', minRole: 'standard' },
+  { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar', minRole: 'standard' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'Reports', minRole: 'standard' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Versions', minRole: 'standard' },
   { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import Data', minRole: 'standard' },
@@ -52,7 +53,12 @@ const adminNavItems: AdminNavItem[] = [
   { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Role Management', minRole: 'master' },
 ];
 
-function getNavItemsForRole(roleLevel: RoleLevel): AdminNavItem[] {
+/**
+ * Return sidebar items the given role is allowed to see.
+ * Returns an empty array when roleLevel is null (role not yet verified).
+ */
+function getNavItemsForRole(roleLevel: RoleLevel | null): AdminNavItem[] {
+  if (!roleLevel) return [];
   const userRank = ROLE_RANK[roleLevel] ?? 0;
   return adminNavItems.filter((item) => {
     const requiredRank = ROLE_RANK[item.minRole ?? 'editor'] ?? 0;
@@ -111,7 +117,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { selectedProgram, selectedProgramId } = useProgram();
   const [user, setUser] = useState<UserProfile | undefined>();
-  const [roleLevel, setRoleLevel] = useState<RoleLevel>('editor');
+  const [roleLevel, setRoleLevel] = useState<RoleLevel | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const prevProgramIdRef = useRef<string | null>(null);
@@ -155,7 +162,20 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     fetch('/api/auth/me')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!data?.google_email) return;
+        if (!data?.google_email) {
+          setRoleLoaded(true);
+          return;
+        }
+
+        // Instructors/staff should not be in the admin layout (middleware
+        // redirects them to /portal), but defend in depth: if org_role is
+        // 'instructor', leave roleLevel null so no nav items render.
+        const orgRole = data.org_role as string | undefined;
+        if (orgRole === 'instructor') {
+          setRoleLoaded(true);
+          return;
+        }
+
         const fullName = data.display_name || data.google_email.split('@')[0] || 'User';
         const parts = fullName.trim().split(/\s+/);
         const initials =
@@ -166,6 +186,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         setRoleLevel(rl);
         const roleLabel = rl === 'master' ? 'Master Admin' : rl === 'standard' ? 'Admin' : 'Editor';
         setUser({ name: fullName, initials, role: roleLabel });
+        setRoleLoaded(true);
+      })
+      .catch(() => {
+        setRoleLoaded(true);
       });
   }, []);
 
@@ -217,6 +241,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Onboarding Checklist (bottom-right corner) — per-program */}
       {showOnboarding && <OnboardingChecklist onClose={handleCloseOnboarding} />}
+
+      {/* Persistent ARIA live regions for toast notifications */}
+      <ToastContainer />
     </div>
   );
 }

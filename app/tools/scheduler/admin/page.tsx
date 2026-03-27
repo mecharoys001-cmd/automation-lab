@@ -17,6 +17,7 @@ import {
   Tag,
   Printer,
   MoreHorizontal,
+  Upload,
 } from 'lucide-react';
 import { showToast } from '../lib/toast';
 import { Button } from '../components/ui/Button';
@@ -1326,6 +1327,7 @@ function CalendarDashboard() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
+      <h1 className="sr-only">Calendar</h1>
       {/* ================================================================= */}
       {/* TOP BAR                                                            */}
       {/* ================================================================= */}
@@ -1490,24 +1492,47 @@ function CalendarDashboard() {
                   Full Program Year
                 </button>
 
+                <div className="border-t border-slate-100 my-1" />
+
+                {/* Actions section — visible only below lg */}
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-slate-700 uppercase tracking-wider">Actions</div>
+                <button
+                  onClick={() => { handleGenerateSchedule(); setShowOverflowMenu(false); }}
+                  disabled={isGenerating}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-slate-700" />
+                  {isGenerating ? 'Previewing...' : 'Generate Schedule'}
+                </button>
+                <button
+                  onClick={() => { handlePublishSchedule(); setShowOverflowMenu(false); }}
+                  disabled={isPublishing}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5 text-slate-700" />
+                  {isPublishing ? 'Publishing...' : 'Publish Sessions'}
+                </button>
+
               </div>
             </>
           )}
         </div>
 
-        {/* Auto-Generate Draft */}
-        <Button
-          variant="secondary"
-          tooltip="Generate draft events from your weekly template"
-          icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-600 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-600" />}
-          onClick={handleGenerateSchedule}
-          disabled={isGenerating}
-        >
-          {isGenerating ? 'Previewing...' : 'Generate Schedule'}
-        </Button>
+        {/* Auto-Generate Draft — hidden below lg, shown in overflow menu instead */}
+        <div className="hidden lg:block">
+          <Button
+            variant="secondary"
+            tooltip="Generate draft events from your weekly template"
+            icon={isGenerating ? <Loader2 className="w-3.5 h-3.5 text-slate-600 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-slate-600" />}
+            onClick={handleGenerateSchedule}
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Previewing...' : 'Generate Schedule'}
+          </Button>
+        </div>
 
-        {/* Publish Sessions + Readiness */}
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        {/* Publish Sessions + Readiness — hidden below lg, shown in overflow menu instead */}
+        <div className="hidden lg:flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
           <ReadinessWidget programId={selectedProgramId} />
           <Button
             variant="primary"
@@ -1535,6 +1560,7 @@ function CalendarDashboard() {
       {/* ================================================================= */}
       {/* MAIN CONTENT                                                       */}
       {/* ================================================================= */}
+      <h2 className="sr-only">{currentView.charAt(0).toUpperCase() + currentView.slice(1)} View</h2>
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* ---- Week View ---- */}

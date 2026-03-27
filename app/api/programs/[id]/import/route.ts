@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 export async function POST(
   request: NextRequest,
@@ -24,6 +24,10 @@ export async function POST(
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Importing data between programs requires standard-level access or higher
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const { id: targetProgramId } = await params;
     const supabase = createServiceClient();
