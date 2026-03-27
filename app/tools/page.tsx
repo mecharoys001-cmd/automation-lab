@@ -143,7 +143,7 @@ export default async function ToolsPage() {
 
   // Group tools by suite
   const hasSuites = userSuites.length > 0;
-  type ToolGroup = { label: string | null; accent: string | null; tools: typeof visibleTools };
+  type ToolGroup = { label: string | null; accent: string | null; tools: typeof visibleTools; isManager?: boolean };
   let toolGroups: ToolGroup[] = [];
 
   if (hasSuites) {
@@ -160,7 +160,7 @@ export default async function ToolsPage() {
       const ids = suiteToolMap[suite.suite_id] ?? [];
       const suiteTools = visibleTools.filter((t) => ids.includes(t.id));
       if (suiteTools.length > 0) {
-        grouped.push({ label: suite.name, accent: suiteTools[0]?.accent ?? null, tools: suiteTools });
+        grouped.push({ label: suite.name, accent: suiteTools[0]?.accent ?? null, tools: suiteTools, isManager: suite.role === 'manager' });
       }
     }
     toolGroups = grouped;
@@ -303,6 +303,25 @@ export default async function ToolsPage() {
                     backgroundColor: "var(--color-border)",
                   }}
                 />
+                {(group.isManager || isAdmin) && (
+                  <Link
+                    href="/tools/admin/suite-manager"
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "var(--color-teal)",
+                      textDecoration: "none",
+                      padding: "4px 12px",
+                      borderRadius: "20px",
+                      border: "1px solid var(--color-teal)",
+                      transition: "background 0.2s, color 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                    title="Manage who has access to these tools"
+                  >
+                    👥 Manage Access
+                  </Link>
+                )}
               </div>
             )}
         {group.tools.map((tool) => (
