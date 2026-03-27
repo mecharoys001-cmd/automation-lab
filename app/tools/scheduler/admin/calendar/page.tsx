@@ -262,7 +262,7 @@ function MonthGrid({
         </h3>
         {isCurrentMonth && (
           <Tooltip text="This is the current calendar month">
-            <span className="text-[11px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full cursor-help">
+            <span className="text-[11px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full cursor-help">
               Current Month
             </span>
           </Tooltip>
@@ -1323,7 +1323,7 @@ export default function CalendarPage() {
                     }, 100);
                   }}
                   className="text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer appearance-none"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 >
                   <option value="" disabled>Jump to month…</option>
                   {(() => {
@@ -1346,7 +1346,7 @@ export default function CalendarPage() {
               <Tooltip text="Scroll to today's date in the calendar">
                 <button
                   onClick={scrollToToday}
-                  className="text-[13px] font-medium text-blue-500 hover:text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+                  className="text-[13px] font-medium text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
                 >
                   Today
                 </button>
@@ -1500,7 +1500,7 @@ export default function CalendarPage() {
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as CalendarStatusType | 'all')}
                   className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors appearance-none cursor-pointer"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 >
                   <option value="all">All Types</option>
                   <option value="no_school">No School</option>

@@ -108,7 +108,15 @@ export async function POST(request: NextRequest) {
       tool_id, display_name, minutes_per_use, tracking_method,
       description, is_external, tracking_notes,
       run_frequency, run_interval_days, first_run_date, historical_runs,
+      visibility,
     } = body;
+
+    if (visibility !== undefined && !['public', 'restricted', 'hidden'].includes(visibility)) {
+      return NextResponse.json(
+        { error: 'visibility must be one of: public, restricted, hidden' },
+        { status: 400 }
+      );
+    }
 
     if (!tool_id || !display_name || minutes_per_use === undefined || !tracking_method) {
       return NextResponse.json(
@@ -141,6 +149,7 @@ export async function POST(request: NextRequest) {
         first_run_date: first_run_date || null,
         historical_runs: historical_runs ?? 0,
         next_run_date,
+        visibility: visibility ?? 'public',
         is_active: true,
         created_at: now,
         updated_at: now,
@@ -174,7 +183,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tool_id, display_name, minutes_per_use, description, is_active, tracking_notes, run_frequency, run_interval_days, first_run_date } = body;
+    const { tool_id, display_name, minutes_per_use, description, is_active, tracking_notes, run_frequency, run_interval_days, first_run_date, visibility } = body;
+
+    if (visibility !== undefined && !['public', 'restricted', 'hidden'].includes(visibility)) {
+      return NextResponse.json(
+        { error: 'visibility must be one of: public, restricted, hidden' },
+        { status: 400 }
+      );
+    }
 
     if (!tool_id) {
       return NextResponse.json({ error: 'tool_id is required' }, { status: 400 });
@@ -189,6 +205,7 @@ export async function PUT(request: NextRequest) {
     if (run_frequency !== undefined) updates.run_frequency = run_frequency;
     if (run_interval_days !== undefined) updates.run_interval_days = run_interval_days;
     if (first_run_date !== undefined) updates.first_run_date = first_run_date;
+    if (visibility !== undefined) updates.visibility = visibility;
     // Recompute next_run_date if frequency changed
     if (run_frequency !== undefined && first_run_date !== undefined) {
       updates.next_run_date = computeNextRunDate(first_run_date, run_frequency, run_interval_days);

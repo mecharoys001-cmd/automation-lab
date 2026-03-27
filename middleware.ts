@@ -100,6 +100,53 @@ export async function middleware(request: NextRequest) {
     return redirect
   }
 
+  // ── Tool-level access control (visibility gates) ─────────────────────
+  const toolSlug = path.split('/')[2]
+  if (
+    user &&
+    toolSlug &&
+    !path.startsWith('/tools/admin') &&
+    !path.startsWith('/tools/analytics') &&
+    !path.startsWith('/tools/scheduler/intake')
+  ) {
+    const { createServiceClient } = await import('@/lib/supabase-service')
+    const svc = createServiceClient()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: toolConfig } = await (svc.from('tool_config') as any)
+      .select('visibility')
+      .eq('tool_id', toolSlug)
+      .maybeSingle()
+
+    const visibility = toolConfig?.visibility
+    if (visibility === 'restricted' || visibility === 'hidden') {
+      // Check if site admin
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: siteAdmin } = await (svc.from('site_admins') as any)
+        .select('role_level')
+        .ilike('google_email', user.email!)
+        .maybeSingle()
+
+      if (!siteAdmin) {
+        // Check tool_access table
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: access } = await (svc.from('tool_access') as any)
+          .select('id')
+          .eq('tool_id', toolSlug)
+          .ilike('user_email', user.email!)
+          .maybeSingle()
+
+        if (!access) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/tools'
+          const redirect = NextResponse.redirect(url)
+          applySecurityHeaders(redirect, nonce)
+          return redirect
+        }
+      }
+    }
+  }
+
   // ── RBAC for analytics admin ───────────────────────────────────────────
   if (user && path.startsWith('/tools/analytics/admin')) {
     const { createServiceClient } = await import('@/lib/supabase-service')

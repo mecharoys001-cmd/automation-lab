@@ -498,7 +498,7 @@ export function EventPopover({
               {event.status && (
                 <Tooltip text={`Status: ${event.status}`}>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                    event.status === 'published' ? 'bg-green-100 text-green-700' :
+                    event.status === 'published' ? 'bg-green-100 text-green-800' :
                     event.status === 'canceled' ? 'bg-red-100 text-red-700' :
                     event.status === 'draft' ? 'bg-slate-100 text-slate-600' :
                     'bg-blue-100 text-blue-700'

@@ -1,11 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { getUserAccessibleToolIds } from "@/lib/tool-access";
+import { getSiteAdmin, isSiteAdmin } from "@/lib/site-rbac";
 
-export const metadata: Metadata = {
-  title: "Tools | The Automation Lab",
-  description:
-    "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Tools | The Automation Lab",
+    description:
+      "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
+  };
+}
 
 const tools = [
   {
@@ -97,7 +102,42 @@ const tools = [
   },
 ];
 
-export default function ToolsPage() {
+export default async function ToolsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let accessibleToolIds: string[] | null = null;
+  let isAdmin = false;
+
+  if (user?.email) {
+    const adminInfo = await getSiteAdmin(user.email);
+    isAdmin = isSiteAdmin(adminInfo);
+    accessibleToolIds = await getUserAccessibleToolIds(user.email);
+  }
+
+  // Filter tools: if we have an access list, only show accessible tools
+  // Tools not in tool_config are treated as public (accessible to all)
+  const visibleTools = accessibleToolIds
+    ? tools.filter((t) => accessibleToolIds!.includes(t.id))
+    : tools;
+
+  // For admin badges, fetch visibility from tool_config
+  let visibilityMap: Record<string, string> = {};
+  if (isAdmin) {
+    const { createServiceClient } = await import("@/lib/supabase-service");
+    const svc = createServiceClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: configs } = await (svc.from("tool_config") as any)
+      .select("tool_id, visibility");
+    if (configs) {
+      visibilityMap = Object.fromEntries(
+        configs.map((c: { tool_id: string; visibility: string | null }) => [
+          c.tool_id,
+          c.visibility ?? "public",
+        ]),
+      );
+    }
+  }
 
   return (
     <div style={{ paddingTop: "64px", minHeight: "100vh", backgroundColor: "var(--color-bg)", fontFamily: "'Montserrat', sans-serif" }}>
@@ -185,7 +225,7 @@ export default function ToolsPage() {
           padding: "4rem 1.5rem",
         }}
       >
-        {tools.map((tool) => (
+        {visibleTools.map((tool) => (
           <div
             key={tool.id}
             style={{
@@ -243,20 +283,54 @@ export default function ToolsPage() {
                     </div>
                   </div>
                 </div>
-                <span
-                  style={{
-                    backgroundColor: `${tool.accent}12`,
-                    color: tool.accent,
-                    padding: "6px 14px",
-                    borderRadius: "100px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  ● Live
-                </span>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  {isAdmin && visibilityMap[tool.id] && visibilityMap[tool.id] !== "public" && (
+                    <span
+                      style={{
+                        backgroundColor: visibilityMap[tool.id] === "restricted" ? "#fef3c7" : "#f1f5f9",
+                        color: visibilityMap[tool.id] === "restricted" ? "#d97706" : "#64748b",
+                        padding: "4px 10px",
+                        borderRadius: "100px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {visibilityMap[tool.id]}
+                    </span>
+                  )}
+                  {isAdmin && visibilityMap[tool.id] === "public" && (
+                    <span
+                      style={{
+                        backgroundColor: "#dcfce7",
+                        color: "#16a34a",
+                        padding: "4px 10px",
+                        borderRadius: "100px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      Public
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      backgroundColor: `${tool.accent}12`,
+                      color: tool.accent,
+                      padding: "6px 14px",
+                      borderRadius: "100px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    ● Live
+                  </span>
+                </div>
               </div>
 
               <p

@@ -15,6 +15,7 @@ export interface ToolConfig {
   first_run_date: string | null;
   historical_runs: number;
   next_run_date: string | null;
+  visibility: 'public' | 'restricted' | 'hidden' | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +42,7 @@ export interface ToolUsageStats {
   run_interval_days?: number | null;
   first_run_date?: string | null;
   next_run_date?: string | null;
+  visibility?: 'public' | 'restricted' | 'hidden' | null;
   total_uses: number;
   total_minutes_saved: number;
   total_hours_saved: number;

@@ -524,6 +524,24 @@ export default function ImpactDashboard() {
     );
   }
 
+  function visibilityBadge(vis: string | null | undefined) {
+    const v = vis ?? 'public';
+    const styles: Record<string, { bg: string; color: string }> = {
+      public: { bg: '#dcfce7', color: '#16a34a' },
+      restricted: { bg: '#fef3c7', color: '#d97706' },
+      hidden: { bg: '#f1f5f9', color: '#64748b' },
+    };
+    const c = styles[v] ?? styles.public;
+    return (
+      <span style={{
+        fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px',
+        padding: '2px 7px', borderRadius: '4px', background: c.bg, color: c.color,
+      }}>
+        {v}
+      </span>
+    );
+  }
+
   function renderToolCard(s: ToolUsageStats, showLogButton: boolean) {
     const isExternal = s.is_external;
 
@@ -532,12 +550,17 @@ export default function ImpactDashboard() {
       return renderEditExtForm(s);
     }
 
+    // Resolve visibility from config if available
+    const toolConfig = configs.find(c => c.tool_id === s.tool_id);
+    const visibility = toolConfig?.visibility ?? null;
+
     return (
       <div key={s.tool_id} style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontWeight: 700, fontSize: '16px', color: '#1a1a2e' }}>{s.display_name}</span>
+              {visibilityBadge(visibility)}
               {s.run_frequency && (
                 <span style={{
                   fontSize: '11px',
