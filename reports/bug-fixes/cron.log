@@ -1853,3 +1853,308 @@ app/tools/scheduler/components/calendar/WeekView.tsx:1187:                  cons
 ✅ Validation passed
 
 💾 Committing changes...
+🌐 Deploying to production...
+✓ Marking as fixed in Airtable...
+✅ Successfully deployed fix for recMCA68yLLfwXWMq
+   URL: https://automation-mcwkp0xqa-roys-projects-ec3324ba.vercel.app
+📄 Report written: 2026-03-27T05-36-19-903Z_recMCA68yLLfwXWMq.md
+
+✅ Successfully fixed recMCA68yLLfwXWMq
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 17
+   High: 0
+   Medium: 12
+   Low: 5
+
+=== Bug Fixer Run: Fri Mar 27 02:00:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recd54cuIBueuGgxa
+   Priority: Medium
+   Page: Event Templates
+   Category: ALREADY_FIXED
+   Feedback: Active templates cannot be saved without Day of Week, Staff, and Venue fields filled in. Users canno...
+
+✓ Bug recd54cuIBueuGgxa was already fixed
+📄 Report written: 2026-03-27T06-00-05-257Z_recd54cuIBueuGgxa.md
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 02:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recHUg2YPxcsNIQO6
+   Priority: Medium
+   Page: Versions
+   Category: ALREADY_FIXED
+   Feedback: When all 5 version slots are full and Save Draft is clicked, the system silently overwrites the olde...
+
+✓ Bug recHUg2YPxcsNIQO6 was already fixed
+📄 Report written: 2026-03-27T06-30-05-555Z_recHUg2YPxcsNIQO6.md
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 03:00:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: reczKKUMYyG058zk1
+   Priority: Medium
+   Page: Settings
+   Category: UNCATEGORIZED
+   Feedback: Clicking the Remove button for an admin entry in Settings causes the browser to hang/timeout consist...
+
+🔧 Attempting to fix reczKKUMYyG058zk1...
+❌ Fix attempt failed: Command failed: claude -p --dangerously-skip-permissions "Fix Airtable bug reczKKUMYyG058zk1:
+
+**Priority:** Medium
+**Page:** Settings
+**Issue:** Clicking the Remove button for an admin entry in Settings causes the browser to hang/timeout consistently. The action never completes. This blocked cleanup of the test admin entry. May be related to a confirmation dialog or server-side issue.
+
+QA NOTE (3/25/26): NOT FIXED. Remove buttons present but hang behavior could not be safely re-tested.
+
+QA NOTE (2026-03-25): NOT FIXED. Admin Remove button hang behavior could not be safely re-tested; no code change evidence found.
+
+QA NOTE (2026-03-26): NOT FIXED. Admin Remove button hang not safely re-testable.
+
+**Requirements:**
+1. Read existing code for the Settings page
+2. Implement the fix described in the issue
+3. Test that the build succeeds (npm run build)
+4. Report what you changed
+
+**DO NOT:**
+- Deploy to production
+- Mark as fixed in Airtable
+- Make unrelated changes
+
+Work in /home/ethan/.openclaw/workspace/automation-lab
+"
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+
+📄 Report written: 2026-03-27T07-05-05-202Z_reczKKUMYyG058zk1.md
+
+❌ Failed to fix reczKKUMYyG058zk1 (attempt 1/3)
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 15
+   High: 0
+   Medium: 10
+   Low: 5
+
+=== Bug Fixer Run: Fri Mar 27 03:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: reczKKUMYyG058zk1
+   Priority: Medium
+   Page: Settings
+   Category: UNCATEGORIZED
+   Feedback: Clicking the Remove button for an admin entry in Settings causes the browser to hang/timeout consist...
+
+🔧 Attempting to fix reczKKUMYyG058zk1...
+❌ Fix attempt failed: Command failed: claude -p --dangerously-skip-permissions "Fix Airtable bug reczKKUMYyG058zk1:
+
+**Priority:** Medium
+**Page:** Settings
+**Issue:** Clicking the Remove button for an admin entry in Settings causes the browser to hang/timeout consistently. The action never completes. This blocked cleanup of the test admin entry. May be related to a confirmation dialog or server-side issue.
+
+QA NOTE (3/25/26): NOT FIXED. Remove buttons present but hang behavior could not be safely re-tested.
+
+QA NOTE (2026-03-25): NOT FIXED. Admin Remove button hang behavior could not be safely re-tested; no code change evidence found.
+
+QA NOTE (2026-03-26): NOT FIXED. Admin Remove button hang not safely re-testable.
+
+**Requirements:**
+1. Read existing code for the Settings page
+2. Implement the fix described in the issue
+3. Test that the build succeeds (npm run build)
+4. Report what you changed
+
+**DO NOT:**
+- Deploy to production
+- Mark as fixed in Airtable
+- Make unrelated changes
+
+Work in /home/ethan/.openclaw/workspace/automation-lab
+"
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+
+📄 Report written: 2026-03-27T07-35-05-039Z_reczKKUMYyG058zk1.md
+
+❌ Failed to fix reczKKUMYyG058zk1 (attempt 2/3)
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 15
+   High: 0
+   Medium: 10
+   Low: 5
+
+=== Bug Fixer Run: Fri Mar 27 04:00:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 04:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+⚠️  Detected stuck state, clearing...
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 05:00:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 05:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 06:00:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 06:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 07:00:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 07:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 08:00:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 08:30:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 09:00:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 09:30:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 10:00:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 10:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 11:00:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 11:30:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 12:00:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Fri Mar 27 12:30:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recJZvYYyZbXWciKr
+   Priority: High
+   Page: Calendar
+   Category: UNCATEGORIZED
+   Feedback: WCAG 2.1 AA contrast failures across the app: (1) Placeholder text (slate-400 on white) at 2.56:1, n...
+
+🔧 Attempting to fix recJZvYYyZbXWciKr...
+✅ Fix applied successfully
+   Changes: 2
+🚀 Deploying fix for recJZvYYyZbXWciKr...
+📦 Validating build...
+🔍 Running pre-deploy checks...
+📦 Building project...
+✅ Build successful
+✅ Changes detected
+app/api/site-admins/route.ts:105:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:213:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:282:    console.log(JSON.stringify({
+app/api/classes/route.ts:25:    console.log('[GET /api/classes] returning', data?.length ?? 0, 'classes');
+app/api/seed/route.ts:188:    console.log('Templates created:', templates.length);
+app/api/tags/[id]/route.ts:39:    console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
+app/api/tags/[id]/route.ts:64:    console.log('[PATCH /api/tags] updateData:', JSON.stringify(updateData));
+app/api/tags/[id]/route.ts:77:    console.log('[PATCH /api/tags] supabase response:', JSON.stringify({ data, error }));
+app/api/tags/[id]/route.ts:108:    console.log('[PATCH /api/tags] final response tag:', JSON.stringify(data));
+app/api/tags/route.ts:35:    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+app/api/admins/route.ts:85:    console.log(JSON.stringify({
+app/api/admins/route.ts:186:    console.log(JSON.stringify({
+app/api/admins/route.ts:256:    console.log(JSON.stringify({
+app/api/templates/route.ts:26:    console.log('[Templates API] GET request for program:', programId);
+app/api/templates/route.ts:47:    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
+app/tools/scheduler/admin/calendar/page.tsx:192:  console.log('[TOAST] Toast rendered:', toast.message, 'type:', toast.type);
+app/tools/scheduler/admin/page.tsx:581:          console.log('Cancel event:', event.title);
+app/tools/scheduler/admin/page.tsx:585:          console.log('Suggest replacements for:', event.title);
+app/tools/scheduler/admin/page.tsx:589:          console.log('Duplicate event:', event.title);
+app/tools/scheduler/admin/page.tsx:593:          console.log('Delete event:', event.title);
+app/tools/scheduler/admin/page.tsx:634:      console.log('[handleEventDrop] Called with:', {
+app/tools/scheduler/admin/page.tsx:653:          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+app/tools/scheduler/admin/page.tsx:668:      console.log('[handleEventDrop] PATCH body:', patchBody);
+app/tools/scheduler/admin/page.tsx:682:          console.log('[handleEventDrop] PATCH success for', eventId);
+app/tools/scheduler/admin/page.tsx:819:      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
+app/tools/scheduler/admin/page.tsx:838:        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+app/tools/scheduler/admin/page.tsx:886:        console.log(`[${fetchId}] Aborted`);
+app/tools/scheduler/admin/page.tsx:898:    console.log('[useEffect] Triggering fetchSessions due to dependency change');
+app/tools/scheduler/admin/page.tsx:902:      console.log('[useEffect] Cleanup: aborting previous fetch');
+app/tools/scheduler/admin/roles/page.tsx:376:    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
+app/tools/scheduler/admin/roles/page.tsx:378:      console.log('[SAVE_EDIT] Roles match, cancelling edit');
+app/tools/scheduler/admin/roles/page.tsx:385:    console.log('[SAVE_EDIT] wasInstructor:', wasInstructor, 'becomingInstructor:', becomingInstructor);
+app/tools/scheduler/components/calendar/DayView.tsx:320:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/DayView.tsx:331:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/YearView.tsx:522:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/YearView.tsx:532:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/MonthView.tsx:266:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/MonthView.tsx:277:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:137:  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+app/tools/scheduler/components/calendar/WeekView.tsx:223:    console.log('[DRAG START]', {
+app/tools/scheduler/components/calendar/WeekView.tsx:578:    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
+app/tools/scheduler/components/calendar/WeekView.tsx:583:    console.log('Hover leave');
+app/tools/scheduler/components/calendar/WeekView.tsx:646:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/WeekView.tsx:657:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:1129:                          console.log('[DROP] Event drop:', {
+app/tools/scheduler/components/calendar/WeekView.tsx:1187:                  console.log('Render hover state', hoverState);
+⚠️  Warning: console.log statements found (non-commented)
+✅ Validation passed
+
+💾 Committing changes...

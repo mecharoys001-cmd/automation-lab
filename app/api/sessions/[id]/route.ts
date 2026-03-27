@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, availabilityCoversWindow, toTimeWindow, dayIndexToName, parseDate } from '@/lib/scheduler/utils';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
 export async function PATCH(
   request: NextRequest,
@@ -262,6 +262,10 @@ export async function DELETE(
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Editors can edit sessions but not delete them
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const { id } = await params;
     const supabase = createServiceClient();

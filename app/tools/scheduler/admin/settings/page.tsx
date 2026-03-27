@@ -136,7 +136,7 @@ export default function SettingsPage() {
   const [adminForm, setAdminForm] = useState<AdminFormData>(emptyAdminForm);
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
-  const [deletingAdminId] = useState<string | null>(null);
+  const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
   const deletingRef = useRef(false);
   const [confirmRemoveAdmin, setConfirmRemoveAdmin] = useState<Admin | null>(null);
 
@@ -342,17 +342,22 @@ export default function SettingsPage() {
     const adminToRemove = admins.find((a) => a.id === id);
     if (!adminToRemove) return;
 
+    deletingRef.current = true;
+    setDeletingAdminId(id);
+
     // Optimistic update: immediately remove from UI and close modal
     setAdmins((prev) => prev.filter((a) => a.id !== id));
     setConfirmRemoveAdmin(null);
-    deletingRef.current = false;
 
     // Show optimistic success (will be replaced if error occurs)
     setToast({ message: `Removing ${adminToRemove.display_name || adminToRemove.google_email}...`, type: 'success', id: Date.now() });
 
-    // Make API call in background
+    // Make API call in background with timeout to prevent hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
-      const res = await fetch(`/api/admins?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admins?id=${id}`, { method: 'DELETE', signal: controller.signal });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -362,13 +367,20 @@ export default function SettingsPage() {
       // Success - update toast
       setToast({ message: `${adminToRemove.display_name || adminToRemove.google_email} removed`, type: 'success', id: Date.now() });
     } catch (err) {
+      clearTimeout(timeout);
       // Rollback optimistic update on error
       fetchAdmins();
+      const message = err instanceof DOMException && err.name === 'AbortError'
+        ? 'Remove request timed out. Please try again.'
+        : err instanceof Error ? err.message : 'Failed to remove admin. Please try again.';
       setToast({
-        message: err instanceof Error ? err.message : 'Failed to remove admin. Please try again.',
+        message,
         type: 'error',
         id: Date.now(),
       });
+    } finally {
+      deletingRef.current = false;
+      setDeletingAdminId(null);
     }
   }
 

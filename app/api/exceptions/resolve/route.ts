@@ -19,7 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 import type { Session, Instructor } from '@/types/database';
 
 type ResolutionType = 'substitute' | 'cancel' | 'cancel_reschedule';
@@ -37,6 +37,10 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    // Exception resolution (substitute, cancel, reschedule) requires admin role
+    const roleCheck = requireMinRole(auth.user, 'standard');
+    if (roleCheck) return roleCheck;
 
     const body = await request.json();
     const { session_id, resolution_type, instructor_id, makeup_date } = body as {

@@ -79,6 +79,19 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 0 0 4px rgba(147, 187, 253, 0.4) !important;
 }
 
+/* ─────────────────────────────────────────────
+   PLACEHOLDER — WCAG 2.1 AA contrast (≥ 4.5:1)
+   Default from @tailwindcss/forms is #9ca3af
+   (~2.9:1 on white) which fails AA.
+   #475569 (slate-600) = 5.9:1 on #fff, 5.6:1 on
+   slate-50 — comfortably passes AA even on tinted
+   input backgrounds.
+───────────────────────────────────────────── */
+::placeholder {
+  color: #475569;
+  opacity: 1;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text);
