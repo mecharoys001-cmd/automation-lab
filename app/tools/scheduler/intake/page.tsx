@@ -4,7 +4,44 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { AvailabilityJson, DayOfWeek } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
-import { showToast } from '../lib/toast';
+
+// ── Inline Toast Component (React-rendered, visible to QA) ────
+
+interface ToastState {
+  message: string;
+  type: 'success' | 'error';
+  id: number;
+}
+
+function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
+
+  const isSuccess = toast.type === 'success';
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      data-testid="toast"
+      className={`fixed bottom-4 right-4 z-[99999] flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg transition-all ${
+        isSuccess ? 'bg-emerald-500' : 'bg-red-500'
+      }`}
+    >
+      {isSuccess ? (
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      ) : (
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+      )}
+      {toast.message}
+    </div>
+  );
+}
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -127,6 +164,13 @@ function IntakeForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [submitError, setSubmitError] = useState('');
+
+  // React-rendered toast state
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const toastCounter = useRef(0);
+  const fireToast = useCallback((message: string, type: 'success' | 'error') => {
+    setToast({ message, type, id: ++toastCounter.current });
+  }, []);
 
   // Dynamic subjects from API
   const [availableSubjects, setAvailableSubjects] = useState<SubjectTag[]>([]);
@@ -378,20 +422,20 @@ function IntakeForm() {
         }
 
         setSubmitState('success');
-        showToast('Your information has been submitted successfully!', 'success');
+        fireToast('Your information has been submitted successfully!', 'success');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An unexpected error occurred';
         setSubmitError(message);
         setSubmitState('error');
-        showToast(message, 'error');
+        fireToast(message, 'error');
         // Scroll error banner into view so user sees the feedback
         setTimeout(() => {
           document.getElementById('submit-error-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 50);
       }
     },
-    [form, selectedSkills, selectedSlots, validate, honeypot, programId]
+    [form, selectedSkills, selectedSlots, validate, honeypot, programId, fireToast]
   );
 
   const resetForm = useCallback(() => {
@@ -409,8 +453,9 @@ function IntakeForm() {
   if (submitState === 'success') {
     return (
       <div className="dark min-h-screen bg-background text-foreground">
+        {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
         <div className="mx-auto max-w-2xl px-4 py-16 sm:py-24">
-          <div className="rounded-xl border border-border bg-card p-8 text-center shadow-lg">
+          <div data-testid="submission-success" className="rounded-xl border border-border bg-card p-8 text-center shadow-lg">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
               <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -444,6 +489,7 @@ function IntakeForm() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
       <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8 text-center">

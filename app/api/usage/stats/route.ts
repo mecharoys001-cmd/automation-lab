@@ -214,6 +214,7 @@ export async function GET() {
         run_interval_days: config.run_interval_days,
         first_run_date: config.first_run_date,
         next_run_date: config.next_run_date,
+        historical_runs_seeded: config.historical_runs_seeded ?? false,
         total_uses: totalUses,
         total_minutes_saved: totalMinutes,
         total_hours_saved: Math.round((totalMinutes / 60) * 10) / 10,

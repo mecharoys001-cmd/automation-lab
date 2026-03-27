@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import UserIndicator from "./UserIndicator";
 
 const navLinks = [
   { href: "/#about", label: "About" },
@@ -91,6 +92,7 @@ export default function Navigation() {
             >
               Take the Self-Assessment
             </a>
+            <UserIndicator />
           </div>
 
           {/* Mobile toggle */}

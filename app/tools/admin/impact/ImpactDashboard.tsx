@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ToolUsageStats, ToolConfig } from '@/types/usage';
+import { calculateExpectedRuns } from '@/lib/usage-calculations';
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -95,9 +96,9 @@ export default function ImpactDashboard() {
   const [editExtSaving, setEditExtSaving] = useState(false);
 
   // Seed Historical Runs state
-  const [seedCount, setSeedCount] = useState('0');
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedSuccess, setSeedSuccess] = useState('');
+  const [seedError, setSeedError] = useState('');
 
   // Delete confirmation state
   const [deletingTool, setDeletingTool] = useState<string | null>(null);
@@ -115,8 +116,13 @@ export default function ImpactDashboard() {
   const [newRunFrequency, setNewRunFrequency] = useState('');
   const [newCustomInterval, setNewCustomInterval] = useState('30');
   const [newFirstRunDate, setNewFirstRunDate] = useState('');
-  const [newHistoricalRuns, setNewHistoricalRuns] = useState('0');
   const [addSaving, setAddSaving] = useState(false);
+
+  const expectedRuns = useMemo(() => calculateExpectedRuns(
+    editExtFirstRunDate || null,
+    editExtRunFrequency || null,
+    editExtRunFrequency === 'custom' ? Number(editExtCustomInterval) || null : null,
+  ), [editExtFirstRunDate, editExtRunFrequency, editExtCustomInterval]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -206,37 +212,35 @@ export default function ImpactDashboard() {
     setEditExtFirstRunDate(s.first_run_date || '');
     setEditExtDescription(s.description || '');
     setEditExtTrackingNotes(s.tracking_notes || '');
-    setSeedCount('0');
     setSeedSuccess('');
+    setSeedError('');
     setEditExtTool(s.tool_id);
   }
 
   async function seedRuns(toolId: string) {
-    const count = Number(seedCount);
-    if (!count || count <= 0) return;
+    if (expectedRuns <= 0) return;
     setSeedLoading(true);
     setSeedSuccess('');
+    setSeedError('');
     try {
       const res = await fetch('/api/usage/config/seed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tool_id: toolId,
-          count,
-          first_run_date: editExtFirstRunDate || null,
-          run_frequency: editExtRunFrequency || null,
-          run_interval_days: editExtRunFrequency === 'custom' ? Number(editExtCustomInterval) || 30 : null,
-        }),
+        body: JSON.stringify({ tool_id: toolId }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Seed failed');
-      }
       const data = await res.json();
-      setSeedSuccess(`Successfully seeded ${data.events_seeded} historical events.`);
+      if (!res.ok) {
+        if (data.already_seeded) {
+          setSeedError('Historical runs have already been backfilled for this tool.');
+        } else {
+          throw new Error(data.error || 'Seed failed');
+        }
+        return;
+      }
+      setSeedSuccess(`Backfilled ${data.events_seeded} runs`);
       fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to seed runs');
+      setSeedError(err instanceof Error ? err.message : 'Failed to seed runs');
     } finally {
       setSeedLoading(false);
     }
@@ -304,7 +308,6 @@ export default function ImpactDashboard() {
           run_frequency: newRunFrequency || null,
           run_interval_days: newRunFrequency === 'custom' ? Number(newCustomInterval) || 30 : null,
           first_run_date: newFirstRunDate || null,
-          historical_runs: Number(newHistoricalRuns) || 0,
         }),
       });
       if (!res.ok) {
@@ -322,7 +325,6 @@ export default function ImpactDashboard() {
       setNewRunFrequency('');
       setNewCustomInterval('30');
       setNewFirstRunDate('');
-      setNewHistoricalRuns('0');
       fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add tool');
@@ -452,48 +454,80 @@ export default function ImpactDashboard() {
         </div>
 
         {/* Backfill Historical Usage */}
-        <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a2e', marginBottom: '4px' }}>
-            Backfill Historical Usage
-          </div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.75rem' }}>
-            Add past usage events based on the tool&apos;s run frequency
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label style={{ ...labelStyle, marginBottom: 0 }}>Times Run So Far</label>
-            <input
-              type="number"
-              min="0"
-              value={seedCount}
-              onChange={(e) => { setSeedCount(e.target.value); setSeedSuccess(''); }}
-              style={{ ...inputStyle, width: '100px', textAlign: 'center' }}
-            />
-            <button
-              onClick={() => seedRuns(s.tool_id)}
-              disabled={seedLoading || !Number(seedCount) || Number(seedCount) <= 0 || !editExtRunFrequency || !editExtFirstRunDate}
-              style={{
-                padding: '8px 16px', borderRadius: '6px', border: 'none',
-                background: (!Number(seedCount) || Number(seedCount) <= 0 || !editExtRunFrequency || !editExtFirstRunDate) ? '#cbd5e1' : '#6366f1',
-                color: '#ffffff', fontSize: '13px', fontWeight: 600,
-                cursor: (!Number(seedCount) || Number(seedCount) <= 0 || !editExtRunFrequency || !editExtFirstRunDate) ? 'not-allowed' : 'pointer',
-                fontFamily: "'Montserrat', sans-serif",
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {seedLoading ? 'Seeding...' : 'Seed Runs'}
-            </button>
-          </div>
-          {!editExtRunFrequency || !editExtFirstRunDate ? (
-            <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px' }}>
-              Set a run frequency and first run date above to enable seeding.
+        {(() => {
+          const alreadySeeded = s.historical_runs_seeded || false;
+          const canSeed = expectedRuns > 0 && !!editExtRunFrequency && !!editExtFirstRunDate && !alreadySeeded;
+          const freqLabel = editExtRunFrequency === 'custom' && editExtCustomInterval
+            ? `every ${editExtCustomInterval} days`
+            : editExtRunFrequency || 'none';
+          return (
+            <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a2e', marginBottom: '4px' }}>
+                Backfill Historical Usage
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.75rem' }}>
+                Auto-calculated from first run date and frequency
+              </div>
+              {alreadySeeded ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    fontSize: '13px', fontWeight: 600, color: '#10b981',
+                    background: '#dcfce7', padding: '6px 14px', borderRadius: '6px',
+                  }}>
+                    Already backfilled
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      fontSize: '14px', fontWeight: 700, color: expectedRuns > 0 ? '#6366f1' : '#94a3b8',
+                      background: expectedRuns > 0 ? '#eef2ff' : '#f1f5f9',
+                      padding: '6px 14px', borderRadius: '6px',
+                    }}>
+                      {expectedRuns} runs will be backfilled
+                    </span>
+                    <button
+                      onClick={() => seedRuns(s.tool_id)}
+                      disabled={seedLoading || !canSeed}
+                      style={{
+                        padding: '8px 16px', borderRadius: '6px', border: 'none',
+                        background: !canSeed ? '#cbd5e1' : '#6366f1',
+                        color: '#ffffff', fontSize: '13px', fontWeight: 600,
+                        cursor: !canSeed ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Montserrat', sans-serif",
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {seedLoading ? 'Backfilling...' : `Backfill ${expectedRuns} Runs`}
+                    </button>
+                  </div>
+                  {editExtFirstRunDate && editExtRunFrequency ? (
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>
+                      From {editExtFirstRunDate} to today &middot; Based on {freqLabel} schedule
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px' }}>
+                      Set a run frequency and first run date above to enable backfilling.
+                    </div>
+                  )}
+                </>
+              )}
+              {seedSuccess && (
+                <div style={{ fontSize: '12px', color: '#10b981', marginTop: '6px', fontWeight: 600 }}>
+                  {seedSuccess}
+                </div>
+              )}
+              {seedError && (
+                <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '6px', fontWeight: 600 }}>
+                  {seedError}
+                </div>
+              )}
             </div>
-          ) : null}
-          {seedSuccess && (
-            <div style={{ fontSize: '12px', color: '#10b981', marginTop: '6px', fontWeight: 600 }}>
-              {seedSuccess}
-            </div>
-          )}
-        </div>
+          );
+        })()}
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
           <button
@@ -793,6 +827,7 @@ export default function ImpactDashboard() {
               run_interval_days: c.run_interval_days,
               first_run_date: c.first_run_date,
               next_run_date: c.next_run_date,
+              historical_runs_seeded: c.historical_runs_seeded ?? false,
               total_uses: 0,
               total_minutes_saved: 0,
               total_hours_saved: 0,
@@ -949,16 +984,6 @@ export default function ImpactDashboard() {
                     style={inputStyle}
                   />
                 </div>
-                <div>
-                  <label style={labelStyle}>Times Run So Far</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newHistoricalRuns}
-                    onChange={(e) => setNewHistoricalRuns(e.target.value)}
-                    style={inputStyle}
-                  />
-                </div>
               </div>
             </div>
 
@@ -976,7 +1001,6 @@ export default function ImpactDashboard() {
                   setNewRunFrequency('');
                   setNewCustomInterval('30');
                   setNewFirstRunDate('');
-                  setNewHistoricalRuns('0');
                 }}
                 style={{
                   padding: '8px 20px',
