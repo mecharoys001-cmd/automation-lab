@@ -17,16 +17,9 @@ export default async function SymphonixSchedulerPage() {
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
             Automated scheduling platform for educational programs.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Tooltip text="Submit your availability">
-              <Link
-                href="/tools/scheduler/intake"
-                className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
-              >
-                Staff Intake
-              </Link>
-            </Tooltip>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            To submit your availability, use the intake form link provided by your administrator.
+          </p>
         </div>
       </div>
     );
@@ -74,13 +67,12 @@ export default async function SymphonixSchedulerPage() {
               Staff Portal
             </Link>
           </Tooltip>
-          <Tooltip text="Submit your availability">
-            <Link
-              href="/tools/scheduler/intake"
-              className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+          <Tooltip text="Use the intake form link from your administrator">
+            <span
+              className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium opacity-50 cursor-default"
             >
               Staff Intake
-            </Link>
+            </span>
           </Tooltip>
         </div>
         <p className="text-xs text-muted-foreground">

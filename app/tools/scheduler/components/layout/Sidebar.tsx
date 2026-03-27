@@ -135,7 +135,7 @@ export function Sidebar({
               <Tooltip key={item.href} text={item.tooltip} position="right">
                 <Link
                   href={`${basePath}${item.href}`}
-                  className={`flex items-center gap-2.5 w-full rounded-lg px-3 py-2.5 transition-colors ${
+                  className={`flex items-center gap-2.5 w-full rounded-lg px-3 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 ${
                     active
                       ? 'bg-slate-700 text-white font-semibold'
                       : 'text-slate-100 hover:bg-slate-700/50 hover:text-white font-medium'
@@ -164,7 +164,7 @@ export function Sidebar({
             <Tooltip text="Sign out" position="top">
               <button
                 onClick={onLogout}
-                className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0"
+                className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800"
                 aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />

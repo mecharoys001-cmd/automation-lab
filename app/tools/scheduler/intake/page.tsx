@@ -144,10 +144,18 @@ function IntakeForm() {
       .then((res) => res.json())
       .then((data) => {
         const programs = data.programs ?? [];
-        // If a program_id was provided in the URL, use that; otherwise fall back to first valid
-        const targetProgram = urlProgramId
-          ? programs.find((p: { id: string; start_date?: string; end_date?: string }) => p.id === urlProgramId && p.start_date && p.end_date)
-          : programs.find((p: { id: string; start_date?: string; end_date?: string }) => p.start_date && p.end_date);
+        // Require program_id in the URL — external staff won't have session/cookie context
+        if (!urlProgramId) {
+          setHasProgram(false);
+          setProgramError('missing_param');
+          setSubjectsLoading(false);
+          setProgramLoading(false);
+          return;
+        }
+        const targetProgram = programs.find(
+          (p: { id: string; start_date?: string; end_date?: string }) =>
+            p.id === urlProgramId && p.start_date && p.end_date
+        );
         if (targetProgram) {
           setHasProgram(true);
           setProgramId(targetProgram.id);
@@ -165,11 +173,13 @@ function IntakeForm() {
             .finally(() => setSubjectsLoading(false));
         } else {
           setHasProgram(false);
+          setProgramError('not_configured');
           setSubjectsLoading(false);
         }
       })
       .catch(() => {
         setHasProgram(false);
+        setProgramError('not_configured');
         setSubjectsLoading(false);
       })
       .finally(() => setProgramLoading(false));
@@ -444,7 +454,17 @@ function IntakeForm() {
         </div>
 
         {/* Program check banner */}
-        {!programLoading && !hasProgram && (
+        {!programLoading && !hasProgram && programError === 'missing_param' && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-6 text-center">
+            <p className="text-sm text-red-800 font-medium">
+              This form link is incomplete.
+            </p>
+            <p className="text-xs text-red-800/70 mt-1">
+              Please ask your administrator for the correct intake form URL with a program parameter.
+            </p>
+          </div>
+        )}
+        {!programLoading && !hasProgram && programError === 'not_configured' && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 mb-6 text-center">
             <p className="text-sm text-amber-800 font-medium">
               This form is not yet available. The scheduling program has not been configured.
