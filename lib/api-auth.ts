@@ -12,8 +12,20 @@ export interface AuthUser {
   roleLevel: RoleLevel;
 }
 
+/** Authenticated org member — either an admin or an instructor (staff). */
+export interface OrgUser {
+  id: string;
+  email: string;
+  orgRole: 'admin' | 'instructor';
+  /** Only set when orgRole === 'admin' */
+  roleLevel: RoleLevel | null;
+}
+
 type AuthSuccess = { user: AuthUser; error: null };
 type AuthFailure = { user: null; error: NextResponse };
+
+type OrgAuthSuccess = { user: OrgUser; error: null };
+type OrgAuthFailure = { user: null; error: NextResponse };
 
 // ── Core auth check ─────────────────────────────────────────────────────────
 
@@ -151,4 +163,69 @@ export async function getAccessibleProgramIds(
     .eq('admin_id', authUser.id);
 
   return (data ?? []).map((row: { program_id: string }) => row.program_id);
+}
+
+// ── Org-level auth (admins + instructors) ───────────────────────────────────
+
+/**
+ * Authenticate any org member — admin or instructor.
+ * Use this for routes that instructors (staff) need to access, like the
+ * staff portal viewing their own schedule.
+ */
+export async function requireOrgMember(): Promise<OrgAuthSuccess | OrgAuthFailure> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return {
+      user: null,
+      error: NextResponse.json({ error: 'Authentication required' }, { status: 401 }),
+    };
+  }
+
+  const service = createServiceClient();
+
+  // Check admins table first (higher privilege)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: admin } = await (service.from('admins') as any)
+    .select('id, role_level')
+    .eq('google_email', user.email)
+    .maybeSingle();
+
+  if (admin) {
+    return {
+      user: {
+        id: admin.id,
+        email: user.email,
+        orgRole: 'admin',
+        roleLevel: admin.role_level as RoleLevel,
+      },
+      error: null,
+    };
+  }
+
+  // Check instructors table
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: instructor } = await (service.from('instructors') as any)
+    .select('id')
+    .eq('email', user.email)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (instructor) {
+    return {
+      user: {
+        id: instructor.id,
+        email: user.email,
+        orgRole: 'instructor',
+        roleLevel: null,
+      },
+      error: null,
+    };
+  }
+
+  return {
+    user: null,
+    error: NextResponse.json({ error: 'Forbidden: org membership required' }, { status: 403 }),
+  };
 }

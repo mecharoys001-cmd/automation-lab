@@ -262,11 +262,18 @@ export async function middleware(request: NextRequest) {
 
       // Pages requiring master admin (rank 3)
       const masterPages = ['/tools/scheduler/admin/settings', '/tools/scheduler/admin/roles']
-      // Pages requiring standard admin (rank 2)
+      // Pages requiring standard admin (rank 2) — editors can only access
+      // the calendar view; all management pages require standard+
       const standardPages = [
         '/tools/scheduler/admin/reports',
         '/tools/scheduler/admin/versions',
         '/tools/scheduler/admin/import',
+        '/tools/scheduler/admin/event-templates',
+        '/tools/scheduler/admin/tags',
+        '/tools/scheduler/admin/people',
+        '/tools/scheduler/admin/calendar',
+        '/tools/scheduler/admin/classes',
+        '/tools/scheduler/admin/exceptions',
       ]
 
       const needsMaster = masterPages.some(p => path === p || path.startsWith(p + '/'))

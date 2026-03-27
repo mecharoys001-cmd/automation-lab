@@ -42,10 +42,10 @@ const ROLE_RANK: Record<RoleLevel, number> = { master: 3, standard: 2, editor: 1
 
 const adminNavItems: AdminNavItem[] = [
   { href: '/admin', label: 'Calendar', icon: LayoutDashboard, tooltip: 'Calendar' },
-  { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Event Templates' },
-  { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Tags' },
-  { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Staff & Venues' },
-  { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar' },
+  { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Event Templates', minRole: 'standard' },
+  { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Tags', minRole: 'standard' },
+  { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Staff & Venues', minRole: 'standard' },
+  { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar', minRole: 'standard' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'Reports', minRole: 'standard' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Versions', minRole: 'standard' },
   { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import Data', minRole: 'standard' },
