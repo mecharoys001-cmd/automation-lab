@@ -14,13 +14,15 @@ function generateNonce(): string {
 }
 
 function buildCspHeader(nonce: string): string {
+  const isDev = process.env.NODE_ENV === 'development';
   return [
     `default-src 'self'`,
-    // 'nonce-…' lets Next.js inline bootstrap scripts run; 'unsafe-inline' is
-    // ignored by browsers that support nonces (CSP Level 2+) but acts as a
-    // fallback for older browsers.  'unsafe-eval' is required by Next.js in
-    // development; consider removing it in production behind NODE_ENV check.
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
+    // 'nonce-…' lets Next.js inline bootstrap scripts run.  'strict-dynamic'
+    // allows nonce-authenticated scripts to load their own dependencies (SRI
+    // compliance).  'unsafe-inline' is ignored by CSP Level 2+ browsers when a
+    // nonce is present but acts as a fallback for older browsers.  'unsafe-eval'
+    // is required by Next.js HMR in development only.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''} 'unsafe-inline'`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com`,
     `img-src 'self' data: blob:`,
@@ -35,6 +37,9 @@ function applySecurityHeaders(response: NextResponse, nonce: string) {
   response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
+  // Expose the nonce so server components / _document can read it for inline
+  // script tags (SRI compliance).  This header is NOT visible to client JS.
+  response.headers.set('X-Nonce', nonce)
 }
 
 // ---------------------------------------------------------------------------

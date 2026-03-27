@@ -493,7 +493,7 @@ function IntakeForm() {
       <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Staff Intake Form</h1>
+          <h1 id="intake-form-heading" className="text-2xl font-bold sm:text-3xl">Staff Intake Form</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Please provide your contact information, event types, and weekly availability.
           </p>
@@ -521,7 +521,7 @@ function IntakeForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} role="form" noValidate>
+        <form onSubmit={handleSubmit} aria-labelledby="intake-form-heading" noValidate>
           {/* Honeypot — hidden from humans, caught by bots */}
           <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <label htmlFor="website">Website</label>

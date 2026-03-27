@@ -1327,6 +1327,7 @@ function CalendarDashboard() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
+      <h1 className="sr-only">Calendar</h1>
       {/* ================================================================= */}
       {/* TOP BAR                                                            */}
       {/* ================================================================= */}
@@ -1559,6 +1560,7 @@ function CalendarDashboard() {
       {/* ================================================================= */}
       {/* MAIN CONTENT                                                       */}
       {/* ================================================================= */}
+      <h2 className="sr-only">{currentView.charAt(0).toUpperCase() + currentView.slice(1)} View</h2>
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* ---- Week View ---- */}
