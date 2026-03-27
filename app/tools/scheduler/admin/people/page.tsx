@@ -296,7 +296,7 @@ const StaffCard = memo(function StaffCard({
     <div
       onClick={() => onOpenDetail(inst)}
       className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
-      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 220px' }}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 220px', contain: 'layout style paint' }}
     >
       {/* Card Header */}
       <div className="flex items-start justify-between">
@@ -331,22 +331,13 @@ const StaffCard = memo(function StaffCard({
         </div>
       </div>
 
-      {/* Contact Info — lightweight text with click-to-copy via card detail modal */}
+      {/* Contact — single line, no icon components (saves ~8 DOM nodes) */}
       {(inst.email || inst.phone) && (
-        <div className="flex flex-col gap-1">
-          {inst.email && (
-            <span className="flex items-center gap-1.5 text-xs text-blue-500 truncate">
-              <Mail className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
-              {inst.email}
-            </span>
-          )}
-          {inst.phone && (
-            <span className="flex items-center gap-1.5 text-xs text-slate-600 truncate">
-              <Phone className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
-              {inst.phone}
-            </span>
-          )}
-        </div>
+        <p className="text-xs text-slate-600 truncate">
+          {inst.email && <span className="text-blue-500">{inst.email}</span>}
+          {inst.email && inst.phone && <span className="mx-1.5 text-slate-300">|</span>}
+          {inst.phone && <span>{inst.phone}</span>}
+        </p>
       )}
 
       {/* Subject Pills — capped at MAX_VISIBLE_SKILLS */}
@@ -379,27 +370,27 @@ const StaffCard = memo(function StaffCard({
       {/* Weekly Availability — compact SVG (replaces ~35 DOM elements) */}
       <AvailabilitySvg availability={inst.availability_json} />
 
-      {/* View on Calendar Link */}
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-      <div onClick={(e) => e.stopPropagation()}>
-        <Link
-          href={`/tools/scheduler/admin?instructor=${inst.id}`}
-          title="Jump to calendar filtered to this staff member"
-          className="text-xs font-medium text-blue-500 hover:text-blue-600"
+      {/* Footer: Calendar link + Edit — single row, no wrapper divs */}
+      <div className="flex items-center justify-between">
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+        <span onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={`/tools/scheduler/admin?instructor=${inst.id}`}
+            title="Jump to calendar filtered to this staff member"
+            className="text-xs font-medium text-blue-500 hover:text-blue-600"
+          >
+            View on Calendar &rarr;
+          </Link>
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(inst); }}
+          aria-label={`Edit ${fullName}`}
+          title={`Edit ${fullName}`}
+          className="w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
         >
-          View on Calendar &rarr;
-        </Link>
+          <span className="text-slate-700 text-xs">&#9998;</span>
+        </button>
       </div>
-
-      {/* Edit Button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onEdit(inst); }}
-        aria-label={`Edit ${fullName}`}
-        title={`Edit ${fullName}`}
-        className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
-      >
-        <Edit2 className="w-3.5 h-3.5 text-slate-700" />
-      </button>
     </div>
   );
 });
@@ -421,7 +412,7 @@ const VenueCard = memo(function VenueCard({
     <div
       onClick={() => onSelect(venue)}
       className="group relative bg-white rounded-lg shadow-[0_1px_3px_#0000000A] border border-slate-200 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
-      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 160px' }}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 160px', contain: 'layout style paint' }}
     >
       {/* Header */}
       <div className="min-w-0">
@@ -445,35 +436,32 @@ const VenueCard = memo(function VenueCard({
         </div>
       )}
 
-      {/* Capacity */}
-      <div className="flex items-center gap-1.5" title={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>
-        <Users className="w-3.5 h-3.5 text-slate-600" />
-        <span className="text-[13px] text-slate-600">
-          Capacity: {venue.max_capacity ?? 'Unlimited'}
+      {/* Capacity — text only, no icon component */}
+      <p className="text-[13px] text-slate-600" title={`Maximum capacity: ${venue.max_capacity ?? 'Unlimited'}`}>
+        Capacity: {venue.max_capacity ?? 'Unlimited'}
+      </p>
+
+      {/* Footer: Schedule link + Edit — single row */}
+      <div className="flex items-center justify-between">
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+        <span onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={`/tools/scheduler/admin?venue=${venue.id}`}
+            title="View venue schedule on the calendar"
+            className="text-xs font-medium text-blue-500 hover:text-blue-600"
+          >
+            View Schedule &rarr;
+          </Link>
         </span>
-      </div>
-
-      {/* View Schedule Link */}
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-      <div onClick={(e) => e.stopPropagation()}>
-        <Link
-          href={`/tools/scheduler/admin?venue=${venue.id}`}
-          title="View venue schedule on the calendar"
-          className="text-xs font-medium text-blue-500 hover:text-blue-600"
+        <button
+          onClick={(e) => { e.stopPropagation(); onSelect(venue); }}
+          aria-label={`Edit ${venue.name}`}
+          title={`Edit ${venue.name}`}
+          className="w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
         >
-          View Schedule &rarr;
-        </Link>
+          <span className="text-slate-700 text-xs">&#9998;</span>
+        </button>
       </div>
-
-      {/* Edit Button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onSelect(venue); }}
-        aria-label={`Edit ${venue.name}`}
-        title={`Edit ${venue.name}`}
-        className="absolute bottom-3 right-3 w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors opacity-0 group-hover:opacity-100"
-      >
-        <Edit2 className="w-3.5 h-3.5 text-slate-700" />
-      </button>
     </div>
   );
 });
@@ -1849,13 +1837,13 @@ export default function PeoplePage() {
           ) : (
             <div
               className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-              data-paginated="true"
-              data-page-size={ITEMS_PER_PAGE}
-              data-total-items={filtered.length}
-              data-current-page={safeStaffPage}
-              data-total-pages={staffTotalPages}
               role="list"
-              aria-label={`Staff members, page ${safeStaffPage} of ${staffTotalPages}`}
+              aria-label={`Staff members – page ${safeStaffPage} of ${staffTotalPages}`}
+              data-paginated="true"
+              data-total-items={filtered.length}
+              data-page-size={ITEMS_PER_PAGE}
+              data-current-page={safeStaffPage}
+              data-rendered-items={paginatedStaff.length}
             >
               {paginatedStaff.map((inst) => (
                 <StaffCard
@@ -1869,46 +1857,43 @@ export default function PeoplePage() {
             </div>
           )}
 
-          {/* Staff Pagination */}
-          {!loadingAll && filtered.length > 0 && (
-            <nav className="flex items-center justify-between pt-3" aria-label="Staff pagination">
+          {/* Pagination controls */}
+          {!loadingAll && filtered.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-3">
               <span className="text-sm text-slate-600">
-                Showing {(safeStaffPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeStaffPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                Showing {(safeStaffPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeStaffPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} staff
               </span>
-              {staffTotalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={safeStaffPage <= 1}
-                    onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
-                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-slate-700" />
-                  </button>
-                  {Array.from({ length: staffTotalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setStaffPage(p)}
-                      className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
-                        p === safeStaffPage
-                          ? 'bg-blue-500 text-white'
-                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                  <button
-                    disabled={safeStaffPage >= staffTotalPages}
-                    onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
-                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="w-4 h-4 text-slate-700" />
-                  </button>
-                </div>
-              )}
-            </nav>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                  disabled={safeStaffPage <= 1}
+                  aria-label="Previous page"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-medium text-slate-700">
+                  {safeStaffPage} / {staffTotalPages}
+                </span>
+                <button
+                  onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
+                  disabled={safeStaffPage >= staffTotalPages}
+                  aria-label="Next page"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Item count (single page) */}
+          {!loadingAll && filtered.length > 0 && filtered.length <= ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-3">
+              <span className="text-sm text-slate-600">
+                {filtered.length} staff member{filtered.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           )}
         </section>
 
@@ -1970,13 +1955,13 @@ export default function PeoplePage() {
           ) : (
             <div
               className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-              data-paginated="true"
-              data-page-size={ITEMS_PER_PAGE}
-              data-total-items={filteredVenues.length}
-              data-current-page={safeVenuePage}
-              data-total-pages={venueTotalPages}
               role="list"
-              aria-label={`Venues, page ${safeVenuePage} of ${venueTotalPages}`}
+              aria-label={`Venues – page ${safeVenuePage} of ${venueTotalPages}`}
+              data-paginated="true"
+              data-total-items={filteredVenues.length}
+              data-page-size={ITEMS_PER_PAGE}
+              data-current-page={safeVenuePage}
+              data-rendered-items={paginatedVenues.length}
             >
               {paginatedVenues.map((venue) => (
                 <VenueCard
@@ -1988,46 +1973,43 @@ export default function PeoplePage() {
             </div>
           )}
 
-          {/* Venue Pagination */}
-          {!loadingVenues && filteredVenues.length > 0 && (
-            <nav className="flex items-center justify-between pt-3" aria-label="Venue pagination">
+          {/* Pagination controls */}
+          {!loadingVenues && filteredVenues.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-3">
               <span className="text-sm text-slate-600">
-                Showing {(safeVenuePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeVenuePage * ITEMS_PER_PAGE, filteredVenues.length)} of {filteredVenues.length}
+                Showing {(safeVenuePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeVenuePage * ITEMS_PER_PAGE, filteredVenues.length)} of {filteredVenues.length} venue{filteredVenues.length !== 1 ? 's' : ''}
               </span>
-              {venueTotalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={safeVenuePage <= 1}
-                    onClick={() => setVenuePage((p) => Math.max(1, p - 1))}
-                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-slate-700" />
-                  </button>
-                  {Array.from({ length: venueTotalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setVenuePage(p)}
-                      className={`min-w-[32px] h-8 rounded-md text-sm font-medium transition-colors ${
-                        p === safeVenuePage
-                          ? 'bg-blue-500 text-white'
-                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                  <button
-                    disabled={safeVenuePage >= venueTotalPages}
-                    onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))}
-                    className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="w-4 h-4 text-slate-700" />
-                  </button>
-                </div>
-              )}
-            </nav>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setVenuePage((p) => Math.max(1, p - 1))}
+                  disabled={safeVenuePage <= 1}
+                  aria-label="Previous venue page"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-medium text-slate-700">
+                  {safeVenuePage} / {venueTotalPages}
+                </span>
+                <button
+                  onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))}
+                  disabled={safeVenuePage >= venueTotalPages}
+                  aria-label="Next venue page"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Item count (single page) */}
+          {!loadingVenues && filteredVenues.length > 0 && filteredVenues.length <= ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-3">
+              <span className="text-sm text-slate-600">
+                {filteredVenues.length} venue{filteredVenues.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           )}
         </section>
       </div>
@@ -2082,8 +2064,8 @@ export default function PeoplePage() {
         />
       )}
 
-      {/* ── Venue CSV Import Dialog ─────────────────────────── */}
-      <CsvImportDialog
+      {/* ── Venue CSV Import Dialog (lazy-mounted) ───────────── */}
+      {venueImportOpen && <CsvImportDialog
         open={venueImportOpen}
         onClose={() => setVenueImportOpen(false)}
         title="Import Venues from CSV"
@@ -2130,10 +2112,10 @@ export default function PeoplePage() {
         }}
         exampleCsv={VENUE_CSV_EXAMPLE}
         templateFilename="venues.csv"
-      />
+      />}
 
-      {/* ── Instructor CSV Import Dialog ──────────────────── */}
-      <CsvImportDialog
+      {/* ── Instructor CSV Import Dialog (lazy-mounted) ────── */}
+      {instructorImportOpen && <CsvImportDialog
         open={instructorImportOpen}
         onClose={() => setInstructorImportOpen(false)}
         title="Import Staff from CSV"
@@ -2170,7 +2152,7 @@ export default function PeoplePage() {
         }}
         exampleCsv={INSTRUCTOR_CSV_EXAMPLE}
         templateFilename="staff.csv"
-      />
+      />}
 
       {/* ── Toast notifications ───────────────────────────── */}
       {toast && (
