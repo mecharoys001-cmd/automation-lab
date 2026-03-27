@@ -26,11 +26,14 @@ import { Badge } from '../components/ui/Badge';
 import { Tooltip } from '../components/ui/Tooltip';
 import { FilterBar } from '../components/layout/FilterBar';
 import type { ActiveFilters, FilterConfig } from '../components/layout/FilterBar';
-import { WeekView } from '../components/calendar/WeekView';
+import dynamic from 'next/dynamic';
 import type { EventTemplate } from '../components/calendar/WeekView';
-import { MonthView } from '../components/calendar/MonthView';
-import { DayView } from '../components/calendar/DayView';
-import { YearView } from '../components/calendar/YearView';
+
+// Code-split heavy calendar views — only the active view is loaded
+const WeekView = dynamic(() => import('../components/calendar/WeekView').then(m => ({ default: m.WeekView })), { ssr: false });
+const MonthView = dynamic(() => import('../components/calendar/MonthView').then(m => ({ default: m.MonthView })), { ssr: false });
+const DayView = dynamic(() => import('../components/calendar/DayView').then(m => ({ default: m.DayView })), { ssr: false });
+const YearView = dynamic(() => import('../components/calendar/YearView').then(m => ({ default: m.YearView })), { ssr: false });
 import { EventContextMenu } from '../components/calendar/EventContextMenu';
 import type { ContextMenuAction } from '../components/calendar/EventContextMenu';
 import { EVENT_COLORS } from '../components/calendar/types';

@@ -543,7 +543,7 @@ function IntakeForm() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* First Name */}
               <div>
-                <label htmlFor="first_name" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                <label htmlFor="first_name" className="block text-sm font-medium text-muted-foreground mb-1.5">
                   First Name <span className="text-red-700">*</span>
                 </label>
                 <Tooltip text="Enter your first name" className="w-full">
@@ -551,6 +551,7 @@ function IntakeForm() {
                     id="first_name"
                     type="text"
                     required
+                    autoComplete="given-name"
                     aria-required="true"
                     aria-invalid={!!errors.first_name}
                     aria-describedby={errors.first_name ? 'first_name-error' : undefined}
@@ -567,7 +568,7 @@ function IntakeForm() {
 
               {/* Last Name */}
               <div>
-                <label htmlFor="last_name" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                <label htmlFor="last_name" className="block text-sm font-medium text-muted-foreground mb-1.5">
                   Last Name <span className="text-red-700">*</span>
                 </label>
                 <Tooltip text="Enter your last name" className="w-full">
@@ -575,6 +576,7 @@ function IntakeForm() {
                     id="last_name"
                     type="text"
                     required
+                    autoComplete="family-name"
                     aria-required="true"
                     aria-invalid={!!errors.last_name}
                     aria-describedby={errors.last_name ? 'last_name-error' : undefined}
@@ -591,7 +593,7 @@ function IntakeForm() {
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1.5">
                   Email <span className="text-red-700">*</span>
                 </label>
                 <Tooltip text="Enter your email address" className="w-full">
@@ -599,6 +601,7 @@ function IntakeForm() {
                     id="email"
                     type="email"
                     required
+                    autoComplete="email"
                     aria-required="true"
                     aria-invalid={!!errors.email}
                     aria-describedby={errors.email ? 'email-error' : undefined}
@@ -615,15 +618,18 @@ function IntakeForm() {
 
               {/* Phone */}
               <div>
-                <label htmlFor="phone" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                <label htmlFor="phone" className="block text-sm font-medium text-muted-foreground mb-1.5">
                   Phone
                 </label>
                 <Tooltip text="Enter your phone number (optional)" className="w-full">
                   <input
                     id="phone"
                     type="tel"
+                    pattern="[0-9\s\-\(\)\+\.]{7,20}"
+                    title="Phone number (7-20 characters: digits, spaces, dashes, parentheses, +, .)"
+                    autoComplete="tel"
                     aria-invalid={!!errors.phone}
-                    aria-describedby={errors.phone ? 'phone-error' : undefined}
+                    aria-describedby={errors.phone ? 'phone-error' : 'phone-hint'}
                     value={form.phone}
                     onChange={(e) => {
                       const filtered = e.target.value.replace(/[^0-9\s\-()+.]/g, '');
@@ -642,6 +648,7 @@ function IntakeForm() {
                   />
                 </Tooltip>
                 <p id="phone-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.phone ?? ''}</p>
+                <p id="phone-hint" className="mt-0.5 text-[11px] text-muted-foreground">Format: (555) 123-4567</p>
               </div>
             </div>
           </div>

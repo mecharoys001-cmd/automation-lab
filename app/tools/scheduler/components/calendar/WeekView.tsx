@@ -76,21 +76,30 @@ const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const DAY_FULL_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-// Responsive breakpoints: Desktop 7-day, Tablet 3-day, Mobile 1-day
-function getVisibleDayCount(width: number): number {
-  return width < 640 ? 1 : width < 1024 ? 3 : 7;
+// Responsive breakpoints based on actual container width (not viewport)
+// so that admin sidebar + template sidebar are accounted for.
+function getVisibleDayCount(containerWidth: number): number {
+  // At 768px (tablet), show weekdays only (5); full 7-day view at ≥1024px
+  return containerWidth < 480 ? 1 : containerWidth < 768 ? 3 : containerWidth < 1024 ? 5 : 7;
 }
 
-function useVisibleDayCount(): number {
-  // Always start with 7 on server to avoid hydration mismatch
+function useVisibleDayCount(containerRef: React.RefObject<HTMLElement | null>): number {
   const [count, setCount] = useState(7);
 
   useEffect(() => {
-    const update = () => setCount(getVisibleDayCount(window.innerWidth));
-    update(); // Set correct count on mount
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+    const el = containerRef.current;
+    if (!el) return;
+    const update = (width: number) => setCount(getVisibleDayCount(width));
+    // Set correct count on mount
+    update(el.clientWidth);
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        update(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerRef]);
 
   return count;
 }
@@ -502,8 +511,20 @@ export function WeekView({
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const calendarContentRef = useRef<HTMLDivElement>(null);
   const [dayOffset, setDayOffset] = useState(0); // offset within the week for sub-week views
-  const visibleDayCount = useVisibleDayCount();
+  const visibleDayCount = useVisibleDayCount(calendarContentRef);
+
+  // Auto-collapse template sidebar on narrow screens
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) setSidebarCollapsed(true);
+    };
+    handler(mq); // check on mount
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Sync viewDate when parent changes currentDate externally
   useEffect(() => {
@@ -823,7 +844,7 @@ export function WeekView({
         />
       )}
 
-    <div className="flex-1 flex flex-col overflow-y-hidden overflow-x-auto" style={{ minWidth: 0 }}>
+    <div ref={calendarContentRef} className="flex-1 flex flex-col overflow-y-hidden overflow-x-auto" style={{ minWidth: 0 }}>
       {/* ------- Week Navigation Sub-bar ------- */}
       <div className="flex flex-wrap items-center gap-3 bg-white px-4 sm:px-6 py-3 border-b border-slate-200 shrink-0">
         <Tooltip text="Previous week">
