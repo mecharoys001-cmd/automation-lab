@@ -27,10 +27,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
     }
 
-    if (tag.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, tag.program_id);
-      if (accessErr) return accessErr;
+    if (!tag.program_id) {
+      return NextResponse.json({ error: 'Tag has no program association' }, { status: 403 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, tag.program_id);
+    if (accessErr) return accessErr;
 
     const body = await request.json();
 
@@ -138,10 +140,12 @@ export async function DELETE(
       .eq('id', id)
       .single();
 
-    if (tagToDelete?.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, tagToDelete.program_id);
-      if (accessErr) return accessErr;
+    if (!tagToDelete?.program_id) {
+      return NextResponse.json({ error: 'Tag not found or has no program association' }, { status: 403 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, tagToDelete.program_id);
+    if (accessErr) return accessErr;
 
     const force = request.nextUrl.searchParams.get('force') === 'true';
 

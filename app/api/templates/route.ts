@@ -13,22 +13,24 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 
-    if (programId) {
-      const accessErr = await requireProgramAccess(auth.user, programId);
-      if (accessErr) return accessErr;
+    if (!programId) {
+      return NextResponse.json(
+        { error: 'program_id query parameter is required' },
+        { status: 400 },
+      );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
 
     console.log('[Templates API] GET request for program:', programId);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase.from('session_templates') as any)
+    const query = (supabase.from('session_templates') as any)
       .select('*, venue:venues(*)')
+      .eq('program_id', programId)
       .order('day_of_week')
       .order('sort_order');
-
-    if (programId) {
-      query = query.eq('program_id', programId);
-    }
 
     const { data, error } = await query;
 
@@ -112,10 +114,15 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
     const body = await request.json();
 
-    if (body.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, body.program_id);
-      if (accessErr) return accessErr;
+    if (!body.program_id) {
+      return NextResponse.json(
+        { error: 'program_id is required' },
+        { status: 400 },
+      );
     }
+
+    const accessErr = await requireProgramAccess(auth.user, body.program_id);
+    if (accessErr) return accessErr;
 
     // Default template_type and rotation_mode for backward compatibility
     if (!body.template_type) body.template_type = 'fully_defined';

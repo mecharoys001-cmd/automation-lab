@@ -34,11 +34,12 @@ export async function GET(request: NextRequest) {
 
     console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
 
-    // Fetch session counts per tag from multiple sources:
-    // 1. session_tags junction table (additional tags)
+    // Fetch session counts per tag from multiple sources, scoped to this program:
+    // 1. session_tags junction table (additional tags) — join through sessions to filter by program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessionTags } = await (supabase.from('session_tags') as any)
-      .select('tag_id');
+      .select('tag_id, session:sessions!inner(program_id)')
+      .eq('session.program_id', programId);
 
     const counts: Record<string, number> = {};
     if (sessionTags) {
@@ -47,16 +48,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. Count tags used in template required_skills
-    // Fetch all templates with their IDs and required_skills
+    // 2. Count tags used in template required_skills (scoped to program)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: templates } = await (supabase.from('session_templates') as any)
-      .select('id, required_skills');
+      .select('id, required_skills')
+      .eq('program_id', programId);
 
-    // Fetch all sessions to count by template
+    // Fetch sessions scoped to this program to count by template
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessions } = await (supabase.from('sessions') as any)
-      .select('template_id');
+      .select('template_id')
+      .eq('program_id', programId);
 
     // Count sessions per template
     const sessionsByTemplate: Record<string, number> = {};

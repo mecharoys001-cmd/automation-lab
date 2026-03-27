@@ -25,10 +25,12 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    if (data.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, data.program_id);
-      if (accessErr) return accessErr;
+    if (!data.program_id) {
+      return NextResponse.json({ error: 'Template has no program association' }, { status: 403 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, data.program_id);
+    if (accessErr) return accessErr;
 
     return NextResponse.json({ template: data });
   } catch (err) {
@@ -80,10 +82,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
-    if (existing.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, existing.program_id);
-      if (accessErr) return accessErr;
+    if (!existing.program_id) {
+      return NextResponse.json({ error: 'Template has no program association' }, { status: 403 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, existing.program_id);
+    if (accessErr) return accessErr;
 
     // Merge body with existing data for validation
     const merged = { ...existing, ...body };
@@ -193,10 +197,12 @@ export async function DELETE(
       .eq('id', id)
       .single();
 
-    if (tmpl?.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, tmpl.program_id);
-      if (accessErr) return accessErr;
+    if (!tmpl?.program_id) {
+      return NextResponse.json({ error: 'Template not found or has no program association' }, { status: 403 });
     }
+
+    const accessErr = await requireProgramAccess(auth.user, tmpl.program_id);
+    if (accessErr) return accessErr;
 
     // Orphan sessions that reference this template
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

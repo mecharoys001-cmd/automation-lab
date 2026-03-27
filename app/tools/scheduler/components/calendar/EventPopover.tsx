@@ -27,6 +27,7 @@ import { Tooltip } from '../ui/Tooltip';
 import type { CalendarEvent, EventType } from './types';
 import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
 import { getSubjectColor } from '../../lib/subjectColors';
+import { useProgram } from '../../admin/ProgramContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,6 +100,8 @@ export function EventPopover({
   onOpenEditPanel,
   onCancelFuture,
 }: EventPopoverProps) {
+  const { selectedProgramId } = useProgram();
+
   // Cancel / replace flow
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReplaceOptions, setShowReplaceOptions] = useState(false);
@@ -295,7 +298,7 @@ export function EventPopover({
     setShowTemplates(true);
     setLoadingTemplates(true);
     try {
-      const res = await fetch(`/api/templates?type=${event.type}`);
+      const res = await fetch(`/api/templates?program_id=${selectedProgramId}&type=${event.type}`);
       const data = await res.json();
       setTemplates(data.templates ?? []);
     } catch {
