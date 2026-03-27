@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import UserIndicator from "./UserIndicator";
+
 
 const navLinks = [
   { href: "/#about", label: "About" },
@@ -11,7 +11,7 @@ const navLinks = [
   { href: "/tools", label: "Tools" },
 ];
 
-export default function Navigation() {
+export default function Navigation({ userSlot }: { userSlot?: React.ReactNode } = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -92,7 +92,7 @@ export default function Navigation() {
             >
               Take the Self-Assessment
             </a>
-            <UserIndicator />
+            {userSlot}
           </div>
 
           {/* Mobile toggle */}

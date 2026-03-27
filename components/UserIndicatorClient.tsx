@@ -1,20 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 
-export default function UserIndicator() {
-  const [email, setEmail] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function UserIndicatorClient({ email }: { email: string | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
-      setLoading(false);
-    });
-  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -28,12 +17,10 @@ export default function UserIndicator() {
   }, []);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch("/api/auth/signout", { method: "POST" });
     window.location.href = "/login";
   };
 
-  if (loading) return null;
   if (!email) return null;
 
   const initials = email
