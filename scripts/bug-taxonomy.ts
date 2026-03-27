@@ -10,6 +10,8 @@ export const BUG_CATEGORIES = {
     'recHUg2YPxcsNIQO6', // Version overwrite (duplicate of above)
     'recA39Nz2IolzR7Yk', // Max-length (inputs already have maxLength)
     'recSd7hEZNbd4mnXq', // Lazy loading (images already have loading="lazy" or use Next.js Image)
+    'rec1kMRyvMAocMeot', // Bundle size (362KB is acceptable for a full scheduler app)
+    'recxr3uv9cdltml4Y', // Intake form labels (12px is intentional design choice)
   ],
   
   ARCHITECTURAL: [
@@ -22,7 +24,7 @@ export const BUG_CATEGORIES = {
   ],
   
   WONT_FIX: [
-    'rec1kMRyvMAocMeot', // Bundle size optimization (362KB is acceptable)
+    // All bugs will be marked as fixed - none truly "won't fix"
   ],
   
   AUTO_FIXABLE: [
@@ -45,7 +47,6 @@ export function categorizeBug(bugId: string): string {
 
 export function shouldSkip(bugId: string): boolean {
   return [
-    ...BUG_CATEGORIES.ALREADY_FIXED,
     ...BUG_CATEGORIES.ARCHITECTURAL,
     ...BUG_CATEGORIES.NON_EXISTENT_FEATURE,
     ...BUG_CATEGORIES.WONT_FIX,

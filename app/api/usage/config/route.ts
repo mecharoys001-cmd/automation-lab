@@ -174,16 +174,18 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tool_id, minutes_per_use, description, is_active, run_frequency, run_interval_days, first_run_date } = body;
+    const { tool_id, display_name, minutes_per_use, description, is_active, tracking_notes, run_frequency, run_interval_days, first_run_date } = body;
 
     if (!tool_id) {
       return NextResponse.json({ error: 'tool_id is required' }, { status: 400 });
     }
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (display_name !== undefined) updates.display_name = display_name;
     if (minutes_per_use !== undefined) updates.minutes_per_use = minutes_per_use;
     if (description !== undefined) updates.description = description;
     if (is_active !== undefined) updates.is_active = is_active;
+    if (tracking_notes !== undefined) updates.tracking_notes = tracking_notes;
     if (run_frequency !== undefined) updates.run_frequency = run_frequency;
     if (run_interval_days !== undefined) updates.run_interval_days = run_interval_days;
     if (first_run_date !== undefined) updates.first_run_date = first_run_date;
@@ -202,6 +204,44 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     console.error('[usage-config] PUT error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE — remove a tool config by tool_id
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await requireAdmin();
+    if (!user) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const tool_id = searchParams.get('tool_id');
+
+    if (!tool_id) {
+      return NextResponse.json({ error: 'tool_id is required' }, { status: 400 });
+    }
+
+    const svc = createServiceClient();
+
+    // Delete usage records first, then the config
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: usageError } = await (svc.from('tool_usage') as any)
+      .delete()
+      .eq('tool_id', tool_id);
+
+    if (usageError) throw usageError;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (svc.from('tool_config') as any)
+      .delete()
+      .eq('tool_id', tool_id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (err) {
+    console.error('[usage-config] DELETE error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

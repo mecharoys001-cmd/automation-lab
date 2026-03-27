@@ -81,6 +81,23 @@ export default function ImpactDashboard() {
   const [logDate, setLogDate] = useState('');
   const [logSaving, setLogSaving] = useState(false);
 
+  // Edit External Tool state
+  const [editExtTool, setEditExtTool] = useState<string | null>(null);
+  const [editExtDisplayName, setEditExtDisplayName] = useState('');
+  const [editExtDays, setEditExtDays] = useState('0');
+  const [editExtHours, setEditExtHours] = useState('0');
+  const [editExtMinutes, setEditExtMinutes] = useState('0');
+  const [editExtRunFrequency, setEditExtRunFrequency] = useState('');
+  const [editExtCustomInterval, setEditExtCustomInterval] = useState('30');
+  const [editExtFirstRunDate, setEditExtFirstRunDate] = useState('');
+  const [editExtDescription, setEditExtDescription] = useState('');
+  const [editExtTrackingNotes, setEditExtTrackingNotes] = useState('');
+  const [editExtSaving, setEditExtSaving] = useState(false);
+
+  // Delete confirmation state
+  const [deletingTool, setDeletingTool] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Add External Tool state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newToolId, setNewToolId] = useState('');
@@ -170,6 +187,64 @@ export default function ImpactDashboard() {
       setError('Failed to log usage');
     } finally {
       setLogSaving(false);
+    }
+  }
+
+  function startEditExtTool(s: ToolUsageStats) {
+    const total = s.minutes_per_use;
+    setEditExtDays(String(Math.floor(total / (24 * 60))));
+    setEditExtHours(String(Math.floor((total % (24 * 60)) / 60)));
+    setEditExtMinutes(String(total % 60));
+    setEditExtDisplayName(s.display_name);
+    setEditExtRunFrequency(s.run_frequency || '');
+    setEditExtCustomInterval(String(s.run_interval_days || 30));
+    setEditExtFirstRunDate(s.first_run_date || '');
+    setEditExtDescription(s.description || '');
+    setEditExtTrackingNotes(s.tracking_notes || '');
+    setEditExtTool(s.tool_id);
+  }
+
+  async function saveExtTool(toolId: string) {
+    setEditExtSaving(true);
+    try {
+      const minutes = (Number(editExtDays) * 24 * 60) + (Number(editExtHours) * 60) + Number(editExtMinutes);
+      const res = await fetch('/api/usage/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tool_id: toolId,
+          display_name: editExtDisplayName,
+          minutes_per_use: minutes,
+          run_frequency: editExtRunFrequency || null,
+          run_interval_days: editExtRunFrequency === 'custom' ? Number(editExtCustomInterval) || 30 : null,
+          first_run_date: editExtFirstRunDate || null,
+          description: editExtDescription || null,
+          tracking_notes: editExtTrackingNotes || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setEditExtTool(null);
+      fetchData();
+    } catch {
+      setError('Failed to save external tool');
+    } finally {
+      setEditExtSaving(false);
+    }
+  }
+
+  async function deleteExtTool(toolId: string) {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/usage/config?tool_id=${encodeURIComponent(toolId)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Delete failed');
+      setDeletingTool(null);
+      fetchData();
+    } catch {
+      setError('Failed to delete tool');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -275,7 +350,106 @@ export default function ImpactDashboard() {
     );
   }
 
+  function renderEditExtForm(s: ToolUsageStats) {
+    return (
+      <div key={s.tool_id} style={{ ...cardStyle, border: '2px solid #1282a2' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a2e', marginBottom: '1rem', fontFamily: "'Montserrat', sans-serif" }}>
+          Edit: {s.display_name}
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div>
+            <label style={labelStyle}>Display Name</label>
+            <input type="text" value={editExtDisplayName} onChange={(e) => setEditExtDisplayName(e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Time Saved per Use</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input type="number" min="0" value={editExtDays} onChange={(e) => setEditExtDays(e.target.value)} style={{ ...inputStyle, width: '60px', textAlign: 'center' }} />
+                <span style={{ fontSize: '12px', color: '#64748b' }}>d</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input type="number" min="0" max="23" value={editExtHours} onChange={(e) => setEditExtHours(e.target.value)} style={{ ...inputStyle, width: '60px', textAlign: 'center' }} />
+                <span style={{ fontSize: '12px', color: '#64748b' }}>h</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input type="number" min="0" max="59" value={editExtMinutes} onChange={(e) => setEditExtMinutes(e.target.value)} style={{ ...inputStyle, width: '60px', textAlign: 'center' }} />
+                <span style={{ fontSize: '12px', color: '#64748b' }}>m</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div>
+            <label style={labelStyle}>Run Frequency</label>
+            <select value={editExtRunFrequency} onChange={(e) => setEditExtRunFrequency(e.target.value)} style={inputStyle}>
+              <option value="">None</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          {editExtRunFrequency === 'custom' && (
+            <div>
+              <label style={labelStyle}>Custom Interval Days</label>
+              <input type="number" min="1" value={editExtCustomInterval} onChange={(e) => setEditExtCustomInterval(e.target.value)} style={inputStyle} />
+            </div>
+          )}
+          <div>
+            <label style={labelStyle}>First Run Date</label>
+            <input type="date" value={editExtFirstRunDate} onChange={(e) => setEditExtFirstRunDate(e.target.value)} style={inputStyle} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: '1rem' }}>
+          <label style={labelStyle}>Description</label>
+          <textarea value={editExtDescription} onChange={(e) => setEditExtDescription(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        </div>
+
+        <div style={{ marginTop: '1rem' }}>
+          <label style={labelStyle}>Tracking Notes</label>
+          <textarea value={editExtTrackingNotes} onChange={(e) => setEditExtTrackingNotes(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => setEditExtTool(null)}
+            style={{
+              padding: '8px 20px', borderRadius: '6px', border: '1px solid #e2e8f0',
+              background: '#ffffff', color: '#64748b', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'Montserrat', sans-serif",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => saveExtTool(s.tool_id)}
+            disabled={editExtSaving || !editExtDisplayName.trim()}
+            style={{
+              padding: '8px 20px', borderRadius: '6px', border: 'none',
+              background: !editExtDisplayName.trim() ? '#cbd5e1' : '#1282a2',
+              color: '#ffffff', fontSize: '13px', fontWeight: 600,
+              cursor: !editExtDisplayName.trim() ? 'not-allowed' : 'pointer',
+              fontFamily: "'Montserrat', sans-serif",
+            }}
+          >
+            {editExtSaving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderToolCard(s: ToolUsageStats, showLogButton: boolean) {
+    const isExternal = s.is_external;
+
+    // If editing this external tool, show the edit form instead
+    if (isExternal && editExtTool === s.tool_id) {
+      return renderEditExtForm(s);
+    }
+
     return (
       <div key={s.tool_id} style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -309,6 +483,56 @@ export default function ImpactDashboard() {
             )}
           </div>
           <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {isExternal && (
+              <>
+                <button
+                  onClick={() => startEditExtTool(s)}
+                  style={{
+                    background: 'none', border: '1px solid #cbd5e1', borderRadius: '6px',
+                    padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
+                    color: '#475569', fontFamily: "'Montserrat', sans-serif", whiteSpace: 'nowrap',
+                  }}
+                >
+                  Edit
+                </button>
+                {deletingTool === s.tool_id ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                    <span style={{ color: '#dc2626', fontWeight: 600 }}>Delete?</span>
+                    <button
+                      onClick={() => deleteExtTool(s.tool_id)}
+                      disabled={deleting}
+                      style={{
+                        background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px',
+                        padding: '4px 10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}
+                    >
+                      {deleting ? 'Deleting...' : 'Yes'}
+                    </button>
+                    <button
+                      onClick={() => setDeletingTool(null)}
+                      style={{
+                        background: 'none', color: '#64748b', border: 'none',
+                        cursor: 'pointer', fontSize: '12px', fontWeight: 600,
+                      }}
+                    >
+                      No
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setDeletingTool(s.tool_id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '12px', fontWeight: 600, color: '#dc2626',
+                      fontFamily: "'Montserrat', sans-serif", whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </>
+            )}
             {showLogButton && (
               <button
                 onClick={() => { setLoggingTool(loggingTool === s.tool_id ? null : s.tool_id); setLogDate(''); }}
