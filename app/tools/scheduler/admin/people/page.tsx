@@ -811,8 +811,9 @@ function VenueDetailModal({
 
           {/* Availability Times */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Availability Times</label>
+            <label htmlFor="venue-edit-availability" className="block text-xs font-semibold text-slate-600 mb-1.5">Availability Times</label>
             <AvailabilityEditor
+              id="venue-edit-availability"
               value={editAvailability}
               onChange={setEditAvailability}
             />
@@ -846,12 +847,13 @@ function VenueDetailModal({
           {/* Subjects (Optional) */}
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="text-xs font-semibold text-slate-600">Event Type (Optional)</label>
+              <label htmlFor="venue-edit-event-type" className="text-xs font-semibold text-slate-600">Event Type (Optional)</label>
               <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
                 <AlertTriangle className="w-3 h-3 text-slate-700" />
               </Tooltip>
             </div>
             <TagSelector
+              id="venue-edit-event-type"
               category="Event Type"
               value={venueSubjects}
               onChange={setVenueSubjects}
@@ -862,10 +864,11 @@ function VenueDetailModal({
 
           {/* Accessibility */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Accessibility</label>
+            <label htmlFor="venue-edit-accessible" className="block text-xs font-semibold text-slate-600 mb-1.5">Accessibility</label>
             <Tooltip text="Mark if this venue is wheelchair accessible">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
+                  id="venue-edit-accessible"
                   type="checkbox"
                   checked={accessible}
                   onChange={(e) => setAccessible(e.target.checked)}
@@ -1296,12 +1299,13 @@ function VenueCreateModal({
         {/* Subjects (Optional) */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="text-xs font-semibold text-slate-600">Event Type (Optional)</label>
+            <label htmlFor="venue-form-event-type" className="text-xs font-semibold text-slate-600">Event Type (Optional)</label>
             <Tooltip text="Restrict this venue to specific event types. Leave empty for all event types.">
               <AlertTriangle className="w-3 h-3 text-slate-700" />
             </Tooltip>
           </div>
           <TagSelector
+            id="venue-form-event-type"
             category="Event Type"
             value={form.subjects}
             onChange={(val) => setField('subjects', val as unknown as VenueFormData['subjects'])}
@@ -1362,8 +1366,9 @@ function VenueCreateModal({
 
         {/* Availability */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Availability</label>
+          <label htmlFor="venue-form-availability" className="block text-xs font-semibold text-slate-600 mb-1.5">Availability</label>
           <AvailabilityEditor
+            id="venue-form-availability"
             value={form.availability_json}
             onChange={(v) => setField('availability_json', v)}
           />

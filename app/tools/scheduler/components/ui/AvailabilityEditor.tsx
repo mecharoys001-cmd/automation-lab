@@ -36,9 +36,12 @@ const EDITOR_HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM – 8 
 export function AvailabilityEditor({
   value,
   onChange,
+  id,
 }: {
   value: AvailabilityJson | null;
   onChange: (v: AvailabilityJson | null) => void;
+  /** HTML id for the container (enables label htmlFor linking via aria) */
+  id?: string;
 }) {
   const avail = value ?? {};
 
@@ -128,7 +131,7 @@ export function AvailabilityEditor({
   };
 
   return (
-    <div className="space-y-2" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+    <div id={id} role="group" className="space-y-2" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
       {/* Quick actions */}
       <div className="flex items-center gap-2">
         <button type="button" onClick={setAllFull}

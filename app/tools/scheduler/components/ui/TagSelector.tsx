@@ -29,6 +29,8 @@ interface TagSelectorProps {
   className?: string;
   /** Disabled state */
   disabled?: boolean;
+  /** HTML id for the trigger button (enables label htmlFor linking) */
+  id?: string;
 }
 
 export function TagSelector({
@@ -40,6 +42,7 @@ export function TagSelector({
   excludeCategories,
   className = '',
   disabled = false,
+  id,
 }: TagSelectorProps) {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +174,7 @@ export function TagSelector({
 
       {/* Dropdown Trigger */}
       <button
+        id={id}
         ref={triggerRef}
         type="button"
         onClick={() => {

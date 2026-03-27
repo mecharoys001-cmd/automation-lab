@@ -274,9 +274,10 @@ export function InstructorEditModal({
 
         {/* Event Type */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Event Type</label>
+          <label htmlFor="instructor-event-type" className="block text-xs font-semibold text-slate-600 mb-2">Event Type</label>
           <Tooltip text="Select the event types this staff member teaches">
             <TagSelector
+              id="instructor-event-type"
               value={form.skills}
               onChange={(skills) => setForm(prev => ({ ...prev, skills }))}
               programId={selectedProgramId ?? ''}
@@ -288,9 +289,10 @@ export function InstructorEditModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-semibold text-slate-600 mb-1.5">Notes</label>
+          <label htmlFor="instructor-notes" className="block text-sm font-semibold text-slate-600 mb-1.5">Notes</label>
           <Tooltip text="Internal notes about this staff member" className="w-full">
             <textarea
+              id="instructor-notes"
               value={form.notes}
               onChange={(e) => setField('notes', e.target.value)}
               maxLength={500}
@@ -303,7 +305,7 @@ export function InstructorEditModal({
 
         {/* Availability */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Availability</label>
+          <label htmlFor="instructor-availability" className="block text-xs font-semibold text-slate-600 mb-2">Availability</label>
           {selectedProgram && (
             <Tooltip text="This availability extends outside your program dates">
               <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
@@ -315,6 +317,7 @@ export function InstructorEditModal({
             </Tooltip>
           )}
           <AvailabilityEditor
+            id="instructor-availability"
             value={form.availability_json}
             onChange={(v) => setField('availability_json', v)}
           />
@@ -323,10 +326,11 @@ export function InstructorEditModal({
         {/* Active Toggle — only shown when editing, not creating */}
         {!isNew && (
         <div>
-          <label className="block text-sm font-semibold text-slate-600 mb-1.5">Status</label>
+          <label htmlFor="instructor-status" className="block text-sm font-semibold text-slate-600 mb-1.5">Status</label>
           <Tooltip text={form.is_active ? 'Staff member is active and can be scheduled' : 'Staff member is inactive and will not appear in scheduling'}>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
+                id="instructor-status"
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setField('is_active', e.target.checked)}
