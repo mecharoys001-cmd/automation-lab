@@ -53,7 +53,12 @@ const adminNavItems: AdminNavItem[] = [
   { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Role Management', minRole: 'master' },
 ];
 
-function getNavItemsForRole(roleLevel: RoleLevel): AdminNavItem[] {
+/**
+ * Return sidebar items the given role is allowed to see.
+ * Returns an empty array when roleLevel is null (role not yet verified).
+ */
+function getNavItemsForRole(roleLevel: RoleLevel | null): AdminNavItem[] {
+  if (!roleLevel) return [];
   const userRank = ROLE_RANK[roleLevel] ?? 0;
   return adminNavItems.filter((item) => {
     const requiredRank = ROLE_RANK[item.minRole ?? 'editor'] ?? 0;
@@ -112,7 +117,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { selectedProgram, selectedProgramId } = useProgram();
   const [user, setUser] = useState<UserProfile | undefined>();
-  const [roleLevel, setRoleLevel] = useState<RoleLevel>('editor');
+  const [roleLevel, setRoleLevel] = useState<RoleLevel | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const prevProgramIdRef = useRef<string | null>(null);
@@ -156,7 +162,20 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     fetch('/api/auth/me')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!data?.google_email) return;
+        if (!data?.google_email) {
+          setRoleLoaded(true);
+          return;
+        }
+
+        // Instructors/staff should not be in the admin layout (middleware
+        // redirects them to /portal), but defend in depth: if org_role is
+        // 'instructor', leave roleLevel null so no nav items render.
+        const orgRole = data.org_role as string | undefined;
+        if (orgRole === 'instructor') {
+          setRoleLoaded(true);
+          return;
+        }
+
         const fullName = data.display_name || data.google_email.split('@')[0] || 'User';
         const parts = fullName.trim().split(/\s+/);
         const initials =
@@ -167,6 +186,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         setRoleLevel(rl);
         const roleLabel = rl === 'master' ? 'Master Admin' : rl === 'standard' ? 'Admin' : 'Editor';
         setUser({ name: fullName, initials, role: roleLabel });
+        setRoleLoaded(true);
+      })
+      .catch(() => {
+        setRoleLoaded(true);
       });
   }, []);
 
