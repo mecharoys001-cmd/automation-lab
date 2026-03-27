@@ -223,21 +223,22 @@ export default function RolesPage() {
 
   // ---- Current user ----
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [currentUserRoleLevel, setCurrentUserRoleLevel] = useState<string | null>(null);
 
   useEffect(() => {
-    requestCache.fetch<{ google_email?: string }>('/api/auth/me')
+    requestCache.fetch<{ google_email?: string; role_level?: string }>('/api/auth/me')
       .then((data) => {
         if (data?.google_email) setCurrentUserEmail(data.google_email.toLowerCase());
+        if (data?.role_level) setCurrentUserRoleLevel(data.role_level);
       })
       .catch(() => {});
   }, []);
 
-  // Derive current user's role from admins list
+  // Derive current user's app role from the /api/auth/me role_level
   const currentUserRole = useMemo((): AppRole | null => {
-    if (!currentUserEmail) return null;
-    const currentAdmin = admins.find(a => a.google_email.toLowerCase() === currentUserEmail);
-    return currentAdmin ? adminRoleToAppRole(currentAdmin.role_level) : null;
-  }, [currentUserEmail, admins]);
+    if (!currentUserRoleLevel) return null;
+    return adminRoleToAppRole(currentUserRoleLevel);
+  }, [currentUserRoleLevel]);
 
   // =========================================================================
   // Fetch
@@ -497,6 +498,19 @@ export default function RolesPage() {
   // =========================================================================
   // Render
   // =========================================================================
+
+  // Page-level access guard: only Master Admin users can manage roles
+  if (currentUserRoleLevel !== null && currentUserRoleLevel !== 'master') {
+    return (
+      <div className="flex items-center justify-center h-full bg-slate-50">
+        <div className="text-center space-y-2">
+          <ShieldAlert className="w-10 h-10 text-slate-400 mx-auto" />
+          <h2 className="text-lg font-semibold text-slate-900">Access Denied</h2>
+          <p className="text-sm text-slate-600">Only Master Admin users can manage roles.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6 lg:p-8 overflow-y-auto h-full bg-slate-50">
