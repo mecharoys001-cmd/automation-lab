@@ -245,7 +245,15 @@ export async function middleware(request: NextRequest) {
     const { createServiceClient } = await import('@/lib/supabase-service')
     const svc = createServiceClient()
 
-    // Check admin
+    // Site admins bypass scheduler RBAC entirely
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: siteAdminRow } = await (svc.from('site_admins') as any)
+      .select('id')
+      .ilike('google_email', email!)
+      .maybeSingle()
+    const isSiteAdminUser = !!siteAdminRow
+
+    // Check scheduler-specific admin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: admin } = await (svc.from('admins') as any)
       .select('role_level')
@@ -260,7 +268,7 @@ export async function middleware(request: NextRequest) {
       .eq('is_active', true)
       .maybeSingle()
 
-    const isAdmin = !!admin
+    const isAdmin = !!admin || isSiteAdminUser
     const isInstructor = !!instructor
 
     // Non-org members → redirect to tools list
