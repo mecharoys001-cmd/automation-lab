@@ -37,6 +37,17 @@ export async function getOrgMembership(userEmail: string | undefined): Promise<O
     return { role: 'admin', adminLevel: admin.role_level, instructorId: null };
   }
 
+  // Check site_admins table — site admins get full scheduler admin access
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: siteAdmin } = await (supabase.from('site_admins') as any)
+    .select('role_level')
+    .ilike('google_email', userEmail)
+    .maybeSingle();
+
+  if (siteAdmin) {
+    return { role: 'admin', adminLevel: 'master', instructorId: null };
+  }
+
   // Check instructors table
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: instructor } = await (supabase.from('instructors') as any)
