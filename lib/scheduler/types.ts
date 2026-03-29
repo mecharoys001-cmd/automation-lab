@@ -68,6 +68,10 @@ export interface SchedulerResult {
   unassigned_reasons?: Record<string, number>;
   /** Warnings about scheduling constraints not fully met */
   schedule_warnings?: ScheduleWarning[];
+  /** Diagnostics for venue double-booking detection (Layer 3) */
+  venue_conflict_diagnostics?: string[];
+  /** Number of sessions removed by the post-generation venue conflict sweep */
+  venue_conflicts_removed?: number;
 }
 
 /** Per-template statistics */
@@ -114,7 +118,9 @@ export type SkipReason =
   | 'no_instructor'
   | 'no_qualified_instructor'
   | 'week_cycle_skip'
-  | 'no_time_slot';
+  | 'no_time_slot'
+  | 'no_venue_available'
+  | 'venue_double_booking';
 
 // ============================================================
 // Internal data loaded from the database

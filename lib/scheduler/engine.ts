@@ -29,6 +29,7 @@ import type {
   DraftSession,
   TemplateStats,
   SkippedDate,
+  SkipReason,
   InstructorCandidate,
   SessionTemplate,
   Instructor,
@@ -873,13 +874,13 @@ function runSingleAttempt(
 
           skippedDates.push({
             date: sessionB.date,
-            template_id: sessionB.template_id,
+            template_id: sessionB.template_id ?? '',
             reason: 'venue_double_booking',
             detail: `Conflict in "${venueName}": ${sessionA.name} (${sessionA.start_time}-${sessionA.end_time}) overlaps ${sessionB.name} (${sessionB.start_time}-${sessionB.end_time})`,
           });
 
           // Update template stats
-          const bStats = templateStats.get(sessionB.template_id);
+          const bStats = sessionB.template_id ? templateStats.get(sessionB.template_id) : undefined;
           if (bStats) {
             bStats.sessions_generated = Math.max(0, bStats.sessions_generated - 1);
           }
@@ -897,7 +898,7 @@ function runSingleAttempt(
   }
 
   // --- Post-generation venue conflict sweep (safety net) ---
-  const postSweepConflicts: Array<{date: string; template_id: string; reason: string; detail: string}> = [];
+  const postSweepConflicts: Array<{date: string; template_id: string; reason: SkipReason; detail: string}> = [];
   const sessionsByVenueDate = new Map<string, number[]>();
   for (let i = 0; i < generatedSessions.length; i++) {
     const s = generatedSessions[i];
@@ -921,8 +922,8 @@ function runSingleAttempt(
           sweepIndicesToRemove.add(indices[j]);
           postSweepConflicts.push({
             date: b.date,
-            template_id: b.template_id,
-            reason: "venue_double_booking",
+            template_id: b.template_id ?? '',
+            reason: 'venue_double_booking' as SkipReason,
             detail: `Removed: overlaps with another session at same venue (${a.start_time}-${a.end_time} vs ${b.start_time}-${b.end_time})`,
           });
         }
