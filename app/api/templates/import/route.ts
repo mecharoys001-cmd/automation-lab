@@ -19,6 +19,7 @@ interface TemplateRow {
   start_time?: string;
   end_time?: string;
   duration?: string;
+  session_duration?: string;
   venue?: string;
   instructor?: string;
   subjects?: string;
@@ -137,8 +138,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
       } else {
-        const parsed = parseOptionalInt(row.duration);
-        duration = parsed && parsed > 0 ? parsed : 30;
+        const parsed = parseOptionalInt(row.session_duration);
+        duration = parsed && parsed > 0 ? parsed : 45;
       }
 
       const venueId = row.venue

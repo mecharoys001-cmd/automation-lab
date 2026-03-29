@@ -32,8 +32,9 @@ const GRADE_OPTIONS = [
 const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'name', label: 'Name' },
   { csvHeader: 'day', label: 'Day', required: true },
-  { csvHeader: 'start_time', label: 'Start Time', required: true },
-  { csvHeader: 'end_time', label: 'End Time', required: true },
+  { csvHeader: 'start_time', label: 'Start Time' },
+  { csvHeader: 'end_time', label: 'End Time' },
+  { csvHeader: 'session_duration', label: 'Session Duration' },
   { csvHeader: 'venue', label: 'Venue' },
   { csvHeader: 'instructor', label: 'Staff' },
   { csvHeader: 'subjects', label: 'Event Type' },
@@ -65,19 +66,28 @@ function validateTemplateCsvRow(row: CsvRow, rowIndex: number): ValidationError[
   } else if (!VALID_DAYS.has(row.day.toLowerCase().trim())) {
     errors.push({ row: rowIndex, column: 'day', message: 'Invalid day (use Mon-Sun or 0-6)' });
   }
-  if (!row.start_time?.trim()) {
-    errors.push({ row: rowIndex, column: 'start_time', message: 'Required' });
-  } else if (!/^\d{1,2}:\d{2}$/.test(row.start_time.trim())) {
+  const hasStart = !!row.start_time?.trim();
+  const hasEnd = !!row.end_time?.trim();
+  const hasSessionDuration = !!row.session_duration?.trim();
+  if (hasStart && !/^\d{1,2}:\d{2}$/.test(row.start_time!.trim())) {
     errors.push({ row: rowIndex, column: 'start_time', message: 'Use HH:MM format' });
   }
-  if (!row.end_time?.trim()) {
-    errors.push({ row: rowIndex, column: 'end_time', message: 'Required' });
-  } else if (!/^\d{1,2}:\d{2}$/.test(row.end_time.trim())) {
+  if (hasEnd && !/^\d{1,2}:\d{2}$/.test(row.end_time!.trim())) {
     errors.push({ row: rowIndex, column: 'end_time', message: 'Use HH:MM format' });
   }
-  if (row.start_time && row.end_time && /^\d{1,2}:\d{2}$/.test(row.start_time) && /^\d{1,2}:\d{2}$/.test(row.end_time)) {
-    const [sh, sm] = row.start_time.split(':').map(Number);
-    const [eh, em] = row.end_time.split(':').map(Number);
+  if (hasStart !== hasEnd) {
+    if (!hasStart) errors.push({ row: rowIndex, column: 'start_time', message: 'Required when end_time is provided' });
+    if (!hasEnd) errors.push({ row: rowIndex, column: 'end_time', message: 'Required when start_time is provided' });
+  }
+  if (!hasStart && !hasEnd && hasSessionDuration) {
+    const dur = Number(row.session_duration!.trim());
+    if (isNaN(dur) || dur < 1) {
+      errors.push({ row: rowIndex, column: 'session_duration', message: 'Must be a positive integer (minutes)' });
+    }
+  }
+  if (hasStart && hasEnd && /^\d{1,2}:\d{2}$/.test(row.start_time!) && /^\d{1,2}:\d{2}$/.test(row.end_time!)) {
+    const [sh, sm] = row.start_time!.split(':').map(Number);
+    const [eh, em] = row.end_time!.split(':').map(Number);
     if (eh * 60 + em <= sh * 60 + sm) {
       errors.push({ row: rowIndex, column: 'end_time', message: 'Must be after start time' });
     }
@@ -141,7 +151,8 @@ function validateTemplateCsvRow(row: CsvRow, rowIndex: number): ValidationError[
 
 const TEMPLATE_CSV_EXAMPLE = `# SYMPHONIX EVENT TEMPLATE IMPORT
 # ─────────────────────────────────
-# REQUIRED: day (Mon-Sun), start_time (HH:MM), end_time (HH:MM)
+# REQUIRED: day (Mon-Sun)
+# TIMES: start_time (HH:MM) + end_time (HH:MM), OR session_duration (minutes)
 # OPTIONAL: name, venue, instructor, subjects (semicolon-separated), grades (semicolon-separated)
 #
 # SCHEDULING MODES:
@@ -156,11 +167,11 @@ const TEMPLATE_CSV_EXAMPLE = `# SYMPHONIX EVENT TEMPLATE IMPORT
 #
 # TAGS: additional_tags uses semicolons for multiple values (e.g. Performance;Holiday)
 # ─────────────────────────────────
-name,day,start_time,end_time,venue,instructor,subjects,grades,scheduling_mode,starts_on,ends_on,duration_weeks,session_count,within_weeks,week_cycle_length,week_in_cycle,additional_tags
-Piano Lab,Monday,09:00,10:00,Classroom 101,John Smith,Piano,3rd;4th,ongoing,,,,,,,,
-Strings,Tuesday,10:00,11:30,Stage,Jane Doe,Strings,5th;6th,date_range,2026-09-01,2026-12-15,,,,2,1,
-Choir,Wednesday,13:00,14:00,Cafe,,Choral,K;1st;2nd,duration,2026-09-01,,12,,,,,Performance;Holiday
-Guitar,Thursday,14:00,15:00,Classroom 101,,Guitar,7th;8th,session_count,2026-09-01,,,10,20,,,`;
+name,day,start_time,end_time,session_duration,venue,instructor,subjects,grades,scheduling_mode,starts_on,ends_on,duration_weeks,session_count,within_weeks,week_cycle_length,week_in_cycle,additional_tags
+Piano Lab,Monday,09:00,10:00,,Classroom 101,John Smith,Piano,3rd;4th,ongoing,,,,,,,
+Strings,Tuesday,10:00,11:30,,Stage,Jane Doe,Strings,5th;6th,date_range,2026-09-01,2026-12-15,,,2,1,
+Choir,Wednesday,13:00,14:00,,Cafe,,Choral,K;1st;2nd,duration,2026-09-01,,12,,,,Performance;Holiday
+Guitar,Thursday,,,45,Classroom 101,,Guitar,7th;8th,session_count,2026-09-01,,,10,20,,`;
 
 /* ── Toast ──────────────────────────────────────────────────── */
 
@@ -662,8 +673,9 @@ export default function EventTemplatesPage() {
                   {[
                     ['name', 'Text', 'No', 'Display name for the template'],
                     ['day', 'Mon–Sun or 0–6', 'Yes', 'Day of the week'],
-                    ['start_time', 'HH:MM', 'Yes', 'Start time (24-hour)'],
-                    ['end_time', 'HH:MM', 'Yes', 'End time (24-hour, must be after start)'],
+                    ['start_time', 'HH:MM', 'No*', 'Start time (24-hour). Required unless using session_duration'],
+                    ['end_time', 'HH:MM', 'No*', 'End time (24-hour, must be after start). Required unless using session_duration'],
+                    ['session_duration', 'Integer', 'No*', 'Duration of each session in minutes (e.g. 30, 45, 60). Required when start_time and end_time are omitted'],
                     ['venue', 'Text', 'No', 'Venue name (matched to existing venues)'],
                     ['instructor', 'Text', 'No', 'Staff name (matched to existing staff)'],
                     ['subjects', 'Text; separated', 'No', 'Event types, semicolon-separated'],
