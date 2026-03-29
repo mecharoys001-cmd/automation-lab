@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Upload, X, AlertTriangle, Check, FileText, Loader2, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from './Button';
+import { Tooltip } from './Tooltip';
 import { parseCSV, type CsvRow } from '@/lib/csvDedup';
 
 export interface CsvColumnDef {
@@ -326,7 +327,11 @@ export function CsvImportDialog({
                             <td className="px-3 py-2 text-xs text-slate-700">{i + 1}</td>
                             <td className="px-3 py-2">
                               {hasError ? (
-                                <AlertTriangle className="w-3.5 h-3.5 text-red-700" />
+                                <Tooltip text={rowErrors.map((e) => `${e.column}: ${e.message}`).join('\n')}>
+                                  <span className="inline-flex cursor-help">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-red-700" />
+                                  </span>
+                                </Tooltip>
                               ) : (
                                 <Check className="w-3.5 h-3.5 text-emerald-700" />
                               )}
