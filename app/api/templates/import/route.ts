@@ -16,8 +16,9 @@ const DAY_MAP: Record<string, number> = {
 interface TemplateRow {
   name: string;
   day: string;
-  start_time: string;
-  end_time: string;
+  start_time?: string;
+  end_time?: string;
+  duration?: string;
   venue?: string;
   instructor?: string;
   subjects?: string;
@@ -112,18 +113,32 @@ export async function POST(request: NextRequest) {
 
     for (const row of rows) {
       const dayOfWeek = parseDayOfWeek(row.day);
-      const startTime = parseTime(row.start_time);
-      const endTime = parseTime(row.end_time);
+      const startTime = row.start_time ? parseTime(row.start_time) : null;
+      const endTime = row.end_time ? parseTime(row.end_time) : null;
 
-      if (dayOfWeek === null || !startTime || !endTime) {
+      if (dayOfWeek === null) {
         skipped++;
         continue;
       }
 
-      const duration = timeDiffMinutes(startTime, endTime);
-      if (duration <= 0) {
+      // If only one of start/end is provided, skip (invalid)
+      const hasStart = startTime !== null;
+      const hasEnd = endTime !== null;
+      if (hasStart !== hasEnd) {
         skipped++;
         continue;
+      }
+
+      let duration: number;
+      if (hasStart && hasEnd) {
+        duration = timeDiffMinutes(startTime!, endTime!);
+        if (duration <= 0) {
+          skipped++;
+          continue;
+        }
+      } else {
+        const parsed = parseOptionalInt(row.duration);
+        duration = parsed && parsed > 0 ? parsed : 30;
       }
 
       const venueId = row.venue
@@ -172,8 +187,8 @@ export async function POST(request: NextRequest) {
         template_type: 'fully_defined',
         rotation_mode: 'consistent',
         day_of_week: dayOfWeek,
-        start_time: startTime,
-        end_time: endTime,
+        start_time: startTime || null,
+        end_time: endTime || null,
         duration_minutes: duration,
         venue_id: venueId,
         instructor_id: instructorId,
