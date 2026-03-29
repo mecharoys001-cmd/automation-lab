@@ -508,25 +508,7 @@ export default async function ToolsPage() {
           </div>
         ))}
 
-        {/* Coming soon */}
-        <div
-          style={{
-            textAlign: "center",
-            padding: "3rem",
-            border: "1px dashed var(--color-border)",
-            borderRadius: "20px",
-            color: "var(--color-text-muted)",
-            backgroundColor: "var(--color-card)",
-          }}
-        >
-          <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>🚧</div>
-          <div style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--color-text)" }}>
-            More tools coming soon
-          </div>
-          <div style={{ fontSize: "13px" }}>
-            Email Newsletter Automator · Grant Tracker · Board Meeting Minutes Generator · and more
-          </div>
-        </div>
+
       </div>
     </div>
   );
