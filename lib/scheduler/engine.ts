@@ -476,8 +476,14 @@ function runSingleAttempt(
             });
 
             if ((hasAvailableInstructor || qualifiedInsts.length === 0) && hasAvailableVenue) {
-              // For auto-time, we only need to avoid stacking sessions for the SAME template
-              // on the same date. Different templates CAN run simultaneously (different staff/venues).
+              // Check if ANY venue has capacity at this time slot
+              const scanStartFull = `${scanStartStr}:00`;
+              const scanEndFull = `${scanEndStr}:00`;
+              const hasVenueCapacity = venues.length === 0 || venues.some(v =>
+                !checkVenueCapacity(v, targetDate, scanStartFull, scanEndFull, existing_sessions, generatedSessions, NO_BUFFER)
+              );
+
+              // Also check same-template conflict (don't stack same template at same time)
               const hasSameTemplateConflict = generatedSessions.some(d =>
                 d.date === targetDate &&
                 d.template_id === tmpl.id &&
@@ -485,7 +491,7 @@ function runSingleAttempt(
                 scanStartStr < d.end_time.slice(0, 5) &&
                 scanEndStr > d.start_time.slice(0, 5)
               );
-              if (!hasSameTemplateConflict) {
+              if (hasVenueCapacity && !hasSameTemplateConflict) {
                 startTime = `${scanStartStr}:00`;
                 endTime = `${scanEndStr}:00`;
                 dayNextSlot.set(dayKey, snapToNext30(scanEnd));
