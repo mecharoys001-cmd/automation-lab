@@ -158,8 +158,17 @@ export async function POST(request: NextRequest) {
       const weekCycleLength = parseOptionalInt(row.week_cycle_length);
       const weekInCycle = parseOptionalInt(row.week_in_cycle);
 
+      // Build a display name: use CSV name if provided, otherwise generate from subjects/grades/day
+      const templateName = row.name?.trim()
+        || (subjects.length > 0
+          ? `${subjects.join(', ')}${grades.length > 0 ? ` (${grades.join(', ')})` : ''}`
+          : grades.length > 0
+            ? `Grades ${grades.join(', ')}`
+            : `Template`);
+
       toInsert.push({
         program_id,
+        name: templateName,
         template_type: 'fully_defined',
         rotation_mode: 'consistent',
         day_of_week: dayOfWeek,
