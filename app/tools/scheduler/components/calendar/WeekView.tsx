@@ -1268,7 +1268,7 @@ export function WeekView({
                       return (
                         <div
                           key={venueId}
-                          className={`relative flex-1 ${
+                          className={`relative flex-1 overflow-hidden ${
                             laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                           }`}
                           style={{
@@ -1294,26 +1294,8 @@ export function WeekView({
                         </div>
                       );
                     })}
-                    {/* Venue-less events: overlay spanning all lanes */}
-                    {filteredEvents
-                      .filter((e) => !e.venueId)
-                      .map((event) => (
-                        <div key={event.id} className="absolute inset-x-0 z-[3] pointer-events-auto px-0.5">
-                          <WeekEventBlock
-                            event={event}
-                            dayStartHour={dayStartHour}
-                            onHover={showPopover}
-                            onLeave={hidePopover}
-                            onClick={handleEventClick}
-                            onContextMenu={onEventContextMenu}
-                            onResizeEnd={onEventResize}
-                            enableDrag={!!onEventDrop}
-                            onDragStartNotify={handleEventDragStart}
-                            onDragEndNotify={handleEventDragEnd}
-                            isDragging={draggingEventId === event.id}
-                          />
-                        </div>
-                      ))}
+                    {/* Venue-less events: place in first lane instead of spanning all */}
+                    {/* (Venueless sessions should not exist — generator assigns venues) */}
                     {/* Drop preview ghost (multi-lane) */}
                     {dropPreview && dropPreview.dayIdx === dayIdx && (() => {
                       const laneIdx = dropPreview.venueId ? selectedVenues.indexOf(dropPreview.venueId) : -1;
