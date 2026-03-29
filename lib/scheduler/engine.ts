@@ -730,6 +730,17 @@ function runSingleAttempt(
             : venueExhaustedNote;
         }
 
+        // --- Skip session if auto-venue-assignment exhausted all venues ---
+        if (venueExhaustedNote) {
+          skippedDates.push({
+            date: targetDate,
+            template_id: tmpl.id,
+            reason: 'no_venue_available',
+            detail: 'All venues at capacity or unavailable for this time slot',
+          });
+          continue;
+        }
+
         // --- Create draft session ---
         const draft: DraftSession = {
           program_id: programId,
