@@ -574,17 +574,38 @@ function runSingleAttempt(
         let venueId: string | null = effectiveTmpl.venue_id ?? program.default_venue_id;
 
         // --- Auto-assign venue when none specified ---
-        // Deterministic per template: hash the template ID to pick a consistent
-        // base venue index so the same template always lands in the same venue.
+        // First-fit packing: sort venues by current occupancy on this date
+        // (busiest first) so sessions cluster into fewer venues, leaving
+        // remaining venues open.  Ties broken by back-to-back proximity.
         if (!venueId && venues.length > 0) {
-          let hash = 0;
-          for (let i = 0; i < tmpl.id.length; i++) {
-            hash = ((hash << 5) - hash + tmpl.id.charCodeAt(i)) | 0;
+          // Count sessions already generated per venue for this date
+          const venueOccupancy = new Map<string, number>();
+          const venueLatestEnd = new Map<string, number>(); // latest end_time <= startTime (minutes)
+          const sessionStartMin = timeToMinutes(startTime);
+          for (const s of generatedSessions) {
+            if (s.date !== targetDate) continue;
+            const vid = s.venue_id;
+            if (!vid) continue;
+            venueOccupancy.set(vid, (venueOccupancy.get(vid) ?? 0) + 1);
+            const sEnd = timeToMinutes(s.end_time);
+            if (sEnd <= sessionStartMin) {
+              const prev = venueLatestEnd.get(vid) ?? 0;
+              if (sEnd > prev) venueLatestEnd.set(vid, sEnd);
+            }
           }
-          const baseIndex = ((hash % venues.length) + venues.length) % venues.length;
 
-          for (let offset = 0; offset < venues.length; offset++) {
-            const candidateVenue = venues[(baseIndex + offset) % venues.length];
+          // Sort: busiest first, then smallest gap (back-to-back preference)
+          const sortedVenues = [...venues].sort((a, b) => {
+            const occA = venueOccupancy.get(a.id) ?? 0;
+            const occB = venueOccupancy.get(b.id) ?? 0;
+            if (occB !== occA) return occB - occA; // descending occupancy
+            // Tiebreak: prefer venue whose latest preceding session ends closest to our start
+            const gapA = sessionStartMin - (venueLatestEnd.get(a.id) ?? 0);
+            const gapB = sessionStartMin - (venueLatestEnd.get(b.id) ?? 0);
+            return gapA - gapB; // ascending gap (smaller gap = better)
+          });
+
+          for (const candidateVenue of sortedVenues) {
             if (isVenueBlackoutDate(candidateVenue, targetDate)) continue;
             const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(candidateVenue.availability_json, dayOfWeek, sessionWindow)) continue;
