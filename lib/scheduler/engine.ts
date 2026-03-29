@@ -222,6 +222,8 @@ interface AttemptResult {
   instructorSessionCounts: Map<string, number>;
   sessionsWithWarnings: number;
   unassignedReasons: Map<string, number>;
+  venueConflictDiagnostics: string[];
+  venueConflictsRemoved: number;
 }
 
 /**
@@ -304,6 +306,7 @@ function runSingleAttempt(
   const rotationMap = createRotationMap();
   let sessionsWithWarnings = 0;
   const unassignedReasons = new Map<string, number>();
+  const venueConflictDiagnostics: string[] = [];
 
   // Group templates by effective day_of_week (placement overrides template)
   // Templates with no day_of_week and no placement are scheduled on ALL weekdays (Mon-Fri)
@@ -585,6 +588,22 @@ function runSingleAttempt(
             const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(candidateVenue.availability_json, dayOfWeek, sessionWindow)) continue;
             if (checkVenueCapacity(candidateVenue, targetDate, startTime, endTime, existing_sessions, generatedSessions, NO_BUFFER)) continue;
+
+            // Layer 3: Diagnostic check — verify no overlapping sessions already exist for this venue+date+time
+            const autoAssignWindow = toTimeWindow(startTime, endTime);
+            const autoAssignOverlapCount = generatedSessions.filter(d =>
+              d.venue_id === candidateVenue.id &&
+              d.date === targetDate &&
+              timeWindowsOverlap(autoAssignWindow, toTimeWindow(d.start_time, d.end_time))
+            ).length;
+            if (autoAssignOverlapCount > 0) {
+              venueConflictDiagnostics.push(
+                `[auto-venue-assign] venue="${candidateVenue.name}" date=${targetDate} time=${startTime}-${endTime}: ` +
+                `checkVenueCapacity returned available, but ${autoAssignOverlapCount} overlapping session(s) already generated ` +
+                `(max_concurrent=${candidateVenue.max_concurrent_bookings ?? 1}, buffer=NO_BUFFER)`
+              );
+            }
+
             venueId = candidateVenue.id;
             break;
           }
@@ -646,6 +665,21 @@ function runSingleAttempt(
                   detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${startTime}-${endTime}`,
                 });
                 continue;
+              }
+            } else {
+              // Layer 3: Diagnostic check — venue passed capacity check, verify no overlapping sessions exist
+              const validationWindow = toTimeWindow(startTime, endTime);
+              const validationOverlapCount = generatedSessions.filter(d =>
+                d.venue_id === venue.id &&
+                d.date === targetDate &&
+                timeWindowsOverlap(validationWindow, toTimeWindow(d.start_time, d.end_time))
+              ).length;
+              if (validationOverlapCount > 0) {
+                venueConflictDiagnostics.push(
+                  `[venue-validation] venue="${venue.name}" date=${targetDate} time=${startTime}-${endTime}: ` +
+                  `checkVenueCapacity returned NOT at capacity, but ${validationOverlapCount} overlapping session(s) already generated ` +
+                  `(max_concurrent=${venue.max_concurrent_bookings ?? 1}, buffer_minutes=${bufferSettings.buffer_time_enabled ? bufferSettings.buffer_time_minutes : 0})`
+                );
               }
             }
           }
@@ -789,6 +823,122 @@ function runSingleAttempt(
     }
   }
 
+  // ==================================================================
+  // Layer 2: Post-generation venue conflict sweep (safety net)
+  // ==================================================================
+  // Group sessions by venue_id + date, then check all pairs for overlaps.
+  // Remove the later session (higher index) when a conflict is found.
+  let venueConflictsRemoved = 0;
+
+  const venueeDateGroups = new Map<string, number[]>(); // "venueId|date" -> indices into generatedSessions
+  for (let i = 0; i < generatedSessions.length; i++) {
+    const s = generatedSessions[i];
+    if (!s.venue_id) continue;
+    const key = `${s.venue_id}|${s.date}`;
+    const group = venueeDateGroups.get(key) ?? [];
+    group.push(i);
+    venueeDateGroups.set(key, group);
+  }
+
+  const indicesToRemove = new Set<number>();
+  for (const [key, indices] of venueeDateGroups) {
+    if (indices.length < 2) continue;
+
+    // Sort by start_time within the group
+    indices.sort((a, b) => {
+      const sa = timeToMinutes(generatedSessions[a].start_time);
+      const sb = timeToMinutes(generatedSessions[b].start_time);
+      return sa - sb;
+    });
+
+    // Check every pair for overlaps — O(n²) within same venue+date, but n is small
+    for (let i = 0; i < indices.length; i++) {
+      if (indicesToRemove.has(indices[i])) continue;
+      const sessionA = generatedSessions[indices[i]];
+      const windowA = toTimeWindow(sessionA.start_time, sessionA.end_time);
+
+      for (let j = i + 1; j < indices.length; j++) {
+        if (indicesToRemove.has(indices[j])) continue;
+        const sessionB = generatedSessions[indices[j]];
+        const windowB = toTimeWindow(sessionB.start_time, sessionB.end_time);
+
+        if (timeWindowsOverlap(windowA, windowB)) {
+          // Remove the later session (higher index = added later)
+          const removeIdx = indices[j];
+          indicesToRemove.add(removeIdx);
+          venueConflictsRemoved++;
+
+          const [venueId] = key.split('|');
+          const venueName = venues.find(v => v.id === venueId)?.name ?? venueId;
+
+          skippedDates.push({
+            date: sessionB.date,
+            template_id: sessionB.template_id,
+            reason: 'venue_double_booking',
+            detail: `Conflict in "${venueName}": ${sessionA.name} (${sessionA.start_time}-${sessionA.end_time}) overlaps ${sessionB.name} (${sessionB.start_time}-${sessionB.end_time})`,
+          });
+
+          // Update template stats
+          const bStats = templateStats.get(sessionB.template_id);
+          if (bStats) {
+            bStats.sessions_generated = Math.max(0, bStats.sessions_generated - 1);
+          }
+        }
+      }
+    }
+  }
+
+  // Splice out conflicting sessions (iterate in reverse to preserve indices)
+  if (indicesToRemove.size > 0) {
+    const sortedRemoveIndices = Array.from(indicesToRemove).sort((a, b) => b - a);
+    for (const idx of sortedRemoveIndices) {
+      generatedSessions.splice(idx, 1);
+    }
+  }
+
+  // --- Post-generation venue conflict sweep (safety net) ---
+  const postSweepConflicts: Array<{date: string; template_id: string; reason: string; detail: string}> = [];
+  const sessionsByVenueDate = new Map<string, number[]>();
+  for (let i = 0; i < generatedSessions.length; i++) {
+    const s = generatedSessions[i];
+    if (!s.venue_id) continue;
+    const key = `${s.venue_id}|${s.date}`;
+    const indices = sessionsByVenueDate.get(key) ?? [];
+    indices.push(i);
+    sessionsByVenueDate.set(key, indices);
+  }
+
+  const sweepIndicesToRemove = new Set<number>();
+  for (const [, indices] of sessionsByVenueDate) {
+    for (let i = 0; i < indices.length; i++) {
+      for (let j = i + 1; j < indices.length; j++) {
+        const a = generatedSessions[indices[i]];
+        const b = generatedSessions[indices[j]];
+        const windowA = toTimeWindow(a.start_time, a.end_time);
+        const windowB = toTimeWindow(b.start_time, b.end_time);
+        if (timeWindowsOverlap(windowA, windowB)) {
+          // Remove the later session (higher index = added later)
+          sweepIndicesToRemove.add(indices[j]);
+          postSweepConflicts.push({
+            date: b.date,
+            template_id: b.template_id,
+            reason: "venue_double_booking",
+            detail: `Removed: overlaps with another session at same venue (${a.start_time}-${a.end_time} vs ${b.start_time}-${b.end_time})`,
+          });
+        }
+      }
+    }
+  }
+
+  // Remove conflicts in reverse order to preserve indices
+  const sortedRemovals = Array.from(sweepIndicesToRemove).sort((a, b) => b - a);
+  for (const idx of sortedRemovals) {
+    generatedSessions.splice(idx, 1);
+  }
+
+  // Add removed conflicts to skippedDates
+  skippedDates.push(...postSweepConflicts);
+
   return {
     generatedSessions,
     skippedDates,
@@ -796,6 +946,8 @@ function runSingleAttempt(
     instructorSessionCounts,
     sessionsWithWarnings,
     unassignedReasons,
+    venueConflictDiagnostics,
+    venueConflictsRemoved,
   };
 }
 
@@ -968,6 +1120,8 @@ export async function runScheduler(
     templateStats,
     sessionsWithWarnings,
     unassignedReasons,
+    venueConflictDiagnostics,
+    venueConflictsRemoved,
   } = bestResult!;
 
   // ----------------------------------------------------------
@@ -1100,6 +1254,8 @@ export async function runScheduler(
     byVenue,
     byWeek,
     schedule_warnings: scheduleWarnings.length > 0 ? scheduleWarnings : undefined,
+    venue_conflict_diagnostics: venueConflictDiagnostics.length > 0 ? venueConflictDiagnostics : undefined,
+    venue_conflicts_removed: venueConflictsRemoved > 0 ? venueConflictsRemoved : undefined,
   };
 }
 
