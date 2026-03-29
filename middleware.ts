@@ -120,6 +120,22 @@ export async function middleware(request: NextRequest) {
     return redirect
   }
 
+  // ── Site admins bypass ALL access gates ────────────────────────────────
+  if (user) {
+    const { createServiceClient } = await import('@/lib/supabase-service')
+    const svc = createServiceClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: siteAdminEarly } = await (svc.from('site_admins') as any)
+      .select('role_level')
+      .ilike('google_email', user.email!)
+      .maybeSingle()
+
+    if (siteAdminEarly) {
+      applySecurityHeaders(supabaseResponse, nonce)
+      return supabaseResponse
+    }
+  }
+
   // ── Tool-level access control (visibility gates) ─────────────────────
   const toolSlug = path.split('/')[2]
   if (
@@ -294,7 +310,7 @@ export async function middleware(request: NextRequest) {
     // alongside API-level checks). This prevents lower-privilege admins from
     // even loading pages they can't use.
     if (isAdmin && path.startsWith('/tools/scheduler/admin')) {
-      const roleLevel = admin.role_level as string
+      const roleLevel = (admin?.role_level ?? 'master') as string
       const ROLE_RANK: Record<string, number> = { master: 3, standard: 2, editor: 1 }
       const userRank = ROLE_RANK[roleLevel] ?? 0
 
