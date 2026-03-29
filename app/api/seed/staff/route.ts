@@ -1,15 +1,15 @@
 /**
- * POST /api/seed/instructors
+ * POST /api/seed/staff
  *
- * Seeds the database with instructors covering all subject areas
+ * Seeds the database with staff members covering all subject areas
  * from session_templates required_skills.
  *
  * 1. Queries session_templates for unique required_skills
  * 2. Combines with the full subject list to ensure coverage
- * 3. Creates ~45 instructors with appropriate skills and availability
+ * 3. Creates ~45 staff members with appropriate skills and availability
  *
  * Query params:
- *   ?clear=true  — delete existing instructors first (default: false)
+ *   ?clear=true  — delete existing staff first (default: false)
  *
  * Response: { success, created, subjects_covered }
  */
@@ -69,8 +69,8 @@ const TTHF = {
   friday:   [{ start: '08:00', end: '15:00' }],
 };
 
-// Instructor definitions: realistic names, skills, and varied availability
-const INSTRUCTOR_DEFS: Array<{
+// Staff member definitions: realistic names, skills, and varied availability
+const STAFF_DEFS: Array<{
   first_name: string;
   last_name: string;
   skills: string[];
@@ -160,16 +160,16 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const clearFirst = searchParams.get('clear') === 'true';
 
-    // ── Optionally clear existing instructors ──────────────
+    // ── Optionally clear existing staff ──────────────
     let deleted = 0;
     if (clearFirst) {
-      const { data: delData, error: delError } = await sb.from('instructors')
+      const { data: delData, error: delError } = await sb.from('staff')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000')
         .select('id');
       if (delError) {
         return NextResponse.json(
-          { error: `Failed to clear instructors: ${delError.message}` },
+          { error: `Failed to clear staff: ${delError.message}` },
           { status: 500 },
         );
       }
@@ -190,8 +190,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Build instructor records ───────────────────────────
-    const instructorRecords = INSTRUCTOR_DEFS.map((def) => ({
+    // ── Build staff records ───────────────────────────────
+    const staffRecords = STAFF_DEFS.map((def) => ({
       first_name: def.first_name,
       last_name: def.last_name,
       email: `${def.first_name.toLowerCase()}.${def.last_name.toLowerCase().replace(/'/g, '')}@example.com`,
@@ -205,15 +205,15 @@ export async function POST(request: NextRequest) {
     // ── Insert in batches ──────────────────────────────────
     const allCreated: Array<{ id: string; first_name: string; last_name: string; skills: string[] }> = [];
 
-    for (let i = 0; i < instructorRecords.length; i += 50) {
-      const batch = instructorRecords.slice(i, i + 50);
-      const { data, error } = await sb.from('instructors')
+    for (let i = 0; i < staffRecords.length; i += 50) {
+      const batch = staffRecords.slice(i, i + 50);
+      const { data, error } = await sb.from('staff')
         .upsert(batch, { onConflict: 'email' })
         .select('id, first_name, last_name, skills');
 
       if (error) {
         return NextResponse.json(
-          { error: `Failed to upsert instructors batch ${i}: ${error.message}` },
+          { error: `Failed to upsert staff batch ${i}: ${error.message}` },
           { status: 500 },
         );
       }
@@ -235,14 +235,14 @@ export async function POST(request: NextRequest) {
       subjects_covered: [...coveredSkills].sort(),
       template_subjects: [...templateSubjects].sort(),
       uncovered_template_subjects: uncoveredTemplateSubjects,
-      instructors: allCreated.map(i => ({
+      staff: allCreated.map(i => ({
         id: i.id,
         name: `${i.first_name} ${i.last_name}`,
         skills: i.skills,
       })),
     });
   } catch (err) {
-    console.error('Seed instructors error:', err);
+    console.error('Seed staff error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
       { status: 500 },

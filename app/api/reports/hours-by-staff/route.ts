@@ -1,15 +1,15 @@
 /**
- * GET /api/reports/hours-by-instructor
+ * GET /api/reports/hours-by-staff
  *
  * Sum duration_minutes where status IN (completed, published),
- * grouped by instructor. Supports date range filters.
+ * grouped by staff member. Supports date range filters.
  *
  * Query params:
  *   - start_date (optional) YYYY-MM-DD
  *   - end_date   (optional) YYYY-MM-DD
  *   - program_id (optional) UUID
  *
- * Returns: { success, data: [{ instructor_id, name, total_hours }] }
+ * Returns: { success, data: [{ staff_id, name, total_hours }] }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -48,15 +48,15 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Fetch sessions with instructor relation
+    // Fetch sessions with staff relation
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
       .select(`
         duration_minutes,
-        instructor:instructors (id, first_name, last_name)
+        staff:staff (id, first_name, last_name)
       `)
       .in('status', ['completed', 'published'])
-      .not('instructor_id', 'is', null);
+      .not('staff_id', 'is', null);
 
     if (programId) query = query.eq('program_id', programId);
     if (startDate) query = query.gte('date', startDate);
@@ -71,23 +71,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Aggregate by instructor
-    const instructorMinutes = new Map<string, { name: string; total: number }>();
+    // Aggregate by staff member
+    const staffMinutes = new Map<string, { name: string; total: number }>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const s of (sessions ?? []) as any[]) {
-      const inst = s.instructor as { id: string; first_name: string; last_name: string } | null;
-      if (!inst) continue;
-      const existing = instructorMinutes.get(inst.id) ?? {
-        name: `${inst.first_name} ${inst.last_name}`,
+      const member = s.staff as { id: string; first_name: string; last_name: string } | null;
+      if (!member) continue;
+      const existing = staffMinutes.get(member.id) ?? {
+        name: `${member.first_name} ${member.last_name}`,
         total: 0,
       };
       existing.total += s.duration_minutes;
-      instructorMinutes.set(inst.id, existing);
+      staffMinutes.set(member.id, existing);
     }
 
-    const data = Array.from(instructorMinutes.entries())
+    const data = Array.from(staffMinutes.entries())
       .map(([id, info]) => ({
-        instructor_id: id,
+        staff_id: id,
         name: info.name,
         total_hours: Math.round((info.total / 60) * 100) / 100,
       }))
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (err) {
-    console.error('Reports hours-by-instructor API error:', err);
+    console.error('Reports hours-by-staff API error:', err);
     return NextResponse.json(
       { success: false, error: err instanceof Error ? err.message : 'Internal server error' },
       { status: 500 }

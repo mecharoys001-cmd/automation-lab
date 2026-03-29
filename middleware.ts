@@ -276,19 +276,19 @@ export async function middleware(request: NextRequest) {
       .eq('google_email', email)
       .maybeSingle()
 
-    // Check instructor
+    // Check staff membership
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: instructor } = await (svc.from('instructors') as any)
+    const { data: staffMember } = await (svc.from('staff') as any)
       .select('id')
       .eq('email', email)
       .eq('is_active', true)
       .maybeSingle()
 
     const isAdmin = !!admin || isSiteAdminUser
-    const isInstructor = !!instructor
+    const isStaff = !!staffMember
 
     // Non-org members → redirect to tools list
-    if (!isAdmin && !isInstructor) {
+    if (!isAdmin && !isStaff) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools'
       const redirect = NextResponse.redirect(url)
@@ -296,7 +296,7 @@ export async function middleware(request: NextRequest) {
       return redirect
     }
 
-    // Instructors trying to access /admin → redirect to /portal
+    // Staff members trying to access /admin → redirect to /portal
     if (!isAdmin && path.startsWith('/tools/scheduler/admin')) {
       const url = request.nextUrl.clone()
       url.pathname = '/tools/scheduler/portal'

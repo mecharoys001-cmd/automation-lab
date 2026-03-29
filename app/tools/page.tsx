@@ -226,18 +226,6 @@ export default async function ToolsPage() {
           >
             ← Back to Automation Lab
           </Link>
-          <div
-            style={{
-              fontSize: "12px",
-              color: "var(--color-teal)",
-              fontWeight: 600,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              marginBottom: "1rem",
-            }}
-          >
-            Open Source · Free to Use
-          </div>
           <h1
             style={{
               fontSize: "clamp(2rem, 5vw, 3.5rem)",
@@ -258,8 +246,8 @@ export default async function ToolsPage() {
               lineHeight: 1.7,
             }}
           >
-            Practical tools built through the Automation Lab — free for any
-            nonprofit or organization to use.
+            Practical tools built through the Automation Lab for
+            nonprofit and arts organizations.
           </p>
         </div>
       </div>

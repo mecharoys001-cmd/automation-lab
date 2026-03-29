@@ -10,45 +10,45 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
-    const instructorId = searchParams.get('instructor_id');
+    const staffId = searchParams.get('staff_id');
     const email = searchParams.get('email');
     const status = searchParams.get('status');
     const fromDate = searchParams.get('from_date');
 
-    if (!instructorId && !email) {
+    if (!staffId && !email) {
       return NextResponse.json(
-        { error: 'Either instructor_id or email is required' },
+        { error: 'Either staff_id or email is required' },
         { status: 400 }
       );
     }
 
-    // Resolve instructor ID from email if needed
-    let resolvedId = instructorId;
+    // Resolve staff ID from email if needed
+    let resolvedId = staffId;
     if (!resolvedId && email) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: instructor, error: instrError } = await (supabase.from('instructors') as any)
+      const { data: staffMember, error: instrError } = await (supabase.from('staff') as any)
         .select('id')
         .eq('email', email.trim().toLowerCase())
         .maybeSingle();
 
       if (instrError) {
         return NextResponse.json(
-          { error: `Failed to look up instructor: ${instrError.message}` },
+          { error: `Failed to look up staff member: ${instrError.message}` },
           { status: 500 }
         );
       }
 
-      if (!instructor) {
+      if (!staffMember) {
         return NextResponse.json(
-          { error: 'No instructor found with that email' },
+          { error: 'No staff member found with that email' },
           { status: 404 }
         );
       }
 
-      resolvedId = (instructor as { id: string }).id;
+      resolvedId = (staffMember as { id: string }).id;
     }
 
-    // Instructors can only view their own sessions
+    // Staff members can only view their own sessions
     if (auth.user.orgRole === 'instructor') {
       if (resolvedId !== auth.user.id) {
         return NextResponse.json(
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
       .select('*, venue:venues(*), program:programs(*)')
-      .eq('instructor_id', resolvedId)
+      .eq('staff_id', resolvedId)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 

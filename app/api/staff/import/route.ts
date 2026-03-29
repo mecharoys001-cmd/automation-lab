@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
 
-interface InstructorRow {
+interface StaffRow {
   first_name: string;
   last_name: string;
   email?: string | null;
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       } catch { return null; }
     };
 
-    const rows: (InstructorRow & { program_id: string })[] = rawRows.map((r, idx) => {
+    const rows: (StaffRow & { program_id: string })[] = rawRows.map((r, idx) => {
       const email = r.email ? String(r.email).trim().toLowerCase() : null;
       const phone = r.phone ? String(r.phone).trim() : null;
 
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Check for duplicate emails against existing instructors in this program
+    // Check for duplicate emails against existing staff in this program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase.from('instructors') as any)
+    const { data: existing } = await (supabase.from('staff') as any)
       .select('email')
       .eq('program_id', program_id)
       .not('email', 'is', null)
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       (existing ?? []).map((i: { email: string }) => i.email.toLowerCase().trim()),
     );
 
-    const toInsert: InstructorRow[] = [];
+    const toInsert: StaffRow[] = [];
     let skipped = 0;
 
     for (const row of rows) {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .insert(toInsert)
       .select();
 

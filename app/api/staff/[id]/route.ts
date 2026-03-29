@@ -18,17 +18,17 @@ export async function PATCH(
 
     // Verify program access
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: instructor } = await (supabase.from('instructors') as any)
+    const { data: staffMember } = await (supabase.from('staff') as any)
       .select('program_id, first_name, last_name')
       .eq('id', id)
       .single();
 
-    if (!instructor) {
-      return NextResponse.json({ error: 'Instructor not found' }, { status: 404 });
+    if (!staffMember) {
+      return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
     }
 
-    if (instructor.program_id) {
-      const accessErr = await requireProgramAccess(auth.user, instructor.program_id);
+    if (staffMember.program_id) {
+      const accessErr = await requireProgramAccess(auth.user, staffMember.program_id);
       if (accessErr) return accessErr;
     }
 
@@ -63,13 +63,13 @@ export async function PATCH(
 
     // Check for duplicate name (non-blocking warning)
     let duplicateNameWarning: string | undefined;
-    const firstName = 'first_name' in body ? String(body.first_name).trim() : instructor.first_name;
-    const lastName = 'last_name' in body ? String(body.last_name).trim() : instructor.last_name;
+    const firstName = 'first_name' in body ? String(body.first_name).trim() : staffMember.first_name;
+    const lastName = 'last_name' in body ? String(body.last_name).trim() : staffMember.last_name;
     if (firstName && lastName && ('first_name' in body || 'last_name' in body)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: dupes } = await (supabase.from('instructors') as any)
+      const { data: dupes } = await (supabase.from('staff') as any)
         .select('id, first_name, last_name')
-        .eq('program_id', instructor.program_id)
+        .eq('program_id', staffMember.program_id)
         .ilike('first_name', firstName)
         .ilike('last_name', lastName)
         .neq('id', id);
@@ -79,7 +79,7 @@ export async function PATCH(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .update(body)
       .eq('id', id)
       .select()
@@ -89,7 +89,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ instructor: data, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) });
+    return NextResponse.json({ staffMember: data, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
@@ -114,7 +114,7 @@ export async function DELETE(
 
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inst } = await (supabase.from('instructors') as any)
+    const { data: inst } = await (supabase.from('staff') as any)
       .select('program_id')
       .eq('id', id)
       .single();
@@ -125,7 +125,7 @@ export async function DELETE(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('instructors') as any)
+    const { error } = await (supabase.from('staff') as any)
       .delete()
       .eq('id', id);
 
