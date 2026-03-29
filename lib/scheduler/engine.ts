@@ -584,6 +584,7 @@ function runSingleAttempt(
             if (isVenueBlackoutDate(candidateVenue, targetDate)) continue;
             const sessionWindow = toTimeWindow(startTime, endTime);
             if (!availabilityCoversWindow(candidateVenue.availability_json, dayOfWeek, sessionWindow)) continue;
+            if (checkVenueCapacity(candidateVenue, targetDate, startTime, endTime, existing_sessions, generatedSessions, NO_BUFFER)) continue;
             venueId = candidateVenue.id;
             break;
           }
@@ -625,32 +626,35 @@ function runSingleAttempt(
               }
             }
 
-            if (!program.allows_mixing) {
-              const atCapacity = checkVenueCapacity(
-                venue,
-                targetDate,
-                startTime,
-                endTime,
-                existing_sessions,
-                generatedSessions,
-                bufferSettings
-              );
-              if (atCapacity) {
-                if (venueAutoAssigned) {
-                  venueId = null;
-                } else {
-                  skippedDates.push({
-                    date: targetDate,
-                    template_id: tmpl.id,
-                    reason: 'venue_at_capacity',
-                    detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${startTime}-${endTime}`,
-                  });
-                  continue;
-                }
+            const atCapacity = checkVenueCapacity(
+              venue,
+              targetDate,
+              startTime,
+              endTime,
+              existing_sessions,
+              generatedSessions,
+              bufferSettings
+            );
+            if (atCapacity) {
+              if (venueAutoAssigned) {
+                venueId = null;
+              } else {
+                skippedDates.push({
+                  date: targetDate,
+                  template_id: tmpl.id,
+                  reason: 'venue_at_capacity',
+                  detail: `Venue "${venue.name}" at capacity (max ${venue.max_concurrent_bookings}) at ${startTime}-${endTime}`,
+                });
+                continue;
               }
             }
           }
         }
+
+        // --- Flag when auto-assignment exhausted all venues ---
+        const venueExhaustedNote = (!venueId && !effectiveTmpl.venue_id && !program.default_venue_id && venues.length > 0)
+          ? 'No venue available — all venues at capacity or unavailable'
+          : null;
 
         // --- Match instructor based on template_type ---
         let matchedInstructor: Instructor | null = null;
@@ -717,6 +721,13 @@ function runSingleAttempt(
             matchedInstructor = result.instructor;
             schedulingNotes = result.scheduling_notes;
           }
+        }
+
+        // --- Combine venue + instructor scheduling notes ---
+        if (venueExhaustedNote) {
+          schedulingNotes = schedulingNotes
+            ? `${venueExhaustedNote}; ${schedulingNotes}`
+            : venueExhaustedNote;
         }
 
         // --- Create draft session ---
