@@ -751,7 +751,7 @@ export default function MailingListBuilderPage() {
           borderRadius: 100, padding: '4px 12px', marginBottom: '1rem',
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: ACCENT, display: 'inline-block' }} />
-          <span style={{ fontSize: 12, color: ACCENT, fontWeight: 600 }}>Live · Free to Use</span>
+          <span style={{ fontSize: 12, color: ACCENT, fontWeight: 600 }}>Live</span>
         </div>
         <h1
           onClick={onTitleClick}

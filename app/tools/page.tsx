@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Tools | The Automation Lab",
     description:
-      "Free automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
+      "Automation tools built for nonprofits — by the NWCT Arts Council Automation Lab.",
   };
 }
 

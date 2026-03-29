@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (accessErr) return accessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase.from('staff') as any)
+    let query = (supabase.from('instructors') as any)
       .select('*')
       .eq('program_id', programId)
       .order('last_name')
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ staff: data ?? [] });
+    return NextResponse.json({ instructors: data ?? [] });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
@@ -67,22 +67,22 @@ export async function DELETE() {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    // Global staff deletion is destructive — restrict to master admins
+    // Global instructor deletion is destructive — restrict to master admins
     const masterErr = requireMasterAdmin(auth.user);
     if (masterErr) return masterErr;
 
     const supabase = createServiceClient();
 
-    // Staff are global (not program-scoped), so this deletes all.
+    // Instructors are global (not program-scoped), so this deletes all.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('staff') as any)
+    const { data, error } = await (supabase.from('instructors') as any)
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000') // Supabase requires a filter — this matches all real rows
       .select('id');
 
     if (error) {
       return NextResponse.json(
-        { error: `Failed to delete staff: ${error.message}` },
+        { error: `Failed to delete instructors: ${error.message}` },
         { status: 500 },
       );
     }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     let duplicateNameWarning: string | undefined;
     if (body.first_name && body.last_name) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: dupes } = await (supabase.from('staff') as any)
+      const { data: dupes } = await (supabase.from('instructors') as any)
         .select('id, first_name, last_name')
         .eq('program_id', body.program_id)
         .ilike('first_name', String(body.first_name).trim())
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('staff') as any)
+    const { data, error } = await (supabase.from('instructors') as any)
       .insert(body)
       .select()
       .single();
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ staffMember: data, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) }, { status: 201 });
+    return NextResponse.json({ instructor: data, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

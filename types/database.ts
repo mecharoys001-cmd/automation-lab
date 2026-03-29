@@ -31,7 +31,7 @@ export type RotationMode = 'consistent' | 'rotate';
 export type SchedulingMode = 'date_range' | 'duration' | 'session_count' | 'ongoing';
 
 // ============================================================
-// Availability JSON structure (shared by staff & venues)
+// Availability JSON structure (shared by instructors & venues)
 // ============================================================
 
 export interface TimeBlock {
@@ -63,8 +63,8 @@ export interface Admin {
   created_at: string;
 }
 
-/** 3.2 staff — Teaching artists / staff members with skills & availability */
-export interface Staff {
+/** 3.2 instructors — Teaching artists with skills & availability */
+export interface Instructor {
   id: string;
   first_name: string;
   last_name: string;
@@ -125,7 +125,7 @@ export interface SchoolCalendar {
   description: string | null;
   status_type: CalendarStatusType;
   early_dismissal_time: string | null; // TIME as HH:MM:SS
-  target_staff_id: string | null;
+  target_instructor_id: string | null;
   created_at: string;
 }
 
@@ -137,7 +137,7 @@ export interface SessionTemplate {
   name: string;
   template_type: TemplateType;
   rotation_mode: RotationMode;
-  staff_id: string | null;
+  instructor_id: string | null;
   day_of_week: number | null; // 0=Sunday ... 6=Saturday, null = flexible
   grade_groups: string[];
   start_time: string;
@@ -187,7 +187,7 @@ export interface Session {
   program_id: string;
   template_id: string | null;
   name: string;
-  staff_id: string | null;
+  instructor_id: string | null;
   venue_id: string | null;
   grade_groups: string[];
   date: string;
@@ -220,7 +220,7 @@ export interface VenueTag {
 export interface NotificationLog {
   id: string;
   session_id: string | null;
-  staff_id: string;
+  instructor_id: string;
   channel: NotificationChannel;
   status: NotificationStatus;
   message_preview: string | null;
@@ -248,7 +248,7 @@ export type AdminInsert = Omit<Admin, 'id' | 'created_at'> & {
   created_at?: string;
 };
 
-export type StaffInsert = Omit<Staff, 'id' | 'created_at' | 'updated_at'> & {
+export type InstructorInsert = Omit<Instructor, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
   created_at?: string;
   updated_at?: string;
@@ -304,7 +304,7 @@ export type ProgramRuleInsert = Omit<ProgramRule, 'id' | 'created_at'> & {
 // ============================================================
 
 export type AdminUpdate = Partial<Omit<Admin, 'id'>>;
-export type StaffUpdate = Partial<Omit<Staff, 'id'>>;
+export type InstructorUpdate = Partial<Omit<Instructor, 'id'>>;
 export type VenueUpdate = Partial<Omit<Venue, 'id'>>;
 export type ProgramUpdate = Partial<Omit<Program, 'id'>>;
 export type SchoolCalendarUpdate = Partial<Omit<SchoolCalendar, 'id'>>;
@@ -318,19 +318,19 @@ export type ProgramRuleUpdate = Partial<Omit<ProgramRule, 'id'>>;
 // Joined/enriched types (for UI display)
 // ============================================================
 
-/** Session with joined venue, staff member, tags, and template info */
+/** Session with joined venue, instructor, tags, and template info */
 export interface SessionWithRelations extends Session {
   venue?: Venue | null;
-  staff?: Staff | null;
+  instructor?: Instructor | null;
   tags?: Tag[];
   template?: SessionTemplate | null;
   program?: Program | null;
 }
 
-/** Notification log with joined session and staff member */
+/** Notification log with joined session and instructor */
 export interface NotificationLogWithRelations extends NotificationLog {
   session?: Session | null;
-  staff?: Staff | null;
+  instructor?: Instructor | null;
 }
 
 // ============================================================
@@ -345,10 +345,10 @@ export interface Database {
         Insert: AdminInsert;
         Update: AdminUpdate;
       };
-      staff: {
-        Row: Staff;
-        Insert: StaffInsert;
-        Update: StaffUpdate;
+      instructors: {
+        Row: Instructor;
+        Insert: InstructorInsert;
+        Update: InstructorUpdate;
       };
       venues: {
         Row: Venue;
@@ -417,7 +417,7 @@ export interface ScheduleSnapshot {
   session_templates: SessionTemplate[];
   school_calendar: SchoolCalendar[];
   settings: any; // TODO: Define proper Settings type
-  staff: Staff[];
+  instructors: Instructor[];
   venues: Venue[];
   tags: Tag[];
 }

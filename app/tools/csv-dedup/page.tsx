@@ -5,7 +5,7 @@ import CsvDedupEmbed from "@/components/CsvDedupEmbed";
 export const metadata: Metadata = {
   title: "CSV Deduplicator | Automation Lab Tools",
   description:
-    "Free browser-based CSV deduplication tool. Removes exact and fuzzy-matched duplicate entries — handles misspelled names, initials, and concatenated names at the same address.",
+    "Browser-based CSV deduplication tool. Removes exact and fuzzy-matched duplicate entries — handles misspelled names, initials, and concatenated names at the same address.",
 };
 
 const features = [
@@ -35,7 +35,7 @@ export default function CsvDedupPage() {
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", backgroundColor: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: "100px", padding: "4px 12px", marginBottom: "1rem" }}>
               <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#6366f1", display: "inline-block" }} />
-              <span style={{ fontSize: "12px", color: "#6366f1", fontWeight: 600 }}>Live · Free to Use</span>
+              <span style={{ fontSize: "12px", color: "#6366f1", fontWeight: 600 }}>Live</span>
             </div>
             <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "0.75rem", color: "#1a1a2e" }}>
               🧹 CSV Deduplicator

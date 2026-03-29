@@ -5,7 +5,7 @@ import CampSchedulerEmbed from "@/components/CampSchedulerEmbed";
 export const metadata: Metadata = {
   title: "Camp Scheduler | Automation Lab Tools",
   description:
-    "Free camp activity scheduler with conflict detection, drag-and-drop, instructor management, and Google Sheets integration.",
+    "Camp activity scheduler with conflict detection, drag-and-drop, instructor management, and Google Sheets integration.",
 };
 
 const features = [
@@ -83,7 +83,7 @@ export default function CampSchedulerPage() {
                 }}
               />
               <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 600 }}>
-                Live · Free to Use
+                Live
               </span>
             </div>
             <h1

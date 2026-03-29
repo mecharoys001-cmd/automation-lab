@@ -1,18 +1,18 @@
 /**
- * GET /api/reports/staff-detail
+ * GET /api/reports/instructor-detail
  *
- * Returns detailed session data for a single staff member, optionally filtered
+ * Returns detailed session data for a single instructor, optionally filtered
  * by date range. Provides a weekly breakdown, hours grouped by tag, and totals.
  *
  * Query params:
- *   - staffId   (required) UUID
- *   - startDate (optional) YYYY-MM-DD
- *   - endDate   (optional) YYYY-MM-DD
+ *   - instructorId (required) UUID
+ *   - startDate    (optional) YYYY-MM-DD
+ *   - endDate      (optional) YYYY-MM-DD
  *
  * Response:
  *   {
  *     success: boolean,
- *     staff_member: { id, name },
+ *     instructor: { id, name },
  *     weekly_breakdown: [{ week, hours, session_count }],
  *     hours_by_tag: [{ tag_name, hours, session_count }],
  *     total_hours: number,
@@ -54,38 +54,38 @@ export async function GET(request: NextRequest) {
     if (roleCheck) return roleCheck;
 
     const { searchParams } = new URL(request.url);
-    const staffId = searchParams.get('staffId');
+    const instructorId = searchParams.get('instructorId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    if (!staffId) {
+    if (!instructorId) {
       return NextResponse.json(
-        { success: false, error: 'Missing required param: staffId' },
+        { success: false, error: 'Missing required param: instructorId' },
         { status: 400 }
       );
     }
 
     const supabase = createServiceClient();
 
-    // Fetch staff member info
+    // Fetch instructor info
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: staffMember, error: staffError } = await (supabase.from('staff') as any)
+    const { data: instructor, error: instructorError } = await (supabase.from('instructors') as any)
       .select('id, first_name, last_name')
-      .eq('id', staffId)
+      .eq('id', instructorId)
       .single();
 
-    if (staffError || !staffMember) {
+    if (instructorError || !instructor) {
       return NextResponse.json(
-        { success: false, error: 'Staff member not found' },
+        { success: false, error: 'Instructor not found' },
         { status: 404 }
       );
     }
 
-    // Fetch sessions for this staff member (exclude canceled)
+    // Fetch sessions for this instructor (exclude canceled)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
       .select('id, name, date, start_time, end_time, duration_minutes, status, venue:venues (id, name), template:session_templates (id, required_skills)')
-      .eq('staff_id', staffId)
+      .eq('instructor_id', instructorId)
       .neq('status', 'canceled');
 
     if (startDate) query = query.gte('date', startDate);
@@ -204,9 +204,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      staff_member: {
-        id: staffMember.id,
-        name: `${staffMember.first_name} ${staffMember.last_name}`,
+      instructor: {
+        id: instructor.id,
+        name: `${instructor.first_name} ${instructor.last_name}`,
       },
       weekly_breakdown: weeklyBreakdown,
       hours_by_tag: hoursByTag,
@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
       total_sessions: allSessions.length,
     });
   } catch (err) {
-    console.error('Reports staff-detail API error:', err);
+    console.error('Reports instructor-detail API error:', err);
     return NextResponse.json(
       {
         success: false,

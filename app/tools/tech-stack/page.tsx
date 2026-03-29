@@ -35,7 +35,7 @@ export default function TechStackPage() {
         <div style={{ marginBottom: "2rem" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", backgroundColor: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.3)", borderRadius: "100px", padding: "4px 12px", marginBottom: "1rem" }}>
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#0ea5e9", display: "inline-block" }} />
-            <span style={{ fontSize: "12px", color: "#0ea5e9", fontWeight: 600 }}>Live · Free to Use</span>
+            <span style={{ fontSize: "12px", color: "#0ea5e9", fontWeight: 600 }}>Live</span>
           </div>
           <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
             🗺️ Tech Stack Mapper

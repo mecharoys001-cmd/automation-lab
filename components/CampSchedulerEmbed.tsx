@@ -176,7 +176,7 @@ export default function CampSchedulerEmbed() {
                 Open Camp Scheduler →
               </a>
               <p style={{ fontSize: "12px", color: "#475569" }}>
-                Free · No login required · Runs on Google Apps Script
+                No login required · Runs on Google Apps Script
               </p>
             </div>
           ) : (

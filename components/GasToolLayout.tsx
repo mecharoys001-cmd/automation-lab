@@ -32,7 +32,7 @@ export default function GasToolLayout({ title, description, icon, accent, childr
           borderRadius: '100px', padding: '4px 12px', marginBottom: '1rem',
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: accent, display: 'inline-block' }} />
-          <span style={{ fontSize: '12px', color: accent, fontWeight: 600 }}>Live · Free to Use</span>
+          <span style={{ fontSize: '12px', color: accent, fontWeight: 600 }}>Live</span>
         </div>
         <h1 style={{
           fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 800,
