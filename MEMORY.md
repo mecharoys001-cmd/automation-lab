@@ -1,24 +1,4 @@
 
-## Cache Invalidation Fix (2026-03-29)
-
-**Issue:** "Delete All Data" left stale instructor/venue/template data visible until hard refresh.
-
-**Root Cause:** `requestCache` singleton caches API responses for 2 minutes. Mutation operations weren't invalidating the cache.
-
-**Solution Implemented:**
-- **Settings page:** Added `requestCache.clear()` after delete-all/clear-sessions (commit `9dbd678`)
-- **People page:** Already had 7+ cache invalidations for instructor/venue operations (commit `856aed6`, March 26)
-- **Templates page:** Already had cache invalidation in 4 locations
-- **Documentation:** Created `docs/cache-invalidation.md` pattern guide (commit `43a744f`)
-
-**Result:** UI now updates immediately after mutations without requiring hard refresh.
-
-**Testing Required:** Manual verification that delete-all, CSV imports, and individual operations don't show stale data.
-
-**Pattern for future:** Always call `requestCache.invalidate(/pattern/)` after successful mutation operations.
-
----
-
 ## Bug Fixing Workflow (2026-03-27)
 
 **Learned:** There's a validation agent that verifies fixes and unchecks bugs that aren't actually resolved.
