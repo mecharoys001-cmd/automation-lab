@@ -452,7 +452,7 @@ function runSingleAttempt(
           let foundSlot = false;
           if (!dayNextSlot.has(dayKey)) dayNextSlot.set(dayKey, snapToNext30(dayStartMinutes)); // Start scanning from day start (snapped to 30-min grid)
 
-          for (let scanStart = dayNextSlot.get(dayKey)!; scanStart + durationMinutes <= dayEndMinutes; scanStart += 30) {
+          for (let scanStart = snapToNext30(dayStartMinutes); scanStart + durationMinutes <= dayEndMinutes; scanStart += 30) {
             const scanEnd = scanStart + durationMinutes;
             const scanStartStr = `${String(Math.floor(scanStart / 60)).padStart(2, '0')}:${String(scanStart % 60).padStart(2, '0')}`;
             const scanEndStr = `${String(Math.floor(scanEnd / 60)).padStart(2, '0')}:${String(scanEnd % 60).padStart(2, '0')}`;
