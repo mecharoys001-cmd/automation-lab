@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { Program, Admin, RoleLevel } from '@/types/database';
 import { ImportFromProgramModal } from '../../components/modals/ImportFromProgramModal';
+import { requestCache } from '@/lib/requestCache';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -481,6 +482,9 @@ export default function SettingsPage() {
         localStorage.removeItem('onboarding_minimized');
         window.dispatchEvent(new Event('reopen-onboarding'));
       }
+
+      // Invalidate all cached API responses so UI reflects empty state immediately
+      requestCache.clear();
 
       setClearModalOpen(false);
       setToast({
