@@ -173,11 +173,15 @@ export default function SettingsPage() {
 
   const fetchAdmins = useCallback(async () => {
     setAdminsLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
     try {
-      const res = await fetch('/api/admins');
+      const res = await fetch('/api/admins', { signal: controller.signal });
+      clearTimeout(timeout);
       const data = await res.json();
       setAdmins(data.admins ?? []);
     } catch {
+      clearTimeout(timeout);
       setAdmins([]);
     } finally {
       setAdminsLoading(false);

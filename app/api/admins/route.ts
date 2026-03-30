@@ -314,7 +314,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    await logRoleAudit(supabase, 'delete', auth.user.email, existing?.google_email ?? 'unknown', {
+    // Fire-and-forget: audit logging must never block the response.
+    // In serverless (Vercel), the function may terminate before this completes,
+    // but that's acceptable — the delete itself already succeeded.
+    logRoleAudit(supabase, 'delete', auth.user.email, existing?.google_email ?? 'unknown', {
       admin_id: id,
       old_role: existing?.role_level ?? null,
       display_name: existing?.display_name ?? null,
