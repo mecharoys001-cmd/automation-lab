@@ -16,7 +16,7 @@ export async function GET(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('school_calendar') as any)
-      .select('*, instructor:instructors(id, first_name, last_name)')
+      .select('*, instructor:staff(id, first_name, last_name)')
       .eq('id', id)
       .single();
 
@@ -71,7 +71,7 @@ export async function PATCH(
     const { data, error } = await (supabase.from('school_calendar') as any)
       .update(body)
       .eq('id', id)
-      .select('*, instructor:instructors(id, first_name, last_name)')
+      .select('*, instructor:staff(id, first_name, last_name)')
       .single();
 
     if (error) {

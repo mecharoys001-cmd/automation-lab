@@ -205,7 +205,7 @@ export async function PATCH(
       .eq('id', id)
       .select(`
         *,
-        instructor:instructors!sessions_instructor_id_fkey(*),
+        instructor:staff!sessions_staff_id_fkey(*),
         venue:venues!sessions_venue_id_fkey(*),
         session_tags(tag:tags(*))
       `)
@@ -245,7 +245,7 @@ export async function PATCH(
       const { data: refreshed } = await (supabase.from('sessions') as any)
         .select(`
           *,
-          instructor:instructors!sessions_instructor_id_fkey(*),
+          instructor:staff!sessions_staff_id_fkey(*),
           venue:venues!sessions_venue_id_fkey(*),
           session_tags(tag:tags(*))
         `)

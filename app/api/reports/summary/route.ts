@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     const { data: sessions, error: sessionsError } = await (supabase.from('sessions') as any)
       .select(`
         *,
-        instructor:instructors!sessions_instructor_id_fkey (id, first_name, last_name, email, skills),
+        instructor:staff!sessions_staff_id_fkey (id, first_name, last_name, email, skills),
         venue:venues!sessions_venue_id_fkey (id, name, space_type),
         template:session_templates (id, grade_groups, required_skills)
       `)

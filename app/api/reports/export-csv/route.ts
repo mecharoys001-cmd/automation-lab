@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     let query = (supabase.from('sessions') as any)
       .select(`
         duration_minutes,
-        instructor:instructors!sessions_instructor_id_fkey (id, first_name, last_name),
+        instructor:staff!sessions_staff_id_fkey (id, first_name, last_name),
         program:programs (id, name),
         session_tags (
           tag:tags (id, name)

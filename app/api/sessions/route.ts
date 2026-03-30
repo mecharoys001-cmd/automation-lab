@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       let q = (supabase.from('sessions') as any)
         .select(`
           *,
-          instructor:instructors!sessions_instructor_id_fkey(*),
+          instructor:staff!sessions_staff_id_fkey(*),
           venue:venues!sessions_venue_id_fkey(*),
           template:session_templates(*),
           session_tags(tag:tags(*))

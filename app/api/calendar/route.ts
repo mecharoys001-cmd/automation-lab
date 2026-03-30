@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('school_calendar') as any)
-      .select('*, instructor:instructors(id, first_name, last_name)')
+      .select('*, instructor:staff(id, first_name, last_name)')
       .order('date');
 
     if (programId) {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('school_calendar') as any)
       .insert(body)
-      .select('*, instructor:instructors(id, first_name, last_name)')
+      .select('*, instructor:staff(id, first_name, last_name)')
       .single();
 
     if (error) {
