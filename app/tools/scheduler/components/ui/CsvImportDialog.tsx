@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Upload, X, AlertTriangle, Check, FileText, Loader2, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from './Button';
 import { Tooltip } from './Tooltip';
@@ -135,16 +135,43 @@ export function CsvImportDialog({
 
       setHeaders(parsed.headers.map((h) => h.toLowerCase().trim()));
       setRows(normalizedRows);
-
-      // Validate all rows
-      const allErrors: ValidationError[] = [];
-      normalizedRows.forEach((row, i) => {
-        allErrors.push(...validateRow(row, i));
-      });
-      setErrors(allErrors);
     };
     reader.readAsText(file);
   }, [columns, validateRow]);
+
+  // Filter rows by date range (if date range is set)
+  const filteredRows = useMemo(() => {
+    if (!filterStartDate || !filterEndDate || rows.length === 0) {
+      return rows;
+    }
+
+    const startMs = new Date(filterStartDate).getTime();
+    const endMs = new Date(filterEndDate).getTime();
+
+    return rows.filter((row) => {
+      const dateValue = row[dateColumnName]?.trim();
+      if (!dateValue) return false; // Exclude rows without date
+
+      const dateMs = new Date(dateValue).getTime();
+      // Include if date is between start and end (inclusive)
+      return dateMs >= startMs && dateMs <= endMs;
+    });
+  }, [rows, filterStartDate, filterEndDate, dateColumnName]);
+
+  // Validate filtered rows whenever filtering changes
+  useEffect(() => {
+    if (filteredRows.length === 0) {
+      setErrors([]);
+      return;
+    }
+
+    const allErrors: ValidationError[] = [];
+    filteredRows.forEach((row, idx) => {
+      const rowErrors = validateRow(row, idx);
+      allErrors.push(...rowErrors);
+    });
+    setErrors(allErrors);
+  }, [filteredRows, validateRow]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -160,7 +187,7 @@ export function CsvImportDialog({
   }, [processFile]);
 
   const handleImport = useCallback(async () => {
-    const validRows = rows.filter((_, i) => !errors.some((e) => e.row === i));
+    const validRows = filteredRows.filter((_, i) => !errors.some((e) => e.row === i));
     if (validRows.length === 0) return;
     setImporting(true);
     try {
@@ -171,7 +198,7 @@ export function CsvImportDialog({
     } finally {
       setImporting(false);
     }
-  }, [rows, errors, onImport]);
+  }, [filteredRows, errors, onImport]);
 
   const downloadTemplate = useCallback(() => {
     if (!exampleCsv) return;
@@ -187,7 +214,7 @@ export function CsvImportDialog({
   if (!open) return null;
 
   const rowsWithErrors = new Set(errors.map((e) => e.row));
-  const validCount = rows.filter((_, i) => !rowsWithErrors.has(i)).length;
+  const validCount = filteredRows.filter((_, i) => !rowsWithErrors.has(i)).length;
   const errorCount = rowsWithErrors.size;
 
   // Columns to display: use defined columns, mapped to lowercase headers
@@ -330,19 +357,19 @@ export function CsvImportDialog({
               </div>
               <p className="text-xs text-slate-600 mt-2">
                 {filterStartDate && filterEndDate
-                  ? `Showing entries from ${filterStartDate} to ${filterEndDate} (${rows.length} rows)`
+                  ? `Showing entries from ${filterStartDate} to ${filterEndDate} (${filteredRows.length} rows)`
                   : 'Set date range to filter entries'}
               </p>
             </div>
           )}
 
           {/* Preview table */}
-          {rows.length > 0 && !result && (
+          {filteredRows.length > 0 && !result && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-slate-700">
-                    {rows.length} row{rows.length !== 1 ? 's' : ''} parsed
+                    {filteredRows.length} row{filteredRows.length !== 1 ? 's' : ''} parsed
                   </span>
                   {errorCount > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">
@@ -377,7 +404,7 @@ export function CsvImportDialog({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {rows.map((row, i) => {
+                      {filteredRows.map((row, i) => {
                         const rowErrors = errors.filter((e) => e.row === i);
                         const hasError = rowErrors.length > 0;
                         return (
