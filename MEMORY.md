@@ -1,4 +1,25 @@
 
+## School Calendar CSV Date Range Filter (2026-03-30)
+
+**Feature:** Import dialog now filters calendar entries by program date range.
+
+**Implementation:**
+- `CsvImportDialog.tsx`: Added `dateRangeStart`/`dateRangeEnd` props + date inputs UI (commits `d37b5c9`, `599e3e7`)
+- Filtering: `useMemo` filters rows by date before validation/preview (commit `cbfaac1`)
+- `calendar/page.tsx`: Passes `selectedProgram.start_date` / `end_date` to dialog (commit pending)
+- UI: Two date inputs (First Day, Last Day) shown after file upload
+
+**User Impact:**
+- Prevents importing old/future calendar entries outside program period
+- Date range pre-filled with program dates, adjustable before import
+- Counter shows "X of Y rows" after filtering
+
+**Testing:** Manual tests pending after deploy
+
+**Docs:** `docs/school-calendar-csv-date-filter.md`
+
+---
+
 ## Cache Invalidation Fix (2026-03-29)
 
 **Issue:** "Delete All Data" left stale instructor/venue/template data visible until hard refresh.
