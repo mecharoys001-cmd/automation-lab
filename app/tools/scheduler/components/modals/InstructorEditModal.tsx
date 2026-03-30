@@ -135,7 +135,7 @@ export function InstructorEditModal({
                   <button
                     onClick={onDelete}
                     disabled={deleting}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
                   >
                     {deleting ? (
                       <span className="inline-flex items-center gap-1.5">

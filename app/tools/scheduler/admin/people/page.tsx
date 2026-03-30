@@ -336,7 +336,7 @@ const StaffCard = memo(function StaffCard({
       {(inst.email || inst.phone) && (
         <p className="text-xs text-slate-600 truncate">
           {inst.email && <span className="text-blue-500">{inst.email}</span>}
-          {inst.email && inst.phone && <span className="mx-1.5 text-slate-300">|</span>}
+          {inst.email && inst.phone && <span className="mx-1.5 text-slate-600">|</span>}
           {inst.phone && <span>{inst.phone}</span>}
         </p>
       )}
@@ -647,7 +647,7 @@ function VenueDetailModal({
                     <button
                       onClick={onDelete}
                       disabled={deleting}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
                     >
                       {deleting ? 'Deleting…' : 'Yes, Delete'}
                     </button>
@@ -693,7 +693,7 @@ function VenueDetailModal({
               id="venue-edit-name"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="text-[22px] font-bold text-slate-900 bg-transparent border-b-2 border-blue-400 outline-none w-full max-w-[400px]"
+              className="text-[22px] font-bold text-slate-900 bg-transparent border-b-2 border-blue-400 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 w-full max-w-[400px]"
               placeholder="Venue name"
             />
           </Tooltip>
@@ -1851,7 +1851,7 @@ export default function PeoplePage() {
                   placeholder="Search staff..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-700 bg-transparent outline-none"
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-700 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded-md"
                 />
               </div>
             </Tooltip>
@@ -1863,7 +1863,7 @@ export default function PeoplePage() {
                   aria-label="Filter by staff status"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-                  className="appearance-none bg-transparent px-3 py-1.5 pr-8 text-[13px] font-medium text-slate-600 outline-none cursor-pointer"
+                  className="appearance-none bg-transparent px-3 py-1.5 pr-8 text-[13px] font-medium text-slate-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded-md cursor-pointer"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -1987,7 +1987,7 @@ export default function PeoplePage() {
                   placeholder="Search venues..."
                   value={venueSearch}
                   onChange={(e) => setVenueSearch(e.target.value)}
-                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-700 bg-transparent outline-none"
+                  className="flex-1 text-[13px] text-slate-900 placeholder:text-slate-700 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded-md"
                 />
               </div>
             </Tooltip>
@@ -2119,7 +2119,7 @@ export default function PeoplePage() {
           </>
         }>
           <div className="px-6 py-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-slate-700" data-testid="duplicate-name-warning">{duplicateWarning}</p>
           </div>
         </Modal>

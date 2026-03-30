@@ -68,7 +68,7 @@ export function Pill({
 
   const el = (
     <span
-      className={`inline-flex items-center ${bgClass} ${textClass} ${variantStyles[variant]} ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`}
+      className={`inline-flex items-center ${bgClass} ${textClass} ${variantStyles[variant]} ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1' : ''} ${className}`}
       style={Object.keys(inlineStyle).length > 0 ? inlineStyle : undefined}
       onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
       role={onClick ? 'button' : undefined}

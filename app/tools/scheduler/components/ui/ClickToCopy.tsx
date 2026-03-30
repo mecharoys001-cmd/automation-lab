@@ -183,7 +183,7 @@ export function ClickToCopy({
             <span className={textClassName ?? 'text-sm font-medium text-slate-700'}>
               {displayText || text}
             </span>
-            <Copy className="w-3 h-3 text-slate-300 flex-shrink-0" />
+            <Copy className="w-3 h-3 text-slate-600 flex-shrink-0" />
           </>
         )}
       </button>

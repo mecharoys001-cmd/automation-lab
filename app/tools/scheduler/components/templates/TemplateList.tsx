@@ -261,8 +261,8 @@ export function TemplateList({
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors cursor-pointer"
                   style={{
                     backgroundColor: allActive ? '#ECFDF5' : '#FFFFFF',
-                    borderColor: allActive ? '#059669' : '#E2E8F0',
-                    color: allActive ? '#059669' : '#334155',
+                    borderColor: allActive ? '#047857' : '#E2E8F0',
+                    color: allActive ? '#047857' : '#334155',
                   }}
                 >
                   <span
@@ -271,7 +271,7 @@ export function TemplateList({
                       width: 28,
                       height: 16,
                       borderRadius: 9999,
-                      backgroundColor: allActive ? '#059669' : '#CBD5E1',
+                      backgroundColor: allActive ? '#047857' : '#CBD5E1',
                       position: 'relative',
                       transition: 'background-color 0.2s',
                       flexShrink: 0,
@@ -436,8 +436,8 @@ export function TemplateList({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors cursor-pointer"
                 style={{
                   backgroundColor: filters.activeOnly ? '#ECFDF5' : '#FFFFFF',
-                  borderColor: filters.activeOnly ? '#059669' : '#E2E8F0',
-                  color: filters.activeOnly ? '#059669' : '#64748B',
+                  borderColor: filters.activeOnly ? '#047857' : '#E2E8F0',
+                  color: filters.activeOnly ? '#047857' : '#64748B',
                 }}
               >
                 {filters.activeOnly ? 'Active Only' : 'Show All'}
@@ -726,7 +726,7 @@ function TableView({
                         width: 34,
                         height: 18,
                         borderRadius: 9999,
-                        backgroundColor: t.isActive !== false ? '#059669' : '#CBD5E1',
+                        backgroundColor: t.isActive !== false ? '#047857' : '#CBD5E1',
                         position: 'relative',
                         transition: 'background-color 0.2s',
                         flexShrink: 0,
@@ -750,7 +750,7 @@ function TableView({
                       style={{
                         fontSize: 12,
                         fontWeight: 500,
-                        color: t.isActive !== false ? '#059669' : '#94A3B8',
+                        color: t.isActive !== false ? '#047857' : '#64748b',
                       }}
                     >
                       {t.isActive !== false ? 'Active' : 'Inactive'}

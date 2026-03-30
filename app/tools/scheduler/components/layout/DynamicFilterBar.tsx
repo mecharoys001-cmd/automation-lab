@@ -125,7 +125,7 @@ function FilterDropdown({
           )}
           <ChevronDown className={`w-3 h-3 transition-transform ${
             open ? 'rotate-180' : ''
-          } ${hasSelections ? 'text-blue-400' : 'text-slate-700'}`} />
+          } ${hasSelections ? 'text-blue-600' : 'text-slate-700'}`} />
         </button>
       </Tooltip>
 

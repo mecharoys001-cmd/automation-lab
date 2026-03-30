@@ -150,24 +150,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
     }
   };
 
-  // Track whether the checklist panel has focus within it
   const panelRef = useRef<HTMLElement>(null);
-  const [hasFocusWithin, setHasFocusWithin] = useState(false);
-
-  useEffect(() => {
-    const el = panelRef.current;
-    if (!el) return;
-    const onFocusIn = () => setHasFocusWithin(true);
-    const onFocusOut = (e: FocusEvent) => {
-      if (!el.contains(e.relatedTarget as Node)) setHasFocusWithin(false);
-    };
-    el.addEventListener('focusin', onFocusIn);
-    el.addEventListener('focusout', onFocusOut);
-    return () => {
-      el.removeEventListener('focusin', onFocusIn);
-      el.removeEventListener('focusout', onFocusOut);
-    };
-  }, [minimized, loading]);
 
   const requiredSteps = steps.filter((s) => !s.optional);
   const completedCount = requiredSteps.filter((s) => s.completed).length;
@@ -220,7 +203,6 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       ref={panelRef}
       role="complementary"
       aria-label="Getting Started checklist"
-      {...(!hasFocusWithin ? { inert: '' as unknown as boolean } : {})}
       className="fixed bottom-6 left-6 right-6 sm:right-auto z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-[380px] overflow-hidden"
     >
       {/* Header */}
@@ -236,7 +218,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
             <Tooltip text="Minimize checklist">
               <button
                 onClick={handleMinimize}
-                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-blue-500"
                 aria-label="Minimize checklist"
               >
                 <Minimize2 className="w-4 h-4" />
@@ -245,7 +227,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
             <Tooltip text="Close checklist (reopen in Settings)">
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-blue-500"
                 aria-label="Close checklist"
               >
                 <X className="w-4 h-4" />
@@ -276,7 +258,7 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
             key={step.id}
             href={step.link}
             onClick={() => handleStepClick(index)}
-            className={`block rounded-lg border transition-all ${
+            className={`block rounded-lg border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
               step.completed
                 ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
                 : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50'

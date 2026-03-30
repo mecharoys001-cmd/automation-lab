@@ -138,7 +138,7 @@ export function AvailabilityEditor({
           className="text-[11px] font-medium text-blue-500 hover:text-blue-600 transition-colors">
           Select All
         </button>
-        <span className="text-slate-300">·</span>
+        <span className="text-slate-600">·</span>
         <button type="button" onClick={clearAll}
           className="text-[11px] font-medium text-slate-700 hover:text-slate-600 transition-colors">
           Clear All

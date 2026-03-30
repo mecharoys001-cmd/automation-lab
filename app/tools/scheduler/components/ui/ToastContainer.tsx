@@ -83,7 +83,7 @@ export function ToastContainer() {
         {errorToasts.map((t) => (
           <div
             key={t.id}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg text-[13px] font-medium text-white bg-red-500"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg text-[13px] font-medium text-white bg-red-600"
           >
             {icon(t.type)}
             <span>{t.message}</span>

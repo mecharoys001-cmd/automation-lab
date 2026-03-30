@@ -235,7 +235,7 @@ export function InstructorDetailModal({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-300">—</span>
+                  <span className="text-xs text-slate-600">—</span>
                 )}
               </div>
             );

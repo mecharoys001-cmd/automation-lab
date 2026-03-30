@@ -454,7 +454,7 @@ export function DayView({
         {events.length === 0 && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="flex flex-col items-center gap-3 pointer-events-auto">
-              <CalendarDays className="w-8 h-8 text-slate-300" />
+              <CalendarDays className="w-8 h-8 text-slate-600" />
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-600">No sessions scheduled yet</p>
                 <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>

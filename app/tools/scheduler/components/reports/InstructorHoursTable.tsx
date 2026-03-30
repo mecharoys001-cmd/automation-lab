@@ -28,7 +28,7 @@ interface InstructorHoursTableProps {
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Active:     { bg: 'bg-emerald-100', text: 'text-emerald-700' },
   'Part-time': { bg: 'bg-amber-100',  text: 'text-amber-800' },
-  Substitute: { bg: 'bg-blue-100',    text: 'text-blue-500' },
+  Substitute: { bg: 'bg-blue-100',    text: 'text-blue-700' },
 };
 
 /* ── Component ─────────────────────────────────────────── */
@@ -90,7 +90,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
                 {/* Main Row */}
                 <Tooltip text={tooltipText}>
                   <div
-                    className={`grid items-center px-5 h-14 transition-colors cursor-pointer hover:bg-blue-50 ${
+                    className={`grid items-center px-5 h-14 transition-colors cursor-pointer hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
                       isExpanded ? 'bg-blue-50' : ''
                     } ${!isLast || isExpanded ? 'border-b border-slate-200' : ''}`}
                     style={{ gridTemplateColumns: '1fr 120px 100px 100px 40px' }}

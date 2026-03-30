@@ -298,8 +298,8 @@ export function CsvImportDialog({
                 <label className="text-sm font-medium text-slate-700">
                   Filter by Date Range
                 </label>
-                <Tooltip content="Only show calendar entries between these dates (inclusive). Pre-filled with program start/end dates." position="top">
-                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+                <Tooltip text="Only show calendar entries between these dates (inclusive). Pre-filled with program start/end dates.">
+                  <HelpCircle className="w-4 h-4 text-slate-600 cursor-help" />
                 </Tooltip>
               </div>
               <div className="flex items-center gap-4">
@@ -328,9 +328,9 @@ export function CsvImportDialog({
                   />
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
-                {filterStartDate && filterEndDate 
-                  ? `Showing entries from ${filterStartDate} to ${filterEndDate} (${filteredRows.length} of ${rows.length} rows)`
+              <p className="text-xs text-slate-600 mt-2">
+                {filterStartDate && filterEndDate
+                  ? `Showing entries from ${filterStartDate} to ${filterEndDate} (${rows.length} rows)`
                   : 'Set date range to filter entries'}
               </p>
             </div>
@@ -399,7 +399,7 @@ export function CsvImportDialog({
                               return (
                                 <td key={col} className="px-3 py-2">
                                   <span className={cellErrors.length > 0 ? 'text-red-700 font-medium' : 'text-slate-700'}>
-                                    {row[col] || <span className="text-slate-500">-</span>}
+                                    {row[col] || <span className="text-slate-600">-</span>}
                                   </span>
                                   {cellErrors.map((e, ei) => (
                                     <span key={ei} className="block text-[11px] text-red-700">{e.message}</span>

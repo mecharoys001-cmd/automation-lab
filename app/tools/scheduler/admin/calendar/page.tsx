@@ -1065,7 +1065,7 @@ export default function CalendarPage() {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center max-w-md">
-          <CalendarDays className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-slate-900 mb-2">School Calendar</h1>
           <p className="text-sm text-slate-600">
             Select a program to manage its calendar entries.
@@ -1196,7 +1196,7 @@ export default function CalendarPage() {
             {isDirty && (
               <Tooltip text="You have unsaved changes">
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
                   <span className="text-xs font-medium text-amber-800">Unsaved</span>
                 </span>
               </Tooltip>
@@ -1562,7 +1562,7 @@ export default function CalendarPage() {
                                 <div className="flex items-center gap-1.5 mb-3">
                                   <Tooltip text="You have unsaved changes to this entry">
                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
-                                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                      <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
                                       <span className="text-xs font-medium text-amber-800">Unsaved changes</span>
                                     </span>
                                   </Tooltip>

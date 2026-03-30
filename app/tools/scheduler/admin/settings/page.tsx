@@ -76,7 +76,7 @@ const btnPrimary =
 const btnSecondary =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDanger =
-  'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
+  'inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDangerOutline =
   'inline-flex items-center gap-1.5 rounded-lg border border-red-300 text-red-700 px-3 py-1.5 text-xs font-medium hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const thClass =
@@ -1399,7 +1399,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleClearData}
                     disabled={clearing || clearConfirmText !== 'DELETE ALL SESSIONS'}
-                    className={`inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50 ${clearConfirmText !== 'DELETE ALL SESSIONS' ? 'cursor-not-allowed' : ''}`}
+                    className={`inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50 ${clearConfirmText !== 'DELETE ALL SESSIONS' ? 'cursor-not-allowed' : ''}`}
                   >
                     {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     {clearing ? 'Clearing...' : 'Yes, Clear Sessions'}
@@ -1410,7 +1410,7 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setClearStep(2)}
                     disabled={clearConfirmText !== 'DELETE ALL DATA'}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
                   >
                     Continue
                   </button>
@@ -1419,7 +1419,7 @@ export default function SettingsPage() {
                 <Tooltip text="Proceed to final confirmation">
                   <button
                     onClick={() => setClearStep(3)}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors"
                   >
                     Continue
                   </button>
@@ -1429,7 +1429,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleClearData}
                     disabled={clearing}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
                   >
                     {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     {clearing ? 'Clearing...' : 'Yes, Delete Everything'}
@@ -1478,7 +1478,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => deleteAdmin(confirmRemoveAdmin.id)}
                 disabled={!!deletingAdminId}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {deletingAdminId === confirmRemoveAdmin.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

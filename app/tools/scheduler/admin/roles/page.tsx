@@ -92,7 +92,7 @@ const btnPrimary =
 const btnSecondary =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDanger =
-  'inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
+  'inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const thClass =
   'text-left px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wider';
 const tdClass = 'px-4 py-3 text-sm';
@@ -532,7 +532,7 @@ export default function RolesPage() {
     return (
       <div className="flex items-center justify-center h-full bg-slate-50">
         <div className="text-center space-y-2">
-          <ShieldAlert className="w-10 h-10 text-slate-400 mx-auto" />
+          <ShieldAlert className="w-10 h-10 text-slate-600 mx-auto" />
           <h2 className="text-lg font-semibold text-slate-900">Access Denied</h2>
           <p className="text-sm text-slate-600">Only Master Admin users can manage roles.</p>
         </div>
@@ -772,7 +772,7 @@ export default function RolesPage() {
                 {auditEntries.map((entry) => {
                   const meta = entry.metadata ?? {};
                   const actionLabel = entry.event_type === 'role_create' ? 'Added' : entry.event_type === 'role_update' ? 'Updated' : 'Removed';
-                  const actionColor = entry.event_type === 'role_create' ? 'text-emerald-600' : entry.event_type === 'role_update' ? 'text-blue-600' : 'text-red-600';
+                  const actionColor = entry.event_type === 'role_create' ? 'text-emerald-700' : entry.event_type === 'role_update' ? 'text-blue-700' : 'text-red-700';
                   const details = entry.event_type === 'role_create'
                     ? `Role: ${meta.new_role ?? '—'}`
                     : entry.event_type === 'role_update'
@@ -924,7 +924,7 @@ export default function RolesPage() {
               <button
                 onClick={handleRemove}
                 disabled={removing}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {removing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

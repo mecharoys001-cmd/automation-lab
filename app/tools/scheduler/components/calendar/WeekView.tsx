@@ -448,7 +448,7 @@ function TemplateSidebar({
                     borderLeft: subjectColor ? `3px solid ${subjectColor.accent}` : undefined,
                   }}
                 >
-                  <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0 group-hover:text-blue-400" />
+                  <GripVertical className="w-3.5 h-3.5 text-slate-600 mt-0.5 shrink-0 group-hover:text-blue-600" />
                   <div className="min-w-0 flex-1">
                     <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-600 italic'}`}>
                       {displayName}
@@ -903,7 +903,7 @@ export function WeekView({
         {events.length === 0 && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="flex flex-col items-center gap-3 pointer-events-auto">
-              <CalendarDays className="w-8 h-8 text-slate-300" />
+              <CalendarDays className="w-8 h-8 text-slate-600" />
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-600">No sessions scheduled yet</p>
                 <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>

@@ -109,6 +109,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prevent privilege escalation: only master admins can grant master role
+    if (roleLevel === 'master' && auth.user.roleLevel !== 'master') {
+      return NextResponse.json(
+        { error: 'Forbidden: only master admins can grant master admin access' },
+        { status: 403 },
+      );
+    }
+
     // Whitelist fields to prevent arbitrary column injection
     const insertPayload = {
       google_email: String(body.google_email).trim(),
@@ -176,6 +184,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         { error: `Invalid role_level: must be one of ${VALID_ROLE_LEVELS.join(', ')}` },
         { status: 400 },
+      );
+    }
+
+    // Prevent privilege escalation: only master admins can grant master role
+    if ('role_level' in body && body.role_level === 'master' && auth.user.roleLevel !== 'master') {
+      return NextResponse.json(
+        { error: 'Forbidden: only master admins can grant master admin access' },
+        { status: 403 },
       );
     }
 

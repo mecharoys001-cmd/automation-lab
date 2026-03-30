@@ -62,6 +62,11 @@ html { scroll-behavior: smooth; }
    Uses both outline AND box-shadow for maximum
    visibility, even when Tailwind utilities or
    @tailwindcss/forms set outline to transparent/none.
+
+   The :focus-visible rule covers keyboard navigation.
+   The [tabindex]:focus rule is a fallback for custom
+   interactive elements (role="button", etc.) that may
+   not trigger :focus-visible in all browsers.
 ───────────────────────────────────────────── */
 *:focus-visible {
   outline: 2px solid #3b82f6 !important;
@@ -69,12 +74,33 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3) !important;
 }
 
+/* Ensure elements with explicit tabindex also show focus
+   when navigated via keyboard (screen readers, switch devices) */
+[role="button"]:focus,
+[tabindex="0"]:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Suppress the outline on mouse click for role="button" elements;
+   :focus-visible already handles keyboard-only focus. */
+[role="button"]:focus:not(:focus-visible),
+[tabindex="0"]:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Brighter ring on dark backgrounds */
 .bg-slate-800 *:focus-visible,
 .bg-slate-900 *:focus-visible,
 [class*="bg-gradient"] *:focus-visible,
 .bg-slate-800:focus-visible,
-.bg-slate-900:focus-visible {
+.bg-slate-900:focus-visible,
+.bg-slate-800 [role="button"]:focus,
+.bg-slate-900 [role="button"]:focus,
+.bg-slate-800 [tabindex="0"]:focus,
+.bg-slate-900 [tabindex="0"]:focus {
   outline-color: #93bbfd !important;
   box-shadow: 0 0 0 4px rgba(147, 187, 253, 0.4) !important;
 }
@@ -86,10 +112,13 @@ html { scroll-behavior: smooth; }
    #475569 (slate-600) = 5.9:1 on #fff, 5.6:1 on
    slate-50 — comfortably passes AA even on tinted
    input backgrounds.
+   Uses !important to override @tailwindcss/forms
+   attribute selectors ([type='text']::placeholder
+   etc.) which have higher specificity.
 ───────────────────────────────────────────── */
 ::placeholder {
-  color: #475569;
-  opacity: 1;
+  color: #475569 !important;
+  opacity: 1 !important;
 }
 
 body {

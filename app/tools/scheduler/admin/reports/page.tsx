@@ -166,7 +166,7 @@ function InstructorHoursTab({
             <tr>
               <td colSpan={5} className="px-5 py-12 text-center">
                 <div className="flex flex-col items-center gap-3">
-                  <Users className="w-8 h-8 text-slate-300" />
+                  <Users className="w-8 h-8 text-slate-600" />
                   <div>
                     <p className="text-sm font-medium text-slate-600">No staff hours available</p>
                     <p className="text-sm text-slate-700 mt-1">Add staff members and assign them to events to start tracking hours.</p>
@@ -202,7 +202,7 @@ function InstructorHoursTab({
                   <td colSpan={5} className="p-0 border-b border-[#E2E8F0]">
                     <Tooltip text={`Click to ${isExpanded ? 'collapse' : 'expand'} monthly breakdown for ${instructor.name}`}>
                       <div
-                        className={`grid items-center px-5 h-14 transition-colors cursor-pointer hover:bg-blue-50/60 ${
+                        className={`grid items-center px-5 h-14 transition-colors cursor-pointer hover:bg-blue-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
                           isExpanded ? 'bg-blue-50/40' : ''
                         }`}
                         style={{ gridTemplateColumns: '280px 120px 100px 120px 48px' }}
@@ -374,7 +374,7 @@ function HoursByTagTab({
             <tr>
               <td colSpan={4} className="px-5 py-12 text-center">
                 <div className="flex flex-col items-center gap-3">
-                  <Tag className="w-8 h-8 text-slate-300" />
+                  <Tag className="w-8 h-8 text-slate-600" />
                   <div>
                     <p className="text-sm font-medium text-slate-600">No tag data available</p>
                     <p className="text-sm text-slate-700 mt-1">Create event tags and apply them to templates to see reporting breakdowns.</p>
