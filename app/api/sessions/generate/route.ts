@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: created, error: insertError } = await (supabase.from('sessions') as any)
       .insert(sessionRows)
-      .select('*, instructor:instructors(id, first_name, last_name), venue:venues(id, name)');
+      .select('*, instructor:instructors!sessions_instructor_id_fkey(id, first_name, last_name), venue:venues!sessions_venue_id_fkey(id, name)');
 
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });

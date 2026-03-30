@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     let query = (supabase.from('sessions') as any)
       .select(`
         duration_minutes,
-        instructor:instructors (id, first_name, last_name)
+        instructor:instructors!sessions_instructor_id_fkey (id, first_name, last_name)
       `)
       .in('status', ['completed', 'published'])
       .not('staff_id', 'is', null);
