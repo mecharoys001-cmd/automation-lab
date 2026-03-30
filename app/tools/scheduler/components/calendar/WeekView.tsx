@@ -428,7 +428,7 @@ function TemplateSidebar({
               const tipLines: string[] = ['Event Template'];
               if (template.name) tipLines.push(`Name: ${template.name}`);
               if (subject) tipLines.push(`Subject: ${subject}`);
-              if (instructorName) tipLines.push(`Instructor: ${instructorName}`);
+              if (instructorName) tipLines.push(`Staff: ${instructorName}`);
               if (venueName) tipLines.push(`Venue: ${venueName}`);
               if (template.duration_minutes > 0) tipLines.push(`Duration: ${template.duration_minutes} min`);
               if (template.grade_groups?.length) tipLines.push(`Grades: ${template.grade_groups.join(', ')}`);

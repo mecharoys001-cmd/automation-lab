@@ -69,7 +69,7 @@ export async function POST(
     // Import staff
     if (import_staff) {
       const { data: instructors } = await sb
-        .from('instructors')
+        .from('staff')
         .select('first_name, last_name, email, phone, skills, availability_json, is_active, on_call, notes')
         .eq('program_id', source_program_id);
 
@@ -79,7 +79,7 @@ export async function POST(
           program_id: targetProgramId,
         }));
 
-        const { data } = await sb.from('instructors').insert(rows).select('id');
+        const { data } = await sb.from('staff').insert(rows).select('id');
         counts.instructors = data?.length ?? 0;
       }
     }

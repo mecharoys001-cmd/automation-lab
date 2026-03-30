@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch all active instructors scoped to the session's program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawInstructors, error: instError } = await (supabase.from('instructors') as any)
+    const { data: rawInstructors, error: instError } = await (supabase.from('staff') as any)
       .select('id, first_name, last_name, skills, availability_json, is_active')
       .eq('program_id', session.program_id)
       .eq('is_active', true)
@@ -113,27 +113,27 @@ export async function GET(request: NextRequest) {
     // Filter: not double-booked
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: conflicts } = await (supabase.from('sessions') as any)
-      .select('instructor_id, start_time, end_time')
+      .select('staff_id, start_time, end_time')
       .eq('date', session.date)
       .neq('status', 'canceled')
       .neq('id', session.id);
 
     if (conflicts) {
       const bookedInstructors = new Set<string>();
-      for (const c of conflicts as { instructor_id: string | null; start_time: string; end_time: string }[]) {
-        if (!c.instructor_id) continue;
+      for (const c of conflicts as { staff_id: string | null; start_time: string; end_time: string }[]) {
+        if (!c.staff_id) continue;
         const cStart = timeToMinutes(c.start_time);
         const cEnd = timeToMinutes(c.end_time);
         if (sessionStartMin < cEnd && sessionEndMin > cStart) {
-          bookedInstructors.add(c.instructor_id);
+          bookedInstructors.add(c.staff_id);
         }
       }
       candidates = candidates.filter((c) => !bookedInstructors.has(c.id));
     }
 
     // Exclude the original instructor
-    if (session.instructor_id) {
-      candidates = candidates.filter((c) => c.id !== session.instructor_id);
+    if (session.staff_id) {
+      candidates = candidates.filter((c) => c.id !== session.staff_id);
     }
 
     return NextResponse.json({

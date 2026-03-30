@@ -168,7 +168,7 @@ function isInstructorBooked(
 
   for (const session of existingSessions) {
     if (
-      session.instructor_id === instructorId &&
+      session.staff_id === instructorId &&
       session.date === date &&
       session.status !== 'canceled'
     ) {
@@ -178,7 +178,7 @@ function isInstructorBooked(
   }
 
   for (const draft of generatedSessions) {
-    if (draft.instructor_id === instructorId && draft.date === date) {
+    if (draft.staff_id === instructorId && draft.date === date) {
       const draftWindow = toTimeWindow(draft.start_time, draft.end_time);
       if (timeWindowsOverlap(bufferedWindow, draftWindow)) return true;
     }

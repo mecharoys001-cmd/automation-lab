@@ -62,7 +62,7 @@ export async function notify(payload: NotificationPayload): Promise<Notification
   // 1. Look up instructor
   // ----------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: instructorData, error: lookupError } = await (supabase.from('instructors') as any)
+  const { data: instructorData, error: lookupError } = await (supabase.from('staff') as any)
     .select('*')
     .eq('id', recipientId)
     .single();

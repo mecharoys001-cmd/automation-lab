@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch instructor info
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: instructor, error: instructorError } = await (supabase.from('instructors') as any)
+    const { data: instructor, error: instructorError } = await (supabase.from('staff') as any)
       .select('id, first_name, last_name')
       .eq('id', instructorId)
       .single();
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
       .select('id, name, date, start_time, end_time, duration_minutes, status, venue:venues (id, name), template:session_templates (id, required_skills)')
-      .eq('instructor_id', instructorId)
+      .eq('staff_id', instructorId)
       .neq('status', 'canceled');
 
     if (startDate) query = query.gte('date', startDate);

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Build base query
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let baseQuery = (supabase.from('sessions') as any).select('id, status, instructor_id');
+    let baseQuery = (supabase.from('sessions') as any).select('id, status, staff_id');
     if (programId) {
       baseQuery = baseQuery.eq('program_id', programId);
     }
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sessions: { id: string; status: string; instructor_id: string | null }[] = data ?? [];
+    const sessions: { id: string; status: string; staff_id: string | null }[] = data ?? [];
 
     const stats = {
       total: sessions.length,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       published: sessions.filter((s) => s.status === 'published').length,
       canceled: sessions.filter((s) => s.status === 'canceled').length,
       completed: sessions.filter((s) => s.status === 'completed').length,
-      unassigned: sessions.filter((s) => s.instructor_id === null && s.status !== 'canceled').length,
+      unassigned: sessions.filter((s) => s.staff_id === null && s.status !== 'canceled').length,
     };
 
     return NextResponse.json(stats);

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     let resolvedId = instructorId;
     if (!resolvedId && email) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: instructor, error: instrError } = await (supabase.from('instructors') as any)
+      const { data: instructor, error: instrError } = await (supabase.from('staff') as any)
         .select('id')
         .eq('email', email.trim().toLowerCase())
         .maybeSingle();
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
       .select('*, venue:venues(*), program:programs(*)')
-      .eq('instructor_id', resolvedId)
+      .eq('staff_id', resolvedId)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 

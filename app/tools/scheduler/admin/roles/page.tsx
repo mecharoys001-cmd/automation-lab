@@ -255,7 +255,7 @@ export default function RolesPage() {
     try {
       const [adminsData, instructorsData] = await Promise.all([
         requestCache.fetch<{ admins?: Admin[] }>('/api/admins'),
-        requestCache.fetch<{ instructors?: Instructor[] }>(`/api/instructors?program_id=${selectedProgramId}`),
+        requestCache.fetch<{ instructors?: Instructor[] }>(`/api/staff?program_id=${selectedProgramId}`),
       ]);
       setAdmins(adminsData.admins ?? []);
       setInstructors(instructorsData.instructors ?? []);
@@ -343,7 +343,7 @@ export default function RolesPage() {
         const nameParts = form.name.trim().split(/\s+/);
         const firstName = nameParts[0];
         const lastName = nameParts.slice(1).join(' ') || '';
-        const res = await fetch('/api/instructors', {
+        const res = await fetch('/api/staff', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -356,7 +356,7 @@ export default function RolesPage() {
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || 'Failed to create instructor');
+          throw new Error(data.error || 'Failed to create staff member');
         }
       } else {
         const res = await fetch('/api/admins', {
@@ -424,11 +424,11 @@ export default function RolesPage() {
           }),
         });
         if (!createRes.ok) throw new Error('Failed to create admin record');
-        await fetch(`/api/instructors/${user.id}`, { method: 'DELETE' });
+        await fetch(`/api/staff/${user.id}`, { method: 'DELETE' });
       } else if (!wasInstructor && becomingInstructor) {
         // Create instructor first, then delete admin (safe order — no data loss on failure)
         const nameParts = user.name.split(/\s+/);
-        const createRes = await fetch('/api/instructors', {
+        const createRes = await fetch('/api/staff', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -441,7 +441,7 @@ export default function RolesPage() {
         });
         if (!createRes.ok) {
           const errBody = await createRes.json().catch(() => ({}));
-          throw new Error(errBody.error || 'Failed to create instructor record');
+          throw new Error(errBody.error || 'Failed to create staff member record');
         }
         await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
       } else {
@@ -493,7 +493,7 @@ export default function RolesPage() {
     // Make API call in background
     try {
       const endpoint = userToRemove.source === 'instructor'
-        ? `/api/instructors/${userToRemove.id}`
+        ? `/api/staff/${userToRemove.id}`
         : `/api/admins?id=${userToRemove.id}`;
       
       const res = await fetch(endpoint, { method: 'DELETE' });

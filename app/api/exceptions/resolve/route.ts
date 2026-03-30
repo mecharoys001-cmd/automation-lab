@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
         // Fetch the substitute instructor
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: rawInstructor, error: instError } = await (supabase.from('instructors') as any)
+        const { data: rawInstructor, error: instError } = await (supabase.from('staff') as any)
           .select('*')
           .eq('id', instructor_id)
           .eq('is_active', true)
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: conflicts } = await (supabase.from('sessions') as any)
           .select('id, start_time, end_time')
-          .eq('instructor_id', instructor_id)
+          .eq('staff_id', instructor_id)
           .eq('date', session.date)
           .neq('status', 'canceled')
           .neq('id', session.id);
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: updateError } = await (supabase.from('sessions') as any)
           .update({
-            instructor_id,
+            staff_id: instructor_id,
             needs_resolution: false,
           })
           .eq('id', session_id);
@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
           .insert({
             program_id: session.program_id,
             template_id: session.template_id,
-            instructor_id: session.instructor_id,
+            staff_id: session.staff_id,
             venue_id: session.venue_id,
             grade_groups: session.grade_groups,
             date: makeup_date,

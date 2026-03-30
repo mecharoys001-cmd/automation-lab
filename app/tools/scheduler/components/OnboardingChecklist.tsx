@@ -44,8 +44,8 @@ export function OnboardingChecklist({ onClose }: OnboardingChecklistProps) {
       const sessions = sessionsData.sessions ?? [];
       const hasSessions = sessions.length > 0;
 
-      // Check if this program has sessions with assigned instructors
-      const hasInstructors = sessions.some((s: { instructor_id?: string | null }) => s.instructor_id != null);
+      // Check if this program has sessions with assigned staff members
+      const hasInstructors = sessions.some((s: { staff_id?: string | null }) => s.staff_id != null);
 
       // Check if this program has sessions with assigned venues
       const hasVenues = sessions.some((s: { venue_id?: string | null }) => s.venue_id != null);

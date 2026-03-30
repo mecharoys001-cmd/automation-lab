@@ -50,7 +50,7 @@ export async function getOrgMembership(userEmail: string | undefined): Promise<O
 
   // Check instructors table
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: instructor } = await (supabase.from('instructors') as any)
+  const { data: instructor } = await (supabase.from('staff') as any)
     .select('id')
     .eq('email', userEmail)
     .eq('is_active', true)

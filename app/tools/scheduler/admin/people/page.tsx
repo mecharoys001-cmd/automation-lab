@@ -137,7 +137,7 @@ function validateVenueCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   return errors;
 }
 
-/* ── Instructor CSV Import config ─────────────────────────── */
+/* ── Staff CSV Import config ──────────────────────────────── */
 
 const INSTRUCTOR_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'first_name', label: 'First Name', required: true },
@@ -152,7 +152,7 @@ const INSTRUCTOR_CSV_COLUMNS: CsvColumnDef[] = [
 ];
 
 const INSTRUCTOR_CSV_EXAMPLE = `first_name,last_name,email,phone,skills,availability_json,is_active,on_call,notes
-Maria,Gonzalez,maria.gonzalez@example.com,555-0101,Piano;Voice;Music Theory,"{""monday"":[{""start"":""09:00"",""end"":""15:00""}],""wednesday"":[{""start"":""09:00"",""end"":""15:00""}]}",true,false,Bilingual instructor
+Maria,Gonzalez,maria.gonzalez@example.com,555-0101,Piano;Voice;Music Theory,"{""monday"":[{""start"":""09:00"",""end"":""15:00""}],""wednesday"":[{""start"":""09:00"",""end"":""15:00""}]}",true,false,Bilingual staff member
 James,Chen,james.chen@example.com,555-0102,Guitar;Bass;Ukulele,"{""tuesday"":[{""start"":""10:00"",""end"":""18:00""}],""thursday"":[{""start"":""10:00"",""end"":""18:00""}],""friday"":[{""start"":""12:00"",""end"":""17:00""}]}",true,true,Available for weekend workshops
 Aisha,Williams,aisha.williams@example.com,555-0103,Violin;Viola;Orchestra,"{""monday"":[{""start"":""08:00"",""end"":""14:00""}],""tuesday"":[{""start"":""08:00"",""end"":""14:00""}],""wednesday"":[{""start"":""08:00"",""end"":""14:00""}]}",true,false,`;
 
@@ -907,7 +907,7 @@ function VenueDetailModal({
   );
 }
 
-/* ── Instructor Detail Modal ────────────────────────────────── */
+/* ── Staff Detail Modal ─────────────────────────────────────── */
 
 interface SessionRecord {
   id: string;
@@ -1409,7 +1409,7 @@ export default function PeoplePage() {
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [togglingOnCall, setTogglingOnCall] = useState(false);
 
-  // Edit / Create instructor modal state
+  // Edit / Create staff modal state
   const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [savingInstructor, setSavingInstructor] = useState(false);
@@ -1437,7 +1437,7 @@ export default function PeoplePage() {
     setLoadingAll(true);
     try {
       const data = await requestCache.fetch<{ instructors: Instructor[] }>(
-        `/api/instructors?program_id=${selectedProgramId}`
+        `/api/staff?program_id=${selectedProgramId}`
       );
       setAllInstructors(data.instructors);
     } catch {
@@ -1483,7 +1483,7 @@ export default function PeoplePage() {
     setLoadingDetailSessions(true);
     try {
       const data = await requestCache.fetch<{ sessions: SessionRecord[] }>(
-        `/api/instructor-sessions?instructor_id=${instructor.id}`
+        `/api/staff-sessions?instructor_id=${instructor.id}`
       );
       setDetailSessionCount(data.sessions.length);
       setDetailSessions(data.sessions);
@@ -1499,7 +1499,7 @@ export default function PeoplePage() {
     if (!selectedInstructor) return;
     setTogglingStatus(true);
     try {
-      const res = await fetch(`/api/instructors/${selectedInstructor.id}`, {
+      const res = await fetch(`/api/staff/${selectedInstructor.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !selectedInstructor.is_active }),
@@ -1509,7 +1509,7 @@ export default function PeoplePage() {
       requestCache.invalidate(/\/api\/instructors/);
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-      setToast({ message: `Instructor ${updated.is_active ? 'activated' : 'made inactive'}`, type: 'success', id: Date.now() });
+      setToast({ message: `Staff member ${updated.is_active ? 'activated' : 'made inactive'}`, type: 'success', id: Date.now() });
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : 'Failed to update status', type: 'error', id: Date.now() });
     } finally {
@@ -1521,7 +1521,7 @@ export default function PeoplePage() {
     if (!selectedInstructor) return;
     setTogglingOnCall(true);
     try {
-      const res = await fetch(`/api/instructors/${selectedInstructor.id}`, {
+      const res = await fetch(`/api/staff/${selectedInstructor.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ on_call: !selectedInstructor.on_call }),
@@ -1635,7 +1635,7 @@ export default function PeoplePage() {
         availability_json: data.availability_json,
       };
       if (isNew) body.program_id = selectedProgramId;
-      const url = isNew ? '/api/instructors' : `/api/instructors/${editingInstructor!.id}`;
+      const url = isNew ? '/api/staff' : `/api/staff/${editingInstructor!.id}`;
       const method = isNew ? 'POST' : 'PATCH';
       const res = await fetch(url, {
         method,
@@ -1644,7 +1644,7 @@ export default function PeoplePage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `Failed to ${isNew ? 'create' : 'update'} instructor`);
+        throw new Error(errData.error || `Failed to ${isNew ? 'create' : 'update'} staff member`);
       }
       const { instructor: saved } = (await res.json()) as { instructor: Instructor };
       requestCache.invalidate(/\/api\/instructors/);
@@ -1680,7 +1680,7 @@ export default function PeoplePage() {
     if (!editingInstructor) return;
     setDeletingInstructor(true);
     try {
-      const res = await fetch(`/api/instructors/${editingInstructor.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/staff/${editingInstructor.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete staff');
       requestCache.invalidate(/\/api\/instructors/);
       setAllInstructors((prev) => prev.filter((i) => i.id !== editingInstructor.id));
@@ -1827,7 +1827,7 @@ export default function PeoplePage() {
           </div>
         </section>
 
-        {/* ── Instructors Section ─────────────────────────── */}
+        {/* ── Staff Section ─────────────────────────────────── */}
         <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
@@ -2081,7 +2081,7 @@ export default function PeoplePage() {
         </section>
       </div>
 
-      {/* ── Instructor Detail Modal ──────────────────────── */}
+      {/* ── Staff Detail Modal ───────────────────────────── */}
       {selectedInstructor && (
         <InstructorDetailModal
           instructor={selectedInstructor}
@@ -2097,7 +2097,7 @@ export default function PeoplePage() {
         />
       )}
 
-      {/* ── Instructor Edit / Create Modal ────────────────── */}
+      {/* ── Staff Edit / Create Modal ─────────────────────── */}
       {(editingInstructor || showCreateModal) && (
         <InstructorEditModal
           instructor={editingInstructor}
@@ -2196,7 +2196,7 @@ export default function PeoplePage() {
         templateFilename="venues.csv"
       />}
 
-      {/* ── Instructor CSV Import Dialog (lazy-mounted) ────── */}
+      {/* ── Staff CSV Import Dialog (lazy-mounted) ───────────── */}
       {instructorImportOpen && <CsvImportDialog
         open={instructorImportOpen}
         onClose={() => setInstructorImportOpen(false)}
@@ -2215,7 +2215,7 @@ export default function PeoplePage() {
             on_call: r.on_call || '',
             notes: r.notes || '',
           }));
-          const res = await fetch('/api/instructors/import', {
+          const res = await fetch('/api/staff/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rows: mapped, program_id: selectedProgramId }),

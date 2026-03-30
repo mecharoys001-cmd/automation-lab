@@ -169,7 +169,7 @@ export function TemplateFormModal({
     if (!open || !programId) return;
     const load = async () => {
       const [instRes, venueRes] = await Promise.all([
-        fetch(`/api/instructors?program_id=${programId}&_t=${Date.now()}`),
+        fetch(`/api/staff?program_id=${programId}&_t=${Date.now()}`),
         fetch(`/api/venues?program_id=${programId}&_t=${Date.now()}`),
       ]);
       if (instRes.ok) {

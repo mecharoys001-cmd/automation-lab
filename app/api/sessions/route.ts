@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     let instructorId: string | null = null;
     if (instructorEmail) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: instructor, error: instrError } = await (supabase.from('instructors') as any)
+      const { data: instructor, error: instrError } = await (supabase.from('staff') as any)
         .select('id')
         .eq('email', instructorEmail.trim().toLowerCase())
         .maybeSingle();
@@ -102,15 +102,15 @@ export async function GET(request: NextRequest) {
       } else if (accessibleProgramIds !== null) {
         q = q.in('program_id', accessibleProgramIds);
       }
-      if (instructorId) q = q.eq('instructor_id', instructorId);
+      if (instructorId) q = q.eq('staff_id', instructorId);
       if (date) q = q.eq('date', date);
       if (startDate && endDate) q = q.gte('date', startDate).lte('date', endDate);
       if (statusFilter) q = q.eq('status', statusFilter);
       if (excludeStatus) q = q.neq('status', excludeStatus);
       if (excludeId) q = q.neq('id', excludeId);
       if (templateId) q = q.eq('template_id', templateId);
-      if (instructorIdParam === 'null') q = q.is('instructor_id', null);
-      else if (instructorIdParam) q = q.eq('instructor_id', instructorIdParam);
+      if (instructorIdParam === 'null') q = q.is('staff_id', null);
+      else if (instructorIdParam) q = q.eq('staff_id', instructorIdParam);
       return q;
     }
 
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
 
       if (template?.required_skills?.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: instructor } = await (supabase.from('instructors') as any)
+        const { data: instructor } = await (supabase.from('staff') as any)
           .select('skills')
           .eq('id', body.instructor_id)
           .single();
@@ -264,6 +264,12 @@ export async function POST(request: NextRequest) {
     delete body.recurrence;
     const rotationInstructorIds = body.rotation_instructor_ids as string[] | undefined;
     delete body.rotation_instructor_ids;
+
+    // Remap client field to the renamed DB column (sessions.staff_id)
+    if ('instructor_id' in body) {
+      body.staff_id = body.instructor_id;
+      delete body.instructor_id;
+    }
 
     if (recurrence && recurrence.type && recurrence.type !== 'none') {
       // Determine interval in days and stop condition
@@ -336,7 +342,7 @@ export async function POST(request: NextRequest) {
       const rows = dates.map((d, idx) => {
         const row = { ...body, date: d };
         if (rotationInstructorIds && rotationInstructorIds.length >= 2) {
-          row.instructor_id = rotationInstructorIds[idx % rotationInstructorIds.length];
+          row.staff_id = rotationInstructorIds[idx % rotationInstructorIds.length];
         }
         return row;
       });

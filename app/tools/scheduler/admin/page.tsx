@@ -915,7 +915,7 @@ function CalendarDashboard() {
     try {
       // Use request cache to prevent duplicate concurrent requests
       const [instData, venueData, tagData] = await Promise.all([
-        requestCache.fetch<{ instructors: { id: string; first_name: string; last_name: string }[] }>(`/api/instructors?program_id=${selectedProgramId}`, {}, 10000),
+        requestCache.fetch<{ instructors: { id: string; first_name: string; last_name: string }[] }>(`/api/staff?program_id=${selectedProgramId}`, {}, 10000),
         requestCache.fetch<{ venues: { id: string; name: string }[] }>(`/api/venues?program_id=${selectedProgramId}`, {}, 10000),
         requestCache.fetch<{ tags: { id: string; name: string; category: string | null; emoji?: string | null }[] }>(`/api/tags?program_id=${selectedProgramId}`, {}, 10000),
       ]);

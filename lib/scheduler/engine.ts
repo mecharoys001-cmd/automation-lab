@@ -138,17 +138,17 @@ function findBlockingSession(
 ): Session | DraftSession | null {
   // Check existing sessions
   for (const session of existingSessions) {
-    if (session.instructor_id === instructorId && session.date === date && session.status !== 'canceled') {
+    if (session.staff_id === instructorId && session.date === date && session.status !== 'canceled') {
       const window = toTimeWindow(session.start_time, session.end_time);
       if (timeWindowsOverlap(sessionWindow, window)) {
         return session;
       }
     }
   }
-  
+
   // Check generated sessions
   for (const draft of generatedSessions) {
-    if (draft.instructor_id === instructorId && draft.date === date) {
+    if (draft.staff_id === instructorId && draft.date === date) {
       const window = toTimeWindow(draft.start_time, draft.end_time);
       if (timeWindowsOverlap(sessionWindow, window)) {
         return draft;
@@ -296,9 +296,9 @@ function runSingleAttempt(
 
   // Seed counts from existing non-draft sessions
   for (const session of existing_sessions) {
-    if (session.instructor_id) {
-      const count = instructorSessionCounts.get(session.instructor_id) ?? 0;
-      instructorSessionCounts.set(session.instructor_id, count + 1);
+    if (session.staff_id) {
+      const count = instructorSessionCounts.get(session.staff_id) ?? 0;
+      instructorSessionCounts.set(session.staff_id, count + 1);
     }
   }
 
@@ -812,7 +812,7 @@ function runSingleAttempt(
         const draft: DraftSession = {
           program_id: programId,
           template_id: tmpl.id,
-          instructor_id: matchedInstructor?.id ?? null,
+          staff_id: matchedInstructor?.id ?? null,
           venue_id: venueId ?? null,
           grade_groups: tmpl.template_type === 'time_block' && tmpl.grade_groups.length === 0
             ? []
@@ -1321,7 +1321,7 @@ async function loadSchedulerData(
       .order('sort_order'),
     supabase.from('school_calendar').select('*').eq('program_id', programId),
     supabase.from('program_rules').select('*').eq('program_id', programId).eq('is_active', true),
-    supabase.from('instructors').select('*').eq('is_active', true),
+    supabase.from('staff').select('*').eq('is_active', true),
     supabase.from('venues').select('*'),
     // Load existing non-draft sessions for conflict detection
     supabase
@@ -1674,7 +1674,7 @@ function isInstructorBooked(
   // Check existing non-draft sessions
   for (const session of existingSessions) {
     if (
-      session.instructor_id === instructorId &&
+      session.staff_id === instructorId &&
       session.date === date &&
       session.status !== 'canceled'
     ) {
@@ -1687,7 +1687,7 @@ function isInstructorBooked(
 
   // Check sessions generated in this run
   for (const draft of generatedSessions) {
-    if (draft.instructor_id === instructorId && draft.date === date) {
+    if (draft.staff_id === instructorId && draft.date === date) {
       const draftWindow = toTimeWindow(draft.start_time, draft.end_time);
       if (timeWindowsOverlap(bufferedWindow, draftWindow)) {
         return true;

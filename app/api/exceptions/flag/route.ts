@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       case 'instructor_exception':
         // Only that instructor's sessions
         if (entry.target_instructor_id) {
-          query = query.eq('instructor_id', entry.target_instructor_id);
+          query = query.eq('staff_id', entry.target_instructor_id);
         }
         break;
     }

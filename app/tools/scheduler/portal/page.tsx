@@ -97,7 +97,7 @@ export default function InstructorPortalPage() {
       }
 
       // Look up instructor by email
-      const instrRes = await fetch(`/api/instructors?email=${encodeURIComponent(authData.email)}`);
+      const instrRes = await fetch(`/api/staff?email=${encodeURIComponent(authData.email)}`);
       if (!instrRes.ok) {
         setError('Something went wrong. Please try again.');
         setLoading(false);
@@ -119,7 +119,7 @@ export default function InstructorPortalPage() {
         instructor_id: resolvedInstructor.id,
         status: 'published',
       });
-      const sessRes = await fetch(`/api/instructor-sessions?${sessParams}`);
+      const sessRes = await fetch(`/api/staff-sessions?${sessParams}`);
       if (!sessRes.ok) {
         setError('Failed to load schedule. Please try again.');
         setLoading(false);

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     await sb.from('school_calendar').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await sb.from('program_rules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await sb.from('programs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await sb.from('instructors').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await sb.from('staff').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await sb.from('tags').delete().neq('id', '00000000-0000-0000-0000-000000000000').neq('is_default', true);
     await sb.from('venues').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     // ── Instructors ──────────────────────────────────────────
-    const { data: instructorsData } = await sb.from('instructors').insert(
+    const { data: instructorsData } = await sb.from('staff').insert(
       dataset.instructors.map((i: Record<string, unknown>) => ({ ...i, program_id: programId }))
     ).select();
 
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         duration_minutes: t.duration_minutes,
         venue_id: t.venue ? venueMap[t.venue] : null,
         required_skills: t.skills,
-        instructor_id: t.instructor_index !== null ? instIds[t.instructor_index] : null,
+        staff_id: t.instructor_index !== null ? instIds[t.instructor_index] : null,
         sort_order: t.sort_order,
         is_active: true,
       }))
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
         sessionInserts.push({
           program_id: programId,
           template_id: tmpl.id,
-          instructor_id: instIds[instIdx],
+          staff_id: instIds[instIdx],
           venue_id: tmpl.venue_id,
           grade_groups: tmpl.grade_groups,
           date: dateStr,
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
         await sb.from('sessions').insert({
           program_id: programId,
           template_id: orig.template_id,
-          instructor_id: instIds[Math.floor(Math.random() * instIds.length)],
+          staff_id: instIds[Math.floor(Math.random() * instIds.length)],
           venue_id: orig.venue_id,
           grade_groups: orig.grade_groups,
           date: makeupDate.toISOString().split('T')[0],

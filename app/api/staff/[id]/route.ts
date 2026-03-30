@@ -18,7 +18,7 @@ export async function PATCH(
 
     // Verify program access
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: instructor } = await (supabase.from('instructors') as any)
+    const { data: instructor } = await (supabase.from('staff') as any)
       .select('program_id, first_name, last_name')
       .eq('id', id)
       .single();
@@ -67,7 +67,7 @@ export async function PATCH(
     const lastName = 'last_name' in body ? String(body.last_name).trim() : instructor.last_name;
     if (firstName && lastName && ('first_name' in body || 'last_name' in body)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: dupes } = await (supabase.from('instructors') as any)
+      const { data: dupes } = await (supabase.from('staff') as any)
         .select('id, first_name, last_name')
         .eq('program_id', instructor.program_id)
         .ilike('first_name', firstName)
@@ -79,7 +79,7 @@ export async function PATCH(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .update(body)
       .eq('id', id)
       .select()
@@ -114,7 +114,7 @@ export async function DELETE(
 
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inst } = await (supabase.from('instructors') as any)
+    const { data: inst } = await (supabase.from('staff') as any)
       .select('program_id')
       .eq('id', id)
       .single();
@@ -125,7 +125,7 @@ export async function DELETE(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('instructors') as any)
+    const { error } = await (supabase.from('staff') as any)
       .delete()
       .eq('id', id);
 

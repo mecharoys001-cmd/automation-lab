@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     // Upsert: match on email, update if exists, insert if new
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .upsert(
         {
           first_name: first_name.trim(),

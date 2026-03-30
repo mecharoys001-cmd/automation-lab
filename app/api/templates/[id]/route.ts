@@ -142,7 +142,7 @@ export async function PATCH(
 
       if (finalInstructorId && finalSkills?.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: instructor } = await (supabase.from('instructors') as any)
+        const { data: instructor } = await (supabase.from('staff') as any)
           .select('skills')
           .eq('id', finalInstructorId)
           .single();

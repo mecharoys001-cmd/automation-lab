@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest) {
 
     // 4. Delete instructors scoped to this program
     const { data: instrData, error: instrErr } = await sb
-      .from('instructors')
+      .from('staff')
       .delete()
       .eq('program_id', programId)
       .select('id');

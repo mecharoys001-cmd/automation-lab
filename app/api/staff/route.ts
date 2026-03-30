@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (accessErr) return accessErr;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase.from('instructors') as any)
+    let query = (supabase.from('staff') as any)
       .select('*')
       .eq('program_id', programId)
       .order('last_name')
@@ -75,7 +75,7 @@ export async function DELETE() {
 
     // Instructors are global (not program-scoped), so this deletes all.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000') // Supabase requires a filter — this matches all real rows
       .select('id');
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     let duplicateNameWarning: string | undefined;
     if (body.first_name && body.last_name) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: dupes } = await (supabase.from('instructors') as any)
+      const { data: dupes } = await (supabase.from('staff') as any)
         .select('id, first_name, last_name')
         .eq('program_id', body.program_id)
         .ilike('first_name', String(body.first_name).trim())
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .insert(body)
       .select()
       .single();

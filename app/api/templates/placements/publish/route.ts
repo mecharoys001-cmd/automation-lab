@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         return {
           program_id,
           template_id: p.templateId,
-          instructor_id: tpl?.instructor_id ?? null,
+          staff_id: tpl?.instructor_id ?? null,
           venue_id: p.venueId ?? tpl?.venue_id ?? null,
           grade_groups: tpl?.grade_groups ?? [],
           date: getNextDateForDay(p.dayIndex),

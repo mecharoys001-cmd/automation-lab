@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         instructor:instructors (id, first_name, last_name)
       `)
       .in('status', ['completed', 'published'])
-      .not('instructor_id', 'is', null);
+      .not('staff_id', 'is', null);
 
     if (programId) query = query.eq('program_id', programId);
     if (startDate) query = query.gte('date', startDate);

@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     // Check for duplicate emails against existing instructors in this program
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase.from('instructors') as any)
+    const { data: existing } = await (supabase.from('staff') as any)
       .select('email')
       .eq('program_id', program_id)
       .not('email', 'is', null)
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('instructors') as any)
+    const { data, error } = await (supabase.from('staff') as any)
       .insert(toInsert)
       .select();
 

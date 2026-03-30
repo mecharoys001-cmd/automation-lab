@@ -38,7 +38,7 @@ export async function PATCH(
     // template_id require standard-level access.
     if (auth.user.roleLevel === 'editor') {
       const EDITOR_ALLOWED_FIELDS = new Set([
-        'instructor_id', 'status', 'date', 'start_time', 'end_time',
+        'staff_id', 'status', 'date', 'start_time', 'end_time',
         'venue_id', 'name', 'notes', 'tag_names',
       ]);
       const disallowed = Object.keys(body).filter(k => !EDITOR_ALLOWED_FIELDS.has(k));
@@ -136,7 +136,7 @@ export async function PATCH(
 
       // Fetch instructor details (skills + availability)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: instructor } = await (supabase.from('instructors') as any)
+      const { data: instructor } = await (supabase.from('staff') as any)
         .select('first_name, last_name, skills, availability_json')
         .eq('id', body.instructor_id)
         .single();
@@ -192,6 +192,12 @@ export async function PATCH(
     // Extract tag_names before updating the session (not a DB column)
     const tagNames: string[] | undefined = body.tag_names;
     delete body.tag_names;
+
+    // Remap client field to the renamed DB column (sessions.staff_id)
+    if ('instructor_id' in body) {
+      body.staff_id = body.instructor_id;
+      delete body.instructor_id;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('sessions') as any)

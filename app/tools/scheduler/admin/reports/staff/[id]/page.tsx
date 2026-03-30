@@ -96,10 +96,10 @@ export default function InstructorDetailPage() {
       const params = new URLSearchParams({ instructorId });
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
-      const res = await fetch(`/api/reports/instructor-detail?${params}`);
+      const res = await fetch(`/api/reports/staff-detail?${params}`);
       const json = await res.json();
       if (!res.ok || !json.success) {
-        setError(json.error ?? 'Failed to load instructor data');
+        setError(json.error ?? 'Failed to load staff data');
         setData(null);
       } else {
         setData(json);

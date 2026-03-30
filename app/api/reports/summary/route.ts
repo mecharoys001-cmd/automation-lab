@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
     // Unassigned count (non-canceled sessions with no instructor)
     // ----------------------------------------------------------
     const unassignedCount = allSessions.filter(
-      (s) => s.status !== 'canceled' && !s.instructor_id
+      (s) => s.status !== 'canceled' && !s.staff_id
     ).length;
 
     // ----------------------------------------------------------

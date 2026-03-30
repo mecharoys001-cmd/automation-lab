@@ -104,7 +104,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
                       }
                     }}
                   >
-                  {/* Instructor name + avatar */}
+                  {/* Staff member name + avatar */}
                   <div className="flex items-center gap-3">
                     <Avatar
                       initials={initials}
@@ -157,7 +157,7 @@ export function InstructorHoursTable({ instructors }: InstructorHoursTableProps)
                       months={instructor.monthly}
                       onViewDetail={() => {
                         router.push(
-                          `/tools/scheduler/admin/reports/instructors/${instructor.id}`
+                          `/tools/scheduler/admin/reports/staff/${instructor.id}`
                         );
                       }}
                     />

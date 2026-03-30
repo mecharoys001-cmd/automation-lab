@@ -158,7 +158,7 @@ export default function InstructorHoursPage() {
   useEffect(() => {
     if (!programId) return;
     requestCache.fetch<{ instructors?: Array<{ id: string; first_name: string; last_name: string }> }>(
-      `/api/instructors?program_id=${programId}&is_active=true`
+      `/api/staff?program_id=${programId}&is_active=true`
     )
       .then(data => setAllStaff(data.instructors ?? []))
       .catch(() => {});

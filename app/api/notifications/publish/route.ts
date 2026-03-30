@@ -85,10 +85,10 @@ export async function POST(request: NextRequest) {
     // Fetch all published sessions with assigned instructors (including just-updated ones)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sessions, error: sessionsError } = await (supabase.from('sessions') as any)
-      .select('id, instructor_id')
+      .select('id, staff_id')
       .eq('program_id', programId)
       .eq('status', 'published')
-      .not('instructor_id', 'is', null);
+      .not('staff_id', 'is', null);
 
     if (sessionsError) {
       console.error('Fetch published sessions error:', sessionsError);
@@ -98,12 +98,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const publishedSessions = (sessions ?? []) as Pick<Session, 'id' | 'instructor_id'>[];
+    const publishedSessions = (sessions ?? []) as Pick<Session, 'id' | 'staff_id'>[];
 
-    // Group sessions by instructor_id
+    // Group sessions by staff_id
     const sessionsByInstructor = new Map<string, number>();
     for (const session of publishedSessions) {
-      const id = session.instructor_id!;
+      const id = session.staff_id!;
       sessionsByInstructor.set(id, (sessionsByInstructor.get(id) ?? 0) + 1);
     }
 
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       try {
         // Get instructor details
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: instructorData, error: instructorError } = await (supabase.from('instructors') as any)
+        const { data: instructorData, error: instructorError } = await (supabase.from('staff') as any)
           .select('id, first_name, last_name')
           .eq('id', instructorId)
           .single();

@@ -157,8 +157,8 @@ async function buildSnapshot(supabase: any, year: number, programId: string | nu
     (supabase.from('settings') as any).select('*').limit(1).single(),
     // Reference data — preserved on revert (scoped to program if provided)
     programId
-      ? (supabase.from('instructors') as any).select('*').eq('program_id', programId)
-      : (supabase.from('instructors') as any).select('*'),
+      ? (supabase.from('staff') as any).select('*').eq('program_id', programId)
+      : (supabase.from('staff') as any).select('*'),
     programId
       ? (supabase.from('venues') as any).select('*').eq('program_id', programId)
       : (supabase.from('venues') as any).select('*'),

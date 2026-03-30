@@ -55,7 +55,7 @@ const ACTION_MAP: Array<{ match: string; hint: string; path: string }> = [
   { match: 'No active templates found', hint: 'Create templates', path: '/tools/scheduler/admin/event-templates' },
   { match: 'missing start/end time', hint: 'Edit template times', path: '/tools/scheduler/admin/event-templates' },
   { match: 'no grade groups assigned', hint: 'Assign grade groups', path: '/tools/scheduler/admin/event-templates' },
-  { match: 'No active instructors found', hint: 'Add instructors', path: '/tools/scheduler/admin/people' },
+  { match: 'No active instructors found', hint: 'Add staff', path: '/tools/scheduler/admin/people' },
   { match: 'None have event types configured', hint: 'Assign event types', path: '/tools/scheduler/admin/people' },
   { match: 'missing event types', hint: 'Assign event types', path: '/tools/scheduler/admin/people' },
   { match: 'None have availability set', hint: 'Set availability', path: '/tools/scheduler/admin/people' },
@@ -67,7 +67,7 @@ const ACTION_MAP: Array<{ match: string; hint: string; path: string }> = [
 /** Category-level navigation paths */
 const CATEGORY_PATH: Record<string, string> = {
   'Event Templates': '/tools/scheduler/admin/event-templates',
-  'Instructors': '/tools/scheduler/admin/people',
+  'Staff': '/tools/scheduler/admin/people',
   'Venues': '/tools/scheduler/admin/people',
 };
 

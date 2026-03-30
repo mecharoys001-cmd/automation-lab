@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     // ── Optionally clear existing instructors ──────────────
     let deleted = 0;
     if (clearFirst) {
-      const { data: delData, error: delError } = await sb.from('instructors')
+      const { data: delData, error: delError } = await sb.from('staff')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000')
         .select('id');
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < instructorRecords.length; i += 50) {
       const batch = instructorRecords.slice(i, i + 50);
-      const { data, error } = await sb.from('instructors')
+      const { data, error } = await sb.from('staff')
         .upsert(batch, { onConflict: 'email' })
         .select('id, first_name, last_name, skills');
 

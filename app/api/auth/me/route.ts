@@ -43,7 +43,7 @@ export async function GET() {
 
     // Check instructors table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: instructor } = await (serviceClient.from('instructors') as any)
+    const { data: instructor } = await (serviceClient.from('staff') as any)
       .select('id, first_name, last_name, email')
       .eq('email', user.email)
       .eq('is_active', true)

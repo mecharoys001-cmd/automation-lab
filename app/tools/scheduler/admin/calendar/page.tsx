@@ -922,7 +922,7 @@ export default function CalendarPage() {
     if (action === 'instructor_exception' && batchInstructors.length === 0 && selectedProgramId) {
       try {
         const data = await requestCache.fetch<{ instructors?: Instructor[] }>(
-          `/api/instructors?program_id=${selectedProgramId}&is_active=true`
+          `/api/staff?program_id=${selectedProgramId}&is_active=true`
         );
         setBatchInstructors(data.instructors ?? []);
       } catch {
@@ -1190,7 +1190,7 @@ export default function CalendarPage() {
             <div>
               <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</h1>
               <p className="text-sm text-slate-600 mt-1">
-                Manage blackout dates, early dismissals, and instructor exceptions.
+                Manage blackout dates, early dismissals, and staff exceptions.
               </p>
             </div>
             {isDirty && (
@@ -1724,7 +1724,7 @@ export default function CalendarPage() {
           {batchModal?.action === 'instructor_exception' && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Instructor <span className="text-red-700 ml-0.5">*</span>
+                Staff Member <span className="text-red-700 ml-0.5">*</span>
               </label>
               <p className="text-xs text-slate-700">Select the staff member for this exception.</p>
               <select
@@ -1733,7 +1733,7 @@ export default function CalendarPage() {
                 className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
               >
                 <option value="">
-                  {batchInstructors.length === 0 ? 'Loading instructors…' : 'Select instructor…'}
+                  {batchInstructors.length === 0 ? 'Loading staff…' : 'Select staff member…'}
                 </option>
                 {batchInstructors.map((inst) => (
                   <option key={inst.id} value={inst.id}>

@@ -923,7 +923,7 @@ export default function SettingsPage() {
         </div>
 
         <p className="text-[13px] text-slate-600 mb-4">
-          Show the setup checklist that walks you through creating your first program, adding instructors, and generating a schedule.
+          Show the setup checklist that walks you through creating your first program, adding staff, and generating a schedule.
         </p>
 
         <Tooltip text="Reopen the getting started checklist in the bottom-right corner">

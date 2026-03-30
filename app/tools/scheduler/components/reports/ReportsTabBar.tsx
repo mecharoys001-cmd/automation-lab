@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Tooltip } from '../ui/Tooltip';
 
 const TABS = [
-  { key: 'instructor-hours', label: 'Staff Hours', href: '/tools/scheduler/admin/reports/instructor-hours', tooltip: 'View hours breakdown by staff member' },
+  { key: 'staff-hours', label: 'Staff Hours', href: '/tools/scheduler/admin/reports/staff-hours', tooltip: 'View hours breakdown by staff member' },
   { key: 'hours-by-tag', label: 'Hours by Tag', href: '/tools/scheduler/admin/reports/hours-by-tag', tooltip: 'View hours breakdown by tag category' },
 ] as const;
 

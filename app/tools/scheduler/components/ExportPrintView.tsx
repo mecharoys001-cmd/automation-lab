@@ -102,7 +102,7 @@ export function openPrintView(opts: ExportPrintOptions) {
         <th>Start</th>
         <th>End</th>
         <th>Event</th>
-        <th>Instructor</th>
+        <th>Staff Member</th>
         <th>Venue</th>
         <th>Grade</th>
         <th>Status</th>

@@ -75,7 +75,7 @@ interface UnassignedSession {
   id: string;
   date: string;
   template_id: string | null;
-  instructor_id: string | null;
+  staff_id: string | null;
   grade_groups: string[];
   start_time: string;
   end_time: string;
@@ -241,11 +241,11 @@ function UnassignedPanel({
           fetch(
             `/api/sessions?template_id=${templateStats.template_id}&instructor_id=null&program_id=${programId}&status=draft`,
           ),
-          fetch('/api/instructors?is_active=true'),
+          fetch('/api/staff?is_active=true'),
         ]);
 
         if (!sessRes.ok) throw new Error('Failed to fetch sessions');
-        if (!instrRes.ok) throw new Error('Failed to fetch instructors');
+        if (!instrRes.ok) throw new Error('Failed to fetch staff');
 
         const sessData = await sessRes.json();
         const instrData = await instrRes.json();
@@ -430,7 +430,7 @@ function UnassignedPanel({
                 disabled={saving}
                 className="flex-1 text-[11px] text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-0.5 min-w-0 disabled:opacity-50"
               >
-                <option value="">Select Instructor...</option>
+                <option value="">Select Staff Member...</option>
                 {instructors.map((inst) => (
                   <option key={inst.id} value={inst.id}>
                     {inst.first_name} {inst.last_name}
@@ -448,7 +448,7 @@ function UnassignedPanel({
                 onClick={() => handleAutoAssignOne(session)}
                 disabled={saving || instructors.length === 0}
                 title="Auto-assign"
-                aria-label="Auto-assign instructor"
+                aria-label="Auto-assign staff member"
                 className="p-0.5 text-amber-800 hover:bg-amber-100 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
               >
                 <Wand2 className="w-3 h-3" />
@@ -538,7 +538,7 @@ export function SchedulerResultModal({
       // Fetch all unassigned draft sessions for this program
       const [sessRes, instrRes] = await Promise.all([
         fetch(`/api/sessions?program_id=${programId}&instructor_id=null&status=draft`),
-        fetch('/api/instructors?is_active=true'),
+        fetch('/api/staff?is_active=true'),
       ]);
 
       if (!sessRes.ok || !instrRes.ok) throw new Error('Failed to fetch data');

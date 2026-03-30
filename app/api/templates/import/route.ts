@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [venuesRes, instructorsRes] = await Promise.all([
       (supabase.from('venues') as any).select('id, name').eq('program_id', program_id),
-      (supabase.from('instructors') as any).select('id, first_name, last_name').eq('program_id', program_id),
+      (supabase.from('staff') as any).select('id, first_name, last_name').eq('program_id', program_id),
     ]);
 
     const venueMap = new Map<string, string>();

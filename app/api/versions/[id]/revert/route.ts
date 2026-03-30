@@ -107,7 +107,7 @@ export async function POST(
     // 2e. Delete instructors, venues, tags (only if snapshot has them)
     if (hasEntityData) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('instructors') as any)
+      await (supabase.from('staff') as any)
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
 
@@ -128,7 +128,7 @@ export async function POST(
     if (hasEntityData) {
       if (snapshot.instructors?.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: instrErr } = await (supabase.from('instructors') as any)
+        const { error: instrErr } = await (supabase.from('staff') as any)
           .insert(snapshot.instructors);
 
         if (instrErr) {

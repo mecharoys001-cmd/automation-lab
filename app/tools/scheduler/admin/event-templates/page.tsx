@@ -252,7 +252,7 @@ export default function EventTemplatesPage() {
     try {
       const [instData, venueData] = await Promise.all([
         requestCache.fetch<{ instructors?: Instructor[] }>(
-          `/api/instructors?program_id=${selectedProgramId}`
+          `/api/staff?program_id=${selectedProgramId}`
         ),
         requestCache.fetch<{ venues?: Venue[] }>(
           `/api/venues?program_id=${selectedProgramId}`

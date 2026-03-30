@@ -238,7 +238,7 @@ export function OneOffEventModal({
 
     const load = async () => {
       const [instrRes, venueRes, tagRes] = await Promise.all([
-        fetch('/api/instructors?is_active=true'),
+        fetch('/api/staff?is_active=true'),
         fetch('/api/venues'),
         fetch('/api/tags'),
       ]);
@@ -734,7 +734,7 @@ export function OneOffEventModal({
                   }}
                   className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer"
                 />
-                <span className="text-xs font-medium text-slate-600">Rotate Instructors</span>
+                <span className="text-xs font-medium text-slate-600">Rotate Staff</span>
               </label>
 
               {rotateInstructors && (

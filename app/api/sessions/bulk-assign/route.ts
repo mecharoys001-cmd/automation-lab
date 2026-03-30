@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
                 .select('date, start_time, end_time')
                 .eq('id', item.id)
                 .single(),
-              (supabase.from('instructors') as any)
+              (supabase.from('staff') as any)
                 .select('first_name, last_name, availability_json')
                 .eq('id', item.instructor_id)
                 .single(),
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error } = await (supabase.from('sessions') as any)
-            .update({ instructor_id: item.instructor_id })
+            .update({ staff_id: item.instructor_id })
             .eq('id', item.id);
 
           if (error) throw error;

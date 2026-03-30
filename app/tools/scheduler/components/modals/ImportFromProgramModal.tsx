@@ -47,7 +47,7 @@ export function ImportFromProgramModal({
     setLoading(true);
     try {
       const [instrRes, venueRes, tagRes] = await Promise.all([
-        fetch(`/api/instructors?program_id=${programId}`),
+        fetch(`/api/staff?program_id=${programId}`),
         fetch(`/api/venues?program_id=${programId}`),
         fetch(`/api/tags?program_id=${programId}`),
       ]);
@@ -243,7 +243,7 @@ export function ImportFromProgramModal({
                   className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700">
-                  Import Staff ({staffCount} instructor{staffCount !== 1 ? 's' : ''})
+                  Import Staff ({staffCount} staff member{staffCount !== 1 ? 's' : ''})
                 </span>
               </label>
 

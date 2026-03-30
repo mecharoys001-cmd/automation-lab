@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const [sessions, templates, instructors, venues, tags] = await Promise.all([
       sb.from('sessions').select('id', { count: 'exact', head: true }).eq('program_id', programId),
       sb.from('session_templates').select('id', { count: 'exact', head: true }).eq('program_id', programId),
-      sb.from('instructors').select('id', { count: 'exact', head: true }).eq('program_id', programId),
+      sb.from('staff').select('id', { count: 'exact', head: true }).eq('program_id', programId),
       sb.from('venues').select('id', { count: 'exact', head: true }).eq('program_id', programId),
       sb.from('tags').select('id', { count: 'exact', head: true }).eq('program_id', programId),
     ]);
