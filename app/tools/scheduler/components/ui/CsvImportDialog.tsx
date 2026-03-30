@@ -35,6 +35,12 @@ export interface CsvImportDialogProps {
   templateFilename?: string;
   /** Optional collapsible help content shown between upload area and preview */
   helpContent?: React.ReactNode;
+  /** Optional date range filter: program start date (YYYY-MM-DD) */
+  dateRangeStart?: string;
+  /** Optional date range filter: program end date (YYYY-MM-DD) */
+  dateRangeEnd?: string;
+  /** Optional: column name containing the date to filter (default: 'date') */
+  dateColumnName?: string;
 }
 
 export function CsvImportDialog({
@@ -47,6 +53,9 @@ export function CsvImportDialog({
   exampleCsv,
   templateFilename = 'template.csv',
   helpContent,
+  dateRangeStart,
+  dateRangeEnd,
+  dateColumnName = 'date',
 }: CsvImportDialogProps) {
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -56,6 +65,8 @@ export function CsvImportDialog({
   const [parseError, setParseError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState<string>(dateRangeStart || '');
+  const [filterEndDate, setFilterEndDate] = useState<string>(dateRangeEnd || '');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reset = useCallback(() => {
@@ -66,7 +77,9 @@ export function CsvImportDialog({
     setResult(null);
     setParseError(null);
     setDragOver(false);
-  }, []);
+    setFilterStartDate(dateRangeStart || '');
+    setFilterEndDate(dateRangeEnd || '');
+  }, [dateRangeStart, dateRangeEnd]);
 
   const handleClose = useCallback(() => {
     reset();
