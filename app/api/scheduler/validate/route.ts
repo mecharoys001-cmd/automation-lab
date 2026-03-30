@@ -76,9 +76,11 @@ export async function GET(request: NextRequest) {
       templateSummary = '0 templates found';
     } else {
       // Check for templates missing critical fields
+      // Templates without start/end times are valid if they have duration_minutes
+      // (the engine will auto-assign times based on availability)
       const missingTime = templates.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (t: any) => !t.start_time || !t.end_time
+        (t: any) => (!t.start_time || !t.end_time) && !t.duration_minutes
       );
       const missingGrades = templates.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
 
       if (missingTime.length > 0) {
         templateStatus = 'warning';
-        templateDetails.push(`${missingTime.length} ${missingTime.length === 1 ? 'template is' : 'templates are'} missing start/end time`);
+        templateDetails.push(`${missingTime.length} ${missingTime.length === 1 ? 'template is' : 'templates are'} missing start/end time and duration`);
       }
       if (missingGrades.length > 0) {
         templateDetails.push(`${missingGrades.length} ${missingGrades.length === 1 ? 'template has' : 'templates have'} no grade groups assigned`);

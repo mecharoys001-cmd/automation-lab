@@ -53,7 +53,7 @@ const STATUS_TEXT_CLASS = {
 /** Maps detail text patterns to { hint, path } for navigation */
 const ACTION_MAP: Array<{ match: string; hint: string; path: string }> = [
   { match: 'No active templates found', hint: 'Create templates', path: '/tools/scheduler/admin/event-templates' },
-  { match: 'missing start/end time', hint: 'Edit template times', path: '/tools/scheduler/admin/event-templates' },
+  { match: 'missing start/end time and duration', hint: 'Edit template times or add duration', path: '/tools/scheduler/admin/event-templates' },
   { match: 'no grade groups assigned', hint: 'Assign grade groups', path: '/tools/scheduler/admin/event-templates' },
   { match: 'No active instructors found', hint: 'Add staff', path: '/tools/scheduler/admin/people' },
   { match: 'None have event types configured', hint: 'Assign event types', path: '/tools/scheduler/admin/people' },
