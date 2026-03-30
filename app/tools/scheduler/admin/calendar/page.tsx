@@ -458,7 +458,7 @@ export default function CalendarPage() {
   // Infinite scroll calendar
   const today = new Date();
   const [monthRange, setMonthRange] = useState(() => {
-    // Start 2 months before current, show 6 months initially
+    // Fallback: start 2 months before current, show 8 months
     const start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
     return {
       startYear: start.getFullYear(),
@@ -469,6 +469,23 @@ export default function CalendarPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
+  // When a program is selected, reset calendar to span program start→end dates
+  useEffect(() => {
+    if (!selectedProgram?.start_date) return;
+    const [sY, sM] = selectedProgram.start_date.split('-').map(Number);
+    const startYear = sY;
+    const startMonth = sM - 1; // 0-indexed
+
+    let count = 8; // default
+    if (selectedProgram.end_date) {
+      const [eY, eM] = selectedProgram.end_date.split('-').map(Number);
+      // months from start to end, inclusive, plus 1 buffer month
+      count = (eY - sY) * 12 + (eM - sM) + 2;
+    }
+
+    setMonthRange({ startYear, startMonth, count });
+  }, [selectedProgram?.start_date, selectedProgram?.end_date]);
 
   // ── Fetch entries ────────────────────────────────────────────
 
