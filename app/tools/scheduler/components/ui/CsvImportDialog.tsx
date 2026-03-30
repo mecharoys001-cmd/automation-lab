@@ -291,6 +291,51 @@ export function CsvImportDialog({
             </div>
           )}
 
+          {/* Date Range Filter (shown after file upload, before preview) */}
+          {rows.length > 0 && (dateRangeStart || dateRangeEnd) && (
+            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <div className="flex items-center gap-3 mb-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Filter by Date Range
+                </label>
+                <Tooltip content="Only show calendar entries between these dates (inclusive). Pre-filled with program start/end dates." position="top">
+                  <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+                </Tooltip>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label htmlFor="filter-start-date" className="block text-xs font-medium text-slate-600 mb-1">
+                    First Day (Start)
+                  </label>
+                  <input
+                    id="filter-start-date"
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="filter-end-date" className="block text-xs font-medium text-slate-600 mb-1">
+                    Last Day (End)
+                  </label>
+                  <input
+                    id="filter-end-date"
+                    type="date"
+                    value={filterEndDate}
+                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                {filterStartDate && filterEndDate 
+                  ? `Showing entries from ${filterStartDate} to ${filterEndDate} (${filteredRows.length} of ${rows.length} rows)`
+                  : 'Set date range to filter entries'}
+              </p>
+            </div>
+          )}
+
           {/* Preview table */}
           {rows.length > 0 && !result && (
             <>
@@ -354,7 +399,7 @@ export function CsvImportDialog({
                               return (
                                 <td key={col} className="px-3 py-2">
                                   <span className={cellErrors.length > 0 ? 'text-red-700 font-medium' : 'text-slate-700'}>
-                                    {row[col] || <span className="text-slate-300">-</span>}
+                                    {row[col] || <span className="text-slate-500">-</span>}
                                   </span>
                                   {cellErrors.map((e, ei) => (
                                     <span key={ei} className="block text-[11px] text-red-700">{e.message}</span>
