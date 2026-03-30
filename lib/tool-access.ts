@@ -45,7 +45,9 @@ export async function checkToolAccess(
     .eq('tool_id', toolId)
     .maybeSingle();
 
-  const visibility: ToolVisibility = config?.visibility ?? 'public';
+  // Tools without a config row are treated as restricted (not visible by default)
+  // Only explicitly public tools are accessible without grants
+  const visibility: ToolVisibility = config?.visibility ?? 'restricted';
 
   if (visibility === 'public') {
     return { hasAccess: true, visibility };
@@ -99,11 +101,11 @@ export async function getUserAccessibleToolIds(
     return (allTools ?? []).map((t: { tool_id: string }) => t.tool_id);
   }
 
-  // Get all public tools
+  // Get all public tools (only explicitly public — null visibility is NOT public)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: publicTools } = await (svc.from('tool_config') as any)
     .select('tool_id')
-    .or('visibility.eq.public,visibility.is.null');
+    .eq('visibility', 'public');
 
   const toolIds = new Set(
     (publicTools ?? []).map((t: { tool_id: string }) => t.tool_id),

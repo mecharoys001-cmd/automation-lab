@@ -128,7 +128,7 @@ export default async function ToolsPage() {
   }
 
   // Filter tools: if we have an access list, only show accessible tools
-  // Tools not in tool_config are treated as public (accessible to all)
+  // Only explicitly public tools + granted tools are visible
   const visibleTools = accessibleToolIds
     ? tools.filter((t) => accessibleToolIds!.includes(t.id))
     : tools;

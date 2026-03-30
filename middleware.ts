@@ -154,7 +154,8 @@ export async function middleware(request: NextRequest) {
       .eq('tool_id', toolSlug)
       .maybeSingle()
 
-    const visibility = toolConfig?.visibility
+    // Default to restricted if no visibility set (only explicitly public tools are open)
+    const visibility = toolConfig?.visibility ?? 'restricted'
     if (visibility === 'restricted' || visibility === 'hidden') {
       // Check if site admin
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
