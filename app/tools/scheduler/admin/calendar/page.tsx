@@ -401,7 +401,7 @@ const EMPTY_FORM: EntryForm = {
 // ── Main page ────────────────────────────────────────────────
 
 export default function CalendarPage() {
-  const { selectedProgramId } = useProgram();
+  const { selectedProgramId, selectedProgram } = useProgram();
 
   // Data
   const [entries, setEntries] = useState<(SchoolCalendar & { instructor?: Instructor | null })[]>([]);
@@ -1820,6 +1820,9 @@ export default function CalendarPage() {
         }}
         exampleCsv={CALENDAR_CSV_EXAMPLE}
         templateFilename="school-calendar.csv"
+        dateRangeStart={selectedProgram?.start_date}
+        dateRangeEnd={selectedProgram?.end_date}
+        dateColumnName="date"
       />
 
       {/* Toast notifications */}
