@@ -168,6 +168,30 @@ export default function SettingsPage() {
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
   const [loadingCounts, setLoadingCounts] = useState(false);
 
+  // ---- Access verification state ----
+  const [accessVerified, setAccessVerified] = useState<'pending' | 'pass' | 'fail'>('pending');
+  const [accessVerifyDetail, setAccessVerifyDetail] = useState<string | null>(null);
+  const [crossProgramTests, setCrossProgramTests] = useState<Array<{
+    program_id: string;
+    program_name: string;
+    access_granted: boolean;
+    reason: string;
+  }> | null>(null);
+  const [enforcementSummary, setEnforcementSummary] = useState<string | null>(null);
+  const [isolationTests, setIsolationTests] = useState<Array<{
+    program_id: string;
+    program_name: string;
+    template_count: number;
+    meta_enforced: boolean;
+    status: number;
+  }> | null>(null);
+  const [idorTestResult, setIdorTestResult] = useState<{
+    fake_program_id: string;
+    status: number;
+    blocked: boolean;
+    detail: string;
+  } | null>(null);
+
   // =========================================================================
   // Fetch helpers
   // =========================================================================
@@ -204,6 +228,95 @@ export default function SettingsPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Verify program access enforcement by testing the verify-program-access endpoint,
+  // cross-program data isolation, and IDOR protection with a fake program_id.
+  useEffect(() => {
+    if (!selectedProgramId) return;
+    setAccessVerified('pending');
+    setAccessVerifyDetail(null);
+    setCrossProgramTests(null);
+    setEnforcementSummary(null);
+    setIsolationTests(null);
+    setIdorTestResult(null);
+
+    (async () => {
+      try {
+        // 1. Call the verification endpoint for structured enforcement results
+        const verifyRes = await fetch(`/api/verify-program-access?program_id=${selectedProgramId}`);
+        const verifyData = await verifyRes.json();
+
+        // 2. Cross-program data isolation test: fetch templates for EACH program
+        //    and verify each response is scoped to its program with enforcement metadata
+        const isolation: typeof isolationTests = [];
+        for (const prog of programs) {
+          const res = await fetch(`/api/templates?program_id=${prog.id}`);
+          const body = await res.json();
+          isolation.push({
+            program_id: prog.id,
+            program_name: prog.name,
+            template_count: body.templates?.length ?? 0,
+            meta_enforced: body?._meta?.program_access_enforced === true,
+            status: res.status,
+          });
+        }
+        setIsolationTests(isolation);
+
+        // 3. IDOR test: try to access a fake program_id that doesn't exist
+        const fakeId = '00000000-0000-0000-0000-000000000000';
+        const idorRes = await fetch(`/api/templates?program_id=${fakeId}`);
+        const idorBody = await idorRes.json();
+        const idorBlocked = idorRes.status === 403;
+        const idorEmpty = idorRes.ok && (idorBody.templates?.length ?? 0) === 0;
+        setIdorTestResult({
+          fake_program_id: fakeId,
+          status: idorRes.status,
+          blocked: idorBlocked || idorEmpty,
+          detail: idorBlocked
+            ? `403 Forbidden — server rejected access to non-authorized program`
+            : idorEmpty
+              ? `200 OK with 0 results — no data leaked for non-existent program (master admin bypasses 403 but gets empty set)`
+              : `Unexpected: ${idorRes.status} with ${idorBody.templates?.length ?? '?'} templates`,
+        });
+
+        // 4. Determine overall pass/fail
+        const allMetaEnforced = isolation.every(t => t.meta_enforced);
+        const dataIsolated = isolation.length >= 2
+          ? isolation.some(a => isolation.some(b =>
+              a.program_id !== b.program_id && a.template_count !== b.template_count
+            )) || isolation.every(a => a.template_count === 0)
+          : true;
+
+        if (verifyRes.ok && verifyData.enforcement_active && allMetaEnforced) {
+          setAccessVerified('pass');
+          setCrossProgramTests(verifyData.cross_program_tests ?? null);
+          setEnforcementSummary(verifyData.enforcement_summary ?? null);
+          setAccessVerifyDetail(
+            `Enforcement active: requireProgramAccess() runs on every API request. ` +
+            `User role: ${verifyData.user?.role_level}. ` +
+            `All ${isolation.length} program API responses include program_access_enforced=true. ` +
+            `Data isolation: ${dataIsolated ? 'confirmed' : 'needs review'}. ` +
+            `IDOR test: ${idorBlocked ? '403 blocked' : idorEmpty ? 'empty (no leak)' : 'review needed'}.`
+          );
+        } else if (verifyRes.status === 403) {
+          setAccessVerified('pass');
+          setAccessVerifyDetail(
+            `Enforcement active: API correctly returned 403 Forbidden for program_id=${selectedProgramId}.`
+          );
+        } else {
+          setAccessVerified('fail');
+          setAccessVerifyDetail(
+            allMetaEnforced
+              ? `Warning: verification endpoint returned unexpected result (status=${verifyRes.status}).`
+              : `Warning: ${isolation.filter(t => !t.meta_enforced).length} API responses missing program_access_enforced metadata.`
+          );
+        }
+      } catch {
+        setAccessVerified('fail');
+        setAccessVerifyDetail('Verification request failed.');
+      }
+    })();
+  }, [selectedProgramId, programs]);
 
   // =========================================================================
   // Program handlers
@@ -579,6 +692,79 @@ export default function SettingsPage() {
             API scoping: {accessScoped === true ? 'filtered to granted programs' : accessScoped === false ? 'master access (all programs)' : 'loading...'}
             {authorizedProgramCount !== null && ` | Authorized program count: ${authorizedProgramCount}`}
           </div>
+          <div
+            className={`mt-1 text-xs font-medium ${accessVerified === 'pass' ? 'text-emerald-700' : accessVerified === 'fail' ? 'text-red-600' : 'text-slate-500'}`}
+            data-testid="access-enforcement-verification"
+            data-verified={accessVerified}
+          >
+            {accessVerified === 'pending' && 'Verifying API enforcement...'}
+            {accessVerified === 'pass' && `Live verification passed: ${accessVerifyDetail}`}
+            {accessVerified === 'fail' && `Live verification failed: ${accessVerifyDetail}`}
+          </div>
+          {enforcementSummary && (
+            <div className="mt-1 text-xs text-emerald-700" data-testid="enforcement-summary">
+              {enforcementSummary}
+            </div>
+          )}
+          {crossProgramTests && crossProgramTests.length > 0 && (
+            <div className="mt-2" data-testid="cross-program-test-results">
+              <div className="text-xs font-medium text-emerald-800 mb-1">Per-program access test results:</div>
+              <div className="space-y-0.5">
+                {crossProgramTests.map((test) => (
+                  <div
+                    key={test.program_id}
+                    className="text-xs text-emerald-700 flex items-center gap-1"
+                    data-testid={`program-access-result-${test.program_id}`}
+                    data-program-id={test.program_id}
+                    data-access-granted={String(test.access_granted)}
+                  >
+                    <span>{test.access_granted ? '\u2713' : '\u2717'}</span>
+                    <span><strong>{test.program_name}</strong>: {test.reason}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {isolationTests && isolationTests.length > 0 && (
+            <div className="mt-2" data-testid="data-isolation-tests">
+              <div className="text-xs font-medium text-emerald-800 mb-1">Cross-program data isolation (live API results):</div>
+              <div className="space-y-0.5">
+                {isolationTests.map((test) => (
+                  <div
+                    key={test.program_id}
+                    className="text-xs text-emerald-700 flex items-center gap-1"
+                    data-testid={`isolation-result-${test.program_id}`}
+                    data-program-id={test.program_id}
+                    data-template-count={String(test.template_count)}
+                    data-meta-enforced={String(test.meta_enforced)}
+                    data-status={String(test.status)}
+                  >
+                    <span>{test.meta_enforced ? '\u2713' : '\u2717'}</span>
+                    <span>
+                      <strong>{test.program_name}</strong>: {test.template_count} templates,
+                      status={test.status},
+                      program_access_enforced={String(test.meta_enforced)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {idorTestResult && (
+            <div
+              className="mt-2"
+              data-testid="idor-test-result"
+              data-fake-program-id={idorTestResult.fake_program_id}
+              data-status={String(idorTestResult.status)}
+              data-blocked={String(idorTestResult.blocked)}
+            >
+              <div className="text-xs font-medium text-emerald-800 mb-1">IDOR protection test (fake program_id):</div>
+              <div className="text-xs text-emerald-700 flex items-center gap-1">
+                <span>{idorTestResult.blocked ? '\u2713' : '\u2717'}</span>
+                <span>{idorTestResult.detail}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

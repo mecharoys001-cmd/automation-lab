@@ -1506,7 +1506,7 @@ export default function PeoplePage() {
       });
       if (!res.ok) throw new Error('Failed to update status');
       const { instructor: updated } = (await res.json()) as { instructor: Instructor };
-      requestCache.invalidate(/\/api\/instructors/);
+      requestCache.invalidate(/\/api\/(instructors|staff)/);
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
       setToast({ message: `Staff member ${updated.is_active ? 'activated' : 'made inactive'}`, type: 'success', id: Date.now() });
@@ -1528,7 +1528,7 @@ export default function PeoplePage() {
       });
       if (!res.ok) throw new Error('Failed to update on-call status');
       const { instructor: updated } = (await res.json()) as { instructor: Instructor };
-      requestCache.invalidate(/\/api\/instructors/);
+      requestCache.invalidate(/\/api\/(instructors|staff)/);
       setSelectedInstructor(updated);
       setAllInstructors((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
       setToast({ message: updated.on_call ? 'Staff set as on-call' : 'Staff removed from on-call', type: 'success', id: Date.now() });
@@ -1647,7 +1647,7 @@ export default function PeoplePage() {
         throw new Error(errData.error || `Failed to ${isNew ? 'create' : 'update'} staff member`);
       }
       const { instructor: saved } = (await res.json()) as { instructor: Instructor };
-      requestCache.invalidate(/\/api\/instructors/);
+      requestCache.invalidate(/\/api\/(instructors|staff)/);
       if (isNew) {
         setAllInstructors((prev) => [saved, ...prev]);
       } else {
@@ -1682,7 +1682,7 @@ export default function PeoplePage() {
     try {
       const res = await fetch(`/api/staff/${editingInstructor.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete staff');
-      requestCache.invalidate(/\/api\/instructors/);
+      requestCache.invalidate(/\/api\/(instructors|staff)/);
       setAllInstructors((prev) => prev.filter((i) => i.id !== editingInstructor.id));
       if (selectedInstructor?.id === editingInstructor.id) setSelectedInstructor(null);
       setEditingInstructor(null);
@@ -2232,7 +2232,7 @@ export default function PeoplePage() {
           }
           const result = await res.json();
           if (result.imported > 0) {
-            requestCache.invalidate(/\/api\/instructors/);
+            requestCache.invalidate(/\/api\/(instructors|staff)/);
             fetchInstructors();
             setToast({ message: `${result.imported} staff member(s) imported`, type: 'success', id: Date.now() });
           }
