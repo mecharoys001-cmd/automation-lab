@@ -374,7 +374,7 @@ export default function RolesPage() {
         }
       }
 
-      requestCache.invalidate(/\/api\/(admins|instructors)/);
+      requestCache.invalidate(/\/api\/(admins|instructors|staff)/);
       await fetchAll();
       fetchAuditLog();
       closeAddModal();
@@ -446,7 +446,11 @@ export default function RolesPage() {
             throw new Error(errBody.error || 'Failed to create staff member record');
           }
         }
-        await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
+        const delRes = await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
+        if (!delRes.ok) {
+          const delBody = await delRes.json().catch(() => ({}));
+          throw new Error(delBody.error || 'Failed to remove admin record');
+        }
       } else {
         // Same source, just update role level via PATCH
         const res = await fetch('/api/admins?id=' + user.id, {
@@ -462,7 +466,7 @@ export default function RolesPage() {
         }
       }
 
-      requestCache.invalidate(/\/api\/(admins|instructors)/);
+      requestCache.invalidate(/\/api\/(admins|instructors|staff)/);
       await fetchAll();
       fetchAuditLog();
       setEditingId(null);
@@ -511,7 +515,7 @@ export default function RolesPage() {
       setToast({ message: `${userToRemove.name} removed`, type: 'success', id: Date.now() });
     } catch (err) {
       // Rollback optimistic update on error
-      requestCache.invalidate(/\/api\/(admins|instructors)/);
+      requestCache.invalidate(/\/api\/(admins|instructors|staff)/);
       if (userToRemove.source === 'instructor') {
         // Refetch to restore the user
         fetchAll();
