@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,9 +41,12 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('end_date');
     const programId = searchParams.get('program_id');
 
+    let accessibleProgramIds: string[] | null = null;
     if (programId) {
       const accessErr = await requireProgramAccess(auth.user, programId);
       if (accessErr) return accessErr;
+    } else {
+      accessibleProgramIds = await getAccessibleProgramIds(auth.user);
     }
 
     const supabase = createServiceClient();
@@ -59,6 +62,7 @@ export async function GET(request: NextRequest) {
       .not('staff_id', 'is', null);
 
     if (programId) query = query.eq('program_id', programId);
+    else if (accessibleProgramIds !== null) query = query.in('program_id', accessibleProgramIds);
     if (startDate) query = query.gte('date', startDate);
     if (endDate) query = query.lte('date', endDate);
 

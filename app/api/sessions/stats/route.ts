@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -37,9 +37,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 
+    let accessibleProgramIds: string[] | null = null;
     if (programId) {
       const accessErr = await requireProgramAccess(auth.user, programId);
       if (accessErr) return accessErr;
+    } else {
+      accessibleProgramIds = await getAccessibleProgramIds(auth.user);
     }
 
     // Build base query
@@ -47,6 +50,8 @@ export async function GET(request: NextRequest) {
     let baseQuery = (supabase.from('sessions') as any).select('id, status, staff_id');
     if (programId) {
       baseQuery = baseQuery.eq('program_id', programId);
+    } else if (accessibleProgramIds !== null) {
+      baseQuery = baseQuery.in('program_id', accessibleProgramIds);
     }
 
     const { data, error } = await baseQuery;

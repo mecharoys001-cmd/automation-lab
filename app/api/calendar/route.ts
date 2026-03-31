@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
-import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,9 +12,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
 
+    let accessibleProgramIds: string[] | null = null;
     if (programId) {
       const accessErr = await requireProgramAccess(auth.user, programId);
       if (accessErr) return accessErr;
+    } else {
+      accessibleProgramIds = await getAccessibleProgramIds(auth.user);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +27,8 @@ export async function GET(request: NextRequest) {
 
     if (programId) {
       query = query.eq('program_id', programId);
+    } else if (accessibleProgramIds !== null) {
+      query = query.in('program_id', accessibleProgramIds);
     }
 
     const { data, error } = await query;

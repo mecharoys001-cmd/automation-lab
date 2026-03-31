@@ -172,6 +172,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         // 'instructor', leave roleLevel null so no nav items render.
         const orgRole = data.org_role as string | undefined;
         if (orgRole === 'instructor') {
+          // Still show their real name in the sidebar
+          const staffName = data.display_name || data.google_email?.split('@')[0] || 'Staff';
+          const staffParts = staffName.trim().split(/\s+/);
+          const staffInitials = staffParts.length >= 2
+            ? (staffParts[0][0] + staffParts[staffParts.length - 1][0]).toUpperCase()
+            : staffName.slice(0, 2).toUpperCase();
+          setUser({ name: staffName, initials: staffInitials, role: 'Staff' });
           setRoleLoaded(true);
           return;
         }

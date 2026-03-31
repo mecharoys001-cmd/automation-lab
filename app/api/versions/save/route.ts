@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { ScheduleSnapshot } from '@/types/database';
-import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,9 +35,12 @@ export async function POST(request: NextRequest) {
     const year = Number(yearParam);
     const programId = searchParams.get('program_id');
 
+    let accessibleProgramIds: string[] | null = null;
     if (programId) {
       const accessErr = await requireProgramAccess(auth.user, programId);
       if (accessErr) return accessErr;
+    } else {
+      accessibleProgramIds = await getAccessibleProgramIds(auth.user);
     }
 
     // Parse optional status from body
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Build snapshot ───────────────────────────────────────
-    const snapshot = await buildSnapshot(supabase, year, programId);
+    const snapshot = await buildSnapshot(supabase, year, programId, accessibleProgramIds);
 
     // ── Determine next version slot (1-5 rotation) ───────────
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,10 +126,18 @@ export async function POST(request: NextRequest) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function buildSnapshot(supabase: any, year: number, programId: string | null): Promise<ScheduleSnapshot> {
+async function buildSnapshot(supabase: any, year: number, programId: string | null, accessibleProgramIds: string[] | null): Promise<ScheduleSnapshot> {
   // Determine date range for the year
   const startDate = `${year}-01-01`;
   const endDate = `${year}-12-31`;
+
+  // Helper to scope a query by program access
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function scopeByProgram(query: any): any {
+    if (programId) return query.eq('program_id', programId);
+    if (accessibleProgramIds !== null) return query.in('program_id', accessibleProgramIds);
+    return query; // master admin — no filter
+  }
 
   // Fetch all scheduling data in parallel
   const [
@@ -140,31 +151,29 @@ async function buildSnapshot(supabase: any, year: number, programId: string | nu
     tagsRes,
   ] = await Promise.all([
     // Sessions for this year
-    (supabase.from('sessions') as any)
-      .select('*')
-      .gte('date', startDate)
-      .lte('date', endDate),
+    scopeByProgram(
+      (supabase.from('sessions') as any)
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate)
+    ),
     // Session tags for sessions in this year (fetch all, filter client-side)
     (supabase.from('session_tags') as any).select('*'),
-    // Event templates (not year-scoped — include all)
-    (supabase.from('session_templates') as any).select('*'),
+    // Event templates (scoped to accessible programs)
+    scopeByProgram((supabase.from('session_templates') as any).select('*')),
     // School calendar for this year
-    (supabase.from('school_calendar') as any)
-      .select('*')
-      .gte('date', startDate)
-      .lte('date', endDate),
+    scopeByProgram(
+      (supabase.from('school_calendar') as any)
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate)
+    ),
     // Settings (single row)
     (supabase.from('settings') as any).select('*').limit(1).single(),
-    // Reference data — preserved on revert (scoped to program if provided)
-    programId
-      ? (supabase.from('staff') as any).select('*').eq('program_id', programId)
-      : (supabase.from('staff') as any).select('*'),
-    programId
-      ? (supabase.from('venues') as any).select('*').eq('program_id', programId)
-      : (supabase.from('venues') as any).select('*'),
-    programId
-      ? (supabase.from('tags') as any).select('*').eq('program_id', programId)
-      : (supabase.from('tags') as any).select('*'),
+    // Reference data — preserved on revert (scoped to accessible programs)
+    scopeByProgram((supabase.from('staff') as any).select('*')),
+    scopeByProgram((supabase.from('venues') as any).select('*')),
+    scopeByProgram((supabase.from('tags') as any).select('*')),
   ]);
 
   const sessions = sessionsRes.data ?? [];
