@@ -441,7 +441,10 @@ export default function RolesPage() {
         });
         if (!createRes.ok) {
           const errBody = await createRes.json().catch(() => ({}));
-          throw new Error(errBody.error || 'Failed to create staff member record');
+          // If staff record already exists (duplicate email), that's fine — just proceed to remove admin
+          if (!errBody.error?.includes('duplicate key')) {
+            throw new Error(errBody.error || 'Failed to create staff member record');
+          }
         }
         await fetch(`/api/admins?id=${user.id}`, { method: 'DELETE' });
       } else {
