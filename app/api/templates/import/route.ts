@@ -242,8 +242,9 @@ export async function POST(request: NextRequest) {
         program_id,
       }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('tags') as any)
-        .upsert(tagRows, { onConflict: 'name,category', ignoreDuplicates: true });
+      const { error: tagError } = await (supabase.from('tags') as any)
+        .upsert(tagRows, { onConflict: 'name,program_id', ignoreDuplicates: true });
+      if (tagError) console.error('Tag upsert error:', tagError.message);
     }
 
     trackScheduleChange();
