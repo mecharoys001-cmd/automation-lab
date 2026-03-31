@@ -169,9 +169,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
         // Instructors/staff should not be in the admin layout (middleware
         // redirects them to /portal), but defend in depth: if org_role is
-        // 'instructor', leave roleLevel null so no nav items render.
+        // 'staff', leave roleLevel null so no nav items render.
         const orgRole = data.org_role as string | undefined;
-        if (orgRole === 'instructor') {
+        if (orgRole === 'staff') {
           // Still show their real name in the sidebar
           const staffName = data.display_name || data.google_email?.split('@')[0] || 'Staff';
           const staffParts = staffName.trim().split(/\s+/);

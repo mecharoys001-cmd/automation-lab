@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { getAccessibleProgramIds } from '@/lib/api-auth';
+import type { RoleLevel } from '@/types/database';
 
 /**
  * GET /api/auth/me
  * Returns the current authenticated user's profile.
  * Checks admins table first, then instructors table.
- * Returns org_role ('admin' | 'instructor') alongside role_level.
+ * Returns org_role ('admin' | 'staff') alongside role_level.
  */
 export async function GET() {
   try {
@@ -39,6 +41,8 @@ export async function GET() {
         role_level: siteAdmin.role_level ?? 'master',
         org_role: 'admin',
         is_site_admin: true,
+        authorized_programs: 'all',
+        program_access_enforced: true,
       });
     }
 
@@ -50,6 +54,13 @@ export async function GET() {
       .maybeSingle();
 
     if (admin) {
+      const authorizedPrograms = await getAccessibleProgramIds({
+        id: admin.id,
+        email: admin.google_email,
+        role: 'admin',
+        roleLevel: admin.role_level as RoleLevel,
+      });
+
       return NextResponse.json({
         id: admin.id,
         email: admin.google_email,
@@ -57,6 +68,8 @@ export async function GET() {
         display_name: admin.display_name,
         role_level: admin.role_level,
         org_role: 'admin',
+        authorized_programs: authorizedPrograms ?? 'all',
+        program_access_enforced: true,
       });
     }
 
@@ -75,7 +88,7 @@ export async function GET() {
         google_email: instructor.email,
         display_name: [instructor.first_name, instructor.last_name].filter(Boolean).join(' ') || null,
         role_level: null,
-        org_role: 'instructor',
+        org_role: 'staff',
       });
     }
 

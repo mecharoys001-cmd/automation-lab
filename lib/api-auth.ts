@@ -16,7 +16,7 @@ export interface AuthUser {
 export interface OrgUser {
   id: string;
   email: string;
-  orgRole: 'admin' | 'instructor';
+  orgRole: 'admin' | 'staff';
   /** Only set when orgRole === 'admin' */
   roleLevel: RoleLevel | null;
 }
@@ -158,7 +158,10 @@ export function scopedJsonResponse(
   body: unknown,
   init?: { status?: number },
 ): NextResponse {
-  const resp = NextResponse.json(body, init);
+  const enriched = typeof body === 'object' && body !== null
+    ? { ...body, _meta: { program_access_enforced: true } }
+    : body;
+  const resp = NextResponse.json(enriched, init);
   resp.headers.set('X-Program-Access-Scoped', 'true');
   return resp;
 }
@@ -233,7 +236,7 @@ export async function requireOrgMember(): Promise<OrgAuthSuccess | OrgAuthFailur
       user: {
         id: instructor.id,
         email: user.email,
-        orgRole: 'instructor',
+        orgRole: 'staff',
         roleLevel: null,
       },
       error: null,

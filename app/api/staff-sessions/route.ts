@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Instructors can only view their own sessions
-    if (auth.user.orgRole === 'instructor') {
+    if (auth.user.orgRole === 'staff') {
       if (resolvedId !== auth.user.id) {
         return NextResponse.json(
           { error: 'Staff members can only view their own schedule' },

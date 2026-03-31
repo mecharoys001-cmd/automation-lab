@@ -3,13 +3,13 @@ import type { RoleLevel } from '@/types/database';
 
 // ── Role types ─────────────────────────────────────────────────────────────
 
-export type OrgRole = 'admin' | 'instructor' | null;
+export type OrgRole = 'admin' | 'staff' | null;
 
 export interface OrgMembership {
   role: OrgRole;
   /** Admin role_level when role === 'admin' */
   adminLevel: RoleLevel | null;
-  /** Instructor id when role === 'instructor' */
+  /** Instructor id when role === 'staff' */
   instructorId: string | null;
 }
 
@@ -57,7 +57,7 @@ export async function getOrgMembership(userEmail: string | undefined): Promise<O
     .maybeSingle();
 
   if (instructor) {
-    return { role: 'instructor', adminLevel: null, instructorId: instructor.id };
+    return { role: 'staff', adminLevel: null, instructorId: instructor.id };
   }
 
   return NO_MEMBERSHIP;

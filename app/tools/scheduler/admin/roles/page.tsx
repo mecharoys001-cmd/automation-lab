@@ -25,14 +25,14 @@ import { requestCache } from '@/lib/requestCache';
 // Types
 // ---------------------------------------------------------------------------
 
-type AppRole = 'master_admin' | 'admin' | 'editor' | 'instructor';
+type AppRole = 'master_admin' | 'admin' | 'editor' | 'staff';
 
 interface UnifiedUser {
   id: string;
   name: string;
   email: string;
   role: AppRole;
-  source: 'admin' | 'instructor';
+  source: 'admin' | 'staff';
   createdAt: string;
 }
 
@@ -71,7 +71,7 @@ const ROLE_META: Record<AppRole, { label: string; description: string; color: st
     color: 'bg-amber-100 text-amber-800',
     icon: Shield,
   },
-  instructor: {
+  staff: {
     label: 'Staff',
     description: 'View own schedule and availability only',
     color: 'bg-emerald-100 text-emerald-800',
@@ -105,11 +105,11 @@ const tdClass = 'px-4 py-3 text-sm';
 function getAllowedRoleOptions(currentRole: AppRole | null): AppRole[] {
   // Master Admin can assign any role
   if (currentRole === 'master_admin') {
-    return ['master_admin', 'admin', 'editor', 'instructor'];
+    return ['master_admin', 'admin', 'editor', 'staff'];
   }
   // Non-Master Admin users cannot grant Master Admin privileges
   // They can only assign Admin, Editor, or Staff roles
-  return ['admin', 'editor', 'instructor'];
+  return ['admin', 'editor', 'staff'];
 }
 
 /** Map DB admin role_level to our unified role */
@@ -161,8 +161,8 @@ function normalizeInstructors(instructors: Instructor[]): UnifiedUser[] {
     id: i.id,
     name: formatInstructorName(i.first_name, i.last_name) || i.email || 'Unknown',
     email: i.email || '',
-    role: 'instructor' as AppRole,
-    source: 'instructor' as const,
+    role: 'staff' as AppRole,
+    source: 'staff' as const,
     createdAt: i.created_at,
   }));
 }
@@ -339,7 +339,7 @@ export default function RolesPage() {
     setFormError(null);
 
     try {
-      if (form.role === 'instructor') {
+      if (form.role === 'staff') {
         const nameParts = form.name.trim().split(/\s+/);
         const firstName = nameParts[0];
         const lastName = nameParts.slice(1).join(' ') || '';
@@ -407,12 +407,12 @@ export default function RolesPage() {
       return;
     }
 
-    const wasInstructor = user.source === 'instructor';
-    const becomingInstructor = editRole === 'instructor';
-    console.log('[SAVE_EDIT] wasInstructor:', wasInstructor, 'becomingInstructor:', becomingInstructor);
+    const wasStaff = user.source === 'staff';
+    const becomingStaff = editRole === 'staff';
+    console.log('[SAVE_EDIT] wasStaff:', wasStaff, 'becomingStaff:', becomingStaff);
 
     try {
-      if (wasInstructor && !becomingInstructor) {
+      if (wasStaff && !becomingStaff) {
         // Create admin first, then delete instructor (safe order — no data loss on failure)
         const createRes = await fetch('/api/admins', {
           method: 'POST',
@@ -425,7 +425,7 @@ export default function RolesPage() {
         });
         if (!createRes.ok) throw new Error('Failed to create admin record');
         await fetch(`/api/staff/${user.id}`, { method: 'DELETE' });
-      } else if (!wasInstructor && becomingInstructor) {
+      } else if (!wasStaff && becomingStaff) {
         // Create instructor first, then delete admin (safe order — no data loss on failure)
         const nameParts = user.name.split(/\s+/);
         const createRes = await fetch('/api/staff', {
@@ -486,7 +486,7 @@ export default function RolesPage() {
     const userToRemove = removeUser;
 
     // Optimistic update: immediately remove from UI and close modal
-    if (userToRemove.source === 'instructor') {
+    if (userToRemove.source === 'staff') {
       setInstructors((prev) => prev.filter((i) => i.id !== userToRemove.id));
     } else {
       setAdmins((prev) => prev.filter((a) => a.id !== userToRemove.id));
@@ -499,7 +499,7 @@ export default function RolesPage() {
 
     // Make API call in background
     try {
-      const endpoint = userToRemove.source === 'instructor'
+      const endpoint = userToRemove.source === 'staff'
         ? `/api/staff/${userToRemove.id}`
         : `/api/admins?id=${userToRemove.id}`;
       
@@ -516,7 +516,7 @@ export default function RolesPage() {
     } catch (err) {
       // Rollback optimistic update on error
       requestCache.invalidate(/\/api\/(admins|instructors|staff)/);
-      if (userToRemove.source === 'instructor') {
+      if (userToRemove.source === 'staff') {
         // Refetch to restore the user
         fetchAll();
       } else {
