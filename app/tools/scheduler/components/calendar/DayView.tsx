@@ -52,7 +52,10 @@ interface DayViewProps {
 
 const DEFAULT_START = 8;   // 8 AM
 const DEFAULT_END = 15;    // 3 PM
-const HOUR_HEIGHT = 64;    // px per hour
+const DEFAULT_HOUR_HEIGHT = 64;    // px per hour
+const MIN_HOUR_HEIGHT = 32;
+const MAX_HOUR_HEIGHT = 200;
+const HOUR_HEIGHT_STORAGE_KEY = 'symphonix-day-view-hour-height';
 const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -125,12 +128,14 @@ function snapTo15Min(decimal: number): number {
 function DayEventBlock({
   event,
   gridStartHour,
+  hourHeight,
   onHover,
   onLeave,
   onClick,
 }: {
   event: CalendarEvent;
   gridStartHour: number;
+  hourHeight: number;
   onHover: (event: CalendarEvent, el: HTMLElement) => void;
   onLeave: () => void;
   onClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -144,8 +149,8 @@ function DayEventBlock({
   const endHour = event.endTime ? parseTimeToHour(event.endTime) : startHour + 1;
   const duration = Math.max(endHour - startHour, 0.5);
 
-  const top = (startHour - gridStartHour) * HOUR_HEIGHT;
-  const height = duration * HOUR_HEIGHT - 4;
+  const top = (startHour - gridStartHour) * hourHeight;
+  const height = duration * hourHeight - 4;
   const isCompact = height < 32; // ≤30min events: single-line display
 
   const blockTooltip = `${event.title} — ${event.time}${event.endTime ? ` – ${event.endTime}` : ''}${event.instructor ? ` · ${event.instructor}` : ''}${event.venue ? ` · ${event.venue}` : ''} (${EVENT_TYPE_LABELS[event.type]})`;
@@ -225,6 +230,53 @@ export function DayView({
   const [dayStartHour, setDayStartHour] = useState(initialStartHour);
   const [dayEndHour, setDayEndHour] = useState(initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+
+  // Hour height state with localStorage persistence
+  const [hourHeight, setHourHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(HOUR_HEIGHT_STORAGE_KEY);
+      if (stored) {
+        const parsed = Number(stored);
+        if (!isNaN(parsed) && parsed >= MIN_HOUR_HEIGHT && parsed <= MAX_HOUR_HEIGHT) return parsed;
+      }
+    }
+    return DEFAULT_HOUR_HEIGHT;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(HOUR_HEIGHT_STORAGE_KEY, String(hourHeight));
+  }, [hourHeight]);
+
+  // Drag-to-resize hour height
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(DEFAULT_HOUR_HEIGHT);
+  const isDragging = useRef(false);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartY.current = e.clientY;
+    dragStartHeight.current = hourHeight;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const delta = ev.clientY - dragStartY.current;
+      const newHeight = Math.min(MAX_HOUR_HEIGHT, Math.max(MIN_HOUR_HEIGHT, dragStartHeight.current + delta / 2));
+      setHourHeight(Math.round(newHeight));
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [hourHeight]);
+
+  const resetHourHeight = useCallback(() => {
+    setHourHeight(DEFAULT_HOUR_HEIGHT);
+  }, []);
 
   // Sync viewDate when parent changes currentDate externally
   useEffect(() => {
@@ -355,7 +407,7 @@ export function DayView({
     (_, i) => dayStartHour + i,
   );
 
-  const totalHeight = hours.length * HOUR_HEIGHT;
+  const totalHeight = hours.length * hourHeight;
 
   const navigate = (delta: number) => {
     const next = new Date(viewDate);
@@ -408,6 +460,17 @@ export function DayView({
             onEndHourChange={setDayEndHour}
           />
         </Tooltip>
+
+        {hourHeight !== DEFAULT_HOUR_HEIGHT && (
+          <Tooltip text="Reset row height to default">
+            <button
+              onClick={resetHourHeight}
+              className="text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-100"
+            >
+              Reset zoom
+            </button>
+          </Tooltip>
+        )}
 
         <div className="w-px h-5 bg-slate-200 mx-1" />
 
@@ -500,16 +563,28 @@ export function DayView({
 
           {/* Time gutter */}
           <div
-            className="border-r border-slate-200 bg-slate-50"
+            className="border-r border-slate-200 bg-slate-50 relative"
             style={{ gridRow: multiLane ? 2 : 1 }}
           >
-            {hours.map((hour) => (
+            {hours.map((hour, hIdx) => (
               <div
                 key={hour}
-                className="flex items-start justify-end pr-2 text-[11px] font-medium text-slate-700"
-                style={{ height: `${HOUR_HEIGHT}px` }}
+                className="flex items-start justify-end pr-2 text-[11px] font-medium text-slate-700 relative"
+                style={{ height: `${hourHeight}px` }}
               >
                 <span className="-mt-1.5">{formatHourLabel(hour)}</span>
+                {/* Drag handle on the bottom edge of each hour row */}
+                {hIdx < hours.length - 1 && (
+                  <Tooltip text="Drag to resize hours">
+                    <div
+                      className="absolute left-0 right-0 h-2 -bottom-1 z-10 cursor-row-resize group"
+                      onMouseDown={handleDragStart}
+                      onDoubleClick={resetHourHeight}
+                    >
+                      <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4 h-0.5 rounded-full bg-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </Tooltip>
+                )}
               </div>
             ))}
           </div>
@@ -524,7 +599,7 @@ export function DayView({
                     if ((e.target as HTMLElement).closest('[data-event-block]')) return;
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickY = e.clientY - rect.top;
-                    const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
+                    const rawHour = dayStartHour + clickY / hourHeight;
                     const snapped = snapTo15Min(rawHour);
                     onEmptySlotClick(formatDateKey(viewDate), formatDecimalTo24h(snapped));
                   }
@@ -537,8 +612,8 @@ export function DayView({
                 key={hour}
                 className="absolute left-0 right-0 border-b border-slate-100"
                 style={{
-                  top: `${hIdx * HOUR_HEIGHT}px`,
-                  height: `${HOUR_HEIGHT}px`,
+                  top: `${hIdx * hourHeight}px`,
+                  height: `${hourHeight}px`,
                 }}
               />
             ))}
@@ -549,7 +624,7 @@ export function DayView({
                 key={`half-${hour}`}
                 className="absolute left-0 right-0 border-b border-dashed border-slate-50"
                 style={{
-                  top: `${hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
+                  top: `${hIdx * hourHeight + hourHeight / 2}px`,
                 }}
               />
             ))}
@@ -576,6 +651,7 @@ export function DayView({
                           key={event.id}
                           event={event}
                           gridStartHour={dayStartHour}
+                          hourHeight={hourHeight}
                           onHover={showPopover}
                           onLeave={hidePopover}
                           onClick={handleEventClick}
@@ -593,6 +669,7 @@ export function DayView({
                     key={event.id}
                     event={event}
                     gridStartHour={dayStartHour}
+                    hourHeight={hourHeight}
                     onHover={showPopover}
                     onLeave={hidePopover}
                     onClick={handleEventClick}
