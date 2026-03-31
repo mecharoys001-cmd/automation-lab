@@ -66,10 +66,10 @@ export function TagSelector({
 
       // Filter by category if specified
       if (category) {
-        // Normalize category: "Event Types" matches "Event Type", "Event Types", and legacy "Subjects"/"Subject"
+        // Normalize legacy category names to "Event Type"
         const normalizeCategory = (cat: string) => {
           const lower = cat.toLowerCase().trim();
-          if (lower === 'subject' || lower === 'subjects' || lower === 'event type') return 'Event Types';
+          if (lower === 'subject' || lower === 'subjects' || lower === 'event types') return 'Event Type';
           return cat;
         };
         tags = tags.filter((t: Tag) => normalizeCategory(t.category) === normalizeCategory(category));

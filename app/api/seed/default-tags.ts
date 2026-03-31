@@ -37,11 +37,11 @@ export const DEFAULT_TAGS: TagPreset[] = [
   { name: 'Saxophone', color: '#EAB308', emoji: '🎷', category: 'Instrument' },
 
   // Event Types
-  { name: 'Group', color: '#3B82F6', emoji: '👥', category: 'Event Types', description: 'Group instruction session' },
-  { name: 'Private', color: '#8B5CF6', emoji: '👤', category: 'Event Types', description: 'One-on-one instruction' },
-  { name: 'Theory', color: '#6366F1', emoji: '📚', category: 'Event Types', description: 'Music theory class' },
-  { name: 'Performance', color: '#EC4899', emoji: '🎭', category: 'Event Types', description: 'Performance preparation or showcase' },
-  { name: 'Recital Prep', color: '#F43F5E', emoji: '🎪', category: 'Event Types', description: 'Recital preparation session' },
+  { name: 'Group', color: '#3B82F6', emoji: '👥', category: 'Event Type', description: 'Group instruction session' },
+  { name: 'Private', color: '#8B5CF6', emoji: '👤', category: 'Event Type', description: 'One-on-one instruction' },
+  { name: 'Theory', color: '#6366F1', emoji: '📚', category: 'Event Type', description: 'Music theory class' },
+  { name: 'Performance', color: '#EC4899', emoji: '🎭', category: 'Event Type', description: 'Performance preparation or showcase' },
+  { name: 'Recital Prep', color: '#F43F5E', emoji: '🎪', category: 'Event Type', description: 'Recital preparation session' },
 ];
 
 // ── Space Types ─────────────────────────────────────────

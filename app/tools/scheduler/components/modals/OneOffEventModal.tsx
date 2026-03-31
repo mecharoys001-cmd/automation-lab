@@ -253,7 +253,7 @@ export function OneOffEventModal({
       }
       if (tagRes.ok) {
         const body = await tagRes.json();
-        // Filter to event type tags only (category = 'Event Type' or legacy 'Subjects')
+        // Filter to event type tags only (category = 'Event Type')
         const allTags: Tag[] = body.tags ?? [];
         setTags(allTags);
       }
@@ -395,9 +395,9 @@ export function OneOffEventModal({
 
   if (!open) return null;
 
-  // Filter event type tags (category = 'Event Types' or legacy 'Event Type'/'Subjects')
+  // Filter event type tags
   const subjectTags = tags.filter(
-    (t) => t.category?.toLowerCase() === 'event types' || t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject',
+    (t) => t.category === 'Event Type',
   );
   // If no event type tags exist, show all tags as fallback
   const displayTags = subjectTags.length > 0 ? subjectTags : tags;

@@ -120,6 +120,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Auto-create tags for imported skills
+    const skillValues = new Set<string>();
+    for (const row of rows) {
+      if (row.skills) {
+        for (const s of (Array.isArray(row.skills) ? row.skills : [])) {
+          if (s.trim()) skillValues.add(s.trim());
+        }
+      }
+    }
+    if (skillValues.size > 0) {
+      const tagRows = Array.from(skillValues).map((name) => ({
+        name,
+        category: 'Event Type',
+        program_id,
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('tags') as any)
+        .upsert(tagRows, { onConflict: 'name,category', ignoreDuplicates: true });
+    }
+
     return NextResponse.json({
       imported: (data ?? []).length,
       skipped,

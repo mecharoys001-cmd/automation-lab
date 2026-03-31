@@ -130,7 +130,7 @@ export function SubjectDashboard({ templates, className = '', onTagClick, select
       ) : (
         <div className="px-4 py-3">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Event Types</span>
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Event Type</span>
             <span className="text-xs text-slate-700">·</span>
             <span className="text-xs text-slate-600">{totalTemplates} total</span>
           </div>

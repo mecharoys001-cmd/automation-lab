@@ -221,6 +221,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Auto-create tags for imported subjects and additional_tags
+    const tagValues = new Set<string>();
+    for (const row of rows) {
+      if (row.subjects) {
+        for (const s of row.subjects.split(';').map((v) => v.trim()).filter(Boolean)) {
+          tagValues.add(s);
+        }
+      }
+      if (row.additional_tags) {
+        for (const t of row.additional_tags.split(';').map((v) => v.trim()).filter(Boolean)) {
+          tagValues.add(t);
+        }
+      }
+    }
+    if (tagValues.size > 0) {
+      const tagRows = Array.from(tagValues).map((name) => ({
+        name,
+        category: 'Event Type',
+        program_id,
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('tags') as any)
+        .upsert(tagRows, { onConflict: 'name,category', ignoreDuplicates: true });
+    }
+
     trackScheduleChange();
 
     return NextResponse.json({

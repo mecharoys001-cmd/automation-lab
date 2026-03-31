@@ -161,7 +161,7 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
   const templateSubjects = Array.isArray(session.template?.required_skills) ? session.template.required_skills : [];
   const tagSubjects = Array.isArray(session.tags)
     ? session.tags
-        .filter((t: { category?: string }) => t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject')
+        .filter((t: { category?: string }) => t.category === 'Event Type')
         .map((t: { name?: string }) => t.name)
         .filter(Boolean)
     : [];
@@ -174,7 +174,7 @@ function sessionToCalendarEvent(session: any): CalendarEvent {
   // Find the event type tag ID from event type category tags
   const subjectTag = Array.isArray(session.tags)
     ? session.tags.find((t: { category?: string }) =>
-        t.category?.toLowerCase() === 'event type' || t.category?.toLowerCase() === 'subjects' || t.category?.toLowerCase() === 'subject'
+        t.category === 'Event Type'
       )
     : undefined;
 

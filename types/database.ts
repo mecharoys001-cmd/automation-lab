@@ -177,7 +177,7 @@ export interface Tag {
   color: string | null;
   emoji: string | null;
   description: string | null;
-  category: string; // Tag category (e.g., "Instrument", "Grade Level", "Event Types")
+  category: string; // Tag category (e.g., "Instrument", "Grade Level", "Event Type")
   created_at: string;
 }
 

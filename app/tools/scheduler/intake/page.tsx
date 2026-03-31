@@ -209,7 +209,7 @@ function IntakeForm() {
             .then((res) => res.json())
             .then((tagData) => {
               const tags: SubjectTag[] = (tagData.tags ?? []).filter(
-                (t: SubjectTag) => ['Skills', 'Subjects', 'Event Type', 'Event Types'].includes(t.category)
+                (t: SubjectTag) => t.category === 'Event Type'
               );
               setAvailableSubjects(tags);
             })

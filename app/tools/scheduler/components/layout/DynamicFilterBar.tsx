@@ -68,7 +68,6 @@ interface TagData {
 // ---------------------------------------------------------------------------
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  'Event Types': GraduationCap,
   'Event Type': GraduationCap,
   Administrative: Tag,
   General: Tag,
