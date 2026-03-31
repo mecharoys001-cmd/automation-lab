@@ -40,7 +40,7 @@ const AVAIL_DAYS: { key: DayOfWeek; label: string }[] = [
 ];
 
 const AVATAR_COLORS = [
-  'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
+  'bg-blue-600', 'bg-violet-500', 'bg-emerald-500',
   'bg-amber-500', 'bg-pink-500', 'bg-cyan-500',
 ];
 
@@ -335,7 +335,7 @@ const StaffCard = memo(function StaffCard({
       {/* Contact — single line, no icon components (saves ~8 DOM nodes) */}
       {(inst.email || inst.phone) && (
         <p className="text-xs text-slate-600 truncate">
-          {inst.email && <span className="text-blue-500">{inst.email}</span>}
+          {inst.email && <span className="text-blue-600">{inst.email}</span>}
           {inst.email && inst.phone && <span className="mx-1.5 text-slate-600">|</span>}
           {inst.phone && <span>{inst.phone}</span>}
         </p>
@@ -378,7 +378,7 @@ const StaffCard = memo(function StaffCard({
           <Link
             href={`/tools/scheduler/admin?instructor=${inst.id}`}
             title="Jump to calendar filtered to this staff member"
-            className="text-xs font-medium text-blue-500 hover:text-blue-600"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
           >
             View on Calendar &rarr;
           </Link>
@@ -449,7 +449,7 @@ const VenueCard = memo(function VenueCard({
           <Link
             href={`/tools/scheduler/admin?venue=${venue.id}`}
             title="View venue schedule on the calendar"
-            className="text-xs font-medium text-blue-500 hover:text-blue-600"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
           >
             View Schedule &rarr;
           </Link>
@@ -632,7 +632,7 @@ function VenueDetailModal({
             <Link
               href={`/tools/scheduler/admin?venue=${venue.id}`}
               onClick={onClose}
-              className="text-[13px] font-medium text-blue-500 hover:text-blue-600"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700"
             >
               View Schedule &rarr;
             </Link>
@@ -861,7 +861,7 @@ function VenueDetailModal({
                   type="checkbox"
                   checked={accessible}
                   onChange={(e) => setAccessible(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
                 />
                 <span className="text-sm text-slate-700">Wheelchair accessible</span>
               </label>
@@ -947,7 +947,7 @@ function InstructorDetailModal({
             <Link
               href={`/tools/scheduler/admin?instructor=${instructor.id}`}
               onClick={onClose}
-              className="text-[13px] font-medium text-blue-500 hover:text-blue-600"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700"
             >
               View on Calendar &rarr;
             </Link>
@@ -1005,7 +1005,7 @@ function InstructorDetailModal({
             text={instructor.email}
             label="email"
             icon={Mail}
-            textClassName="text-[13px] text-blue-500"
+            textClassName="text-[13px] text-blue-600"
             buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
           />
         )}
@@ -1327,7 +1327,7 @@ function VenueCreateModal({
                 type="checkbox"
                 checked={form.is_wheelchair_accessible}
                 onChange={(e) => setField('is_wheelchair_accessible', e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
               />
               <span className="text-sm text-slate-700">Wheelchair Accessible</span>
             </label>
@@ -1797,7 +1797,7 @@ export default function PeoplePage() {
         <section className="bg-gradient-to-r from-blue-50 to-violet-50 rounded-lg border border-blue-200 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white border border-blue-200 flex-shrink-0">
-              <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
+              <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm sm:text-base font-semibold text-slate-900 mb-1">
@@ -1830,7 +1830,7 @@ export default function PeoplePage() {
         {/* ── Staff Section ─────────────────────────────────── */}
         <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
             <h2 className="text-base sm:text-lg font-semibold text-slate-900">Staff</h2>
             <Badge
               variant="count"
@@ -1966,7 +1966,7 @@ export default function PeoplePage() {
         {/* ── Venues Section ──────────────────────────────── */}
         <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
             <h2 className="text-base sm:text-lg font-semibold text-slate-900">Venues</h2>
             <Badge
               variant="count"

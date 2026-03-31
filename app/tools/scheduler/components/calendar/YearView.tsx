@@ -298,7 +298,7 @@ function MonthGrid({
               >
                 <span
                   className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
-                    isToday ? 'bg-blue-500 text-white' : 'text-slate-900'
+                    isToday ? 'bg-blue-600 text-white' : 'text-slate-900'
                   }`}
                 >
                   {dayNumber}
@@ -736,7 +736,7 @@ export function YearView({
         <Tooltip text="Jump to today">
           <button
             onClick={scrollToToday}
-            className="inline-flex items-center gap-1.5 bg-blue-500 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-blue-600 transition-colors cursor-pointer text-[13px] font-semibold"
+            className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-blue-700 transition-colors cursor-pointer text-[13px] font-semibold"
           >
             <Calendar className="w-4 h-4" />
             Today

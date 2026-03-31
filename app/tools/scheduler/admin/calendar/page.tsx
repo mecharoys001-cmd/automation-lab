@@ -56,7 +56,7 @@ const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; ce
   },
   instructor_exception: {
     badge: 'bg-blue-100 text-blue-700 border-blue-200',
-    dot: 'bg-blue-500',
+    dot: 'bg-blue-600',
     cell: 'bg-blue-50 text-blue-700 border border-blue-200',
   },
 };
@@ -349,7 +349,7 @@ function MonthGrid({
                 <span
                   className={`text-xs font-medium leading-none inline-flex items-center justify-center w-6 h-6 rounded-full ${
                     isToday
-                      ? 'bg-blue-500 text-white font-bold'
+                      ? 'bg-blue-600 text-white font-bold'
                       : isSelected
                       ? 'text-blue-800 font-semibold'
                       : isWeekend
@@ -1791,7 +1791,7 @@ export default function CalendarPage() {
             <div className="space-y-1">
               <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  className="h-full bg-blue-600 rounded-full transition-all duration-300"
                   style={{ width: `${Math.round((batchProgress.done / batchProgress.total) * 100)}%` }}
                 />
               </div>

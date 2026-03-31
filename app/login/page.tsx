@@ -133,7 +133,7 @@ function LoginPageContent() {
                 width: '52px',
                 height: '52px',
                 borderRadius: '12px',
-                background: '#1282a2',
+                background: '#0F7490',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -159,7 +159,7 @@ function LoginPageContent() {
           <p
             style={{
               fontSize: '11px',
-              color: '#1282a2',
+              color: '#0F7490',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               fontWeight: 600,
@@ -290,7 +290,7 @@ function LoginPageContent() {
               style={{
                 flex: 1,
                 padding: '12px',
-                background: '#1282a2',
+                background: '#0F7490',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '10px',
@@ -311,8 +311,8 @@ function LoginPageContent() {
                 flex: 1,
                 padding: '12px',
                 background: 'transparent',
-                color: '#1282a2',
-                border: '1.5px solid #1282a2',
+                color: '#0F7490',
+                border: '1.5px solid #0F7490',
                 borderRadius: '10px',
                 fontSize: '15px',
                 fontWeight: 700,
@@ -336,7 +336,7 @@ function LoginPageContent() {
             fontFamily: "'Montserrat', sans-serif",
           }}
         >
-          <Link href="/" style={{ color: '#1282a2', textDecoration: 'none', fontWeight: 600 }}>
+          <Link href="/" style={{ color: '#0F7490', textDecoration: 'none', fontWeight: 600 }}>
             ← Back to home
           </Link>
         </p>

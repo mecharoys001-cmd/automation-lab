@@ -21,7 +21,7 @@ const sizeMap: Record<AvatarSize, { container: string; text: string }> = {
   lg: { container: 'w-10 h-10', text: 'text-sm' },
 };
 
-export function Avatar({ initials, photoUrl, size = 'md', bgColor = 'bg-blue-500', className = '', tooltip }: AvatarProps) {
+export function Avatar({ initials, photoUrl, size = 'md', bgColor = 'bg-blue-600', className = '', tooltip }: AvatarProps) {
   const s = sizeMap[size];
 
   const el = photoUrl ? (

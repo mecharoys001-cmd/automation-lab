@@ -45,7 +45,7 @@ const inputStyle: React.CSSProperties = {
 
 const btnPrimary: React.CSSProperties = {
   padding: '10px 24px',
-  background: '#1282a2',
+  background: '#0F7490',
   color: '#fff',
   border: 'none',
   borderRadius: '6px',
@@ -195,9 +195,9 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
               style={{
                 padding: '10px 20px',
                 borderRadius: '6px',
-                border: suite.id === activeSuiteId ? '2px solid #1282a2' : '1px solid #e2e8f0',
+                border: suite.id === activeSuiteId ? '2px solid #0F7490' : '1px solid #e2e8f0',
                 background: suite.id === activeSuiteId ? '#e0f4fa' : '#ffffff',
-                color: suite.id === activeSuiteId ? '#1282a2' : '#64748b',
+                color: suite.id === activeSuiteId ? '#0F7490' : '#64748b',
                 fontWeight: 700,
                 fontSize: '14px',
                 fontFamily: "'Montserrat', sans-serif",

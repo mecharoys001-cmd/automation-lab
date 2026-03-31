@@ -154,8 +154,8 @@ export default function SessionsByTemplatePage() {
   function getSortIcon(field: SortField) {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-700" />;
     return sortDirection === 'asc' ?
-      <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> :
-      <ArrowDown className="w-3.5 h-3.5 text-blue-500" />;
+      <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> :
+      <ArrowDown className="w-3.5 h-3.5 text-blue-600" />;
   }
 
   function clearFilters() {

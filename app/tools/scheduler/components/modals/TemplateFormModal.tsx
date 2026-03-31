@@ -430,7 +430,7 @@ export function TemplateFormModal({
             <span className="text-[11px] text-red-700 mt-0.5 inline-flex items-center gap-0.5">
               <AlertTriangle className="w-3 h-3 inline align-middle" />
               No staff available{form.required_skills.length > 0 ? ` for ${form.required_skills.join(', ')}` : ''}{showSessionFields && sessionDate ? ' at this date/time' : ''}.{' '}
-              <a href="/tools/scheduler/admin/people" className="text-blue-500 underline">
+              <a href="/tools/scheduler/admin/people" className="text-blue-600 underline">
                 Add on Staff &amp; Venues page
               </a>
             </span>
@@ -717,7 +717,7 @@ export function TemplateFormModal({
                 onClick={() => updateForm({ sessions_per_week: n })}
                 className={`h-10 w-12 rounded-lg text-[13px] font-semibold border transition-all cursor-pointer ${
                   form.sessions_per_week === n
-                    ? 'border-blue-500 bg-blue-500 text-white'
+                    ? 'border-blue-500 bg-blue-600 text-white'
                     : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                 }`}
               >

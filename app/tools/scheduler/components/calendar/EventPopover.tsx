@@ -383,7 +383,7 @@ export function EventPopover({
             aria-label={pinned ? 'Unpin popover' : 'Pin popover'}
           >
             {pinned ? (
-              <PinOff className="w-3.5 h-3.5 text-blue-500" />
+              <PinOff className="w-3.5 h-3.5 text-blue-600" />
             ) : (
               <Pin className="w-3.5 h-3.5 text-slate-700" />
             )}
@@ -544,7 +544,7 @@ export function EventPopover({
                 <Tooltip text="Edit notes">
                   <button
                     onClick={() => setIsEditingNotes(true)}
-                    className="text-[11px] text-blue-500 hover:text-blue-600 font-medium cursor-pointer"
+                    className="text-[11px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                     aria-label={noteText ? 'Edit notes' : 'Add notes'}
                   >
                     {noteText ? 'Edit' : 'Add'}
@@ -709,7 +709,7 @@ export function EventPopover({
               <Tooltip text="Back to options">
                 <button
                   onClick={handleBackToReplaceOptions}
-                  className="text-[11px] text-blue-500 hover:text-blue-600 font-medium cursor-pointer"
+                  className="text-[11px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                   aria-label="Back to replace options"
                 >
                   Back
@@ -718,7 +718,7 @@ export function EventPopover({
             </div>
             {loadingSubstitutes ? (
               <div className="flex items-center justify-center py-4 gap-2">
-                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
                 <span className="text-[12px] text-slate-600">Finding available staff...</span>
               </div>
             ) : substitutes.length === 0 ? (
@@ -747,7 +747,7 @@ export function EventPopover({
                           </p>
                         )}
                       </div>
-                      <Check className="w-3.5 h-3.5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </button>
                   </Tooltip>
                 ))}
@@ -764,7 +764,7 @@ export function EventPopover({
               <Tooltip text="Back to options">
                 <button
                   onClick={handleBackToReplaceOptions}
-                  className="text-[11px] text-blue-500 hover:text-blue-600 font-medium cursor-pointer"
+                  className="text-[11px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                   aria-label="Back to replace options"
                 >
                   Back
@@ -773,7 +773,7 @@ export function EventPopover({
             </div>
             {loadingTemplates ? (
               <div className="flex items-center justify-center py-4 gap-2">
-                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
                 <span className="text-[12px] text-slate-600">Finding available events...</span>
               </div>
             ) : templates.length === 0 ? (
@@ -801,7 +801,7 @@ export function EventPopover({
                           {tmpl.instructor_name ? ` \u00b7 ${tmpl.instructor_name}` : ''}
                         </p>
                       </div>
-                      <Check className="w-3.5 h-3.5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </button>
                   </Tooltip>
                 ))}
@@ -830,7 +830,7 @@ export function EventPopover({
             <Tooltip text="Click to pin and add notes">
               <button
                 onClick={(e) => { e.stopPropagation(); onPin(); }}
-                className="text-[11px] font-medium text-slate-700 hover:text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
+                className="text-[11px] font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
                 aria-label="Pin popover"
               >
                 Pin
@@ -840,7 +840,7 @@ export function EventPopover({
           <Tooltip text="Open full event details">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetails?.(event); }}
-              className="text-[11px] font-medium text-blue-500 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
+              className="text-[11px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
               aria-label="View event details"
             >
               View Details

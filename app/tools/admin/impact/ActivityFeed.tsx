@@ -6,8 +6,8 @@ import type { ActivityFeedItem, ActivityFeedResponse } from '@/types/activity';
 type FilterType = 'all' | 'login' | 'tool' | 'error';
 
 const EVENT_COLORS: Record<string, string> = {
-  login: '#3b82f6',
-  logout: '#3b82f6',
+  login: '#2563eb',
+  logout: '#2563eb',
   tool_complete: '#10b981',
   tool_error: '#ef4444',
   tool_open: '#9ca3af',
@@ -126,8 +126,8 @@ export default function ActivityFeed() {
               padding: '6px 14px',
               borderRadius: '6px',
               border: '1px solid',
-              borderColor: filter === f.value ? '#1282a2' : '#e2e8f0',
-              background: filter === f.value ? '#1282a2' : '#ffffff',
+              borderColor: filter === f.value ? '#0F7490' : '#e2e8f0',
+              background: filter === f.value ? '#0F7490' : '#ffffff',
               color: filter === f.value ? '#ffffff' : '#475569',
               fontSize: '13px',
               fontWeight: 600,
@@ -187,7 +187,7 @@ export default function ActivityFeed() {
                       <span style={{
                         fontSize: '11px',
                         fontWeight: 600,
-                        color: '#1282a2',
+                        color: '#0F7490',
                         background: '#f0f9ff',
                         padding: '2px 8px',
                         borderRadius: '4px',

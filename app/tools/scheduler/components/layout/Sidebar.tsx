@@ -119,7 +119,7 @@ export function Sidebar({
         <div className="flex-shrink-0">
           {header ?? (
             <div className="flex items-center gap-2.5 pb-6">
-              <CalendarDays className="w-7 h-7 text-blue-500 flex-shrink-0" />
+              <CalendarDays className="w-7 h-7 text-blue-600 flex-shrink-0" />
               <span className="text-xl font-bold text-white">Symphonix</span>
             </div>
           )}
@@ -142,7 +142,7 @@ export function Sidebar({
                   }`}
                 >
                   <Icon
-                    className={`w-5 h-5 flex-shrink-0 ${active ? 'text-blue-500' : 'text-slate-300'}`}
+                    className={`w-5 h-5 flex-shrink-0 ${active ? 'text-blue-600' : 'text-slate-300'}`}
                   />
                   <span className="text-sm">{item.label}</span>
                 </Link>
@@ -155,7 +155,7 @@ export function Sidebar({
       {/* Bottom section: User profile */}
       <div className="border-t border-slate-700 pt-4 flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <Avatar initials={user.initials} size="md" bgColor="bg-blue-500" />
+          <Avatar initials={user.initials} size="md" bgColor="bg-blue-600" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-semibold text-white truncate">{user.name}</p>
             <p className="text-[11px] text-slate-300 truncate">{user.role}</p>

@@ -448,7 +448,7 @@ function TemplateSidebar({
                     borderLeft: subjectColor ? `3px solid ${subjectColor.accent}` : undefined,
                   }}
                 >
-                  <GripVertical className="w-3.5 h-3.5 text-slate-600 mt-0.5 shrink-0 group-hover:text-blue-600" />
+                  <GripVertical className="w-3.5 h-3.5 text-slate-600 mt-0.5 shrink-0 group-hover:text-blue-700" />
                   <div className="min-w-0 flex-1">
                     <p className={`text-[12px] font-medium truncate leading-snug ${hasName ? 'text-slate-700' : 'text-slate-600 italic'}`}>
                       {displayName}

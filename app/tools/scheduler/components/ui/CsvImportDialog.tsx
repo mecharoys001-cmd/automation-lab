@@ -277,7 +277,7 @@ export function CsvImportDialog({
               {exampleCsv && (
                 <button
                   onClick={downloadTemplate}
-                  className="text-xs text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                  className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   Download CSV template

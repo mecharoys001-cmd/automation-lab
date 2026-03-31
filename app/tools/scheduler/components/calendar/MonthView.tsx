@@ -440,7 +440,7 @@ export function MonthView({
                 >
                   <span
                     className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
-                      isToday ? 'bg-blue-500 text-white' : 'text-slate-900'
+                      isToday ? 'bg-blue-600 text-white' : 'text-slate-900'
                     }`}
                   >
                     {dayNumber}
@@ -518,7 +518,7 @@ export function MonthView({
                       ))}
                       {dayEvents.length > 3 && (
                         <button
-                          className="w-full text-[10px] font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
+                          className="w-full text-[10px] font-medium text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
                           onClick={(e) => { e.stopPropagation(); onDayClick?.(date); }}
                         >
                           +{dayEvents.length - 3} more

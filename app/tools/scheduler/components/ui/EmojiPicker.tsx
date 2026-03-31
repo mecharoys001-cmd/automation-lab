@@ -64,7 +64,7 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                     selectedCategory === cat
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >

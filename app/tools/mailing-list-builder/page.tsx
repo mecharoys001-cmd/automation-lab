@@ -632,7 +632,7 @@ function ColumnMappingUI({ fields, partial, onProcess }: {
 
 // ── Main Page Component ──
 
-const ACCENT = '#1282a2';
+const ACCENT = '#0F7490';
 
 export default function MailingListBuilderPage() {
   const [result, setResult] = useState<ProcessResult | null>(null);

@@ -135,7 +135,7 @@ export function AvailabilityEditor({
       {/* Quick actions */}
       <div className="flex items-center gap-2">
         <button type="button" onClick={setAllFull}
-          className="text-[11px] font-medium text-blue-500 hover:text-blue-600 transition-colors">
+          className="text-[11px] font-medium text-blue-600 hover:text-blue-700 transition-colors">
           Select All
         </button>
         <span className="text-slate-600">·</span>

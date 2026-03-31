@@ -32,7 +32,7 @@ export function MonthlyBreakdownCards({ months, onViewDetail }: MonthlyBreakdown
               <ProgressBar
                 value={pct}
                 height={4}
-                color="bg-blue-500"
+                color="bg-blue-600"
                 trackColor="bg-slate-100"
                 fillOpacity={m.opacity}
               />
@@ -44,7 +44,7 @@ export function MonthlyBreakdownCards({ months, onViewDetail }: MonthlyBreakdown
         <Tooltip text="View detailed weekly breakdown">
           <button
             type="button"
-            className="text-[13px] font-semibold text-blue-500 hover:text-blue-600 transition-colors text-left cursor-pointer"
+            className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-colors text-left cursor-pointer"
             onClick={onViewDetail}
           >
             View Weekly Detail &rarr;

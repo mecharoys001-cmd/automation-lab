@@ -60,7 +60,7 @@ const inputStyle: React.CSSProperties = {
 
 const btnPrimary: React.CSSProperties = {
   padding: '8px 18px',
-  background: '#1282a2',
+  background: '#0F7490',
   color: '#fff',
   border: 'none',
   borderRadius: '6px',
@@ -468,7 +468,7 @@ export default function SuiteManagement() {
 
         {/* Create Suite Form */}
         {showCreateForm && (
-          <form onSubmit={handleCreateSuite} style={{ ...cardStyle, border: '2px dashed #1282a2', background: '#f0fdfa' }}>
+          <form onSubmit={handleCreateSuite} style={{ ...cardStyle, border: '2px dashed #0F7490', background: '#f0fdfa' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '2px' }}
@@ -551,7 +551,7 @@ export default function SuiteManagement() {
               style={{
                 ...cardStyle,
                 cursor: 'pointer',
-                borderColor: isSelected ? '#1282a2' : '#e2e8f0',
+                borderColor: isSelected ? '#0F7490' : '#e2e8f0',
                 background: isSelected ? '#f0fdfa' : '#ffffff',
                 transition: 'border-color 0.15s, background 0.15s',
               }}

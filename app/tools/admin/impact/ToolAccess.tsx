@@ -166,7 +166,7 @@ export default function ToolAccess() {
 
   const btnPrimary: React.CSSProperties = {
     padding: '8px 18px',
-    background: '#1282a2',
+    background: '#0F7490',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
@@ -244,7 +244,7 @@ export default function ToolAccess() {
               style={{
                 ...cardStyle,
                 cursor: 'pointer',
-                borderColor: isSelected ? '#1282a2' : '#e2e8f0',
+                borderColor: isSelected ? '#0F7490' : '#e2e8f0',
                 background: isSelected ? '#f0fdfa' : '#ffffff',
                 transition: 'border-color 0.15s, background 0.15s',
               }}
@@ -332,7 +332,7 @@ export default function ToolAccess() {
             )}
 
             {/* Add user form */}
-            <form onSubmit={handleGrantAccess} style={{ ...cardStyle, border: '2px dashed #1282a2', background: '#f0fdfa' }}>
+            <form onSubmit={handleGrantAccess} style={{ ...cardStyle, border: '2px dashed #0F7490', background: '#f0fdfa' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
                 Grant User Access
               </label>

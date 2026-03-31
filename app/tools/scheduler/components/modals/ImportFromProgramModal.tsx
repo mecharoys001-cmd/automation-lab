@@ -240,7 +240,7 @@ export function ImportFromProgramModal({
                   type="checkbox"
                   checked={importStaff}
                   onChange={(e) => setImportStaff(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700">
                   Import Staff ({staffCount} staff member{staffCount !== 1 ? 's' : ''})
@@ -253,7 +253,7 @@ export function ImportFromProgramModal({
                   type="checkbox"
                   checked={importVenues}
                   onChange={(e) => setImportVenues(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700">
                   Import Venues ({venueCount} venue{venueCount !== 1 ? 's' : ''})
@@ -267,7 +267,7 @@ export function ImportFromProgramModal({
                     type="checkbox"
                     checked={importTags}
                     onChange={(e) => setImportTags(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                   />
                   <span className="text-sm text-slate-700">
                     Import Tags ({tagCount} tag{tagCount !== 1 ? 's' : ''})
@@ -281,7 +281,7 @@ export function ImportFromProgramModal({
                         type="checkbox"
                         checked={selectAllCategories}
                         onChange={toggleAllCategories}
-                        className="w-3.5 h-3.5 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                       />
                       Select All
                     </label>
@@ -291,7 +291,7 @@ export function ImportFromProgramModal({
                           type="checkbox"
                           checked={selectedCategories.has(cat.category)}
                           onChange={() => toggleCategory(cat.category)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500"
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                         />
                         {cat.category} ({cat.count} tag{cat.count !== 1 ? 's' : ''})
                       </label>

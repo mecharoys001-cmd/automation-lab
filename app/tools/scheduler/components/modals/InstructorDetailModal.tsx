@@ -104,7 +104,7 @@ export function InstructorDetailModal({
             <Tooltip text="Jump to calendar filtered to this staff member">
               <button
                 onClick={onViewCalendar}
-                className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors"
+                className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
                 View on Calendar
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -174,7 +174,7 @@ export function InstructorDetailModal({
             text={data.email}
             label="email"
             icon={Mail}
-            textClassName="text-[13px] text-blue-500"
+            textClassName="text-[13px] text-blue-600"
             buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
           />
         )}
@@ -200,7 +200,7 @@ export function InstructorDetailModal({
               key={skill.name}
               variant="skill"
               bgColor={skill.bgColor ?? 'bg-blue-100'}
-              textColor={skill.textColor ?? 'text-blue-500'}
+              textColor={skill.textColor ?? 'text-blue-600'}
               tooltip={onSubjectClick ? `Click to view calendar filtered by ${skill.name}` : `Event Type: ${skill.name}`}
               onClick={onSubjectClick ? () => onSubjectClick(skill.name) : undefined}
             >

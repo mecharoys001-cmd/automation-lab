@@ -592,7 +592,7 @@ export function OneOffEventModal({
                   onClick={() => toggleGrade(g)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
                     selected
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -659,7 +659,7 @@ export function OneOffEventModal({
                 onClick={() => setRecurrenceType(value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                   recurrenceType === value
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -732,7 +732,7 @@ export function OneOffEventModal({
                     setRotateInstructors(e.target.checked);
                     if (!e.target.checked) setRotationInstructorIds([]);
                   }}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500 cursor-pointer"
                 />
                 <span className="text-xs font-medium text-slate-600">Rotate Staff</span>
               </label>
@@ -761,7 +761,7 @@ export function OneOffEventModal({
                           }
                           className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
                             selected
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-blue-600 text-white'
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >

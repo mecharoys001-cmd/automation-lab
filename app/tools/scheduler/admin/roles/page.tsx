@@ -88,7 +88,7 @@ const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
 const inputClass =
   'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
-  'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
+  'inline-flex items-center gap-1.5 rounded-lg bg-blue-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDanger =
@@ -689,7 +689,7 @@ export default function RolesPage() {
                             <Tooltip text="Save role change">
                               <button
                                 onClick={() => saveEdit(user)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 px-3 py-1.5 text-xs font-medium transition-colors"
+                                className="inline-flex items-center gap-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 text-xs font-medium transition-colors"
                               >
                                 <Check className="w-3 h-3" />
                                 Save

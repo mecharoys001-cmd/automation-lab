@@ -208,7 +208,7 @@ export default function InstructorDetailPage() {
               <Tooltip text="Total hours for this staff member in the selected range">
                 <div className="flex items-center gap-3.5 bg-white rounded-xl border border-slate-200 p-5 transition-shadow hover:shadow-sm">
                   <div className="flex items-center justify-center w-11 h-11 rounded-full bg-blue-100">
-                    <Clock className="w-[22px] h-[22px] text-blue-500" />
+                    <Clock className="w-[22px] h-[22px] text-blue-600" />
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-medium text-slate-600">Total Hours</span>
@@ -359,7 +359,7 @@ function WeeklyBreakdownTable({ rows }: { rows: WeeklyBreakdown[] }) {
                   <div className="pl-4 pr-2">
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 rounded-full transition-all"
+                        className="h-full bg-blue-600 rounded-full transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>

@@ -264,7 +264,7 @@ export function ModalButton({
   const baseStyles = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
   
   const variantStyles = {
-    primary: 'bg-blue-500 text-white hover:bg-blue-600',
+    primary: 'bg-blue-600 text-white hover:bg-blue-700',
     secondary: 'border border-slate-200 text-slate-700 hover:bg-slate-50',
     danger: 'bg-red-600 text-white hover:bg-red-700',
   };

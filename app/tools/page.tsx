@@ -76,7 +76,7 @@ const tools = [
     ],
     icon: "✉️",
     href: "/tools/mailing-list-builder",
-    accent: "#1282a2",
+    accent: "#0F7490",
     usedBy: "Nonprofits preparing mailing lists from Shopify exports",
   },
   {
@@ -375,7 +375,7 @@ export default async function ToolsPage() {
                     <span
                       style={{
                         backgroundColor: "#eff6ff",
-                        color: "#3b82f6",
+                        color: "#2563eb",
                         padding: "4px 10px",
                         borderRadius: "100px",
                         fontSize: "11px",

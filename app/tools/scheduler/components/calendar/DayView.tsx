@@ -415,7 +415,7 @@ export function DayView({
           <Tooltip text="Return to month view">
             <button
               onClick={onBackToMonth}
-              className="text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
             >
               ← Month View
             </button>

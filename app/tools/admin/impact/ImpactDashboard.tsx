@@ -326,7 +326,7 @@ export default function ImpactDashboard() {
     return (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
         <span style={statBadgeStyle}>
-          <span style={{ color: '#1282a2', fontWeight: 700 }}>{s.unique_users ?? 0}</span> unique users
+          <span style={{ color: '#0F7490', fontWeight: 700 }}>{s.unique_users ?? 0}</span> unique users
         </span>
         <span style={statBadgeStyle}>
           <span style={{ color: '#6366f1', fontWeight: 700 }}>{s.repeat_users ?? 0}</span> repeat users
@@ -357,7 +357,7 @@ export default function ImpactDashboard() {
             <input type="number" min="0" max="59" value={editMinutes} onChange={(e) => setEditMinutes(e.target.value)} style={{ width: '50px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
             <span style={{ fontSize: '11px', color: '#64748b' }}>m</span>
           </span>
-          <button onClick={() => saveMinutes(s.tool_id)} disabled={saving} style={{ background: '#1282a2', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}>
+          <button onClick={() => saveMinutes(s.tool_id)} disabled={saving} style={{ background: '#0F7490', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}>
             Save
           </button>
           <button onClick={() => setEditingTool(null)} style={{ background: 'none', color: '#64748b', border: 'none', cursor: 'pointer', fontSize: '12px' }}>
@@ -381,7 +381,7 @@ export default function ImpactDashboard() {
 
   function renderEditExtForm(s: ToolUsageStats) {
     return (
-      <div key={s.tool_id} style={{ ...cardStyle, border: '2px solid #1282a2' }}>
+      <div key={s.tool_id} style={{ ...cardStyle, border: '2px solid #0F7490' }}>
         <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a2e', marginBottom: '1rem', fontFamily: "'Montserrat', sans-serif" }}>
           Edit: {s.display_name}
         </h3>
@@ -476,7 +476,7 @@ export default function ImpactDashboard() {
             disabled={editExtSaving || !editExtDisplayName.trim()}
             style={{
               padding: '8px 20px', borderRadius: '6px', border: 'none',
-              background: !editExtDisplayName.trim() ? '#cbd5e1' : '#1282a2',
+              background: !editExtDisplayName.trim() ? '#cbd5e1' : '#0F7490',
               color: '#ffffff', fontSize: '13px', fontWeight: 600,
               cursor: !editExtDisplayName.trim() ? 'not-allowed' : 'pointer',
               fontFamily: "'Montserrat', sans-serif",
@@ -547,7 +547,7 @@ export default function ImpactDashboard() {
               <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', fontStyle: 'italic' }}>{s.tracking_notes}</div>
             )}
             {s.next_run_date && (
-              <div style={{ fontSize: '11px', color: '#1282a2', marginTop: '4px', fontWeight: 600 }}>
+              <div style={{ fontSize: '11px', color: '#0F7490', marginTop: '4px', fontWeight: 600 }}>
                 Next auto-run: {new Date(s.next_run_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
             )}
@@ -607,10 +607,10 @@ export default function ImpactDashboard() {
               <button
                 onClick={() => { setLoggingTool(loggingTool === s.tool_id ? null : s.tool_id); setLogDate(''); }}
                 style={{
-                  background: loggingTool === s.tool_id ? '#f1f5f9' : '#1282a2',
+                  background: loggingTool === s.tool_id ? '#f1f5f9' : '#0F7490',
                   color: loggingTool === s.tool_id ? '#475569' : '#fff',
                   border: '1px solid',
-                  borderColor: loggingTool === s.tool_id ? '#cbd5e1' : '#1282a2',
+                  borderColor: loggingTool === s.tool_id ? '#cbd5e1' : '#0F7490',
                   borderRadius: '6px',
                   padding: '6px 14px',
                   cursor: 'pointer',
@@ -624,7 +624,7 @@ export default function ImpactDashboard() {
               </button>
             )}
             <div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1282a2', fontFamily: "'Montserrat', sans-serif" }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0F7490', fontFamily: "'Montserrat', sans-serif" }}>
                 {s.total_hours_saved}h
               </div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>saved</div>
@@ -648,7 +648,7 @@ export default function ImpactDashboard() {
               onClick={() => logUsage(s.tool_id)}
               disabled={logSaving}
               style={{
-                background: '#1282a2',
+                background: '#0F7490',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
@@ -699,7 +699,7 @@ export default function ImpactDashboard() {
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2.5rem' }}>
         <div style={cardStyle}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#1282a2', fontFamily: "'Montserrat', sans-serif" }}>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F7490', fontFamily: "'Montserrat', sans-serif" }}>
             {totalUses}
           </div>
           <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px', fontWeight: 600 }}>
@@ -807,13 +807,13 @@ export default function ImpactDashboard() {
               fontFamily: "'Montserrat', sans-serif",
               transition: 'border-color 0.15s, color 0.15s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#1282a2'; e.currentTarget.style.color = '#1282a2'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0F7490'; e.currentTarget.style.color = '#0F7490'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#64748b'; }}
           >
             + Add External Tool
           </button>
         ) : (
-          <div style={{ ...cardStyle, marginTop: '1rem', border: '2px solid #1282a2' }}>
+          <div style={{ ...cardStyle, marginTop: '1rem', border: '2px solid #0F7490' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a2e', marginBottom: '1rem', fontFamily: "'Montserrat', sans-serif" }}>
               Add External Tool
             </h3>
@@ -965,7 +965,7 @@ export default function ImpactDashboard() {
                   padding: '8px 20px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: (!newDisplayName.trim() || !newToolId.trim()) ? '#cbd5e1' : '#1282a2',
+                  background: (!newDisplayName.trim() || !newToolId.trim()) ? '#cbd5e1' : '#0F7490',
                   color: '#ffffff',
                   fontSize: '13px',
                   fontWeight: 600,

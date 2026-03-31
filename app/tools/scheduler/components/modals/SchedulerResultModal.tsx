@@ -505,7 +505,7 @@ export function SchedulerResultModal({
 
   const headerIcon = isPreview ? (
     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50">
-      <Sparkles className="w-5 h-5 text-blue-500" />
+      <Sparkles className="w-5 h-5 text-blue-600" />
     </div>
   ) : result.success ? (
     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50">
@@ -644,7 +644,7 @@ export function SchedulerResultModal({
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-3">
             <StatCard
-              icon={<Calendar className="w-4 h-4 text-blue-500" />}
+              icon={<Calendar className="w-4 h-4 text-blue-600" />}
               label={isPreview ? 'Will Create' : 'Created'}
               value={result.sessions_created}
             />
@@ -831,7 +831,7 @@ export function SchedulerResultModal({
               <button
                 onClick={onConfirm}
                 disabled={isConfirming}
-                className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isConfirming ? (
                   <>

@@ -72,7 +72,7 @@ const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
 const inputClass =
   'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
 const btnPrimary =
-  'inline-flex items-center gap-1.5 rounded-lg bg-blue-500 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
+  'inline-flex items-center gap-1.5 rounded-lg bg-blue-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 px-4 py-2 text-[13px] font-medium hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnDanger =
@@ -548,7 +548,7 @@ export default function SettingsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
-              <CalendarDays className="w-[18px] h-[18px] text-blue-500" />
+              <CalendarDays className="w-[18px] h-[18px] text-blue-600" />
             </div>
             <div>
               <h2 className={sectionTitleClass}>Programs</h2>
@@ -675,7 +675,7 @@ export default function SettingsPage() {
                       <Tooltip text="Select this program to manage its rules">
                         <button
                           onClick={() => setSelectedProgramId(p.id)}
-                          className="text-slate-900 hover:text-blue-500 font-medium transition-colors"
+                          className="text-slate-900 hover:text-blue-700 font-medium transition-colors"
                         >
                           {p.name}
                         </button>
@@ -916,7 +916,7 @@ export default function SettingsPage() {
       <section className={cardBodyClass}>
         <div className="flex items-center gap-2.5 mb-3">
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
-            <svg className="w-[18px] h-[18px] text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-[18px] h-[18px] text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>

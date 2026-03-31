@@ -231,7 +231,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <CalendarDays className="w-5 h-5 text-blue-500" />
+          <CalendarDays className="w-5 h-5 text-blue-600" />
           <span className="text-sm font-semibold text-slate-800">Symphonix</span>
         </div>
         <main id="main-content" className="flex-1 overflow-hidden">

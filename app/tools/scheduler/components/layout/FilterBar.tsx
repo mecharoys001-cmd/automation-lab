@@ -167,7 +167,7 @@ function FilterDropdown({
               : 'border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <Icon className={`w-3.5 h-3.5 ${hasSelections ? 'text-blue-500' : 'text-slate-600'}`} />
+          <Icon className={`w-3.5 h-3.5 ${hasSelections ? 'text-blue-600' : 'text-slate-600'}`} />
           <span>{filter.label}</span>
           {hasSelections && (
             <Badge variant="count" color="blue" className="ml-0.5">
@@ -194,7 +194,7 @@ function FilterDropdown({
               {filter.emptyHref && (
                 <a
                   href={filter.emptyHref}
-                  className="inline-block mt-1.5 text-blue-500 hover:text-blue-600 underline underline-offset-2"
+                  className="inline-block mt-1.5 text-blue-600 hover:text-blue-700 underline underline-offset-2"
                 >
                   {filter.emptyLinkLabel || 'Set up now'}
                 </a>
@@ -215,7 +215,7 @@ function FilterDropdown({
                   >
                     <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
                       isSelected
-                        ? 'bg-blue-500 border-blue-500'
+                        ? 'bg-blue-600 border-blue-500'
                         : 'border-slate-300'
                     }`}>
                       {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -358,7 +358,7 @@ export function FilterBar({
             <Tooltip text="Remove all active filters">
               <button
                 onClick={handleClearAll}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Clear Filters</span>

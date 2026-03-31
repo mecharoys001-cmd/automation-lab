@@ -3853,3 +3853,341 @@ app/tools/scheduler/components/calendar/WeekView.tsx:1207:                  cons
 ✅ Validation passed
 
 💾 Committing changes...
+🌐 Deploying to production...
+✓ Marking as fixed in Airtable...
+✅ Successfully deployed fix for rec1W2HDYQRsiAAQX
+   URL: https://automation-oxckzrxfm-roys-projects-ec3324ba.vercel.app
+📄 Report written: 2026-03-30T19-33-13-321Z_rec1W2HDYQRsiAAQX.md
+
+✅ Successfully fixed rec1W2HDYQRsiAAQX
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 2
+   High: 0
+   Medium: 0
+   Low: 2
+
+=== Bug Fixer Run: Mon Mar 30 16:00:06 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recSd7hEZNbd4mnXq
+   Priority: Low
+   Page: Staff/Venues
+   Category: ALREADY_FIXED
+   Feedback: PROBLEM: No elements on the page use the loading="lazy" attribute. Below-fold content like staff car...
+
+✓ Bug recSd7hEZNbd4mnXq was already fixed
+📄 Report written: 2026-03-30T20-00-09-575Z_recSd7hEZNbd4mnXq.md
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 16:30:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 17:00:06 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 17:30:06 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 18:00:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 18:30:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 19:00:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 19:30:06 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 20:00:06 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 20:30:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+npm notice
+npm notice New major version of npm available! 10.9.4 -> 11.12.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1
+npm notice To update run: npm install -g npm@11.12.1
+npm notice
+
+=== Bug Fixer Run: Mon Mar 30 21:00:06 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 21:30:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 22:00:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 22:30:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 23:00:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Mon Mar 30 23:30:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 00:00:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 00:30:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 01:00:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 01:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 02:00:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 02:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 03:00:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 03:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 04:00:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 04:30:01 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 05:00:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 05:30:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 06:00:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 06:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 07:00:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 07:30:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 08:00:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 08:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 09:00:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 09:30:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 10:00:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 10:30:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 11:00:02 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 11:30:03 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 12:00:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+✅ No more fixable bugs!
+📊 Dashboard updated
+
+=== Bug Fixer Run: Tue Mar 31 12:30:05 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recJZvYYyZbXWciKr
+   Priority: High
+   Page: Calendar
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: The app's primary teal color rgb(18, 130, 162) fails WCAG AA contrast on both white and lig...
+   ⚠️  Previous fix rejected: "Primary teal link color rgb(18, 130, 162) vs white has contrast ratio 4.43:1, failing WCAG AA (needs 4.5:1). Blue-500 action color rgb(59, 130, 246) vs white has ratio 3.68:1, also failing AA. Sidebar inactive items use rgb(241, 245, 249) which is extremely low contrast."
+
+🔧 Attempting to fix recJZvYYyZbXWciKr...
+✅ Fix applied successfully
+   Changes: 2
+🚀 Deploying fix for recJZvYYyZbXWciKr...
+📦 Validating build...
+🔍 Running pre-deploy checks...
+📦 Building project...
+✅ Build successful
+✅ Changes detected
+app/api/site-admins/route.ts:105:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:213:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:282:    console.log(JSON.stringify({
+app/api/classes/route.ts:25:    console.log('[GET /api/classes] returning', data?.length ?? 0, 'classes');
+app/api/seed/route.ts:188:    console.log('Templates created:', templates.length);
+app/api/tags/[id]/route.ts:39:    console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
+app/api/tags/[id]/route.ts:64:    console.log('[PATCH /api/tags] updateData:', JSON.stringify(updateData));
+app/api/tags/[id]/route.ts:77:    console.log('[PATCH /api/tags] supabase response:', JSON.stringify({ data, error }));
+app/api/tags/[id]/route.ts:108:    console.log('[PATCH /api/tags] final response tag:', JSON.stringify(data));
+app/api/tags/route.ts:35:    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+app/api/templates/route.ts:26:    console.log('[Templates API] GET request for program:', programId);
+app/api/templates/route.ts:47:    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
+app/tools/scheduler/admin/calendar/page.tsx:192:  console.log('[TOAST] Toast rendered:', toast.message, 'type:', toast.type);
+app/tools/scheduler/admin/page.tsx:585:          console.log('Cancel event:', event.title);
+app/tools/scheduler/admin/page.tsx:589:          console.log('Suggest replacements for:', event.title);
+app/tools/scheduler/admin/page.tsx:593:          console.log('Duplicate event:', event.title);
+app/tools/scheduler/admin/page.tsx:597:          console.log('Delete event:', event.title);
+app/tools/scheduler/admin/page.tsx:638:      console.log('[handleEventDrop] Called with:', {
+app/tools/scheduler/admin/page.tsx:657:          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+app/tools/scheduler/admin/page.tsx:672:      console.log('[handleEventDrop] PATCH body:', patchBody);
+app/tools/scheduler/admin/page.tsx:686:          console.log('[handleEventDrop] PATCH success for', eventId);
+app/tools/scheduler/admin/page.tsx:823:      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
+app/tools/scheduler/admin/page.tsx:842:        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+app/tools/scheduler/admin/page.tsx:890:        console.log(`[${fetchId}] Aborted`);
+app/tools/scheduler/admin/page.tsx:902:    console.log('[useEffect] Triggering fetchSessions due to dependency change');
+app/tools/scheduler/admin/page.tsx:906:      console.log('[useEffect] Cleanup: aborting previous fetch');
+app/tools/scheduler/admin/roles/page.tsx:403:    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
+app/tools/scheduler/admin/roles/page.tsx:405:      console.log('[SAVE_EDIT] Roles match, cancelling edit');
+app/tools/scheduler/admin/roles/page.tsx:412:    console.log('[SAVE_EDIT] wasInstructor:', wasInstructor, 'becomingInstructor:', becomingInstructor);
+app/tools/scheduler/components/calendar/DayView.tsx:320:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/DayView.tsx:331:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/YearView.tsx:522:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/YearView.tsx:532:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/MonthView.tsx:266:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/MonthView.tsx:277:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:145:  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+app/tools/scheduler/components/calendar/WeekView.tsx:231:    console.log('[DRAG START]', {
+app/tools/scheduler/components/calendar/WeekView.tsx:598:    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
+app/tools/scheduler/components/calendar/WeekView.tsx:603:    console.log('Hover leave');
+app/tools/scheduler/components/calendar/WeekView.tsx:666:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/WeekView.tsx:677:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:1149:                          console.log('[DROP] Event drop:', {
+app/tools/scheduler/components/calendar/WeekView.tsx:1207:                  console.log('Render hover state', hoverState);
+⚠️  Warning: console.log statements found (non-commented)
+✅ Validation passed
+
+💾 Committing changes...

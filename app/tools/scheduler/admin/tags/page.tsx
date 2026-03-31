@@ -753,7 +753,7 @@ export default function TagsPage() {
                           setCategoryQuickAdd(category);
                           setCategoryQuickAddValue('');
                         }}
-                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
                         aria-label="Add new tag to this category"
                       >
                         <Plus className="w-4 h-4" />
@@ -889,7 +889,7 @@ export default function TagsPage() {
                                 <Tooltip text="Edit tag">
                                   <button
                                     onClick={() => startEdit(tag)}
-                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-600"
+                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-700"
                                   >
                                     <Pencil className="w-4 h-4" />
                                   </button>

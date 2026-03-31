@@ -189,7 +189,7 @@ export default function AdminAccounts() {
 
   const btnPrimary: React.CSSProperties = {
     padding: '8px 18px',
-    background: '#1282a2',
+    background: '#0F7490',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
@@ -278,7 +278,7 @@ export default function AdminAccounts() {
 
       {/* Add admin form */}
       {showAddForm && (
-        <form onSubmit={handleAdd} style={{ ...cardStyle, border: '2px dashed #1282a2', background: '#f0fdfa' }}>
+        <form onSubmit={handleAdd} style={{ ...cardStyle, border: '2px dashed #0F7490', background: '#f0fdfa' }}>
           <h4 style={{ margin: '0 0 1rem', fontWeight: 700, fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e', fontSize: '14px' }}>
             New Site Admin Account
           </h4>
@@ -355,10 +355,10 @@ export default function AdminAccounts() {
                       padding: '2px 6px',
                       fontSize: '11px',
                       fontWeight: 700,
-                      border: '1px solid #1282a2',
+                      border: '1px solid #0F7490',
                       borderRadius: '4px',
                       background: '#f0fdfa',
-                      color: '#1282a2',
+                      color: '#0F7490',
                       fontFamily: "'Montserrat', sans-serif",
                       cursor: 'pointer',
                       outline: 'none',
@@ -377,7 +377,7 @@ export default function AdminAccounts() {
                       fontWeight: 700,
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      background: admin.role_level === 'master' ? '#1282a2' : '#e2e8f0',
+                      background: admin.role_level === 'master' ? '#0F7490' : '#e2e8f0',
                       color: admin.role_level === 'master' ? '#fff' : '#64748b',
                     }}
                   >

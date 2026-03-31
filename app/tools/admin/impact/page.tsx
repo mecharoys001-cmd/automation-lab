@@ -45,8 +45,8 @@ export default function ImpactPage() {
                 fontSize: '14px',
                 fontWeight: 700,
                 fontFamily: "'Montserrat', sans-serif",
-                color: activeTab === tab.key ? '#1282a2' : '#94a3b8',
-                borderBottom: activeTab === tab.key ? '2px solid #1282a2' : '2px solid transparent',
+                color: activeTab === tab.key ? '#0F7490' : '#94a3b8',
+                borderBottom: activeTab === tab.key ? '2px solid #0F7490' : '2px solid transparent',
                 marginBottom: '-2px',
                 transition: 'color 0.15s, border-color 0.15s',
               }}

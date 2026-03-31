@@ -50,7 +50,7 @@ export function ToastContainer() {
   };
 
   const bg = (type: ToastType) =>
-    type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-600';
 
   return (
     <>

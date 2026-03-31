@@ -14,7 +14,7 @@ interface BadgeProps {
 }
 
 const colorStyles: Record<string, { bg: string; text: string; dot: string }> = {
-  blue:   { bg: 'bg-blue-100',    text: 'text-blue-700',    dot: 'bg-blue-500' },
+  blue:   { bg: 'bg-blue-100',    text: 'text-blue-700',    dot: 'bg-blue-600' },
   green:  { bg: 'bg-emerald-100', text: 'text-emerald-800', dot: 'bg-emerald-500' },
   amber:  { bg: 'bg-amber-100',   text: 'text-amber-800',   dot: 'bg-amber-700' },
   red:    { bg: 'bg-red-100',     text: 'text-red-800',     dot: 'bg-red-500' },

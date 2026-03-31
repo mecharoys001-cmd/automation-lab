@@ -23,13 +23,13 @@ export function ReportsTabBar() {
                 href={tab.href}
                 className={`relative px-5 py-3.5 text-sm transition-colors ${
                   isActive
-                    ? 'font-semibold text-blue-500'
+                    ? 'font-semibold text-blue-600'
                     : 'font-medium text-slate-600 hover:text-slate-700'
                 }`}
               >
                 {tab.label}
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
                 )}
               </Link>
             </Tooltip>

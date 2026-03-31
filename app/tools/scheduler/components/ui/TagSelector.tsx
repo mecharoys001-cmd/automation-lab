@@ -242,7 +242,7 @@ export function TagSelector({
                         <div
                           className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
                             isSelected
-                              ? 'bg-blue-500 border-blue-500'
+                              ? 'bg-blue-600 border-blue-500'
                               : 'border-slate-300'
                           }`}
                         >
@@ -296,7 +296,7 @@ export function TagSelector({
                             type="button"
                             onClick={handleAddTag}
                             disabled={!newTagName.trim() || savingTag}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                           >
                             {savingTag ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                             Save

@@ -334,7 +334,7 @@ export function InstructorEditModal({
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setField('is_active', e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-500 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500 cursor-pointer accent-blue-500"
               />
               <span className="text-sm text-slate-700">
                 {form.is_active ? 'Active' : 'Inactive'}
