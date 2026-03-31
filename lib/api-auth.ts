@@ -138,13 +138,29 @@ export async function requireProgramAccess(
     .maybeSingle();
 
   if (!data) {
-    return NextResponse.json(
+    const resp = NextResponse.json(
       { error: 'Forbidden: you do not have access to this program' },
       { status: 403 },
     );
+    resp.headers.set('X-Program-Access-Scoped', 'denied');
+    return resp;
   }
 
   return null;
+}
+
+/**
+ * Create a NextResponse with the X-Program-Access-Scoped header set.
+ * Use this instead of plain NextResponse.json() in routes that enforce
+ * program-level access so the authorization is visible to the client.
+ */
+export function scopedJsonResponse(
+  body: unknown,
+  init?: { status?: number },
+): NextResponse {
+  const resp = NextResponse.json(body, init);
+  resp.headers.set('X-Program-Access-Scoped', 'true');
+  return resp;
 }
 
 /**

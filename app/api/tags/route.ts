@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, scopedJsonResponse } from '@/lib/api-auth';
 
 // Ensure this route is always dynamically evaluated (never cached)
 export const dynamic = 'force-dynamic';
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ tags: data ?? [], sessionCounts: counts });
+    return scopedJsonResponse({ tags: data ?? [], sessionCounts: counts });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

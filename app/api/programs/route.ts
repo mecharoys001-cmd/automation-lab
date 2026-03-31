@@ -36,7 +36,13 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ programs: data ?? [] });
+    const response = NextResponse.json({
+      programs: data ?? [],
+      accessScoped: accessibleIds !== null,
+      authorizedProgramCount: accessibleIds !== null ? accessibleIds.length : (data ?? []).length,
+    });
+    response.headers.set('X-Program-Access-Scoped', 'true');
+    return response;
   } catch (err) {
     console.error('Programs API error:', err);
     return NextResponse.json(

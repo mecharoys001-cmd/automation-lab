@@ -23,7 +23,26 @@ export async function GET() {
 
     const serviceClient = createServiceClient();
 
-    // Check admins table first (higher privilege)
+    // Check site_admins first (highest privilege — overrides everything)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: siteAdmin } = await (serviceClient.from('site_admins') as any)
+      .select('id, google_email, display_name, role_level')
+      .ilike('google_email', user.email!)
+      .maybeSingle();
+
+    if (siteAdmin) {
+      return NextResponse.json({
+        id: siteAdmin.id,
+        email: siteAdmin.google_email,
+        google_email: siteAdmin.google_email,
+        display_name: siteAdmin.display_name,
+        role_level: siteAdmin.role_level ?? 'master',
+        org_role: 'admin',
+        is_site_admin: true,
+      });
+    }
+
+    // Check admins table (tool-level admin)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: admin } = await (serviceClient.from('admins') as any)
       .select('id, google_email, display_name, role_level')

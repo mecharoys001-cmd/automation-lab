@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, parseDate, formatDate } from '@/lib/scheduler/utils';
-import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds, scopedJsonResponse } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       return { ...rest, tags };
     });
 
-    return NextResponse.json({ sessions });
+    return scopedJsonResponse({ sessions });
   } catch (err) {
     console.error('Sessions API error:', err);
     return NextResponse.json(

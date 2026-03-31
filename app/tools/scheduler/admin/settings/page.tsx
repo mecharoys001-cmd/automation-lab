@@ -542,6 +542,23 @@ export default function SettingsPage() {
       </div>
 
       {/* ================================================================= */}
+      {/* Program Access Control indicator                                   */}
+      {/* ================================================================= */}
+      <div
+        data-testid="program-access-control"
+        className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800"
+      >
+        <ShieldAlert className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <span>
+          <strong>Program access control active.</strong>{' '}
+          API requests are scoped to your authorized {programs.length === 1 ? 'program' : `${programs.length} programs`}.
+          {currentUserRoleLevel === 'master'
+            ? ' As a master admin you can access all programs.'
+            : ' Only data from programs you are granted access to is returned.'}
+        </span>
+      </div>
+
+      {/* ================================================================= */}
       {/* SECTION 1 — Programs                                              */}
       {/* ================================================================= */}
       <section className={cardBodyClass}>

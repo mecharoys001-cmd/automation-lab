@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch } from '@/lib/scheduler/utils';
-import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, requireProgramAccess, scopedJsonResponse } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }, {});
     console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
 
-    return NextResponse.json({ templates: data ?? [] });
+    return scopedJsonResponse({ templates: data ?? [] });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
