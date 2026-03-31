@@ -15,6 +15,21 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const email = searchParams.get('email');
 
+    // Email-only lookup: Allow staff to find themselves without knowing program_id (portal login)
+    if (email && !programId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('staff') as any)
+        .select('*')
+        .eq('email', email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return scopedJsonResponse({ instructors: data ? [data] : [] });
+    }
+
     if (!programId) {
       return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
     }
