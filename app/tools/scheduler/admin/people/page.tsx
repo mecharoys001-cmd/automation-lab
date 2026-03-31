@@ -1741,18 +1741,27 @@ export default function PeoplePage() {
     return true;
   }), [venues, venueSearch]);
 
-  const filtered = useMemo(() => allInstructors.filter((inst) => {
-    if (filterStatus === 'active' && !inst.is_active) return false;
-    if (filterStatus === 'inactive' && inst.is_active) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const name = `${inst.first_name} ${inst.last_name}`.toLowerCase();
-      const email = (inst.email ?? '').toLowerCase();
-      const skills = (inst.skills ?? []).join(' ').toLowerCase();
-      return name.includes(q) || email.includes(q) || skills.includes(q);
-    }
-    return true;
-  }), [allInstructors, filterStatus, search]);
+  const filtered = useMemo(() => {
+    const result = allInstructors.filter((inst) => {
+      if (filterStatus === 'active' && !inst.is_active) return false;
+      if (filterStatus === 'inactive' && inst.is_active) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const name = `${inst.first_name} ${inst.last_name}`.toLowerCase();
+        const email = (inst.email ?? '').toLowerCase();
+        const skills = (inst.skills ?? []).join(' ').toLowerCase();
+        return name.includes(q) || email.includes(q) || skills.includes(q);
+      }
+      return true;
+    });
+    // Case-insensitive sort by last name, then first name
+    result.sort((a, b) => {
+      const cmp = (a.last_name ?? '').localeCompare(b.last_name ?? '', undefined, { sensitivity: 'base' });
+      if (cmp !== 0) return cmp;
+      return (a.first_name ?? '').localeCompare(b.first_name ?? '', undefined, { sensitivity: 'base' });
+    });
+    return result;
+  }, [allInstructors, filterStatus, search]);
 
   const staffTotalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safeStaffPage = Math.min(staffPage, staffTotalPages);

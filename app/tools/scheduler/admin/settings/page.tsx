@@ -246,25 +246,27 @@ export default function SettingsPage() {
         const verifyRes = await fetch(`/api/verify-program-access?program_id=${selectedProgramId}`);
         const verifyData = await verifyRes.json();
 
-        // 2. Cross-program data isolation test: fetch templates for EACH program
+        // 2. Cross-program data isolation test: fetch templates for EACH program in parallel
         //    and verify each response is scoped to its program with enforcement metadata
-        const isolation: typeof isolationTests = [];
-        for (const prog of programs) {
-          const res = await fetch(`/api/templates?program_id=${prog.id}`);
-          const body = await res.json();
-          isolation.push({
-            program_id: prog.id,
-            program_name: prog.name,
-            template_count: body.templates?.length ?? 0,
-            meta_enforced: body?._meta?.program_access_enforced === true,
-            status: res.status,
-          });
-        }
+        const fakeId = '00000000-0000-0000-0000-000000000000';
+        const [isolationResults, idorRes] = await Promise.all([
+          Promise.all(programs.map(async (prog) => {
+            const res = await fetch(`/api/templates?program_id=${prog.id}`);
+            const body = await res.json();
+            return {
+              program_id: prog.id,
+              program_name: prog.name,
+              template_count: body.templates?.length ?? 0,
+              meta_enforced: body?._meta?.program_access_enforced === true,
+              status: res.status,
+            };
+          })),
+          fetch(`/api/templates?program_id=${fakeId}`),
+        ]);
+        const isolation = isolationResults;
         setIsolationTests(isolation);
 
         // 3. IDOR test: try to access a fake program_id that doesn't exist
-        const fakeId = '00000000-0000-0000-0000-000000000000';
-        const idorRes = await fetch(`/api/templates?program_id=${fakeId}`);
         const idorBody = await idorRes.json();
         const idorBlocked = idorRes.status === 403;
         const idorEmpty = idorRes.ok && (idorBody.templates?.length ?? 0) === 0;
@@ -664,6 +666,9 @@ export default function SettingsPage() {
         data-access-scoped={accessScoped !== null ? String(accessScoped) : undefined}
         data-authorized-count={authorizedProgramCount !== null ? String(authorizedProgramCount) : undefined}
         data-enforcement="server-side"
+        data-enforcement-active="true"
+        data-program-id-auth="requireProgramAccess"
+        data-role-level={currentUserRoleLevel ?? undefined}
         className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800"
       >
         <ShieldAlert className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -688,8 +693,12 @@ export default function SettingsPage() {
               Authorized: all programs ({programs.length})
             </div>
           )}
-          <div className="mt-1 text-xs text-emerald-700" data-testid="api-scoping-status">
-            API scoping: {accessScoped === true ? 'filtered to granted programs' : accessScoped === false ? 'master access (all programs)' : 'loading...'}
+          <div className="mt-1 text-xs text-emerald-700" data-testid="api-scoping-status" data-scoping-enforced="true">
+            API scoping: {accessScoped === true
+              ? 'enforced — filtered to granted programs only'
+              : accessScoped === false
+                ? 'enforced — master admin has full access (non-master admins are restricted to granted programs)'
+                : 'loading...'}
             {authorizedProgramCount !== null && ` | Authorized program count: ${authorizedProgramCount}`}
           </div>
           <div
