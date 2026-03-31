@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireProgramAccess } from '@/lib/api-auth';
 
 const COOKIE_NAME = 'symphonix-selected-program';
 const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -31,6 +31,10 @@ export async function PUT(request: NextRequest) {
   if (typeof programId !== 'string' || programId.length === 0) {
     return NextResponse.json({ error: 'programId is required' }, { status: 400 });
   }
+
+  // Verify the user has access to the requested program
+  const accessErr = await requireProgramAccess(auth.user, programId);
+  if (accessErr) return accessErr;
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, programId, {

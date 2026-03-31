@@ -4,9 +4,6 @@ import { requireAdmin, requireMinRole, requireMasterAdmin, requireProgramAccess,
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
-    if (auth.error) return auth.error;
-
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('program_id');
@@ -15,8 +12,16 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const email = searchParams.get('email');
 
-    // Email-only lookup: Allow staff to find themselves without knowing program_id (portal login)
+    // Email-only lookup: Allow any authenticated user to find staff by email (portal login)
+    // This runs BEFORE requireAdmin so staff members can look themselves up
     if (email && !programId) {
+      // Verify the user is at least authenticated
+      const authClient = await (await import('@/lib/supabase/server')).createClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      if (!user?.email) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('staff') as any)
         .select('*')
@@ -29,6 +34,10 @@ export async function GET(request: NextRequest) {
 
       return scopedJsonResponse({ instructors: data ? [data] : [] });
     }
+
+    // All other operations require admin
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
 
     if (!programId) {
       return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });

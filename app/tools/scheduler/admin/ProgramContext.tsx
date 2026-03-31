@@ -12,6 +12,10 @@ interface ProgramContextValue {
   refetchPrograms: () => Promise<void>;
   /** Update wizard state for the selected program */
   updateWizardState: (wizardCompleted: boolean, wizardStep: number) => Promise<void>;
+  /** Whether the programs API response was scoped by access control */
+  accessScoped: boolean | null;
+  /** Number of programs the user is authorized for (from API response) */
+  authorizedProgramCount: number | null;
 }
 
 // Program ID is persisted in an httpOnly cookie via /api/selected-program
@@ -25,12 +29,16 @@ const ProgramContext = createContext<ProgramContextValue>({
   loading: true,
   refetchPrograms: async () => {},
   updateWizardState: async () => {},
+  accessScoped: null,
+  authorizedProgramCount: null,
 });
 
 export function ProgramProvider({ children }: { children: React.ReactNode }) {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessScoped, setAccessScoped] = useState<boolean | null>(null);
+  const [authorizedProgramCount, setAuthorizedProgramCount] = useState<number | null>(null);
 
   const fetchPrograms = useCallback(async () => {
     setLoading(true);
@@ -39,6 +47,8 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       const progs: Program[] = data.programs ?? [];
       setPrograms(progs);
+      setAccessScoped(data.accessScoped ?? null);
+      setAuthorizedProgramCount(data.authorizedProgramCount ?? null);
 
       // Restore from httpOnly cookie via server endpoint, or pick first
       let stored: string | null = null;
@@ -118,6 +128,8 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
         loading,
         refetchPrograms: fetchPrograms,
         updateWizardState,
+        accessScoped,
+        authorizedProgramCount,
       }}
     >
       {children}

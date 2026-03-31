@@ -45,6 +45,26 @@ export async function requireAdmin(): Promise<AuthSuccess | AuthFailure> {
   }
 
   const service = createServiceClient();
+
+  // Check site_admins first (highest privilege)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: siteAdmin } = await (service.from('site_admins') as any)
+    .select('id, role_level')
+    .ilike('google_email', user.email!)
+    .maybeSingle();
+
+  if (siteAdmin) {
+    return {
+      user: {
+        id: siteAdmin.id,
+        email: user.email,
+        role: 'admin',
+        roleLevel: (siteAdmin.role_level as RoleLevel) ?? 'master',
+      },
+      error: null,
+    };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: admin } = await (service.from('admins') as any)
     .select('id, role_level')
@@ -204,7 +224,26 @@ export async function requireOrgMember(): Promise<OrgAuthSuccess | OrgAuthFailur
 
   const service = createServiceClient();
 
-  // Check admins table first (higher privilege)
+  // Check site_admins first (highest privilege)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: siteAdmin } = await (service.from('site_admins') as any)
+    .select('id, role_level')
+    .ilike('google_email', user.email!)
+    .maybeSingle();
+
+  if (siteAdmin) {
+    return {
+      user: {
+        id: siteAdmin.id,
+        email: user.email,
+        orgRole: 'admin',
+        roleLevel: (siteAdmin.role_level as RoleLevel) ?? 'master',
+      },
+      error: null,
+    };
+  }
+
+  // Check admins table (tool-level admin)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: admin } = await (service.from('admins') as any)
     .select('id, role_level')
@@ -223,7 +262,7 @@ export async function requireOrgMember(): Promise<OrgAuthSuccess | OrgAuthFailur
     };
   }
 
-  // Check instructors table
+  // Check staff table
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: instructor } = await (service.from('staff') as any)
     .select('id')

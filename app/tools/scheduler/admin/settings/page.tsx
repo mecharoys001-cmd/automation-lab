@@ -120,7 +120,7 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 // ---------------------------------------------------------------------------
 
 export default function SettingsPage() {
-  const { programs, selectedProgramId, setSelectedProgramId, loading: programsLoading, refetchPrograms } = useProgram();
+  const { programs, selectedProgramId, setSelectedProgramId, loading: programsLoading, refetchPrograms, accessScoped, authorizedProgramCount } = useProgram();
 
   // ---- Program state ----
   const [showProgramForm, setShowProgramForm] = useState(false);
@@ -144,6 +144,7 @@ export default function SettingsPage() {
   // ---- Current user state (for RBAC + self-removal guard) ----
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [currentUserRoleLevel, setCurrentUserRoleLevel] = useState<RoleLevel | null>(null);
+  const [authorizedPrograms, setAuthorizedPrograms] = useState<string[] | 'all' | null>(null);
 
   // ---- Global save / dirty tracking ----
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -192,13 +193,14 @@ export default function SettingsPage() {
     fetchAdmins();
   }, [fetchAdmins]);
 
-  // Fetch current user's email and role level
+  // Fetch current user's email, role level, and authorized programs
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => {
         if (data.google_email) setCurrentUserEmail(data.google_email);
         if (data.role_level) setCurrentUserRoleLevel(data.role_level);
+        if (data.authorized_programs) setAuthorizedPrograms(data.authorized_programs);
       })
       .catch(() => {});
   }, []);
@@ -546,16 +548,38 @@ export default function SettingsPage() {
       {/* ================================================================= */}
       <div
         data-testid="program-access-control"
+        data-access-scoped={accessScoped !== null ? String(accessScoped) : undefined}
+        data-authorized-count={authorizedProgramCount !== null ? String(authorizedProgramCount) : undefined}
+        data-enforcement="server-side"
         className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800"
       >
         <ShieldAlert className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-        <span>
-          <strong>Program access control active.</strong>{' '}
-          API requests are scoped to your authorized {programs.length === 1 ? 'program' : `${programs.length} programs`}.
-          {currentUserRoleLevel === 'master'
-            ? ' As a master admin you can access all programs.'
-            : ' Only data from programs you are granted access to is returned.'}
-        </span>
+        <div>
+          <span>
+            <strong>Program access control active.</strong>{' '}
+            Server-side enforcement: every API request validates program_id against your authorized programs.
+            {authorizedPrograms === 'all'
+              ? ' As a master admin you can access all programs.'
+              : ' Only data from programs you are granted access to is returned.'}
+          </span>
+          {authorizedPrograms && authorizedPrograms !== 'all' && programs.length > 0 && (
+            <div className="mt-1 text-xs text-emerald-700" data-testid="authorized-program-list">
+              Authorized: {programs
+                .filter(p => (authorizedPrograms as string[]).includes(p.id))
+                .map(p => p.name)
+                .join(', ') || 'none'}
+            </div>
+          )}
+          {authorizedPrograms === 'all' && (
+            <div className="mt-1 text-xs text-emerald-700" data-testid="authorized-program-list">
+              Authorized: all programs ({programs.length})
+            </div>
+          )}
+          <div className="mt-1 text-xs text-emerald-700" data-testid="api-scoping-status">
+            API scoping: {accessScoped === true ? 'filtered to granted programs' : accessScoped === false ? 'master access (all programs)' : 'loading...'}
+            {authorizedProgramCount !== null && ` | Authorized program count: ${authorizedProgramCount}`}
+          </div>
+        </div>
       </div>
 
       {/* ================================================================= */}
