@@ -96,7 +96,7 @@ export default async function SuiteManagerPage() {
         <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '14px' }}>
           Manage members for your tool suites.
         </p>
-        <SuiteManagerPanel suites={suites} />
+        <SuiteManagerPanel suites={suites} currentUserEmail={user.email} />
       </div>
     </div>
   );

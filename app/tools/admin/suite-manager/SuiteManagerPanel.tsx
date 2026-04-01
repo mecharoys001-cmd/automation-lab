@@ -86,7 +86,7 @@ const roleBadge = (role: string): React.CSSProperties => {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
+export default function SuiteManagerPanel({ suites, currentUserEmail }: { suites: Suite[]; currentUserEmail: string }) {
   const [activeSuiteId, setActiveSuiteId] = useState<string>(suites[0]?.id ?? '');
   const [members, setMembers] = useState<SuiteMember[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,6 +94,7 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
 
   // Add member form
   const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState<'member' | 'manager'>('member');
   const [adding, setAdding] = useState(false);
 
   // Track which member is pending removal (for confirm step)
@@ -141,13 +142,14 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
       const res = await fetch(`/api/tool-suites/${activeSuiteId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_email: email, role: 'member' }),
+        body: JSON.stringify({ user_email: email, role: newRole }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to add member');
       }
       setNewEmail('');
+      setNewRole('member');
       fetchMembers(activeSuiteId);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to add member');
@@ -176,6 +178,25 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
       setError(err instanceof Error ? err.message : 'Failed to remove member');
     } finally {
       setRemoving(null);
+    }
+  };
+
+  // -- Change role --
+  const handleChangeRole = async (email: string, role: 'member' | 'manager') => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/tool-suites/${activeSuiteId}/members`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_email: email, role }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to change role');
+      }
+      fetchMembers(activeSuiteId);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to change role');
     }
   };
 
@@ -286,17 +307,30 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
             required
             style={{ ...inputStyle, flex: 1 }}
           />
+          <select
+            value={newRole}
+            onChange={(e) => setNewRole(e.target.value as 'member' | 'manager')}
+            style={{
+              ...inputStyle,
+              width: 'auto',
+              minWidth: '110px',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="member">Member</option>
+            <option value="manager">Manager</option>
+          </select>
           <button
             type="submit"
             disabled={adding || !newEmail.trim()}
-            title="Add this person as a member of the suite"
+            title="Add this person to the suite"
             style={{
               ...btnPrimary,
               opacity: adding || !newEmail.trim() ? 0.5 : 1,
               whiteSpace: 'nowrap',
             }}
           >
-            {adding ? 'Adding…' : 'Add Member'}
+            {adding ? 'Adding…' : 'Add'}
           </button>
         </form>
       </div>
@@ -342,12 +376,14 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
               <MemberRow
                 key={m.id}
                 member={m}
+                currentUserEmail={currentUserEmail}
                 canRemove={false}
                 confirmRemove={false}
                 removing={false}
                 onRequestRemove={() => {}}
                 onConfirmRemove={() => {}}
                 onCancelRemove={() => {}}
+                onChangeRole={(newRole) => handleChangeRole(m.user_email, newRole)}
               />
             ))}
             {/* Then regular members */}
@@ -355,12 +391,14 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
               <MemberRow
                 key={m.id}
                 member={m}
+                currentUserEmail={currentUserEmail}
                 canRemove={true}
                 confirmRemove={confirmRemove === m.user_email}
                 removing={removing === m.user_email}
                 onRequestRemove={() => setConfirmRemove(m.user_email)}
                 onConfirmRemove={() => handleRemoveMember(m.user_email)}
                 onCancelRemove={() => setConfirmRemove(null)}
+                onChangeRole={(newRole) => handleChangeRole(m.user_email, newRole)}
               />
             ))}
           </div>
@@ -377,8 +415,8 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
           lineHeight: 1.6,
         }}
       >
-        You can add or remove members. Only site administrators can add managers
-        or change tool assignments.
+        You can add members, promote them to managers, or remove them. Tool
+        assignments are managed by site administrators.
       </p>
     </div>
   );
@@ -388,23 +426,42 @@ export default function SuiteManagerPanel({ suites }: { suites: Suite[] }) {
 // MemberRow — single member line item
 // ---------------------------------------------------------------------------
 
+const btnRoleChange: React.CSSProperties = {
+  padding: '4px 10px',
+  fontSize: '11px',
+  fontWeight: 600,
+  fontFamily: "'Montserrat', sans-serif",
+  borderRadius: '4px',
+  border: '1px solid #e2e8f0',
+  background: '#ffffff',
+  color: '#64748b',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+};
+
 function MemberRow({
   member,
+  currentUserEmail,
   canRemove,
   confirmRemove,
   removing,
   onRequestRemove,
   onConfirmRemove,
   onCancelRemove,
+  onChangeRole,
 }: {
   member: SuiteMember;
+  currentUserEmail: string;
   canRemove: boolean;
   confirmRemove: boolean;
   removing: boolean;
   onRequestRemove: () => void;
   onConfirmRemove: () => void;
   onCancelRemove: () => void;
+  onChangeRole: (newRole: 'member' | 'manager') => void;
 }) {
+  const isSelf = member.user_email.toLowerCase() === currentUserEmail.toLowerCase();
+
   return (
     <div
       style={{
@@ -432,10 +489,33 @@ function MemberRow({
         title={member.user_email}
       >
         {member.user_email}
+        {isSelf && (
+          <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '6px' }}>(you)</span>
+        )}
       </span>
 
       {/* Role badge */}
       <span style={roleBadge(member.role)}>{member.role}</span>
+
+      {/* Role change button */}
+      {!isSelf && member.role === 'member' && (
+        <button
+          onClick={() => onChangeRole('manager')}
+          title="Promote to manager"
+          style={btnRoleChange}
+        >
+          ↑ Make Manager
+        </button>
+      )}
+      {!isSelf && member.role === 'manager' && (
+        <button
+          onClick={() => onChangeRole('member')}
+          title="Demote to member"
+          style={btnRoleChange}
+        >
+          ↓ Make Member
+        </button>
+      )}
 
       {/* Remove button / confirm */}
       {canRemove && !confirmRemove && (
@@ -479,14 +559,6 @@ function MemberRow({
             Cancel
           </button>
         </div>
-      )}
-      {!canRemove && member.role === 'manager' && (
-        <span
-          style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}
-          title="Only site administrators can remove managers"
-        >
-          (admin-managed)
-        </span>
       )}
     </div>
   );
