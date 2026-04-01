@@ -160,7 +160,7 @@ export default function SettingsPage() {
 
   // ---- Clear data state ----
   const [clearModalOpen, setClearModalOpen] = useState(false);
-  const [clearMode, setClearMode] = useState<'sessions' | 'all'>('all');
+  const [clearMode, setClearMode] = useState<'sessions' | 'all' | 'staff' | 'venues' | 'templates'>('all');
   const [clearing, setClearing] = useState(false);
   const [clearProgress, setClearProgress] = useState<string | null>(null);
   const [clearStep, setClearStep] = useState<1 | 2 | 3>(1);
@@ -586,7 +586,7 @@ export default function SettingsPage() {
   // Clear data handler
   // =========================================================================
 
-  function openClearModal(mode: 'sessions' | 'all') {
+  function openClearModal(mode: 'sessions' | 'all' | 'staff' | 'venues' | 'templates') {
     setClearMode(mode);
     setClearModalOpen(true);
     setClearProgress(null);
@@ -602,9 +602,17 @@ export default function SettingsPage() {
         .catch(() => setClearCounts(null))
         .finally(() => setLoadingCounts(false));
     } else {
-      setClearStep(3); // sessions-only skips to final step
+      setClearStep(3); // non-'all' modes skip to final step
     }
   }
+
+  const clearLabelMap: Record<string, string> = {
+    sessions: 'Sessions',
+    all: 'All Data',
+    staff: 'All Staff',
+    venues: 'All Venues',
+    templates: 'All Event Templates',
+  };
 
   async function handleClearData() {
     if (!selectedProgramId) return;
@@ -612,16 +620,16 @@ export default function SettingsPage() {
     setClearProgress(null);
 
     try {
-      const endpoint =
-        clearMode === 'all'
-          ? `/api/data/clear-all?program_id=${selectedProgramId}`
-          : `/api/data/clear-sessions?program_id=${selectedProgramId}`;
+      const endpointMap: Record<string, string> = {
+        sessions: `/api/data/clear-sessions?program_id=${selectedProgramId}`,
+        all: `/api/data/clear-all?program_id=${selectedProgramId}`,
+        staff: `/api/staff?program_id=${selectedProgramId}`,
+        venues: `/api/venues?program_id=${selectedProgramId}`,
+        templates: `/api/templates?program_id=${selectedProgramId}`,
+      };
+      const endpoint = endpointMap[clearMode];
 
-      setClearProgress(
-        clearMode === 'all'
-          ? 'Deleting all data...'
-          : 'Deleting sessions...',
-      );
+      setClearProgress(`Deleting ${clearLabelMap[clearMode]?.toLowerCase() ?? 'data'}...`);
 
       const res = await fetch(endpoint, { method: 'DELETE' });
       const data = await res.json();
@@ -630,10 +638,17 @@ export default function SettingsPage() {
         throw new Error(data.error ?? 'Clear data failed');
       }
 
+      // Handle both { counts: {...} } and { deleted: N } response shapes
       const counts = data.counts ?? {};
-      const parts = Object.entries(counts)
-        .filter(([, v]) => (v as number) > 0)
-        .map(([k, v]) => `${v} ${k}`);
+      const deleted = data.deleted as number | undefined;
+      let parts: string[];
+      if (deleted !== undefined) {
+        parts = deleted > 0 ? [`${deleted} ${clearMode}`] : [];
+      } else {
+        parts = Object.entries(counts)
+          .filter(([, v]) => (v as number) > 0)
+          .map(([k, v]) => `${v} ${k}`);
+      }
 
       // Reset onboarding checklist so it reappears after clearing data
       if (clearMode === 'all') {
@@ -641,16 +656,24 @@ export default function SettingsPage() {
         window.dispatchEvent(new Event('reopen-onboarding'));
       }
 
-      // Invalidate all cached API responses so UI reflects empty state immediately
-      requestCache.clear();
+      // Invalidate cached API responses so UI reflects the change immediately
+      if (clearMode === 'all') {
+        requestCache.clear();
+      } else if (clearMode === 'staff') {
+        requestCache.invalidate(/\/api\/staff/);
+      } else if (clearMode === 'venues') {
+        requestCache.invalidate(/\/api\/venues/);
+      } else if (clearMode === 'templates') {
+        requestCache.invalidate(/\/api\/templates/);
+      } else {
+        requestCache.clear();
+      }
 
       setClearModalOpen(false);
       setToast({
         message: parts.length > 0
           ? `Cleared: ${parts.join(', ')}`
-          : clearMode === 'all'
-            ? 'All data cleared (nothing to delete)'
-            : 'Sessions cleared (nothing to delete)',
+          : `${clearLabelMap[clearMode] ?? 'Data'} cleared (nothing to delete)`,
         type: 'success',
         id: Date.now(),
       });
@@ -1531,6 +1554,66 @@ export default function SettingsPage() {
             </Tooltip>
           </div>
 
+          {/* Clear All Staff */}
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+            <div className="flex-1 mr-4">
+              <p className="text-sm font-medium text-slate-900">Clear All Staff</p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Removes all staff members for this program. Sessions referencing them will lose their instructor assignments.
+              </p>
+            </div>
+            <Tooltip text="Delete all staff members — sessions will lose instructor assignments">
+              <button
+                onClick={() => openClearModal('staff')}
+                disabled={!selectedProgramId || clearing}
+                className={`${btnDangerOutline} whitespace-nowrap`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear Staff
+              </button>
+            </Tooltip>
+          </div>
+
+          {/* Clear All Venues */}
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+            <div className="flex-1 mr-4">
+              <p className="text-sm font-medium text-slate-900">Clear All Venues</p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Removes all venues for this program. Sessions referencing them will lose their venue assignments.
+              </p>
+            </div>
+            <Tooltip text="Delete all venues — sessions will lose venue assignments">
+              <button
+                onClick={() => openClearModal('venues')}
+                disabled={!selectedProgramId || clearing}
+                className={`${btnDangerOutline} whitespace-nowrap`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear Venues
+              </button>
+            </Tooltip>
+          </div>
+
+          {/* Clear All Event Templates */}
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+            <div className="flex-1 mr-4">
+              <p className="text-sm font-medium text-slate-900">Clear All Event Templates</p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Removes all event templates for this program. Existing scheduled sessions are not affected.
+              </p>
+            </div>
+            <Tooltip text="Delete all event templates — existing scheduled sessions are not affected">
+              <button
+                onClick={() => openClearModal('templates')}
+                disabled={!selectedProgramId || clearing}
+                className={`${btnDangerOutline} whitespace-nowrap`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear Templates
+              </button>
+            </Tooltip>
+          </div>
+
           {/* Clear All Data */}
           <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50/30 px-4 py-3">
             <div className="flex-1 mr-4">
@@ -1575,7 +1658,7 @@ export default function SettingsPage() {
                   <AlertTriangle className="w-5 h-5 text-red-700" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  {clearMode === 'all' ? 'Clear All Data' : 'Clear Sessions'}
+                  {clearLabelMap[clearMode] ? `Clear ${clearLabelMap[clearMode]}` : 'Clear Data'}
                 </h3>
               </div>
               {!clearing && (
@@ -1589,35 +1672,57 @@ export default function SettingsPage() {
 
             {/* Body */}
             <div className="px-5 py-4">
-              {clearMode === 'sessions' ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    This will delete <strong>all scheduled sessions</strong> for this program. Templates, staff, and venues will be kept. This action cannot be undone.
-                  </p>
-                  <Tooltip text="Type DELETE ALL SESSIONS exactly to continue">
-                    <div>
-                      <label htmlFor="clear-confirm" className="block text-xs font-medium text-slate-600 mb-1">
-                        Type <span className="font-mono font-bold text-red-700">DELETE ALL SESSIONS</span> to continue
-                      </label>
-                      <input
-                        id="clear-confirm"
-                        type="text"
-                        value={clearConfirmText}
-                        onChange={(e) => setClearConfirmText(e.target.value)}
-                        placeholder="DELETE ALL SESSIONS"
-                        className={inputClass}
-                        autoFocus
-                        aria-required="true"
-                      />
+              {clearMode !== 'all' ? (
+                /* Single-target confirmation (sessions, staff, venues, templates) */
+                (() => {
+                  const confirmTextMap: Record<string, { text: string; description: string }> = {
+                    sessions: {
+                      text: 'DELETE ALL SESSIONS',
+                      description: 'This will delete <strong>all scheduled sessions</strong> for this program. Templates, staff, and venues will be kept. This action cannot be undone.',
+                    },
+                    staff: {
+                      text: 'DELETE ALL STAFF',
+                      description: 'This will delete <strong>all staff members</strong> for this program. Sessions referencing them will lose their instructor assignments. This action cannot be undone.',
+                    },
+                    venues: {
+                      text: 'DELETE ALL VENUES',
+                      description: 'This will delete <strong>all venues</strong> for this program. Sessions referencing them will lose their venue assignments. This action cannot be undone.',
+                    },
+                    templates: {
+                      text: 'DELETE ALL TEMPLATES',
+                      description: 'This will delete <strong>all event templates</strong> for this program. Existing scheduled sessions are not affected. This action cannot be undone.',
+                    },
+                  };
+                  const { text: confirmText, description } = confirmTextMap[clearMode] ?? { text: 'DELETE', description: 'This action cannot be undone.' };
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-sm text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: description }} />
+                      <Tooltip text={`Type ${confirmText} exactly to continue`}>
+                        <div>
+                          <label htmlFor="clear-confirm" className="block text-xs font-medium text-slate-600 mb-1">
+                            Type <span className="font-mono font-bold text-red-700">{confirmText}</span> to continue
+                          </label>
+                          <input
+                            id="clear-confirm"
+                            type="text"
+                            value={clearConfirmText}
+                            onChange={(e) => setClearConfirmText(e.target.value)}
+                            placeholder={confirmText}
+                            className={inputClass}
+                            autoFocus
+                            aria-required="true"
+                          />
+                        </div>
+                      </Tooltip>
+                      {clearProgress && (
+                        <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-600">
+                          <Loader2 className="w-4 h-4 animate-spin text-red-700" />
+                          {clearProgress}
+                        </div>
+                      )}
                     </div>
-                  </Tooltip>
-                  {clearProgress && (
-                    <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-600">
-                      <Loader2 className="w-4 h-4 animate-spin text-red-700" />
-                      {clearProgress}
-                    </div>
-                  )}
-                </div>
+                  );
+                })()
               ) : clearStep === 1 ? (
                 /* Step 1: Type DELETE ALL DATA */
                 <div className="space-y-3">
@@ -1703,17 +1808,36 @@ export default function SettingsPage() {
                 </button>
               </Tooltip>
 
-              {clearMode === 'sessions' ? (
-                <Tooltip text={clearConfirmText === 'DELETE ALL SESSIONS' ? 'Delete all scheduled sessions for this program' : 'Type DELETE ALL SESSIONS to enable this button'}>
-                  <button
-                    onClick={handleClearData}
-                    disabled={clearing || clearConfirmText !== 'DELETE ALL SESSIONS'}
-                    className={`inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50 ${clearConfirmText !== 'DELETE ALL SESSIONS' ? 'cursor-not-allowed' : ''}`}
-                  >
-                    {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    {clearing ? 'Clearing...' : 'Yes, Clear Sessions'}
-                  </button>
-                </Tooltip>
+              {clearMode !== 'all' ? (
+                (() => {
+                  const confirmTextMap: Record<string, string> = {
+                    sessions: 'DELETE ALL SESSIONS',
+                    staff: 'DELETE ALL STAFF',
+                    venues: 'DELETE ALL VENUES',
+                    templates: 'DELETE ALL TEMPLATES',
+                  };
+                  const buttonLabelMap: Record<string, string> = {
+                    sessions: 'Yes, Clear Sessions',
+                    staff: 'Yes, Clear Staff',
+                    venues: 'Yes, Clear Venues',
+                    templates: 'Yes, Clear Templates',
+                  };
+                  const requiredText = confirmTextMap[clearMode] ?? 'DELETE';
+                  const buttonLabel = buttonLabelMap[clearMode] ?? 'Yes, Clear';
+                  const isConfirmed = clearConfirmText === requiredText;
+                  return (
+                    <Tooltip text={isConfirmed ? `Delete ${clearLabelMap[clearMode]?.toLowerCase() ?? 'data'} for this program` : `Type ${requiredText} to enable this button`}>
+                      <button
+                        onClick={handleClearData}
+                        disabled={clearing || !isConfirmed}
+                        className={`inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50 ${!isConfirmed ? 'cursor-not-allowed' : ''}`}
+                      >
+                        {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        {clearing ? 'Clearing...' : buttonLabel}
+                      </button>
+                    </Tooltip>
+                  );
+                })()
               ) : clearStep === 1 ? (
                 <Tooltip text={clearConfirmText === 'DELETE ALL DATA' ? 'Proceed to review what will be deleted' : 'Type DELETE ALL DATA to enable this button'}>
                   <button
