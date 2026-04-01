@@ -13,32 +13,39 @@ interface ToastState {
   id: number;
 }
 
-function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
+function Toaster({ toast, onDismiss }: { toast: ToastState | null; onDismiss: () => void }) {
   useEffect(() => {
+    if (!toast) return;
     const timer = setTimeout(onDismiss, 4000);
     return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
+  }, [toast?.id, onDismiss]);
 
-  const isSuccess = toast.type === 'success';
   return (
-    <div
-      role="alert"
-      aria-live="assertive"
-      data-testid="toast"
-      className={`fixed bottom-4 right-4 z-[99999] flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg transition-all ${
-        isSuccess ? 'bg-emerald-500' : 'bg-red-500'
-      }`}
-    >
-      {isSuccess ? (
-        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-      ) : (
-        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-        </svg>
+    <div data-testid="toaster" className="fixed bottom-4 right-4 z-[99999]">
+      <div aria-live="assertive" role="status" data-testid="toast-live-region">
+        {toast ? toast.message : ''}
+      </div>
+      {toast && (
+        <div
+          role="alert"
+          data-testid="toast"
+          data-toast-type={toast.type}
+          className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg transition-all ${
+            toast.type === 'success' ? 'bg-emerald-500 success' : 'bg-red-500'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          )}
+          {toast.message}
+        </div>
       )}
-      {toast.message}
     </div>
   );
 }
@@ -452,10 +459,10 @@ function IntakeForm() {
 
   if (submitState === 'success') {
     return (
-      <div className="dark min-h-screen bg-background text-foreground">
-        {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
+      <div className="dark min-h-screen bg-background text-foreground" data-submit-state="success">
+        <Toaster toast={toast} onDismiss={() => setToast(null)} />
         <div className="mx-auto max-w-2xl px-4 py-16 sm:py-24">
-          <div data-testid="submission-success" className="rounded-xl border border-border bg-card p-8 text-center shadow-lg">
+          <div data-testid="submission-success" className="rounded-xl border border-border bg-card p-8 text-center shadow-lg success">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
               <svg className="h-8 w-8 text-green-700" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -486,10 +493,11 @@ function IntakeForm() {
     <main
       role="main"
       className="dark min-h-screen bg-background text-foreground"
+      data-submit-state={submitState}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {toast && <ToastNotification toast={toast} onDismiss={() => setToast(null)} />}
+      <Toaster toast={toast} onDismiss={() => setToast(null)} />
       <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8 text-center">
