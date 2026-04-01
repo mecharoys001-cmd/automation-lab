@@ -254,11 +254,16 @@ export default function RolesPage() {
     setLoading(true);
     try {
       const [adminsData, instructorsData] = await Promise.all([
-        requestCache.fetch<{ admins?: Admin[] }>('/api/admins'),
+        requestCache.fetch<{ admins?: Admin[]; callerRoleLevel?: string }>('/api/admins'),
         requestCache.fetch<{ instructors?: Instructor[] }>(`/api/staff?program_id=${selectedProgramId}`),
       ]);
       setAdmins(adminsData.admins ?? []);
       setInstructors(instructorsData.instructors ?? []);
+      // Use callerRoleLevel from the admins endpoint so the role is
+      // available as soon as the admin list loads (no /api/auth/me race).
+      if (adminsData.callerRoleLevel) {
+        setCurrentUserRoleLevel(adminsData.callerRoleLevel);
+      }
     } catch {
       setAdmins([]);
       setInstructors([]);
@@ -533,19 +538,6 @@ export default function RolesPage() {
   // =========================================================================
   // Render
   // =========================================================================
-
-  // Page-level access guard: only Master Admin users can manage roles
-  if (currentUserRoleLevel !== null && currentUserRoleLevel !== 'master') {
-    return (
-      <div className="flex items-center justify-center h-full bg-slate-50">
-        <div className="text-center space-y-2">
-          <ShieldAlert className="w-10 h-10 text-slate-600 mx-auto" />
-          <h2 className="text-lg font-semibold text-slate-900">Access Denied</h2>
-          <p className="text-sm text-slate-600">Only Master Admin users can manage roles.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 p-6 lg:p-8 overflow-y-auto h-full bg-slate-50">

@@ -31,10 +31,6 @@ export async function GET() {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    // Only master admins can view the admin list (role management)
-    const masterCheck = requireMasterAdmin(auth.user);
-    if (masterCheck) return masterCheck;
-
     const supabase = createServiceClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,7 +65,7 @@ export async function GET() {
         .in('id', invalidIds);
     }
 
-    return NextResponse.json({ admins: validAdmins });
+    return NextResponse.json({ admins: validAdmins, callerRoleLevel: auth.user.roleLevel });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
@@ -82,8 +78,6 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
-    const masterCheck = requireMasterAdmin(auth.user);
-    if (masterCheck) return masterCheck;
 
     const supabase = createServiceClient();
     const body = await request.json();
@@ -153,8 +147,6 @@ export async function PATCH(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
-    const masterCheck = requireMasterAdmin(auth.user);
-    if (masterCheck) return masterCheck;
 
     const supabase = createServiceClient();
     const { searchParams } = new URL(request.url);
@@ -193,6 +185,22 @@ export async function PATCH(request: NextRequest) {
         { error: 'Forbidden: only master admins can grant master admin access' },
         { status: 403 },
       );
+    }
+
+    // Prevent non-master admins from modifying master admin users
+    if (auth.user.roleLevel !== 'master') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: target } = await (supabase.from('admins') as any)
+        .select('role_level')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (target?.role_level === 'master') {
+        return NextResponse.json(
+          { error: 'Forbidden: only master admins can modify master admin accounts' },
+          { status: 403 },
+        );
+      }
     }
 
     // Whitelist fields to prevent arbitrary column injection

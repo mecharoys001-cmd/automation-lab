@@ -5267,3 +5267,221 @@ app/tools/scheduler/components/calendar/WeekView.tsx:1207:                  cons
    Medium: 2
    Low: 0
 
+=== Bug Fixer Run: Tue Mar 31 22:30:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recMCA68yLLfwXWMq
+   Priority: High
+   Page: Role Managment
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: Any admin user can assign any role, including Master Admin, to any other user. A lower-priv...
+   ⚠️  Previous fix rejected: "Opened the Add User form on the Role Management page. The role dropdown (#scheduler-add-user-role) still lists 4 options including "Master Admin" with value "master_admin". Any admin can assign Master Admin role to new users. Master Admin should be hidden or disabled for non-Master Admin users."
+
+🔧 Attempting to fix recMCA68yLLfwXWMq...
+❌ Fix attempt failed: Command failed: claude -p --dangerously-skip-permissions "Fix Airtable bug recMCA68yLLfwXWMq:
+
+**Priority:** High
+**Page:** Role Managment
+**Issue:** PROBLEM: Any admin user can assign any role, including Master Admin, to any other user. A lower-privileged Admin should not be able to grant Master Admin access.
+
+HOW TO FIX:
+1. In the Role Management page component, when rendering the role dropdown (both in the Add User form and the inline Edit row), check the current user's role level.
+2. If the current user is NOT a Master Admin, filter the dropdown options to exclude \"Master Admin\":
+   const currentUserRole = /* get from auth context or API */;
+   const availableRoles = allRoles.filter(role => {
+     if (currentUserRole !== 'master' && role.value === 'master') return false;
+     return true;
+   });
+3. Also enforce this on the server side in the API endpoint that updates user roles (e.g., PUT /api/admins/:id). Check that the requesting user's role_level is 'master' before allowing a role change to 'master'.
+4. The server-side check is the critical part. The client-side filtering is for UX, but the API must reject unauthorized escalation attempts.
+
+WHAT I WILL CHECK: I will open the Add User form and inspect the role dropdown to see if Master Admin is still listed as an option for a non-Master Admin user.
+
+---
+
+
+**⚠️ VALIDATION AGENT REJECTED PREVIOUS FIX:**
+\"Opened the Add User form on the Role Management page. The role dropdown (#scheduler-add-user-role) still lists 4 options including \"Master Admin\" with value \"master_admin\". Any admin can assign Master Admin role to new users. Master Admin should be hidden or disabled for non-Master Admin users.\"
+
+**This means:**
+- Previous fix attempt did NOT resolve the issue
+- You must address this specific validation failure
+- The validation agent will test your fix
+- Only mark complete when this specific issue is resolved
+
+**Requirements:**
+1. Read existing code for the Role Managment page
+2. Address the SPECIFIC validation failure above
+3. Test that the build succeeds (npm run build)
+4. Verify your fix actually resolves the issue
+5. Report what you changed
+
+**DO NOT:**
+- Deploy to production
+- Mark as fixed in Airtable
+- Make unrelated changes
+- Assume code that exists is working
+
+Work in /home/ethan/.openclaw/workspace/automation-lab
+"
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+
+📄 Report written: 2026-04-01T02-35-39-575Z_recMCA68yLLfwXWMq.md
+
+❌ Failed to fix recMCA68yLLfwXWMq (attempt 1/3)
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 3
+   High: 1
+   Medium: 2
+   Low: 0
+
+=== Bug Fixer Run: Tue Mar 31 23:00:04 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recMCA68yLLfwXWMq
+   Priority: High
+   Page: Role Managment
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: Any admin user can assign any role, including Master Admin, to any other user. A lower-priv...
+   ⚠️  Previous fix rejected: "Opened the Add User form on the Role Management page. The role dropdown (#scheduler-add-user-role) still lists 4 options including "Master Admin" with value "master_admin". Any admin can assign Master Admin role to new users. Master Admin should be hidden or disabled for non-Master Admin users."
+
+🔧 Attempting to fix recMCA68yLLfwXWMq...
+❌ Fix attempt failed: Command failed: claude -p --dangerously-skip-permissions "Fix Airtable bug recMCA68yLLfwXWMq:
+
+**Priority:** High
+**Page:** Role Managment
+**Issue:** PROBLEM: Any admin user can assign any role, including Master Admin, to any other user. A lower-privileged Admin should not be able to grant Master Admin access.
+
+HOW TO FIX:
+1. In the Role Management page component, when rendering the role dropdown (both in the Add User form and the inline Edit row), check the current user's role level.
+2. If the current user is NOT a Master Admin, filter the dropdown options to exclude \"Master Admin\":
+   const currentUserRole = /* get from auth context or API */;
+   const availableRoles = allRoles.filter(role => {
+     if (currentUserRole !== 'master' && role.value === 'master') return false;
+     return true;
+   });
+3. Also enforce this on the server side in the API endpoint that updates user roles (e.g., PUT /api/admins/:id). Check that the requesting user's role_level is 'master' before allowing a role change to 'master'.
+4. The server-side check is the critical part. The client-side filtering is for UX, but the API must reject unauthorized escalation attempts.
+
+WHAT I WILL CHECK: I will open the Add User form and inspect the role dropdown to see if Master Admin is still listed as an option for a non-Master Admin user.
+
+---
+
+
+**⚠️ VALIDATION AGENT REJECTED PREVIOUS FIX:**
+\"Opened the Add User form on the Role Management page. The role dropdown (#scheduler-add-user-role) still lists 4 options including \"Master Admin\" with value \"master_admin\". Any admin can assign Master Admin role to new users. Master Admin should be hidden or disabled for non-Master Admin users.\"
+
+**This means:**
+- Previous fix attempt did NOT resolve the issue
+- You must address this specific validation failure
+- The validation agent will test your fix
+- Only mark complete when this specific issue is resolved
+
+**Requirements:**
+1. Read existing code for the Role Managment page
+2. Address the SPECIFIC validation failure above
+3. Test that the build succeeds (npm run build)
+4. Verify your fix actually resolves the issue
+5. Report what you changed
+
+**DO NOT:**
+- Deploy to production
+- Mark as fixed in Airtable
+- Make unrelated changes
+- Assume code that exists is working
+
+Work in /home/ethan/.openclaw/workspace/automation-lab
+"
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+
+📄 Report written: 2026-04-01T03-05-42-690Z_recMCA68yLLfwXWMq.md
+
+❌ Failed to fix recMCA68yLLfwXWMq (attempt 2/3)
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 3
+   High: 1
+   Medium: 2
+   Low: 0
+
+=== Bug Fixer Run: Tue Mar 31 23:30:08 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recMCA68yLLfwXWMq
+   Priority: High
+   Page: Role Managment
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: Any admin user can assign any role, including Master Admin, to any other user. A lower-priv...
+   ⚠️  Previous fix rejected: "Opened the Add User form on the Role Management page. The role dropdown (#scheduler-add-user-role) still lists 4 options including "Master Admin" with value "master_admin". Any admin can assign Master Admin role to new users. Master Admin should be hidden or disabled for non-Master Admin users."
+
+⏭️  Skipping recMCA68yLLfwXWMq: Max attempts (3) reached
+📄 Report written: 2026-04-01T03-30-11-252Z_recMCA68yLLfwXWMq.md
+📊 Dashboard updated
+
+=== Bug Fixer Run: Wed Apr  1 00:00:08 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: recMCA68yLLfwXWMq
+   Priority: High
+   Page: Role Managment
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: Any admin user can assign any role, including Master Admin, to any other user. A lower-priv...
+   ⚠️  Previous fix rejected: "Opened the Add User form on the Role Management page. The role dropdown (#scheduler-add-user-role) still lists 4 options including "Master Admin" with value "master_admin". Any admin can assign Master Admin role to new users. Master Admin should be hidden or disabled for non-Master Admin users."
+
+🔧 Attempting to fix recMCA68yLLfwXWMq...
+✅ Fix applied successfully
+   Changes: 2
+🚀 Deploying fix for recMCA68yLLfwXWMq...
+📦 Validating build...
+🔍 Running pre-deploy checks...
+📦 Building project...
+✅ Build successful
+✅ Changes detected
+app/api/site-admins/route.ts:105:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:213:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:282:    console.log(JSON.stringify({
+app/api/classes/route.ts:25:    console.log('[GET /api/classes] returning', data?.length ?? 0, 'classes');
+app/api/seed/route.ts:188:    console.log('Templates created:', templates.length);
+app/api/tags/[id]/route.ts:39:    console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
+app/api/tags/[id]/route.ts:64:    console.log('[PATCH /api/tags] updateData:', JSON.stringify(updateData));
+app/api/tags/[id]/route.ts:77:    console.log('[PATCH /api/tags] supabase response:', JSON.stringify({ data, error }));
+app/api/tags/[id]/route.ts:108:    console.log('[PATCH /api/tags] final response tag:', JSON.stringify(data));
+app/api/tags/route.ts:35:    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+app/api/templates/route.ts:26:    console.log('[Templates API] GET request for program:', programId);
+app/api/templates/route.ts:47:    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
+app/tools/scheduler/admin/calendar/page.tsx:192:  console.log('[TOAST] Toast rendered:', toast.message, 'type:', toast.type);
+app/tools/scheduler/admin/page.tsx:585:          console.log('Cancel event:', event.title);
+app/tools/scheduler/admin/page.tsx:589:          console.log('Suggest replacements for:', event.title);
+app/tools/scheduler/admin/page.tsx:593:          console.log('Duplicate event:', event.title);
+app/tools/scheduler/admin/page.tsx:597:          console.log('Delete event:', event.title);
+app/tools/scheduler/admin/page.tsx:638:      console.log('[handleEventDrop] Called with:', {
+app/tools/scheduler/admin/page.tsx:657:          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+app/tools/scheduler/admin/page.tsx:672:      console.log('[handleEventDrop] PATCH body:', patchBody);
+app/tools/scheduler/admin/page.tsx:686:          console.log('[handleEventDrop] PATCH success for', eventId);
+app/tools/scheduler/admin/page.tsx:823:      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
+app/tools/scheduler/admin/page.tsx:842:        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+app/tools/scheduler/admin/page.tsx:890:        console.log(`[${fetchId}] Aborted`);
+app/tools/scheduler/admin/page.tsx:902:    console.log('[useEffect] Triggering fetchSessions due to dependency change');
+app/tools/scheduler/admin/page.tsx:906:      console.log('[useEffect] Cleanup: aborting previous fetch');
+app/tools/scheduler/admin/roles/page.tsx:408:    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
+app/tools/scheduler/admin/roles/page.tsx:410:      console.log('[SAVE_EDIT] Roles match, cancelling edit');
+app/tools/scheduler/admin/roles/page.tsx:417:    console.log('[SAVE_EDIT] wasStaff:', wasStaff, 'becomingStaff:', becomingStaff);
+app/tools/scheduler/components/calendar/DayView.tsx:320:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/DayView.tsx:331:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/YearView.tsx:522:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/YearView.tsx:532:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/MonthView.tsx:266:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/MonthView.tsx:277:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:145:  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+app/tools/scheduler/components/calendar/WeekView.tsx:231:    console.log('[DRAG START]', {
+app/tools/scheduler/components/calendar/WeekView.tsx:598:    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
+app/tools/scheduler/components/calendar/WeekView.tsx:603:    console.log('Hover leave');
+app/tools/scheduler/components/calendar/WeekView.tsx:666:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/WeekView.tsx:677:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:1149:                          console.log('[DROP] Event drop:', {
+app/tools/scheduler/components/calendar/WeekView.tsx:1207:                  console.log('Render hover state', hoverState);
+⚠️  Warning: console.log statements found (non-commented)
+✅ Validation passed
+
+💾 Committing changes...
