@@ -11,44 +11,6 @@ import ColumnMapper from "./components/ColumnMapper";
 import CategoryEditor from "./components/CategoryEditor";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
-const PLATFORM_INSTRUCTIONS: Record<string, { title: string; steps: string[] }> = {
-  shopify: {
-    title: "How to export from Shopify:",
-    steps: [
-      "Go to Shopify Admin \u2192 Orders",
-      "Set the date range filter",
-      "Click \u201cExport\u201d \u2192 \u201cAll orders\u201d \u2192 CSV for Excel",
-      "Upload the downloaded file here",
-    ],
-  },
-  square: {
-    title: "How to export from Square:",
-    steps: [
-      "Go to Square Dashboard \u2192 Transactions",
-      "Set the date range and click \u201cExport\u201d",
-      "Choose CSV format and download",
-      "Upload the downloaded file here",
-    ],
-  },
-  woocommerce: {
-    title: "How to export from WooCommerce:",
-    steps: [
-      "Go to WooCommerce \u2192 Orders",
-      "Click \u201cExport\u201d at the top",
-      "Select date range and columns, then download CSV",
-      "Upload the downloaded file here",
-    ],
-  },
-  stripe: {
-    title: "How to export from Stripe:",
-    steps: [
-      "Go to Stripe Dashboard \u2192 Payments",
-      "Click \u201cExport\u201d in the top right",
-      "Select date range and download as CSV",
-      "Upload the downloaded file here",
-    ],
-  },
-};
 
 type ViewState = "upload" | "column-mapper" | "dashboard" | "category-editor";
 
@@ -312,12 +274,12 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <h1 className="mb-2 text-3xl font-bold text-foreground">
-          Village Center of the Arts Sales Analytics Dashboard
+          VCA Transaction Reports
         </h1>
         <p className="mb-8 text-muted-foreground">
           {isSharedView
             ? "You're viewing a shared interactive report."
-            : "Upload a CSV export from Shopify, Square, WooCommerce, Stripe, or any POS to visualize your sales."}
+            : "Upload Village Center for the Arts transaction exports to visualize sales, track trends, and generate reports."}
         </p>
 
         {viewState === "upload" && (
@@ -366,30 +328,10 @@ export default function ReportsPage() {
               />
             </label>
 
-            {/* Platform export instructions */}
-            <div className="mt-6 max-w-2xl space-y-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {Object.entries(PLATFORM_INSTRUCTIONS).map(([key, info]) => (
-                  <details
-                    key={key}
-                    className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground"
-                  >
-                    <summary className="cursor-pointer font-medium text-foreground" title={`Show export instructions for ${info.title.replace("How to export from ", "").replace(":", "")}`}>
-                      {info.title}
-                    </summary>
-                    <ol className="mt-2 list-inside list-decimal space-y-1">
-                      {info.steps.map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ol>
-                  </details>
-                ))}
-              </div>
-              <p className="text-center text-xs text-muted-foreground/70">
-                Don&apos;t see your platform? Upload any CSV and we&apos;ll help you map the columns.
-                All data is processed locally in your browser.
-              </p>
-            </div>
+            <p className="mt-4 text-center text-xs text-muted-foreground/70">
+              Supports Shopify, Square, WooCommerce, Stripe, and custom CSV exports.
+              All data is processed locally in your browser.
+            </p>
 
             {/* Profile import */}
             <div className="mt-4 flex gap-2">
