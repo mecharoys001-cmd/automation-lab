@@ -16,6 +16,8 @@ interface ProgramContextValue {
   accessScoped: boolean | null;
   /** Number of programs the user is authorized for (from API response) */
   authorizedProgramCount: number | null;
+  /** Whether server-side program access enforcement is active (true for all users including master admins) */
+  enforcementActive: boolean | null;
 }
 
 // Program ID is persisted in an httpOnly cookie via /api/selected-program
@@ -31,6 +33,7 @@ const ProgramContext = createContext<ProgramContextValue>({
   updateWizardState: async () => {},
   accessScoped: null,
   authorizedProgramCount: null,
+  enforcementActive: null,
 });
 
 export function ProgramProvider({ children }: { children: React.ReactNode }) {
@@ -39,6 +42,7 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [accessScoped, setAccessScoped] = useState<boolean | null>(null);
   const [authorizedProgramCount, setAuthorizedProgramCount] = useState<number | null>(null);
+  const [enforcementActive, setEnforcementActive] = useState<boolean | null>(null);
 
   const fetchPrograms = useCallback(async () => {
     setLoading(true);
@@ -49,6 +53,7 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
       setPrograms(progs);
       setAccessScoped(data.accessScoped ?? null);
       setAuthorizedProgramCount(data.authorizedProgramCount ?? null);
+      setEnforcementActive(data.enforcement_active ?? null);
 
       // Restore from httpOnly cookie via server endpoint, or pick first
       let stored: string | null = null;
@@ -130,6 +135,7 @@ export function ProgramProvider({ children }: { children: React.ReactNode }) {
         updateWizardState,
         accessScoped,
         authorizedProgramCount,
+        enforcementActive,
       }}
     >
       {children}

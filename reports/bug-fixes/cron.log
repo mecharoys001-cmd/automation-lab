@@ -5034,3 +5034,139 @@ Warning: no stdin data received in 3s, proceeding without it. If piping from a s
    Medium: 2
    Low: 0
 
+=== Bug Fixer Run: Tue Mar 31 21:00:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+⚠️  Detected stuck state, clearing...
+🐛 Processing bug: rec1VVh3gFc6kRDJF
+   Priority: High
+   Page: Settings
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: An authenticated user can access another program's data by passing a different program_id t...
+   ⚠️  Previous fix rejected: "Program selector exists with 2 programs (symphonix, test), but cannot verify server-side API scoping from the browser. No evidence of per-program auth tokens or request-level program_id enforcement visible in the client. Full verification requires direct API testing outside the browser."
+
+🔧 Attempting to fix rec1VVh3gFc6kRDJF...
+❌ Fix attempt failed: Command failed: claude -p --dangerously-skip-permissions "Fix Airtable bug rec1VVh3gFc6kRDJF:
+
+**Priority:** High
+**Page:** Settings
+**Issue:** PROBLEM: An authenticated user can access another program's data by passing a different program_id to the API. For example, calling /api/templates?program_id=SOME_OTHER_ID returns data for a program the user does not belong to. There is no server-side check that the logged-in user is authorized for the requested program.
+
+HOW TO FIX:
+1. In your API route handlers (e.g., /api/templates, /api/tags, /api/sessions, /api/staff, /api/venues, /api/calendar), after authenticating the user, look up which program(s) that user is associated with (from the admins table or a user-program mapping).
+2. Compare the requested program_id against the user's allowed programs. If it does not match, return a 403 Forbidden response.
+3. Example pseudocode for a Next.js API route:
+   const user = await getAuthUser(req);
+   const userPrograms = await getUserPrograms(user.id);
+   if (!userPrograms.includes(req.query.program_id)) {
+     return res.status(403).json({ error: 'Not authorized for this program' });
+   }
+4. Apply this check to every API endpoint that accepts a program_id parameter.
+
+WHAT I WILL CHECK: I will look at the API responses to see if program_id scoping is enforced, but full verification requires direct API testing outside the browser.
+
+---
+
+
+**⚠️ VALIDATION AGENT REJECTED PREVIOUS FIX:**
+\"Program selector exists with 2 programs (symphonix, test), but cannot verify server-side API scoping from the browser. No evidence of per-program auth tokens or request-level program_id enforcement visible in the client. Full verification requires direct API testing outside the browser.\"
+
+**This means:**
+- Previous fix attempt did NOT resolve the issue
+- You must address this specific validation failure
+- The validation agent will test your fix
+- Only mark complete when this specific issue is resolved
+
+**Requirements:**
+1. Read existing code for the Settings page
+2. Address the SPECIFIC validation failure above
+3. Test that the build succeeds (npm run build)
+4. Verify your fix actually resolves the issue
+5. Report what you changed
+
+**DO NOT:**
+- Deploy to production
+- Mark as fixed in Airtable
+- Make unrelated changes
+- Assume code that exists is working
+
+Work in /home/ethan/.openclaw/workspace/automation-lab
+"
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+
+📄 Report written: 2026-04-01T01-05-41-524Z_rec1VVh3gFc6kRDJF.md
+
+❌ Failed to fix rec1VVh3gFc6kRDJF (attempt 1/3)
+📊 Dashboard updated
+
+📊 Remaining fixable bugs: 5
+   High: 3
+   Medium: 2
+   Low: 0
+
+=== Bug Fixer Run: Tue Mar 31 21:30:07 EDT 2026 ===
+🤖 Automated Bug Fixer v2 starting...
+
+🐛 Processing bug: rec1VVh3gFc6kRDJF
+   Priority: High
+   Page: Settings
+   Category: UNCATEGORIZED
+   Feedback: PROBLEM: An authenticated user can access another program's data by passing a different program_id t...
+   ⚠️  Previous fix rejected: "Program selector exists with 2 programs (symphonix, test), but cannot verify server-side API scoping from the browser. No evidence of per-program auth tokens or request-level program_id enforcement visible in the client. Full verification requires direct API testing outside the browser."
+
+🔧 Attempting to fix rec1VVh3gFc6kRDJF...
+✅ Fix applied successfully
+   Changes: 2
+🚀 Deploying fix for rec1VVh3gFc6kRDJF...
+📦 Validating build...
+🔍 Running pre-deploy checks...
+📦 Building project...
+✅ Build successful
+✅ Changes detected
+app/api/site-admins/route.ts:105:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:213:    console.log(JSON.stringify({
+app/api/site-admins/route.ts:282:    console.log(JSON.stringify({
+app/api/classes/route.ts:25:    console.log('[GET /api/classes] returning', data?.length ?? 0, 'classes');
+app/api/seed/route.ts:188:    console.log('Templates created:', templates.length);
+app/api/tags/[id]/route.ts:39:    console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
+app/api/tags/[id]/route.ts:64:    console.log('[PATCH /api/tags] updateData:', JSON.stringify(updateData));
+app/api/tags/[id]/route.ts:77:    console.log('[PATCH /api/tags] supabase response:', JSON.stringify({ data, error }));
+app/api/tags/[id]/route.ts:108:    console.log('[PATCH /api/tags] final response tag:', JSON.stringify(data));
+app/api/tags/route.ts:35:    console.log('[GET /api/tags] returning', data?.length ?? 0, 'tags, sample emoji:', data?.[0]?.emoji);
+app/api/templates/route.ts:26:    console.log('[Templates API] GET request for program:', programId);
+app/api/templates/route.ts:47:    console.log('[Templates API] Templates by venue:', venueStats, 'Total:', (data ?? []).length);
+app/tools/scheduler/admin/calendar/page.tsx:192:  console.log('[TOAST] Toast rendered:', toast.message, 'type:', toast.type);
+app/tools/scheduler/admin/page.tsx:585:          console.log('Cancel event:', event.title);
+app/tools/scheduler/admin/page.tsx:589:          console.log('Suggest replacements for:', event.title);
+app/tools/scheduler/admin/page.tsx:593:          console.log('Duplicate event:', event.title);
+app/tools/scheduler/admin/page.tsx:597:          console.log('Delete event:', event.title);
+app/tools/scheduler/admin/page.tsx:638:      console.log('[handleEventDrop] Called with:', {
+app/tools/scheduler/admin/page.tsx:657:          console.log('[handleEventDrop] Optimistic update:', { old: { date: ev.date, time: ev.time, endTime: ev.endTime, venueId: ev.venueId }, new: { date: updated.date, time: updated.time, endTime: updated.endTime, venueId: updated.venueId } });
+app/tools/scheduler/admin/page.tsx:672:      console.log('[handleEventDrop] PATCH body:', patchBody);
+app/tools/scheduler/admin/page.tsx:686:          console.log('[handleEventDrop] PATCH success for', eventId);
+app/tools/scheduler/admin/page.tsx:823:      console.log(`[${fetchId}] Starting fetch for`, { currentView, selectedDate, start_date, end_date });
+app/tools/scheduler/admin/page.tsx:842:        console.log(`[${fetchId}] Setting ${mappedEvents.length} events, date range:`, {
+app/tools/scheduler/admin/page.tsx:890:        console.log(`[${fetchId}] Aborted`);
+app/tools/scheduler/admin/page.tsx:902:    console.log('[useEffect] Triggering fetchSessions due to dependency change');
+app/tools/scheduler/admin/page.tsx:906:      console.log('[useEffect] Cleanup: aborting previous fetch');
+app/tools/scheduler/admin/roles/page.tsx:403:    console.log('[SAVE_EDIT] editRole:', editRole, 'user.role:', user.role, 'user.id:', user.id, 'user.source:', user.source);
+app/tools/scheduler/admin/roles/page.tsx:405:      console.log('[SAVE_EDIT] Roles match, cancelling edit');
+app/tools/scheduler/admin/roles/page.tsx:412:    console.log('[SAVE_EDIT] wasStaff:', wasStaff, 'becomingStaff:', becomingStaff);
+app/tools/scheduler/components/calendar/DayView.tsx:320:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/DayView.tsx:331:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/YearView.tsx:522:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/YearView.tsx:532:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/MonthView.tsx:266:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/MonthView.tsx:277:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:145:  console.log('[parseTimeToHour]', JSON.stringify(time), '→', result);
+app/tools/scheduler/components/calendar/WeekView.tsx:231:    console.log('[DRAG START]', {
+app/tools/scheduler/components/calendar/WeekView.tsx:598:    console.log('Hover move', { dayIdx, venueId, time, multiLane, selectedVenues });
+app/tools/scheduler/components/calendar/WeekView.tsx:603:    console.log('Hover leave');
+app/tools/scheduler/components/calendar/WeekView.tsx:666:        console.log('Substitute candidates:', candidates);
+app/tools/scheduler/components/calendar/WeekView.tsx:677:      console.log('Find replacement event for:', eventId, templateId);
+app/tools/scheduler/components/calendar/WeekView.tsx:1149:                          console.log('[DROP] Event drop:', {
+app/tools/scheduler/components/calendar/WeekView.tsx:1207:                  console.log('Render hover state', hoverState);
+⚠️  Warning: console.log statements found (non-commented)
+✅ Validation passed
+
+💾 Committing changes...

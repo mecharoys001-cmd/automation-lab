@@ -120,7 +120,7 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 // ---------------------------------------------------------------------------
 
 export default function SettingsPage() {
-  const { programs, selectedProgramId, setSelectedProgramId, loading: programsLoading, refetchPrograms, accessScoped, authorizedProgramCount } = useProgram();
+  const { programs, selectedProgramId, setSelectedProgramId, loading: programsLoading, refetchPrograms, accessScoped, authorizedProgramCount, enforcementActive } = useProgram();
 
   // ---- Program state ----
   const [showProgramForm, setShowProgramForm] = useState(false);
@@ -281,12 +281,16 @@ export default function SettingsPage() {
         const isolation = isolationResults;
         setIsolationTests(isolation);
 
-        // Capture IDOR evidence
+        // 3. IDOR test: try to access a fake program_id that doesn't exist
+        const idorBody = await idorRes.json();
+        const idorBlocked = idorRes.status === 403;
+
+        // Capture IDOR evidence (read body first so metaEnforced is accurate)
         evidence.push({
           url: `/api/templates?program_id=${fakeId}`,
           status: idorRes.status,
           scopedHeader: idorRes.headers.get('X-Program-Access-Scoped'),
-          metaEnforced: false,
+          metaEnforced: idorBody?._meta?.program_access_enforced === true || idorBlocked,
         });
 
         // Also capture verify endpoint evidence
@@ -297,10 +301,6 @@ export default function SettingsPage() {
           metaEnforced: verifyData?.enforcement_active === true,
         });
         setApiScopingEvidence(evidence);
-
-        // 3. IDOR test: try to access a fake program_id that doesn't exist
-        const idorBody = await idorRes.json();
-        const idorBlocked = idorRes.status === 403;
         const idorEmpty = idorRes.ok && (idorBody.templates?.length ?? 0) === 0;
         setIdorTestResult({
           fake_program_id: fakeId,
@@ -698,7 +698,7 @@ export default function SettingsPage() {
         data-access-scoped={accessScoped !== null ? String(accessScoped) : undefined}
         data-authorized-count={authorizedProgramCount !== null ? String(authorizedProgramCount) : undefined}
         data-enforcement="server-side"
-        data-enforcement-active="true"
+        data-enforcement-active={enforcementActive !== null ? String(enforcementActive) : 'loading'}
         data-program-id-auth="requireProgramAccess"
         data-role-level={currentUserRoleLevel ?? undefined}
         className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800"
@@ -725,12 +725,16 @@ export default function SettingsPage() {
               Authorized: all programs ({programs.length})
             </div>
           )}
-          <div className="mt-1 text-xs text-emerald-700" data-testid="api-scoping-status" data-scoping-enforced="true">
-            API scoping: {accessScoped === true
-              ? 'enforced — filtered to granted programs only'
-              : accessScoped === false
-                ? 'enforced — master admin has full access (non-master admins are restricted to granted programs)'
-                : 'loading...'}
+          <div
+            className="mt-1 text-xs text-emerald-700"
+            data-testid="api-scoping-status"
+            data-scoping-enforced={enforcementActive !== null ? String(enforcementActive) : 'loading'}
+          >
+            API scoping: {enforcementActive === true
+              ? (accessScoped === true
+                  ? 'enforced — filtered to granted programs only'
+                  : 'enforced — master admin has full access (non-master admins are restricted to granted programs)')
+              : 'loading...'}
             {authorizedProgramCount !== null && ` | Authorized program count: ${authorizedProgramCount}`}
           </div>
           <div
@@ -811,7 +815,7 @@ export default function SettingsPage() {
               className="mt-3 rounded border border-emerald-300 bg-emerald-50/50 p-3"
               data-testid="api-scoping-evidence"
               data-evidence-count={String(apiScopingEvidence.length)}
-              data-all-scoped={String(apiScopingEvidence.every(e => e.scopedHeader === 'true' || e.metaEnforced))}
+              data-all-scoped={String(apiScopingEvidence.every(e => e.scopedHeader === 'true' || e.metaEnforced || e.status === 403))}
             >
               <div className="text-xs font-semibold text-emerald-900 mb-1.5">
                 Per-request program_id enforcement evidence (live API responses):

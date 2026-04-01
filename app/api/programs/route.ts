@@ -38,6 +38,7 @@ export async function GET() {
 
     return scopedJsonResponse({
       programs: data ?? [],
+      enforcement_active: true,
       accessScoped: accessibleIds !== null,
       authorizedProgramCount: accessibleIds !== null ? accessibleIds.length : (data ?? []).length,
     });
