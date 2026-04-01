@@ -226,6 +226,7 @@ export default function EventTemplatesPage() {
 
   // CSV import
   const [importOpen, setImportOpen] = useState(false);
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
 
   // Tag filter from SubjectDashboard clicks
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -525,6 +526,28 @@ export default function EventTemplatesPage() {
           </div>
         </div>
 
+        {/* Import warnings banner */}
+        {importWarnings.length > 0 && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-amber-800 text-sm">Import completed with warnings</p>
+              <ul className="mt-1 space-y-0.5">
+                {importWarnings.map((w, i) => (
+                  <li key={i} className="text-sm text-amber-700">{w}</li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setImportWarnings([])}
+              className="p-1 rounded hover:bg-amber-100 text-amber-700"
+              aria-label="Dismiss warnings"
+            >
+              <span className="text-xs font-medium">Dismiss</span>
+            </button>
+          </div>
+        )}
+
         {/* Subject Dashboard — click a tag to filter */}
         <SubjectDashboard
           templates={templates}
@@ -651,6 +674,9 @@ export default function EventTemplatesPage() {
             requestCache.invalidate(/\/api\/templates/);
             fetchTemplates();
             setToast({ message: `${result.imported} template(s) imported`, type: 'success', id: Date.now() });
+          }
+          if (result.warnings?.length > 0) {
+            setImportWarnings(result.warnings);
           }
           return result;
         }}

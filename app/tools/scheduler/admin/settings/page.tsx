@@ -140,6 +140,7 @@ export default function SettingsPage() {
   const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
   const deletingRef = useRef(false);
   const [confirmRemoveAdmin, setConfirmRemoveAdmin] = useState<Admin | null>(null);
+  const [confirmDeleteProgram, setConfirmDeleteProgram] = useState<{ id: string; name: string } | null>(null);
 
   // ---- Current user state (for RBAC + self-removal guard) ----
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -422,8 +423,12 @@ export default function SettingsPage() {
     }
   }
 
+  function requestDeleteProgram(id: string, name: string) {
+    setConfirmDeleteProgram({ id, name });
+  }
+
   async function deleteProgram(id: string) {
-    if (!confirm('Are you sure you want to delete this program? This cannot be undone.')) return;
+    setConfirmDeleteProgram(null);
     try {
       const res = await fetch(`/api/programs/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete program');
@@ -996,7 +1001,7 @@ export default function SettingsPage() {
                         </Tooltip>
                         <Tooltip text="Permanently delete this program">
                           <button
-                            onClick={() => deleteProgram(p.id)}
+                            onClick={() => requestDeleteProgram(p.id, p.name)}
                             aria-label={`Delete ${p.name}`}
                             className={btnDangerOutline}
                           >
@@ -1558,6 +1563,8 @@ export default function SettingsPage() {
       {clearModalOpen && (
         <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => !clearing && setClearModalOpen(false)}>
           <div
+            role="alertdialog"
+            aria-modal="true"
             className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1743,10 +1750,14 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Remove Admin Confirmation Modal */}
-      {confirmRemoveAdmin && (
-        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => !deletingRef.current && setConfirmRemoveAdmin(null)}>
+      {/* Delete Program Confirmation Modal */}
+      {confirmDeleteProgram && (
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setConfirmDeleteProgram(null)}>
           <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-program-title"
+            aria-describedby="delete-program-desc"
             className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1755,7 +1766,53 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-center w-9 h-9 rounded-full bg-red-100">
                   <AlertTriangle className="w-5 h-5 text-red-700" />
                 </div>
-                <h3 className="text-base font-semibold text-slate-900">Remove Admin</h3>
+                <h3 id="delete-program-title" className="text-base font-semibold text-slate-900">Delete Program</h3>
+              </div>
+              <button onClick={() => setConfirmDeleteProgram(null)} className="text-slate-700 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p id="delete-program-desc" className="text-sm text-slate-600 leading-relaxed">
+                Are you sure you want to delete <strong>{confirmDeleteProgram.name}</strong>? This cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+              <button
+                onClick={() => setConfirmDeleteProgram(null)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 text-[13px] font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteProgram(confirmDeleteProgram.id)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-red-700 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Admin Confirmation Modal */}
+      {confirmRemoveAdmin && (
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => !deletingRef.current && setConfirmRemoveAdmin(null)}>
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="remove-admin-title"
+            aria-describedby="remove-admin-desc"
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm rounded-xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 pt-5 pb-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-red-100">
+                  <AlertTriangle className="w-5 h-5 text-red-700" />
+                </div>
+                <h3 id="remove-admin-title" className="text-base font-semibold text-slate-900">Remove Admin</h3>
               </div>
               {!deletingAdminId && (
                 <button onClick={() => setConfirmRemoveAdmin(null)} className="text-slate-700 hover:text-slate-600 transition-colors">
@@ -1764,7 +1821,7 @@ export default function SettingsPage() {
               )}
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <p id="remove-admin-desc" className="text-sm text-slate-600 leading-relaxed">
                 Are you sure you want to remove <strong>{confirmRemoveAdmin.display_name || confirmRemoveAdmin.google_email}</strong>?
                 They will lose all admin access.
               </p>

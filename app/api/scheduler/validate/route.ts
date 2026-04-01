@@ -86,6 +86,10 @@ export async function GET(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (t: any) => !t.grade_groups || t.grade_groups.length === 0
       );
+      const missingEventType = templates.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (t: any) => !t.required_skills || t.required_skills.length === 0
+      );
 
       if (missingTime.length > 0) {
         templateStatus = 'warning';
@@ -95,6 +99,10 @@ export async function GET(request: NextRequest) {
         templateDetails.push(`${missingGrades.length} ${missingGrades.length === 1 ? 'template has' : 'templates have'} no grade groups assigned`);
         if (templateStatus === 'ready') templateStatus = 'warning';
       }
+      if (missingEventType.length > 0) {
+        templateDetails.push(`${missingEventType.length} ${missingEventType.length === 1 ? 'template is' : 'templates are'} missing Event Types — sessions from ${missingEventType.length === 1 ? 'this template' : 'these templates'} cannot be published`);
+        if (templateStatus === 'ready') templateStatus = 'warning';
+      }
       if (templateDetails.length === 0) {
         templateSummary = `${templates.length} active, all configured`;
       } else {
@@ -102,6 +110,7 @@ export async function GET(request: NextRequest) {
         const problemTemplateIds = new Set([
           ...missingTime.map((t: any) => t.id),
           ...missingGrades.map((t: any) => t.id),
+          ...missingEventType.map((t: any) => t.id),
         ]);
         templateSummary = `${problemTemplateIds.size} of ${templates.length} need attention`;
       }

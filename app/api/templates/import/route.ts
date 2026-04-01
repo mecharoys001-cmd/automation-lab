@@ -249,10 +249,20 @@ export async function POST(request: NextRequest) {
 
     trackScheduleChange();
 
+    // Count templates with no subjects (required_skills will be null)
+    const noSubjectsCount = toInsert.filter((t) => t.required_skills === null).length;
+    const warnings: string[] = [];
+    if (noSubjectsCount > 0) {
+      warnings.push(
+        `${noSubjectsCount} ${noSubjectsCount === 1 ? 'template has' : 'templates have'} no Event Type — ${noSubjectsCount === 1 ? 'it' : 'they'} cannot be published until one is assigned`,
+      );
+    }
+
     return NextResponse.json({
       imported: (data ?? []).length,
       skipped,
       total: rows.length,
+      warnings,
     });
   } catch (err) {
     return NextResponse.json(

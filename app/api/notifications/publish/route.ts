@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (roleCheck) return roleCheck;
 
     const body = await request.json();
-    const { programId } = body;
+    const { programId, skip_incomplete = false } = body;
 
     if (!programId || typeof programId !== 'string') {
       return NextResponse.json(
@@ -64,12 +64,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update all draft sessions to published
+    // Fetch draft sessions with template info to check for missing Event Types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: draftSessions, error: draftError } = await (supabase.from('sessions') as any)
+      .select('id, template_id, session_templates(id, name, required_skills)')
+      .eq('program_id', programId)
+      .eq('status', 'draft');
+
+    if (draftError) {
+      return NextResponse.json(
+        { success: false, error: draftError.message },
+        { status: 500 }
+      );
+    }
+
+    const allDrafts = draftSessions ?? [];
+
+    // Partition drafts into publishable vs missing event type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const incomplete = allDrafts.filter((s: any) => {
+      const tpl = s.session_templates;
+      return !tpl || !tpl.required_skills || tpl.required_skills.length === 0;
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const publishable = allDrafts.filter((s: any) => {
+      const tpl = s.session_templates;
+      return tpl && tpl.required_skills && tpl.required_skills.length > 0;
+    });
+
+    if (incomplete.length > 0 && !skip_incomplete) {
+      // Collect affected template names
+      const affectedNames = new Set<string>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const s of incomplete) {
+        affectedNames.add(s.session_templates?.name || 'Unknown template');
+      }
+      return NextResponse.json(
+        {
+          success: false,
+          error: `${incomplete.length} session${incomplete.length !== 1 ? 's' : ''} cannot be published because ${incomplete.length === 1 ? 'its template has' : 'their templates have'} no Event Type`,
+          sessions_missing_event_type: incomplete.length,
+          affected_template_names: Array.from(affectedNames),
+        },
+        { status: 422 }
+      );
+    }
+
+    // Determine which session IDs to publish
+    const idsToPublish = skip_incomplete
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? publishable.map((s: any) => s.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      : allDrafts.map((s: any) => s.id);
+
+    if (idsToPublish.length === 0) {
+      return NextResponse.json({
+        success: true,
+        sessionsPublished: 0,
+        sessionsSkipped: incomplete.length,
+        notificationsSent: 0,
+        errors: [],
+      });
+    }
+
+    // Update selected draft sessions to published
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: updatedSessions, error: updateError } = await (supabase.from('sessions') as any)
       .update({ status: 'published', updated_at: new Date().toISOString() })
-      .eq('program_id', programId)
-      .eq('status', 'draft')
+      .in('id', idsToPublish)
       .select('id');
 
     if (updateError) {
@@ -156,6 +218,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       sessionsPublished,
+      sessionsSkipped: skip_incomplete ? incomplete.length : 0,
       notificationsSent,
       errors,
     });
