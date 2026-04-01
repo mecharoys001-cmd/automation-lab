@@ -11,6 +11,7 @@ import { Tooltip } from '../components/ui/Tooltip';
 interface SessionDisplay extends Session {
   venue?: Venue | null;
   program?: Program | null;
+  instructor?: { id: string; first_name: string; last_name: string } | null;
 }
 
 interface DateGroup {
@@ -59,6 +60,10 @@ function groupByDate(sessions: SessionDisplay[]): DateGroup[] {
     }));
 }
 
+// ── Schedule mode ─────────────────────────────────────────────────
+
+type ScheduleMode = 'my' | 'full';
+
 // ── View filter ────────────────────────────────────────────────────
 
 type ViewFilter = 'upcoming' | 'past' | 'all';
@@ -68,10 +73,13 @@ type ViewFilter = 'upcoming' | 'past' | 'all';
 export default function InstructorPortalPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionDisplay[]>([]);
+  const [fullSessions, setFullSessions] = useState<SessionDisplay[]>([]);
   const [instructor, setInstructor] = useState<Instructor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('my');
   const [viewFilter, setViewFilter] = useState<ViewFilter>('upcoming');
+  const [fullScheduleLoading, setFullScheduleLoading] = useState(false);
 
   async function handleSignOut() {
     await fetch('/api/auth/signout', { method: 'POST' });
@@ -135,9 +143,41 @@ export default function InstructorPortalPage() {
     }
   }
 
+  // Load full schedule when switching to that mode
+  useEffect(() => {
+    if (scheduleMode === 'full' && fullSessions.length === 0 && instructor) {
+      loadFullSchedule();
+    }
+  }, [scheduleMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadFullSchedule() {
+    if (!instructor || !sessions.length) return;
+    // Determine program_id from the user's sessions
+    const programId = sessions[0]?.program_id;
+    if (!programId) return;
+
+    setFullScheduleLoading(true);
+    try {
+      const params = new URLSearchParams({
+        program_id: programId,
+        status: 'published',
+      });
+      const res = await fetch(`/api/staff-sessions?${params}`);
+      if (res.ok) {
+        const { sessions: data } = await res.json();
+        setFullSessions((data as SessionDisplay[]) ?? []);
+      }
+    } catch {
+      // Silently fail — user can retry by toggling
+    } finally {
+      setFullScheduleLoading(false);
+    }
+  }
+
   // Filter sessions by view
   const today = new Date().toISOString().split('T')[0];
-  const filteredSessions = sessions.filter((s) => {
+  const activeSessions = scheduleMode === 'full' ? fullSessions : sessions;
+  const filteredSessions = activeSessions.filter((s) => {
     if (viewFilter === 'upcoming') return s.date >= today;
     if (viewFilter === 'past') return s.date < today;
     return true;
@@ -196,7 +236,7 @@ export default function InstructorPortalPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Your teaching schedule (read-only)
+            {scheduleMode === 'full' ? 'Full program schedule (read-only)' : 'Your teaching schedule (read-only)'}
           </p>
         </div>
 
@@ -206,6 +246,27 @@ export default function InstructorPortalPage() {
           </div>
         ) : (
           <>
+            {/* Schedule mode toggle */}
+            <div className="mb-4 flex gap-1 rounded-lg border border-border bg-card p-1">
+              {([
+                { key: 'my' as const, label: 'My Schedule', tip: 'Show only your sessions' },
+                { key: 'full' as const, label: 'Full Schedule', tip: 'Show all sessions in your program' },
+              ]).map(({ key, label, tip }) => (
+                <Tooltip key={key} text={tip}>
+                  <button
+                    onClick={() => setScheduleMode(key)}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      scheduleMode === key
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                </Tooltip>
+              ))}
+            </div>
+
             {/* View filter tabs */}
             <div className="mb-6 flex gap-1 rounded-lg border border-border bg-card p-1">
               {([
@@ -232,7 +293,15 @@ export default function InstructorPortalPage() {
               {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''}
             </p>
 
-            {filteredSessions.length === 0 ? (
+            {fullScheduleLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <svg className="h-6 w-6 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="ml-2 text-sm text-muted-foreground">Loading full schedule...</span>
+              </div>
+            ) : filteredSessions.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-8 text-center shadow-lg sm:p-12">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent">
                   <svg
@@ -270,44 +339,72 @@ export default function InstructorPortalPage() {
                       {group.formatted}
                     </h3>
                     <div className="space-y-3">
-                      {group.sessions.map((session) => (
-                        <div
-                          key={session.id}
-                          className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-5"
-                        >
-                          <div className="mb-2 text-base font-semibold">
-                            {formatTime(session.start_time)} –{' '}
-                            {formatTime(session.end_time)}
+                      {group.sessions.map((session) => {
+                        const isMine = scheduleMode === 'full' && session.staff_id === instructor?.id;
+                        return (
+                          <div
+                            key={session.id}
+                            className={`rounded-lg border p-4 shadow-sm sm:p-5 ${
+                              isMine
+                                ? 'border-primary/40 bg-primary/5'
+                                : 'border-border bg-card'
+                            }`}
+                          >
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="text-base font-semibold">
+                                {formatTime(session.start_time)} –{' '}
+                                {formatTime(session.end_time)}
+                              </span>
+                              {isMine && (
+                                <Tooltip text="This is your session">
+                                  <span className="inline-flex items-center rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
+                                    You
+                                  </span>
+                                </Tooltip>
+                              )}
+                            </div>
+                            <div className="space-y-1.5 text-sm">
+                              {scheduleMode === 'full' && session.instructor && (
+                                <div className="flex items-start gap-2">
+                                  <span className="shrink-0 text-muted-foreground">Instructor:</span>
+                                  <span>{session.instructor.first_name} {session.instructor.last_name}</span>
+                                </div>
+                              )}
+                              {scheduleMode === 'full' && !session.instructor && !session.staff_id && (
+                                <div className="flex items-start gap-2">
+                                  <span className="shrink-0 text-muted-foreground">Instructor:</span>
+                                  <span className="italic text-muted-foreground">Unassigned</span>
+                                </div>
+                              )}
+                              {session.program && (
+                                <div className="flex items-start gap-2">
+                                  <span className="shrink-0 text-muted-foreground">Program:</span>
+                                  <span>{session.program.name}</span>
+                                </div>
+                              )}
+                              {session.grade_groups.length > 0 && (
+                                <div className="flex items-start gap-2">
+                                  <span className="shrink-0 text-muted-foreground">Grades:</span>
+                                  <span>{session.grade_groups.join(', ')}</span>
+                                </div>
+                              )}
+                              {session.venue && (
+                                <div className="flex items-start gap-2">
+                                  <span className="shrink-0 text-muted-foreground">Venue:</span>
+                                  <span>{session.venue.name}</span>
+                                </div>
+                              )}
+                              {session.status !== 'published' && (
+                                <div className="mt-2">
+                                  <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                    {session.status}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="space-y-1.5 text-sm">
-                            {session.program && (
-                              <div className="flex items-start gap-2">
-                                <span className="shrink-0 text-muted-foreground">Program:</span>
-                                <span>{session.program.name}</span>
-                              </div>
-                            )}
-                            {session.grade_groups.length > 0 && (
-                              <div className="flex items-start gap-2">
-                                <span className="shrink-0 text-muted-foreground">Grades:</span>
-                                <span>{session.grade_groups.join(', ')}</span>
-                              </div>
-                            )}
-                            {session.venue && (
-                              <div className="flex items-start gap-2">
-                                <span className="shrink-0 text-muted-foreground">Venue:</span>
-                                <span>{session.venue.name}</span>
-                              </div>
-                            )}
-                            {session.status !== 'published' && (
-                              <div className="mt-2">
-                                <span className="inline-block rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                                  {session.status}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

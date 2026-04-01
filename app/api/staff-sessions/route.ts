@@ -12,8 +12,51 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const instructorId = searchParams.get('instructor_id');
     const email = searchParams.get('email');
+    const programId = searchParams.get('program_id');
     const status = searchParams.get('status');
     const fromDate = searchParams.get('from_date');
+
+    // program_id mode: fetch all sessions for a program (staff can view their program's full schedule)
+    if (programId && !instructorId && !email) {
+      // Staff can only request programs they belong to (have sessions in)
+      if (auth.user.orgRole === 'staff') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: membership } = await (supabase.from('sessions') as any)
+          .select('id')
+          .eq('staff_id', auth.user.id)
+          .eq('program_id', programId)
+          .limit(1);
+
+        if (!membership || membership.length === 0) {
+          return NextResponse.json(
+            { error: 'You do not have access to this program' },
+            { status: 403 },
+          );
+        }
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabase.from('sessions') as any)
+        .select('*, venue:venues(*), program:programs(*), instructor:staff!sessions_staff_id_fkey(id, first_name, last_name)')
+        .eq('program_id', programId)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+      if (fromDate) {
+        query = query.gte('date', fromDate);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ sessions: data ?? [] });
+    }
 
     if (!instructorId && !email) {
       return NextResponse.json(
