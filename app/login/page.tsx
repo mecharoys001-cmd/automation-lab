@@ -218,7 +218,7 @@ function LoginPageContent() {
                 fontSize: '15px',
                 fontWeight: 600,
                 fontFamily: "'Montserrat', sans-serif",
-                cursor: oauthLoading ? 'not-allowed' : 'pointer',
+                cursor: oauthLoading ? 'wait' : 'pointer',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
                 marginTop: signUpSuccess ? '16px' : 0,
               }}
@@ -266,7 +266,7 @@ function LoginPageContent() {
                 fontSize: '15px',
                 fontWeight: 600,
                 fontFamily: "'Montserrat', sans-serif",
-                cursor: oauthLoading ? 'not-allowed' : 'pointer',
+                cursor: oauthLoading ? 'wait' : 'pointer',
                 transition: 'background 0.2s, color 0.2s',
               }}
             >
@@ -352,7 +352,7 @@ function LoginPageContent() {
                     fontSize: '15px',
                     fontWeight: 700,
                     fontFamily: "'Montserrat', sans-serif",
-                    cursor: loading || !email || !password ? 'not-allowed' : 'pointer',
+                    cursor: loading || !email || !password ? 'wait' : 'pointer',
                     opacity: loading || !email || !password ? 0.7 : 1,
                     transition: 'opacity 0.2s',
                   }}
@@ -372,7 +372,7 @@ function LoginPageContent() {
                     fontSize: '15px',
                     fontWeight: 700,
                     fontFamily: "'Montserrat', sans-serif",
-                    cursor: loading || !email || !password ? 'not-allowed' : 'pointer',
+                    cursor: loading || !email || !password ? 'wait' : 'pointer',
                     opacity: loading || !email || !password ? 0.6 : 1,
                     transition: 'opacity 0.2s',
                   }}
