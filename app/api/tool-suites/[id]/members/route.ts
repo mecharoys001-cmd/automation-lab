@@ -80,10 +80,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: `role must be one of: ${VALID_ROLES.join(', ')}` }, { status: 400 });
     }
 
-    // Managers can only add members, not other managers
-    if (!auth.isSiteAdmin && role !== 'member') {
-      return NextResponse.json({ error: 'Managers can only add members with the "member" role' }, { status: 403 });
-    }
+    // Managers can add members and other managers
+    // (both site admins and suite managers can assign any valid role)
 
     const svc = createServiceClient();
 
@@ -122,21 +120,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
-// PUT { user_email, role } — Change role (site admin only)
+// PUT { user_email, role } — Change role (site admin or suite manager)
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await getAuthContext(id);
+    if (!auth) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const adminInfo = await getSiteAdmin(user.email);
-    if (!isSiteAdmin(adminInfo)) {
-      return NextResponse.json({ error: 'Forbidden — only site admins can change roles' }, { status: 403 });
-    }
+    const user = auth.user;
 
     const body = await request.json();
     const { user_email, role } = body;
