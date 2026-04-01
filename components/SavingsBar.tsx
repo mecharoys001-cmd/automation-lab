@@ -83,7 +83,7 @@ export default function SavingsBar() {
         {/* Hours Saved */}
         <div style={{ textAlign: "center" }}>
           <div style={statStyle}>{hoursDisplay}</div>
-          <div style={labelStyle}>Hours Saved by Tools</div>
+          <div style={labelStyle}>Hours Redirected to Mission-Driven Work</div>
         </div>
 
         <div style={dividerStyle} />
@@ -91,7 +91,7 @@ export default function SavingsBar() {
         {/* Cost Savings from tool usage */}
         <div style={{ textAlign: "center" }}>
           <div style={statStyle}>{savingsDisplay}</div>
-          <div style={labelStyle}>Cost Savings</div>
+          <div style={labelStyle}>Nonprofit Labor Savings</div>
         </div>
       </div>
     </section>
