@@ -104,11 +104,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  // ── Allow unauthenticated access to reports visualizer ─────────────────
-  if (path.startsWith('/tools/reports')) {
-    applySecurityHeaders(supabaseResponse, nonce)
-    return supabaseResponse
-  }
+  // Reports now uses tool_config visibility (restricted) — no public exception
 
   // ── Protect /tools and all sub-routes ──────────────────────────────────
   if (!user && path.startsWith('/tools')) {
