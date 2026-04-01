@@ -479,9 +479,12 @@ function runSingleAttempt(
               // Check if ANY venue has capacity at this time slot
               const scanStartFull = `${scanStartStr}:00`;
               const scanEndFull = `${scanEndStr}:00`;
-              const hasVenueCapacity = venues.length === 0 || venues.some(v =>
-                !checkVenueCapacity(v, targetDate, scanStartFull, scanEndFull, existing_sessions, generatedSessions, NO_BUFFER)
-              );
+              const scanWindow = toTimeWindow(scanStartFull, scanEndFull);
+              const hasVenueCapacity = venues.length === 0 || venues.some(v => {
+                // Must pass BOTH availability AND capacity checks
+                if (!availabilityCoversWindow(v.availability_json, dayOfWeek, scanWindow)) return false;
+                return !checkVenueCapacity(v, targetDate, scanStartFull, scanEndFull, existing_sessions, generatedSessions, NO_BUFFER);
+              });
 
               // Also check same-template conflict (don't stack same template at same time)
               const hasSameTemplateConflict = generatedSessions.some(d =>

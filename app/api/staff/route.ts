@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const email = searchParams.get('email');
 
-    // Email-only lookup: Allow any authenticated user to find staff by email (portal login)
+    // Email-only lookup: Allow authenticated users to find their OWN staff record (portal login)
     // This runs BEFORE requireAdmin so staff members can look themselves up
     if (email && !programId) {
       // Verify the user is at least authenticated
@@ -20,6 +20,14 @@ export async function GET(request: NextRequest) {
       const { data: { user } } = await authClient.auth.getUser();
       if (!user?.email) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+
+      // Only allow looking up your own email — prevents cross-program data leaks
+      if (email.trim().toLowerCase() !== user.email.toLowerCase()) {
+        return NextResponse.json(
+          { error: 'Forbidden: you can only look up your own staff record' },
+          { status: 403 },
+        );
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,27 +94,35 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    // Global instructor deletion is destructive — restrict to master admins
     const masterErr = requireMasterAdmin(auth.user);
     if (masterErr) return masterErr;
 
+    const { searchParams } = new URL(request.url);
+    const programId = searchParams.get('program_id');
+
+    if (!programId) {
+      return NextResponse.json({ error: 'program_id query parameter is required' }, { status: 400 });
+    }
+
+    const accessErr = await requireProgramAccess(auth.user, programId);
+    if (accessErr) return accessErr;
+
     const supabase = createServiceClient();
 
-    // Instructors are global (not program-scoped), so this deletes all.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('staff') as any)
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Supabase requires a filter — this matches all real rows
+      .eq('program_id', programId)
       .select('id');
 
     if (error) {
       return NextResponse.json(
-        { error: `Failed to delete instructors: ${error.message}` },
+        { error: `Failed to delete staff: ${error.message}` },
         { status: 500 },
       );
     }

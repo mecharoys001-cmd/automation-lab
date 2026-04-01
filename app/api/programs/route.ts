@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from '../seed/default-tags';
-import { requireAdmin, requireMinRole, getAccessibleProgramIds } from '@/lib/api-auth';
+import { requireAdmin, requireMinRole, getAccessibleProgramIds, scopedJsonResponse } from '@/lib/api-auth';
 
 export async function GET() {
   try {
@@ -36,13 +36,11 @@ export async function GET() {
       );
     }
 
-    const response = NextResponse.json({
+    return scopedJsonResponse({
       programs: data ?? [],
       accessScoped: accessibleIds !== null,
       authorizedProgramCount: accessibleIds !== null ? accessibleIds.length : (data ?? []).length,
     });
-    response.headers.set('X-Program-Access-Scoped', 'true');
-    return response;
   } catch (err) {
     console.error('Programs API error:', err);
     return NextResponse.json(

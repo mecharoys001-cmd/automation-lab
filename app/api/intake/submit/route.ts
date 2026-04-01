@@ -103,25 +103,75 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Upsert: match on email, update if exists, insert if new
+    // Validate that the program_id refers to a real program
+    // (intake is unauthenticated, but we must not allow writes to arbitrary/non-existent programs)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('staff') as any)
-      .upsert(
-        {
+    const { data: program } = await (supabase.from('programs') as any)
+      .select('id')
+      .eq('id', program_id)
+      .maybeSingle();
+
+    if (!program) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid program_id' },
+        { status: 403 }
+      );
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if a staff record with this email already exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase.from('staff') as any)
+      .select('id, program_id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    let data;
+    let error;
+
+    if (existing) {
+      // Only allow updates within the same program — prevent cross-program data manipulation
+      if (existing.program_id !== program_id) {
+        return NextResponse.json(
+          { success: false, error: 'This email is already registered with a different program' },
+          { status: 403 }
+        );
+      }
+
+      // Update existing record within the same program
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ({ data, error } = await (supabase.from('staff') as any)
+        .update({
           first_name: first_name.trim(),
           last_name: last_name.trim(),
-          email: email.toLowerCase().trim(),
+          phone: phone?.trim() || null,
+          skills,
+          availability_json,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select('id')
+        .single());
+    } else {
+      // Insert new staff record
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ({ data, error } = await (supabase.from('staff') as any)
+        .insert({
+          first_name: first_name.trim(),
+          last_name: last_name.trim(),
+          email: normalizedEmail,
           phone: phone?.trim() || null,
           skills,
           availability_json,
           is_active: true,
           updated_at: new Date().toISOString(),
           program_id,
-        },
-        { onConflict: 'email' }
-      )
-      .select('id')
-      .single();
+        })
+        .select('id')
+        .single());
+    }
 
     if (error) {
       console.error('Intake upsert error:', error);
