@@ -736,11 +736,11 @@ export default function MailingListBuilderPage() {
     <div style={{ paddingTop: 64, minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: "'Montserrat', sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8, fontSize: 13, color: '#64748b' }}>
-        <Link href="/" style={{ color: '#64748b', textDecoration: 'none' }}>Automation Lab</Link>
+        <Link href="/" style={{ color: '#64748b', textDecoration: 'none' }}>Village Center for the Arts</Link>
         <span>/</span>
         <Link href="/tools" style={{ color: '#64748b', textDecoration: 'none' }}>Tools</Link>
         <span>/</span>
-        <span style={{ color: ACCENT }}>Mailing List Builder</span>
+        <span style={{ color: ACCENT }}>VCA Mailing List Builder</span>
       </div>
 
       {/* Hero */}
@@ -757,10 +757,10 @@ export default function MailingListBuilderPage() {
           onClick={onTitleClick}
           style={{ fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem', color: '#1a1a2e', cursor: 'default', userSelect: 'none' }}
         >
-          Mailing List Builder
+          VCA Mailing List Builder
         </h1>
         <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.7, maxWidth: 600 }}>
-          Convert any contact list CSV into a clean, deduplicated Constant Contact mailing list.
+          Convert Village Center for the Arts contact exports into a clean, deduplicated Constant Contact mailing list.
           Names are parsed, phones formatted, and duplicates removed — all in your browser.
         </p>
       </div>
@@ -787,7 +787,7 @@ export default function MailingListBuilderPage() {
               {fileName ? `\u2713 ${fileName}` : 'Drop your CSV here'}
             </p>
             <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-              {fileName ? 'Drop another file to re-process' : 'or click to browse — works with Shopify exports, Constant Contact lists, or any contact CSV'}
+              {fileName ? 'Drop another file to re-process' : 'or click to browse — works with VCA Shopify exports, class registrations, or any contact CSV'}
             </p>
           </div>
         </Tip>
@@ -860,7 +860,7 @@ export default function MailingListBuilderPage() {
             <Tip text="Download clean contacts as CSV for Constant Contact import">
               <button
                 disabled={result.clean.length === 0}
-                onClick={() => downloadCSV(toCSV(result.clean, false), 'clean-contacts.csv')}
+                onClick={() => downloadCSV(toCSV(result.clean, false), 'vca-clean-contacts.csv')}
                 style={{
                   padding: '10px 20px', borderRadius: 8, border: 'none',
                   fontSize: '0.9rem', fontWeight: 600, cursor: result.clean.length === 0 ? 'not-allowed' : 'pointer',
@@ -877,7 +877,7 @@ export default function MailingListBuilderPage() {
             <Tip text="Download flagged contacts with reasons for manual review">
               <button
                 disabled={result.flagged.length === 0}
-                onClick={() => downloadCSV(toCSV(result.flagged, true), 'flagged-contacts.csv')}
+                onClick={() => downloadCSV(toCSV(result.flagged, true), 'vca-flagged-contacts.csv')}
                 style={{
                   padding: '10px 20px', borderRadius: 8,
                   fontSize: '0.9rem', fontWeight: 600,
