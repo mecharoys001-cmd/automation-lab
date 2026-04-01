@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -1384,7 +1384,15 @@ function VenueCreateModal({
 
 /* ── Main Page ──────────────────────────────────────────────── */
 
-export default function PeoplePage() {
+export default function PeoplePageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <PeoplePage />
+    </Suspense>
+  );
+}
+
+function PeoplePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');

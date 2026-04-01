@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Suspense, useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus, Loader2, Check, AlertTriangle, Upload, X,
@@ -208,7 +208,15 @@ interface TemplateWithRelations extends SessionTemplate {
 
 /* ── Page Component ─────────────────────────────────────────── */
 
-export default function EventTemplatesPage() {
+export default function EventTemplatesPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <EventTemplatesPage />
+    </Suspense>
+  );
+}
+
+function EventTemplatesPage() {
   const { selectedProgramId } = useProgram();
   const router = useRouter();
   const searchParams = useSearchParams();
