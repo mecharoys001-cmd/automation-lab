@@ -53,15 +53,17 @@ const STATUS_TEXT_CLASS = {
 /** Maps detail text patterns to { hint, path } for navigation */
 const ACTION_MAP: Array<{ match: string; hint: string; path: string }> = [
   { match: 'No active templates found', hint: 'Create templates', path: '/tools/scheduler/admin/event-templates' },
-  { match: 'missing start/end time and duration', hint: 'Edit template times or add duration', path: '/tools/scheduler/admin/event-templates' },
-  { match: 'no grade groups assigned', hint: 'Assign grade groups', path: '/tools/scheduler/admin/event-templates' },
-  { match: 'No active instructors found', hint: 'Add staff', path: '/tools/scheduler/admin/people' },
-  { match: 'None have event types configured', hint: 'Assign event types', path: '/tools/scheduler/admin/people' },
-  { match: 'missing event types', hint: 'Assign event types', path: '/tools/scheduler/admin/people' },
-  { match: 'None have availability set', hint: 'Set availability', path: '/tools/scheduler/admin/people' },
-  { match: 'missing availability', hint: 'Set availability', path: '/tools/scheduler/admin/people' },
+  { match: 'missing start/end time and duration', hint: 'Edit template times or add duration', path: '/tools/scheduler/admin/event-templates?filter=missing_times' },
+  { match: 'no grade groups assigned', hint: 'Assign grade groups', path: '/tools/scheduler/admin/event-templates?filter=missing_grades' },
+  { match: 'missing Event Types', hint: 'Assign event types', path: '/tools/scheduler/admin/event-templates?filter=missing_event_types' },
+  { match: 'No active staff found', hint: 'Add staff', path: '/tools/scheduler/admin/people' },
+  { match: 'None have event types configured', hint: 'Assign event types', path: '/tools/scheduler/admin/people?filter=missing_skills' },
+  { match: 'missing event types:', hint: 'Assign event types', path: '/tools/scheduler/admin/people?filter=missing_skills' },
+  { match: 'None have availability set', hint: 'Set availability', path: '/tools/scheduler/admin/people?filter=missing_availability' },
+  { match: 'staff member', hint: 'Set availability', path: '/tools/scheduler/admin/people?filter=missing_availability' },
   { match: 'No venues configured', hint: 'Add venues', path: '/tools/scheduler/admin/people' },
-  { match: 'missing capacity', hint: 'Set venue capacity', path: '/tools/scheduler/admin/people' },
+  { match: 'missing capacity:', hint: 'Set venue capacity', path: '/tools/scheduler/admin/people?filter=missing_venue_capacity' },
+  { match: 'missing availability:', hint: 'Set venue availability', path: '/tools/scheduler/admin/people?filter=missing_venue_availability' },
 ];
 
 /** Category-level navigation paths */

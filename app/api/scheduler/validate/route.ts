@@ -2,7 +2,7 @@
  * GET /api/scheduler/validate?program_id=xxx
  *
  * Returns a readiness report for auto-schedule generation.
- * Checks that templates, instructors, and venues are properly
+ * Checks that templates, staff, and venues are properly
  * configured before the user runs the scheduler.
  */
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch all data in parallel
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [programRes, templatesRes, instructorsRes, venuesRes] = await Promise.all([
+    const [programRes, templatesRes, staffRes, venuesRes] = await Promise.all([
       (supabase.from('programs') as any).select('*').eq('id', programId).single(),
       (supabase.from('session_templates') as any)
         .select('*')
@@ -91,16 +91,22 @@ export async function GET(request: NextRequest) {
         (t: any) => !t.required_skills || t.required_skills.length === 0
       );
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const templateName = (t: any) => t.name || 'Unnamed';
+
       if (missingTime.length > 0) {
         templateStatus = 'warning';
-        templateDetails.push(`${missingTime.length} ${missingTime.length === 1 ? 'template is' : 'templates are'} missing start/end time and duration`);
+        const names = missingTime.map(templateName).join(', ');
+        templateDetails.push(`${missingTime.length} ${missingTime.length === 1 ? 'template is' : 'templates are'} missing start/end time and duration: ${names}`);
       }
       if (missingGrades.length > 0) {
-        templateDetails.push(`${missingGrades.length} ${missingGrades.length === 1 ? 'template has' : 'templates have'} no grade groups assigned`);
+        const names = missingGrades.map(templateName).join(', ');
+        templateDetails.push(`${missingGrades.length} ${missingGrades.length === 1 ? 'template has' : 'templates have'} no grade groups assigned: ${names}`);
         if (templateStatus === 'ready') templateStatus = 'warning';
       }
       if (missingEventType.length > 0) {
-        templateDetails.push(`${missingEventType.length} ${missingEventType.length === 1 ? 'template is' : 'templates are'} missing Event Types — sessions from ${missingEventType.length === 1 ? 'this template' : 'these templates'} cannot be published`);
+        const names = missingEventType.map(templateName).join(', ');
+        templateDetails.push(`${missingEventType.length} ${missingEventType.length === 1 ? 'template is' : 'templates are'} missing Event Types: ${names}`);
         if (templateStatus === 'ready') templateStatus = 'warning';
       }
       if (templateDetails.length === 0) {
@@ -116,58 +122,64 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // --- Instructors check ---
-    const instructors = instructorsRes.data ?? [];
-    const instructorDetails: string[] = [];
-    let instructorStatus: 'ready' | 'warning' | 'error' = 'ready';
-    let instructorSummary = '';
+    // --- Staff check ---
+    const staffMembers = staffRes.data ?? [];
+    const staffDetails: string[] = [];
+    let staffStatus: 'ready' | 'warning' | 'error' = 'ready';
+    let staffSummary = '';
 
-    if (instructors.length === 0) {
-      instructorStatus = 'error';
-      instructorDetails.push('No active instructors found');
-      instructorSummary = '0 instructors found';
+    if (staffMembers.length === 0) {
+      staffStatus = 'error';
+      staffDetails.push('No active staff found');
+      staffSummary = '0 staff found';
     } else {
-      const withSkills = instructors.filter(
+      const withSkills = staffMembers.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (i: any) => i.skills && i.skills.length > 0
       );
-      const withAvailability = instructors.filter(
+      const withAvailability = staffMembers.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (i: any) => i.availability_json && Object.keys(i.availability_json).length > 0
       );
-      const missingSkills = instructors.length - withSkills.length;
-      const missingAvail = instructors.length - withAvailability.length;
+      const missingSkillsList = staffMembers.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (i: any) => !i.skills || i.skills.length === 0
+      );
+      const missingAvailList = staffMembers.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (i: any) => !i.availability_json || Object.keys(i.availability_json).length === 0
+      );
+      const missingSkills = missingSkillsList.length;
+      const missingAvail = missingAvailList.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const staffName = (i: any) => `${i.first_name ?? ''} ${i.last_name ?? ''}`.trim() || 'Unnamed';
 
       if (withSkills.length === 0) {
-        instructorStatus = 'warning';
-        instructorDetails.push('None have event types configured');
+        staffStatus = 'warning';
+        staffDetails.push('None have event types configured');
       } else if (missingSkills > 0) {
-        instructorDetails.push(`${missingSkills} ${missingSkills === 1 ? 'instructor is' : 'instructors are'} missing event types`);
+        const names = missingSkillsList.map(staffName).join(', ');
+        staffDetails.push(`${missingSkills} ${missingSkills === 1 ? 'staff member is' : 'staff members are'} missing event types: ${names}`);
       }
 
       if (withAvailability.length === 0) {
-        instructorStatus = 'warning';
-        instructorDetails.push('None have availability set');
+        staffStatus = 'warning';
+        staffDetails.push('None have availability set');
       } else if (missingAvail > 0) {
-        instructorDetails.push(`${missingAvail} ${missingAvail === 1 ? 'instructor is' : 'instructors are'} missing availability`);
+        const names = missingAvailList.map(staffName).join(', ');
+        staffDetails.push(`${missingAvail} ${missingAvail === 1 ? 'staff member is' : 'staff members are'} missing availability: ${names}`);
       }
 
       if (missingSkills > 0 || missingAvail > 0) {
-        if (instructorStatus === 'ready') instructorStatus = 'warning';
-        // Count unique instructors that have at least one issue
-        const missingSkillsInstructors = instructors.filter(
-          (i: any) => !i.skills || i.skills.length === 0
-        );
-        const missingAvailInstructors = instructors.filter(
-          (i: any) => !i.availability_json || Object.keys(i.availability_json).length === 0
-        );
-        const problemInstructorIds = new Set([
-          ...missingSkillsInstructors.map((i: any) => i.id),
-          ...missingAvailInstructors.map((i: any) => i.id),
+        if (staffStatus === 'ready') staffStatus = 'warning';
+        const problemStaffIds = new Set([
+          ...missingSkillsList.map((i: any) => i.id),
+          ...missingAvailList.map((i: any) => i.id),
         ]);
-        instructorSummary = `${problemInstructorIds.size} of ${instructors.length} need attention`;
+        staffSummary = `${problemStaffIds.size} of ${staffMembers.length} need attention`;
       } else {
-        instructorSummary = `${instructors.length} active, all configured`;
+        staffSummary = `${staffMembers.length} active, all configured`;
       }
     }
 
@@ -193,27 +205,33 @@ export async function GET(request: NextRequest) {
       const missingCap = venues.length - withCapacity.length;
       const missingAvail = venues.length - withAvailability.length;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const venueName = (v: any) => v.name || 'Unnamed';
+      const missingCapVenuesList = venues.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (v: any) => !v.max_capacity || v.max_capacity <= 0
+      );
+      const missingAvailVenuesList = venues.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (v: any) => !v.availability_json || Object.keys(v.availability_json).length === 0
+      );
+
       if (missingCap > 0) {
-        venueDetails.push(`${missingCap} of ${venues.length} missing capacity`);
+        const names = missingCapVenuesList.map(venueName).join(', ');
+        venueDetails.push(`${missingCap} of ${venues.length} missing capacity: ${names}`);
         if (venueStatus === 'ready') venueStatus = 'warning';
       }
       if (missingAvail > 0) {
-        venueDetails.push(`${missingAvail} of ${venues.length} missing availability`);
+        const names = missingAvailVenuesList.map(venueName).join(', ');
+        venueDetails.push(`${missingAvail} of ${venues.length} missing availability: ${names}`);
         if (venueStatus === 'ready') venueStatus = 'warning';
       }
       if (venueDetails.length === 0) {
         venueSummary = `${venues.length} active, all configured`;
       } else {
-        // Count unique venues that have at least one issue
-        const missingCapVenues = venues.filter(
-          (v: any) => !v.max_capacity || v.max_capacity <= 0
-        );
-        const missingAvailVenues = venues.filter(
-          (v: any) => !v.availability_json || Object.keys(v.availability_json).length === 0
-        );
         const problemVenueIds = new Set([
-          ...missingCapVenues.map((v: any) => v.id),
-          ...missingAvailVenues.map((v: any) => v.id),
+          ...missingCapVenuesList.map((v: any) => v.id),
+          ...missingAvailVenuesList.map((v: any) => v.id),
         ]);
         venueSummary = `${problemVenueIds.size} of ${venues.length} ${problemVenueIds.size === 1 ? 'venue needs' : 'venues need'} attention`;
       }
@@ -221,7 +239,7 @@ export async function GET(request: NextRequest) {
 
     const ready =
       templateStatus !== 'error' &&
-      instructorStatus !== 'error' &&
+      staffStatus !== 'error' &&
       venueStatus !== 'error';
 
     const result: ValidationResult = {
@@ -236,12 +254,12 @@ export async function GET(request: NextRequest) {
           summary: templateSummary,
         },
         instructors: {
-          label: 'Instructors',
-          status: instructorStatus,
-          count: instructors.length,
-          total: instructors.length,
-          details: instructorDetails,
-          summary: instructorSummary,
+          label: 'Staff',
+          status: staffStatus,
+          count: staffMembers.length,
+          total: staffMembers.length,
+          details: staffDetails,
+          summary: staffSummary,
         },
         venues: {
           label: 'Venues',

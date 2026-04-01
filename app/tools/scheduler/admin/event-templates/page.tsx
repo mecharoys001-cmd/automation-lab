@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Plus, Loader2, Check, AlertTriangle, Upload,
+  Plus, Loader2, Check, AlertTriangle, Upload, X,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { SubjectDashboard } from '../../components/ui/SubjectDashboard';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
@@ -208,6 +210,9 @@ interface TemplateWithRelations extends SessionTemplate {
 
 export default function EventTemplatesPage() {
   const { selectedProgramId } = useProgram();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
 
   const [templates, setTemplates] = useState<TemplateWithRelations[]>([]);
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -480,12 +485,38 @@ export default function EventTemplatesPage() {
     };
   });
 
+  // Filter by URL filter param from ReadinessWidget
+  const paramFilteredIds = useMemo(() => {
+    if (!filterParam) return null;
+    return new Set(
+      templates
+        .filter((t) => {
+          if (filterParam === 'missing_times') {
+            return (!t.start_time || !t.end_time) && !t.duration_minutes;
+          }
+          if (filterParam === 'missing_grades') {
+            return !t.grade_groups || t.grade_groups.length === 0;
+          }
+          if (filterParam === 'missing_event_types') {
+            return !t.required_skills || t.required_skills.length === 0;
+          }
+          return true;
+        })
+        .map((t) => t.id)
+    );
+  }, [templates, filterParam]);
+
   // Filter by selected tag from SubjectDashboard
-  const filteredListItems = selectedTag
+  let filteredListItems = selectedTag
     ? templateListItems.filter((item) =>
         (item.tags ?? []).some((t) => t.toLowerCase() === selectedTag.toLowerCase())
       )
     : templateListItems;
+
+  // Apply URL param filter
+  if (paramFilteredIds) {
+    filteredListItems = filteredListItems.filter((item) => paramFilteredIds.has(item.id));
+  }
 
   /* ── Guard: no program selected ──────────────────────────── */
 

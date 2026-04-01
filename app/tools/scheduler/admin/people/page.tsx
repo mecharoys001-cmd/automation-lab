@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, ChevronLeft, ChevronRight, X, Mail, Phone,
   Accessibility, Clock, Home, StickyNote, Edit2, Copy,
@@ -1386,6 +1386,8 @@ function VenueCreateModal({
 
 export default function PeoplePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
   const { programs, selectedProgramId } = useProgram();
 
   // Performance measurement: track render times for this page
@@ -1732,6 +1734,12 @@ export default function PeoplePage() {
   /* ── Derived state (memoized) ─────────────────────────── */
 
   const filteredVenues = useMemo(() => venues.filter((v) => {
+    if (filterParam === 'missing_venue_capacity') {
+      if (v.max_capacity && v.max_capacity > 0) return false;
+    }
+    if (filterParam === 'missing_venue_availability') {
+      if (v.availability_json && Object.keys(v.availability_json).length > 0) return false;
+    }
     if (venueSearch.trim()) {
       const q = venueSearch.toLowerCase();
       const name = (v.name ?? '').toLowerCase();
@@ -1739,10 +1747,16 @@ export default function PeoplePage() {
       return name.includes(q) || spaceType.includes(q);
     }
     return true;
-  }), [venues, venueSearch]);
+  }), [venues, venueSearch, filterParam]);
 
   const filtered = useMemo(() => {
     const result = allInstructors.filter((inst) => {
+      if (filterParam === 'missing_skills') {
+        if (inst.skills && inst.skills.length > 0) return false;
+      }
+      if (filterParam === 'missing_availability') {
+        if (inst.availability_json && Object.keys(inst.availability_json).length > 0) return false;
+      }
       if (filterStatus === 'active' && !inst.is_active) return false;
       if (filterStatus === 'inactive' && inst.is_active) return false;
       if (search.trim()) {
@@ -1761,7 +1775,7 @@ export default function PeoplePage() {
       return (a.first_name ?? '').localeCompare(b.first_name ?? '', undefined, { sensitivity: 'base' });
     });
     return result;
-  }, [allInstructors, filterStatus, search]);
+  }, [allInstructors, filterStatus, search, filterParam]);
 
   const staffTotalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safeStaffPage = Math.min(staffPage, staffTotalPages);
@@ -1798,6 +1812,29 @@ export default function PeoplePage() {
           Staff &amp; Venues
         </h1>
       </div>
+
+      {/* ── Filter Banner ────────────────────────────────── */}
+      {filterParam && (
+        <div className="flex items-center gap-3 bg-blue-50 border-b border-blue-200 px-3 sm:px-6 lg:px-8 py-2.5 flex-shrink-0">
+          <AlertTriangle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <span className="text-sm text-blue-800 font-medium">
+            {filterParam === 'missing_skills' && 'Showing staff with missing event types'}
+            {filterParam === 'missing_availability' && 'Showing staff with missing availability'}
+            {filterParam === 'missing_venue_capacity' && 'Showing venues with missing capacity'}
+            {filterParam === 'missing_venue_availability' && 'Showing venues with missing availability'}
+          </span>
+          <Tooltip text="Remove filter and show all records">
+            <button
+              type="button"
+              onClick={() => router.replace('/tools/scheduler/admin/people')}
+              className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors cursor-pointer"
+            >
+              <X className="w-3 h-3" />
+              Clear filter
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
       {/* ── Content Area ─────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
