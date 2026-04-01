@@ -606,8 +606,8 @@ function CalendarDashboard() {
     [events, markRecentlyModified],
   );
 
-  // Publish all draft sessions
-  const handlePublishSchedule = useCallback(async () => {
+  // Publish all draft sessions via the publish API
+  const handlePublishSchedule = useCallback(async (skipIncomplete = false) => {
     if (events.length === 0) {
       showToast('No sessions to publish — generate a schedule first', 'info');
       return;
@@ -620,18 +620,28 @@ function CalendarDashboard() {
 
     setIsPublishing(true);
     try {
-      const results = await Promise.allSettled(
-        drafts.map((ev) =>
-          fetch(`/api/sessions/${ev.id}`, {
-            method: 'PATCH',
-            cache: 'no-store',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'published' }),
-          }),
-        ),
-      );
+      const res = await fetch('/api/notifications/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          programId: selectedProgramId,
+          ...(skipIncomplete ? { skip_incomplete: true } : {}),
+        }),
+      });
 
-      const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+      if (res.status === 422) {
+        const data = await res.json();
+        setPublishConfirm(data);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Publish failed');
+      }
+
+      const result = await res.json();
+      const count = result.published ?? drafts.length;
 
       setEvents((prev) =>
         prev.map((ev) =>
@@ -639,13 +649,13 @@ function CalendarDashboard() {
         ),
       );
 
-      showToast(`${succeeded} session${succeeded !== 1 ? 's' : ''} published!`);
+      showToast(`${count} session${count !== 1 ? 's' : ''} published!`);
     } catch {
       showToast('Failed to publish schedule', 'error');
     } finally {
       setIsPublishing(false);
     }
-  }, [events]);
+  }, [events, selectedProgramId]);
 
   // Compute the date range to fetch from the API based on the current view.
   // Plain function — not memoized — to avoid creating extra callback identities
@@ -1416,7 +1426,7 @@ function CalendarDashboard() {
           <Button
             variant="primary"
             tooltip="Change all draft sessions to published"
-            onClick={handlePublishSchedule}
+            onClick={() => handlePublishSchedule()}
             disabled={isPublishing}
           >
             {isPublishing ? 'Publishing...' : 'Publish Sessions'}
@@ -1784,6 +1794,46 @@ function CalendarDashboard() {
           submitLabel="Save Changes"
         />
       )}
+
+      {/* Publish validation modal — shown when sessions are missing event type */}
+      <Modal
+        open={!!publishConfirm}
+        onClose={() => setPublishConfirm(null)}
+        title="Some Sessions Cannot Be Published"
+        footer={
+          <>
+            <ModalButton variant="secondary" onClick={() => setPublishConfirm(null)}>
+              Cancel
+            </ModalButton>
+            <Tooltip text="Publish only sessions that have a valid event type assigned">
+              <ModalButton
+                variant="primary"
+                loading={isPublishing}
+                onClick={() => {
+                  setPublishConfirm(null);
+                  handlePublishSchedule(true);
+                }}
+              >
+                Publish Valid Only
+              </ModalButton>
+            </Tooltip>
+          </>
+        }
+      >
+        <p className="text-sm text-slate-700 mb-3">{publishConfirm?.error}</p>
+        {publishConfirm?.affected_templates && publishConfirm.affected_templates.length > 0 && (
+          <div>
+            <p className="text-sm font-medium text-slate-700 mb-1">
+              Affected templates ({publishConfirm.sessions_missing_event_type} session{publishConfirm.sessions_missing_event_type !== 1 ? 's' : ''}):
+            </p>
+            <ul className="list-disc list-inside text-sm text-slate-600 space-y-0.5">
+              {publishConfirm.affected_templates.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
