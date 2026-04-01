@@ -37,7 +37,14 @@ export async function GET(request: NextRequest) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase.from('sessions') as any)
-        .select('*, venue:venues(*), program:programs(*), instructor:staff!sessions_staff_id_fkey(id, first_name, last_name)')
+        .select(`
+          *,
+          venue:venues(*),
+          program:programs(*),
+          instructor:staff!sessions_staff_id_fkey(id, first_name, last_name),
+          template:session_templates(*),
+          session_tags(tag:tags(*))
+        `)
         .eq('program_id', programId)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true });
@@ -55,7 +62,17 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      return NextResponse.json({ sessions: data ?? [] });
+      // Flatten session_tags junction into a tags array (matching admin API shape)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sessions = ((data ?? []) as any[]).map((session: Record<string, unknown>) => {
+        const { session_tags, ...rest } = session;
+        const tags = Array.isArray(session_tags)
+          ? session_tags.map((st: Record<string, unknown>) => st.tag).filter(Boolean)
+          : [];
+        return { ...rest, tags };
+      });
+
+      return NextResponse.json({ sessions });
     }
 
     if (!instructorId && !email) {
@@ -111,7 +128,14 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('sessions') as any)
-      .select('*, venue:venues(*), program:programs(*)')
+      .select(`
+        *,
+        venue:venues(*),
+        program:programs(*),
+        instructor:staff!sessions_staff_id_fkey(id, first_name, last_name),
+        template:session_templates(*),
+        session_tags(tag:tags(*))
+      `)
       .eq('staff_id', resolvedId)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
@@ -134,7 +158,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ sessions: data ?? [] });
+    // Flatten session_tags junction into a tags array (matching admin API shape)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sessions = ((data ?? []) as any[]).map((session: Record<string, unknown>) => {
+      const { session_tags, ...rest } = session;
+      const tags = Array.isArray(session_tags)
+        ? session_tags.map((st: Record<string, unknown>) => st.tag).filter(Boolean)
+        : [];
+      return { ...rest, tags };
+    });
+
+    return NextResponse.json({ sessions });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
