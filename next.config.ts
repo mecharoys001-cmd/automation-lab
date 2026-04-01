@@ -4,7 +4,9 @@ const nextConfig: NextConfig = {
   // Enable experimental optimizations
   experimental: {
     optimizePackageImports: ['lucide-react'],
-
+    sri: {
+      algorithm: 'sha256',
+    },
   },
   
   async headers() {
