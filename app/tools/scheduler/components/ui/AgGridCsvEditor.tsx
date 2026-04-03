@@ -8,18 +8,15 @@ import {
   forwardRef,
   useEffect,
 } from 'react';
-import dynamic from 'next/dynamic';
 import type { CsvRow } from '@/lib/csvDedup';
 import type { CsvColumnDef, ValidationError } from './CsvImportDialog';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import { AgGridReact } from 'ag-grid-react';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-// Lazy-load AgGridReact to avoid bundle bloat
-const AgGridReact = dynamic(
-  () => import('ag-grid-react').then((mod) => ({ default: mod.AgGridReact })),
-  { ssr: false }
-);
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 /* ── Types ──────────────────────────────────────────────────── */
 
