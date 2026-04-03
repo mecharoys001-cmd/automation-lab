@@ -259,7 +259,7 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
         return colDef;
       });
 
-      return [statusCol, ...dataCols];
+      return dataCols;
     }, [columns, validationMap, injectedColumns]);
 
     const defaultColDef = useMemo(() => ({
