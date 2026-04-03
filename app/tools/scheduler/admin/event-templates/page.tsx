@@ -240,6 +240,7 @@ function EventTemplatesPage() {
   // CSV import
   const [importOpen, setImportOpen] = useState(false);
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [tagOptions, setTagOptions] = useState<string[]>([]);
 
   // Tag filter from SubjectDashboard clicks
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -264,16 +265,20 @@ function EventTemplatesPage() {
   const fetchLookups = useCallback(async () => {
     if (!selectedProgramId) return;
     try {
-      const [instData, venueData] = await Promise.all([
+      const [instData, venueData, tagsData] = await Promise.all([
         requestCache.fetch<{ instructors?: Instructor[] }>(
           `/api/staff?program_id=${selectedProgramId}`
         ),
         requestCache.fetch<{ venues?: Venue[] }>(
           `/api/venues?program_id=${selectedProgramId}`
         ),
+        requestCache.fetch<{ tags?: string[] }>(
+          `/api/tags?program_id=${selectedProgramId}`
+        ),
       ]);
       setInstructors(instData.instructors ?? []);
       setVenues(venueData.venues ?? []);
+      setTagOptions(tagsData.tags ?? []);
     } catch {
       // Non-critical, dropdowns will just be empty
     }
@@ -281,6 +286,16 @@ function EventTemplatesPage() {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
   useEffect(() => { fetchLookups(); }, [fetchLookups]);
+
+  // CSV columns with dynamic select editor for subjects
+  const csvColumns = useMemo(() =>
+    TEMPLATE_CSV_COLUMNS.map((col) =>
+      col.csvHeader === 'subjects' && tagOptions.length > 0
+        ? { ...col, cellEditorType: 'select' as const, cellEditorOptions: tagOptions }
+        : col
+    ),
+    [tagOptions]
+  );
 
   /* ── Form helpers ───────────────────────────────────────── */
 
@@ -676,7 +691,7 @@ function EventTemplatesPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         title="Import Event Templates from CSV"
-        columns={TEMPLATE_CSV_COLUMNS}
+        columns={csvColumns}
         validateRow={validateTemplateCsvRow}
         onImport={async (csvRows) => {
           if (!selectedProgramId) throw new Error('No program selected');

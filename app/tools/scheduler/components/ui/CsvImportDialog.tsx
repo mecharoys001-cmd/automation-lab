@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { Upload, X, AlertTriangle, Check, FileText, Loader2, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from './Button';
 import { Tooltip } from './Tooltip';
 import { parseCSV, type CsvRow } from '@/lib/csvDedup';
+import { AgGridCsvEditor, type AgGridCsvEditorRef, type ValidationSummary } from './AgGridCsvEditor';
 
 export interface CsvColumnDef {
   /** CSV header name (case-insensitive match) */
@@ -12,12 +13,18 @@ export interface CsvColumnDef {
   /** Display label */
   label: string;
   required?: boolean;
+  /** Cell editor type for AG Grid editing (default: 'text') */
+  cellEditorType?: 'text' | 'select';
+  /** Options for select cell editor */
+  cellEditorOptions?: string[];
 }
 
 export interface ValidationError {
   row: number;
   column: string;
   message: string;
+  /** Severity level: 'error' blocks import, 'warning' allows import */
+  severity?: 'error' | 'warning';
 }
 
 export interface CsvImportDialogProps {
@@ -58,8 +65,6 @@ export function CsvImportDialog({
   dateColumnName = 'date',
 }: CsvImportDialogProps) {
   const [rows, setRows] = useState<CsvRow[]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [errors, setErrors] = useState<ValidationError[]>([]);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -68,17 +73,18 @@ export function CsvImportDialog({
   const [filterStartDate, setFilterStartDate] = useState<string>(dateRangeStart || '');
   const [filterEndDate, setFilterEndDate] = useState<string>(dateRangeEnd || '');
   const fileRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<AgGridCsvEditorRef>(null);
+  const [validationSummary, setValidationSummary] = useState<ValidationSummary | null>(null);
 
   const reset = useCallback(() => {
     setRows([]);
-    setHeaders([]);
-    setErrors([]);
     setImporting(false);
     setResult(null);
     setParseError(null);
     setDragOver(false);
     setFilterStartDate(dateRangeStart || '');
     setFilterEndDate(dateRangeEnd || '');
+    setValidationSummary(null);
   }, [dateRangeStart, dateRangeEnd]);
 
   const handleClose = useCallback(() => {
@@ -133,11 +139,10 @@ export function CsvImportDialog({
         return normalized;
       });
 
-      setHeaders(parsed.headers.map((h) => h.toLowerCase().trim()));
       setRows(normalizedRows);
     };
     reader.readAsText(file);
-  }, [columns, validateRow]);
+  }, [columns]);
 
   // Filter rows by date range (if date range is set)
   const filteredRows = useMemo(() => {
@@ -158,21 +163,6 @@ export function CsvImportDialog({
     });
   }, [rows, filterStartDate, filterEndDate, dateColumnName]);
 
-  // Validate filtered rows whenever filtering changes
-  useEffect(() => {
-    if (filteredRows.length === 0) {
-      setErrors([]);
-      return;
-    }
-
-    const allErrors: ValidationError[] = [];
-    filteredRows.forEach((row, idx) => {
-      const rowErrors = validateRow(row, idx);
-      allErrors.push(...rowErrors);
-    });
-    setErrors(allErrors);
-  }, [filteredRows, validateRow]);
-
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -187,7 +177,10 @@ export function CsvImportDialog({
   }, [processFile]);
 
   const handleImport = useCallback(async () => {
-    const validRows = filteredRows.filter((_, i) => !errors.some((e) => e.row === i));
+    // Read current (possibly edited) rows from the grid
+    const currentRows = gridRef.current?.getRows() ?? filteredRows;
+    const errorIndices = validationSummary?.errorRowIndices ?? new Set<number>();
+    const validRows = currentRows.filter((_, i) => !errorIndices.has(i));
     if (validRows.length === 0) return;
     setImporting(true);
     try {
@@ -198,7 +191,7 @@ export function CsvImportDialog({
     } finally {
       setImporting(false);
     }
-  }, [filteredRows, errors, onImport]);
+  }, [filteredRows, validationSummary, onImport]);
 
   const downloadTemplate = useCallback(() => {
     if (!exampleCsv) return;
@@ -213,12 +206,11 @@ export function CsvImportDialog({
 
   if (!open) return null;
 
-  const rowsWithErrors = new Set(errors.map((e) => e.row));
-  const validCount = filteredRows.filter((_, i) => !rowsWithErrors.has(i)).length;
-  const errorCount = rowsWithErrors.size;
-
-  // Columns to display: use defined columns, mapped to lowercase headers
-  const displayCols = columns.map((c) => c.csvHeader.toLowerCase());
+  const totalCount = validationSummary?.total ?? filteredRows.length;
+  const validCount = validationSummary?.valid ?? filteredRows.length;
+  const warningCount = validationSummary?.warnings ?? 0;
+  const errorCount = validationSummary?.errors ?? 0;
+  const hasErrors = errorCount > 0;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
@@ -363,84 +355,63 @@ export function CsvImportDialog({
             </div>
           )}
 
-          {/* Preview table */}
+          {/* AG Grid CSV Editor */}
           {filteredRows.length > 0 && !result && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-slate-700">
-                    {filteredRows.length} row{filteredRows.length !== 1 ? 's' : ''} parsed
-                  </span>
-                  {errorCount > 0 && (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">
-                      <AlertTriangle className="w-3 h-3" />
-                      {errorCount} row{errorCount !== 1 ? 's' : ''} with errors
+                  <Tooltip text={`${totalCount} total rows parsed from CSV`}>
+                    <span className="text-sm font-medium text-slate-700">
+                      {totalCount} row{totalCount !== 1 ? 's' : ''}
                     </span>
+                  </Tooltip>
+                  <Tooltip text={`${validCount} valid, ${warningCount} warning${warningCount !== 1 ? 's' : ''}, ${errorCount} error${errorCount !== 1 ? 's' : ''}`}>
+                    <span className="text-xs text-slate-700">
+                      ({validCount} valid{warningCount > 0 ? `, ${warningCount} warning${warningCount !== 1 ? 's' : ''}` : ''}{errorCount > 0 ? `, ${errorCount} error${errorCount !== 1 ? 's' : ''}` : ''})
+                    </span>
+                  </Tooltip>
+                  {errorCount > 0 && (
+                    <Tooltip text={`${errorCount} row${errorCount !== 1 ? 's' : ''} have errors that must be fixed before import`}>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-800 bg-red-50 px-2 py-0.5 rounded-full">
+                        <AlertTriangle className="w-3 h-3" />
+                        {errorCount} error{errorCount !== 1 ? 's' : ''}
+                      </span>
+                    </Tooltip>
                   )}
-                  <span className="text-xs text-slate-700">
-                    {validCount} will be imported
-                  </span>
+                  {warningCount > 0 && errorCount === 0 && (
+                    <Tooltip text={`${warningCount} row${warningCount !== 1 ? 's' : ''} have warnings but can still be imported`}>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">
+                        <AlertTriangle className="w-3 h-3" />
+                        {warningCount} warning{warningCount !== 1 ? 's' : ''}
+                      </span>
+                    </Tooltip>
+                  )}
                 </div>
-                <button
-                  onClick={reset}
-                  className="text-xs text-slate-600 hover:text-slate-700"
-                >
-                  Choose different file
-                </button>
+                <Tooltip text="Discard current data and upload a new CSV file">
+                  <button
+                    onClick={reset}
+                    className="text-xs text-slate-600 hover:text-slate-700"
+                  >
+                    Choose different file
+                  </button>
+                </Tooltip>
               </div>
 
               <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-600 w-8">#</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-600 w-8"></th>
-                        {displayCols.map((col) => (
-                          <th key={col} className="px-3 py-2 text-left text-xs font-medium text-slate-600">
-                            {columns.find((c) => c.csvHeader.toLowerCase() === col)?.label ?? col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredRows.map((row, i) => {
-                        const rowErrors = errors.filter((e) => e.row === i);
-                        const hasError = rowErrors.length > 0;
-                        return (
-                          <tr key={i} className={hasError ? 'bg-red-50/50' : ''}>
-                            <td className="px-3 py-2 text-xs text-slate-700">{i + 1}</td>
-                            <td className="px-3 py-2">
-                              {hasError ? (
-                                <Tooltip text={rowErrors.map((e) => `${e.column}: ${e.message}`).join('\n')}>
-                                  <span className="inline-flex cursor-help">
-                                    <AlertTriangle className="w-3.5 h-3.5 text-red-700" />
-                                  </span>
-                                </Tooltip>
-                              ) : (
-                                <Check className="w-3.5 h-3.5 text-emerald-700" />
-                              )}
-                            </td>
-                            {displayCols.map((col) => {
-                              const cellErrors = rowErrors.filter((e) => e.column === col);
-                              return (
-                                <td key={col} className="px-3 py-2">
-                                  <span className={cellErrors.length > 0 ? 'text-red-700 font-medium' : 'text-slate-700'}>
-                                    {row[col] || <span className="text-slate-600">-</span>}
-                                  </span>
-                                  {cellErrors.map((e, ei) => (
-                                    <span key={ei} className="block text-[11px] text-red-700">{e.message}</span>
-                                  ))}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <AgGridCsvEditor
+                  ref={gridRef}
+                  rows={filteredRows}
+                  columns={columns}
+                  validateRow={validateRow}
+                  onValidationChange={setValidationSummary}
+                />
               </div>
+
+              <Tooltip text={`${validCount} valid, ${warningCount} warnings, ${errorCount} errors out of ${totalCount} rows`}>
+                <p className="text-xs text-slate-600">
+                  {totalCount} row{totalCount !== 1 ? 's' : ''} &middot; {validCount} valid{warningCount > 0 ? ` \u00b7 ${warningCount} warning${warningCount !== 1 ? 's' : ''}` : ''}{errorCount > 0 ? ` \u00b7 ${errorCount} error${errorCount !== 1 ? 's' : ''}` : ''} &middot; Click any cell to edit
+                </p>
+              </Tooltip>
             </>
           )}
         </div>
@@ -451,14 +422,18 @@ export function CsvImportDialog({
             {result ? 'Close' : 'Cancel'}
           </Button>
           {rows.length > 0 && !result && (
-            <Button
-              variant="primary"
-              onClick={handleImport}
-              disabled={importing || validCount === 0}
-              icon={importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            >
-              {importing ? 'Importing...' : `Import ${validCount} row${validCount !== 1 ? 's' : ''}`}
-            </Button>
+            <Tooltip text={hasErrors ? `Fix ${errorCount} error${errorCount !== 1 ? 's' : ''} first` : `Import ${validCount} valid row${validCount !== 1 ? 's' : ''}`}>
+              <span>
+                <Button
+                  variant="primary"
+                  onClick={handleImport}
+                  disabled={importing || validCount === 0 || hasErrors}
+                  icon={importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                >
+                  {importing ? 'Importing...' : `Import ${validCount} row${validCount !== 1 ? 's' : ''}`}
+                </Button>
+              </span>
+            </Tooltip>
           )}
         </div>
       </div>
