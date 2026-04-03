@@ -32,6 +32,8 @@ export interface AgGridCsvEditorProps {
   columns: CsvColumnDef[];
   validateRow: (row: CsvRow, rowIndex: number) => ValidationError[];
   onValidationChange: (summary: ValidationSummary) => void;
+  /** Columns that were auto-injected (not in original CSV) — headers styled amber */
+  injectedColumns?: string[];
 }
 
 export interface ValidationSummary {
@@ -54,7 +56,7 @@ function isDarkMode(): boolean {
 /* ── Component ───────────────────────────────────────────────── */
 
 export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorProps>(
-  function AgGridCsvEditor({ rows: initialRows, columns, validateRow, onValidationChange }, ref) {
+  function AgGridCsvEditor({ rows: initialRows, columns, validateRow, onValidationChange, injectedColumns = [] }, ref) {
     const [rowData, setRowData] = useState<CsvRow[]>(() =>
       initialRows.map((r, i) => ({ ...r, __rowIndex: String(i) }))
     );
@@ -155,8 +157,11 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
       };
 
       // Data columns
+      const injectedSet = new Set(injectedColumns.map((c) => c.toLowerCase()));
+
       const dataCols = columns.map((col) => {
         const field = col.csvHeader.toLowerCase();
+        const isInjected = injectedSet.has(field);
         const colDef: any = {
           headerName: col.label,
           field,
@@ -165,6 +170,9 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
           minWidth: 100,
           sortable: true,
           filter: false,
+          ...(isInjected && {
+            headerStyle: { backgroundColor: 'rgba(245, 158, 11, 0.25)' },
+          }),
           cellStyle: (params: any) => {
             const rowIdx = params.rowIndex as number;
             const errs = validationMap.get(rowIdx);
@@ -196,7 +204,7 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
       });
 
       return [statusCol, ...dataCols];
-    }, [columns, validationMap]);
+    }, [columns, validationMap, injectedColumns]);
 
     const defaultColDef = useMemo(() => ({
       resizable: true,

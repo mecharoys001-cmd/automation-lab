@@ -75,6 +75,7 @@ export function CsvImportDialog({
   const fileRef = useRef<HTMLInputElement>(null);
   const gridRef = useRef<AgGridCsvEditorRef>(null);
   const [validationSummary, setValidationSummary] = useState<ValidationSummary | null>(null);
+  const [injectedColumns, setInjectedColumns] = useState<string[]>([]);
 
   const reset = useCallback(() => {
     setRows([]);
@@ -85,6 +86,7 @@ export function CsvImportDialog({
     setFilterStartDate(dateRangeStart || '');
     setFilterEndDate(dateRangeEnd || '');
     setValidationSummary(null);
+    setInjectedColumns([]);
   }, [dateRangeStart, dateRangeEnd]);
 
   const handleClose = useCallback(() => {
@@ -120,14 +122,22 @@ export function CsvImportDialog({
         return;
       }
 
-      // Check required columns exist
+      // Auto-inject missing required columns instead of blocking
       const lowerHeaders = parsed.headers.map((h) => h.toLowerCase().trim());
       const missing = columns
         .filter((c) => c.required)
         .filter((c) => !lowerHeaders.includes(c.csvHeader.toLowerCase()));
       if (missing.length > 0) {
-        setParseError(`Missing required columns: ${missing.map((c) => c.csvHeader).join(', ')}`);
-        return;
+        const missingHeaders = missing.map((c) => c.csvHeader.toLowerCase());
+        parsed.headers.push(...missingHeaders);
+        for (const row of parsed.rows) {
+          for (const h of missingHeaders) {
+            row[h] = '';
+          }
+        }
+        setInjectedColumns(missingHeaders);
+      } else {
+        setInjectedColumns([]);
       }
 
       // Normalize headers to lowercase for consistent access
@@ -355,6 +365,14 @@ export function CsvImportDialog({
             </div>
           )}
 
+          {/* Injected columns banner */}
+          {injectedColumns.length > 0 && filteredRows.length > 0 && !result && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              Added missing columns: {injectedColumns.join(', ')} — fill in values before importing
+            </div>
+          )}
+
           {/* AG Grid CSV Editor */}
           {filteredRows.length > 0 && !result && (
             <>
@@ -404,6 +422,7 @@ export function CsvImportDialog({
                   columns={columns}
                   validateRow={validateRow}
                   onValidationChange={setValidationSummary}
+                  injectedColumns={injectedColumns}
                 />
               </div>
 
