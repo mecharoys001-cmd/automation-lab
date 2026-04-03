@@ -7,11 +7,16 @@ import {
   useImperativeHandle,
   forwardRef,
   useEffect,
+  useRef,
 } from 'react';
 import type { CsvRow } from '@/lib/csvDedup';
 import type { CsvColumnDef, ValidationError } from './CsvImportDialog';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import type { GridApi } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
+import { Button } from './Button';
+import { Tooltip } from './Tooltip';
+import { Plus, Trash2, Download } from 'lucide-react';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -54,9 +59,11 @@ function isDarkMode(): boolean {
 
 export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorProps>(
   function AgGridCsvEditor({ rows: initialRows, columns, validateRow, onValidationChange, injectedColumns = [] }, ref) {
+    const gridApiRef = useRef<GridApi | null>(null);
     const [rowData, setRowData] = useState<CsvRow[]>(() =>
       initialRows.map((r, i) => ({ ...r, __rowIndex: String(i) }))
     );
+    const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
 
     // Re-sync when initialRows identity changes (new file uploaded)
     useEffect(() => {
@@ -122,6 +129,58 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
         return updated;
       });
     }, []);
+
+    // Selection tracking
+    const onSelectionChanged = useCallback((event: any) => {
+      const api = event.api as GridApi;
+      const selected = api.getSelectedRows() as CsvRow[];
+      setSelectedRowIds(new Set(selected.map((r) => r.__rowIndex as string)));
+    }, []);
+
+    // Add row
+    const handleAddRow = useCallback(() => {
+      setRowData((prev) => {
+        const emptyRow: CsvRow = {};
+        columns.forEach((col) => {
+          emptyRow[col.csvHeader.toLowerCase()] = '';
+        });
+        emptyRow.__rowIndex = String(prev.length);
+        return [...prev, emptyRow];
+      });
+    }, [columns]);
+
+    // Remove selected rows
+    const handleRemoveSelected = useCallback(() => {
+      setRowData((prev) => {
+        const filtered = prev.filter((r) => !selectedRowIds.has(r.__rowIndex as string));
+        return filtered.map((r, i) => ({ ...r, __rowIndex: String(i) }));
+      });
+      setSelectedRowIds(new Set());
+    }, [selectedRowIds]);
+
+    // Download CSV
+    const handleDownloadCsv = useCallback(() => {
+      const headers = columns.map((c) => c.csvHeader);
+      const headerLine = headers.join(',');
+      const dataLines = rowData.map((row) => {
+        return headers.map((h) => {
+          const val = String(row[h.toLowerCase()] ?? '');
+          // Escape values containing commas, quotes, or newlines
+          if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+            return `"${val.replace(/"/g, '""')}"`;
+          }
+          return val;
+        }).join(',');
+      });
+      const csv = [headerLine, ...dataLines].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'edited-data.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }, [columns, rowData]);
 
     // Build AG Grid column defs
     const columnDefs = useMemo(() => {
@@ -212,21 +271,54 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
     const themeClass = dark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz';
 
     return (
-      <div className={themeClass} style={{ height: Math.min(400, Math.max(200, rowData.length * 42 + 48)), width: '100%' }}>
-        <AgGridReact
-          rowData={rowData}
-          columnDefs={columnDefs}
-          defaultColDef={defaultColDef}
-          onCellValueChanged={onCellValueChanged}
-          tooltipShowDelay={300}
-          enableBrowserTooltips={true}
-          stopEditingWhenCellsLoseFocus={true}
-          singleClickEdit={true}
-          rowBuffer={20}
-          animateRows={false}
-          suppressColumnVirtualisation={false}
-          domLayout={rowData.length <= 10 ? 'autoHeight' : 'normal'}
-        />
+      <div className="flex flex-col gap-2">
+        {/* Top controls */}
+        <div className="flex justify-end">
+          <Button variant="secondary" size="sm" onClick={handleDownloadCsv} tooltip="Download edited data as CSV">
+            <Download className="h-4 w-4 mr-1" />
+            Download CSV
+          </Button>
+        </div>
+
+        {/* Grid */}
+        <div className={themeClass} style={{ height: Math.min(400, Math.max(200, rowData.length * 42 + 48)), width: '100%' }}>
+          <AgGridReact
+            rowData={rowData}
+            columnDefs={columnDefs}
+            defaultColDef={defaultColDef}
+            onCellValueChanged={onCellValueChanged}
+            onSelectionChanged={onSelectionChanged}
+            onGridReady={(e) => { gridApiRef.current = e.api; }}
+            rowSelection="multiple"
+            tooltipShowDelay={300}
+            enableBrowserTooltips={true}
+            stopEditingWhenCellsLoseFocus={true}
+            singleClickEdit={true}
+            rowBuffer={20}
+            animateRows={false}
+            suppressColumnVirtualisation={false}
+            domLayout={rowData.length <= 10 ? 'autoHeight' : 'normal'}
+          />
+        </div>
+
+        {/* Bottom controls */}
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs text-slate-500 mr-auto">{rowData.length} rows</span>
+          <Button variant="secondary" size="sm" onClick={handleAddRow} tooltip="Add a new empty row">
+            <Plus className="h-4 w-4 mr-1" />
+            Add Row
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleRemoveSelected}
+            disabled={selectedRowIds.size === 0}
+            tooltip={selectedRowIds.size === 0 ? 'Select rows to remove' : `Remove ${selectedRowIds.size} selected row(s)`}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Remove Selected
+          </Button>
+        </div>
       </div>
     );
   }
