@@ -289,7 +289,7 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
             onCellValueChanged={onCellValueChanged}
             onSelectionChanged={onSelectionChanged}
             onGridReady={(e) => { gridApiRef.current = e.api; }}
-            rowSelection="multiple"
+            rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true }}
             tooltipShowDelay={300}
             enableBrowserTooltips={true}
             stopEditingWhenCellsLoseFocus={true}
