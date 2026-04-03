@@ -265,6 +265,8 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
     const defaultColDef = useMemo(() => ({
       resizable: true,
       suppressMovable: true,
+      flex: 1,
+      minWidth: 120,
     }), []);
 
     const dark = isDarkMode();
@@ -281,14 +283,14 @@ export const AgGridCsvEditor = forwardRef<AgGridCsvEditorRef, AgGridCsvEditorPro
         </div>
 
         {/* Grid */}
-        <div className={themeClass} style={{ height: Math.min(400, Math.max(200, rowData.length * 42 + 48)), width: '100%' }}>
+        <div className={themeClass} style={{ height: Math.min(500, Math.max(250, rowData.length * 42 + 48)), width: '100%' }}>
           <AgGridReact
             rowData={rowData}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
             onCellValueChanged={onCellValueChanged}
             onSelectionChanged={onSelectionChanged}
-            onGridReady={(e) => { gridApiRef.current = e.api; }}
+            onGridReady={(e) => { gridApiRef.current = e.api; e.api.sizeColumnsToFit(); }}
             rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true }}
             tooltipShowDelay={300}
             enableBrowserTooltips={true}
