@@ -260,6 +260,56 @@ export default async function ToolsPage() {
           padding: "4rem 1.5rem",
         }}
       >
+        {user && visibleTools.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "4rem 2rem",
+              background: "var(--color-card)",
+              borderRadius: "16px",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "14px",
+                background: "#0F749012",
+                border: "1px solid #0F749025",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "28px",
+                margin: "0 auto 1.5rem",
+              }}
+            >
+              ⚡
+            </div>
+            <h2
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "var(--color-navy)",
+                marginBottom: "0.75rem",
+              }}
+            >
+              Your account is active
+            </h2>
+            <p
+              style={{
+                color: "var(--color-text)",
+                fontSize: "15px",
+                lineHeight: 1.7,
+                maxWidth: "400px",
+                margin: "0 auto",
+              }}
+            >
+              You&#39;re signed in, but no tools have been assigned to your account yet.
+              Contact your suite manager if you think this is a mistake.
+            </p>
+          </div>
+        ) : null}
         {toolGroups.map((group, gi) => (
           <div key={group.label ?? "__ungrouped"}>
             {group.label && (
