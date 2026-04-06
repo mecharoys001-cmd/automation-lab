@@ -77,6 +77,12 @@ export async function checkToolAccess(
     return { hasAccess: true, visibility };
   }
 
+  // Check tool-specific internal roles (e.g. scheduler admins/staff)
+  const internalAccess = await checkToolInternalRoles(email, toolId);
+  if (internalAccess) {
+    return { hasAccess: true, visibility };
+  }
+
   return { hasAccess: false, visibility };
 }
 
@@ -136,6 +142,12 @@ export async function getUserAccessibleToolIds(
     for (const row of stRows ?? []) {
       toolIds.add(row.tool_id);
     }
+  }
+
+  // Check tool-specific internal roles (e.g. scheduler admins/staff)
+  const internalToolIds = await getToolIdsFromInternalRoles(email);
+  for (const id of internalToolIds) {
+    toolIds.add(id);
   }
 
   return Array.from(toolIds) as string[];
@@ -222,6 +234,80 @@ export async function getUserSuites(
       role: row.role,
     }),
   );
+}
+
+/**
+ * Check if a user has access to a tool via tool-specific internal roles.
+ * This bridges tool-internal permission systems (e.g. scheduler admins/staff)
+ * with the central tool_access model, so visibility on /tools stays consistent
+ * even if trigger-based sync is delayed or missing.
+ *
+ * Currently supports: scheduler (admins table + active staff table).
+ */
+export async function checkToolInternalRoles(
+  email: string,
+  toolId: string,
+): Promise<boolean> {
+  if (toolId !== 'scheduler') return false;
+
+  const svc = createServiceClient();
+
+  // Check scheduler admins table
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: admin } = await (svc.from('admins') as any)
+    .select('id')
+    .ilike('google_email', email)
+    .maybeSingle();
+
+  if (admin) return true;
+
+  // Check active staff
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: staff } = await (svc.from('staff') as any)
+    .select('id')
+    .ilike('email', email)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  return !!staff;
+}
+
+/**
+ * Get tool IDs the user can access via tool-specific internal roles.
+ * Returns tool IDs where the user holds an internal role (e.g. scheduler admin/staff).
+ */
+export async function getToolIdsFromInternalRoles(
+  email: string,
+): Promise<string[]> {
+  const toolIds: string[] = [];
+
+  const svc = createServiceClient();
+
+  // Scheduler: check admins table
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: admin } = await (svc.from('admins') as any)
+    .select('id')
+    .ilike('google_email', email)
+    .maybeSingle();
+
+  if (admin) {
+    toolIds.push('scheduler');
+    return toolIds;
+  }
+
+  // Scheduler: check active staff
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: staff } = await (svc.from('staff') as any)
+    .select('id')
+    .ilike('email', email)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (staff) {
+    toolIds.push('scheduler');
+  }
+
+  return toolIds;
 }
 
 /**
