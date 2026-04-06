@@ -118,7 +118,7 @@ export function Sidebar({
         <div className="flex-shrink-0">
           {header ?? (
             <div className="flex items-center pb-6">
-              <img src="/images/asap-logo.svg" alt="ASAP" className="h-8 flex-shrink-0 brightness-0 invert" />
+              <img src="/images/asap-logo.svg" alt="ASAP" className="h-12 flex-shrink-0 brightness-0 invert" />
             </div>
           )}
         </div>
