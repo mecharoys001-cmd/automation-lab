@@ -15,7 +15,6 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [signUpSuccess, setSignUpSuccess] = useState(false)
 
   async function handleGoogle() {
     setOauthLoading(true)
@@ -57,33 +56,6 @@ function LoginPageContent() {
         setLoading(false)
       } else {
         router.push(next)
-      }
-    } catch {
-      setError('Something went wrong. Please try again.')
-      setLoading(false)
-    }
-  }
-
-  async function handleSignUp() {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          redirectTo: window.location.origin + '/auth/callback',
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Sign up failed')
-        setLoading(false)
-      } else {
-        setSignUpSuccess(true)
-        setLoading(false)
       }
     } catch {
       setError('Something went wrong. Please try again.')
@@ -181,23 +153,6 @@ function LoginPageContent() {
           </p>
         </div>
 
-        {signUpSuccess ? (
-          <div
-            style={{
-              background: '#f0fff4',
-              border: '1px solid #38a169',
-              borderRadius: '8px',
-              padding: '16px',
-              color: '#276749',
-              fontSize: '14px',
-              textAlign: 'center',
-              fontFamily: "'Montserrat', sans-serif",
-            }}
-          >
-            ✅ Check your email to confirm your account, then sign in below.
-          </div>
-        ) : null}
-
         {view === 'buttons' ? (
           <>
             {/* Google OAuth */}
@@ -220,7 +175,6 @@ function LoginPageContent() {
                 fontFamily: "'Montserrat', sans-serif",
                 cursor: oauthLoading ? 'wait' : 'pointer',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
-                marginTop: signUpSuccess ? '16px' : 0,
               }}
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -229,7 +183,7 @@ function LoginPageContent() {
                 <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
                 <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
               </svg>
-              {oauthLoading ? 'Redirecting…' : 'Sign in with Google'}
+              {oauthLoading ? 'Redirecting...' : 'Sign in with Google'}
             </button>
 
             {/* Divider */}
@@ -274,14 +228,14 @@ function LoginPageContent() {
                 <rect x="2" y="4" width="20" height="16" rx="2" />
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
-              Sign in with Email
+              Log in with Email
             </button>
           </>
         ) : (
           <>
             {/* Back to sign-in options */}
             <button
-              onClick={() => { setView('buttons'); setError(null); setSignUpSuccess(false); }}
+              onClick={() => { setView('buttons'); setError(null); }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -298,6 +252,17 @@ function LoginPageContent() {
             >
               ← Back to sign-in options
             </button>
+
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#666',
+                margin: '0 0 16px',
+                fontFamily: "'Montserrat', sans-serif",
+              }}
+            >
+              Use the email address associated with your organization or tool access.
+            </p>
 
             {/* Email + Password form */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -338,65 +303,70 @@ function LoginPageContent() {
                 </p>
               )}
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                <button
-                  onClick={handleSignIn}
-                  disabled={loading || !email || !password}
+              <button
+                onClick={handleSignIn}
+                disabled={loading || !email || !password}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#0F7490',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  fontFamily: "'Montserrat', sans-serif",
+                  cursor: loading || !email || !password ? 'wait' : 'pointer',
+                  opacity: loading || !email || !password ? 0.7 : 1,
+                  transition: 'opacity 0.2s',
+                  marginTop: '4px',
+                }}
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+
+              <div style={{ textAlign: 'right', marginTop: '2px' }}>
+                <Link
+                  href="/forgot-password"
                   style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: '#0F7490',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '15px',
-                    fontWeight: 700,
-                    fontFamily: "'Montserrat', sans-serif",
-                    cursor: loading || !email || !password ? 'wait' : 'pointer',
-                    opacity: loading || !email || !password ? 0.7 : 1,
-                    transition: 'opacity 0.2s',
-                  }}
-                >
-                  {loading ? 'Signing in…' : 'Sign In'}
-                </button>
-                <button
-                  onClick={handleSignUp}
-                  disabled={loading || !email || !password}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: 'transparent',
                     color: '#0F7490',
-                    border: '1.5px solid #0F7490',
-                    borderRadius: '10px',
-                    fontSize: '15px',
-                    fontWeight: 700,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    textDecoration: 'none',
                     fontFamily: "'Montserrat', sans-serif",
-                    cursor: loading || !email || !password ? 'wait' : 'pointer',
-                    opacity: loading || !email || !password ? 0.6 : 1,
-                    transition: 'opacity 0.2s',
                   }}
                 >
-                  {loading ? '…' : 'Sign Up'}
-                </button>
+                  Forgot password?
+                </Link>
               </div>
             </div>
           </>
         )}
 
-        <p
+        <div
           style={{
             marginTop: '1.5rem',
             textAlign: 'center',
             fontSize: '13px',
             color: '#888',
             fontFamily: "'Montserrat', sans-serif",
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
           }}
         >
-          <Link href="/" style={{ color: '#0F7490', textDecoration: 'none', fontWeight: 600 }}>
-            ← Back to home
-          </Link>
-        </p>
+          <p style={{ margin: 0 }}>
+            Need an account?{' '}
+            <Link href="/create-account" style={{ color: '#0F7490', textDecoration: 'none', fontWeight: 600 }}>
+              Create one
+            </Link>
+          </p>
+          <p style={{ margin: 0 }}>
+            <Link href="/" style={{ color: '#0F7490', textDecoration: 'none', fontWeight: 600 }}>
+              ← Back to home
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
