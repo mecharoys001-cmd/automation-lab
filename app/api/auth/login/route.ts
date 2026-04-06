@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { withSecureCookies } from '@/lib/supabase/cookie-options'
 import { createServiceClient } from '@/lib/supabase-service'
+import { normalizeEmail, mapAuthError } from '@/lib/auth-errors'
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +12,8 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
+
+    const normalizedEmail = normalizeEmail(email)
 
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -30,10 +33,10 @@ export async function POST(request: Request) {
       }
     )
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 })
+      return NextResponse.json({ error: mapAuthError(error.message, 'login') }, { status: 401 })
     }
 
     // Fire-and-forget: log login activity
@@ -43,7 +46,7 @@ export async function POST(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(svc.from('activity_log') as any).insert({
       event_type: 'login',
-      user_email: email,
+      user_email: normalizedEmail,
       metadata: { auth_method: 'email_password' },
       user_agent: userAgent,
       ip_address: ipAddress,

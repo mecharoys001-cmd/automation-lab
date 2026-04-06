@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { withSecureCookies } from '@/lib/supabase/cookie-options'
+import { normalizeEmail, mapAuthError } from '@/lib/auth-errors'
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,8 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
+
+    const normalizedEmail = normalizeEmail(email)
 
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -30,13 +33,13 @@ export async function POST(request: Request) {
     )
 
     const { error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: { emailRedirectTo: redirectTo },
     })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ error: mapAuthError(error.message, 'signup') }, { status: 400 })
     }
 
     return NextResponse.json({ success: true })
