@@ -14,7 +14,7 @@ export default async function SymphonixSchedulerPage() {
     return (
       <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center space-y-6">
-          <Image src="/images/asap-logo.svg" alt="ASAP Scheduler" width={300} height={137} className="mx-auto" priority />
+          <Image src="/images/asap-logo.svg" alt="ASAP Scheduler" width={300} height={137} className="mx-auto brightness-0" priority />
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
             Automated scheduling platform for educational programs.
           </p>
@@ -41,7 +41,7 @@ export default async function SymphonixSchedulerPage() {
   return (
     <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
       <div className="text-center space-y-6">
-        <Image src="/images/asap-logo.svg" alt="ASAP Scheduler" width={300} height={137} className="mx-auto" priority />
+        <Image src="/images/asap-logo.svg" alt="ASAP Scheduler" width={300} height={137} className="mx-auto brightness-0" priority />
         <p className="text-muted-foreground text-lg max-w-md mx-auto">
           Automated scheduling platform for educational programs.
         </p>
