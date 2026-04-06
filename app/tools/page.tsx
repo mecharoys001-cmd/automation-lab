@@ -81,7 +81,7 @@ const tools = [
   },
   {
     id: "scheduler",
-    name: "Symphonix Scheduler",
+    name: "ASAP! Scheduler",
     icon: "🎵",
     accent: "#a244ae",
     status: "live",
