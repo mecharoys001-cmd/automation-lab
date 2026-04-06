@@ -13,7 +13,6 @@ const OnboardingChecklist = dynamic(
   { ssr: false }
 );
 import {
-  CalendarDays,
   LayoutDashboard,
   GraduationCap,
   Tags,
@@ -72,10 +71,7 @@ function SidebarProgramSelector() {
   return (
     <div className="pb-6">
       <div className="flex items-center gap-2.5 mb-3">
-        <CalendarDays className="w-6 h-6 text-blue-400 flex-shrink-0" />
-        <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-          Symphonix
-        </span>
+        <img src="/images/asap-logo.svg" alt="ASAP" className="h-6 flex-shrink-0 brightness-0 invert" />
       </div>
       {loading ? (
         <div className="h-9 w-full rounded-lg bg-slate-700 animate-pulse" />
@@ -238,8 +234,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <CalendarDays className="w-5 h-5 text-blue-600" />
-          <span className="text-sm font-semibold text-slate-800">Symphonix</span>
+          <img src="/images/asap-logo.svg" alt="ASAP" className="h-5 flex-shrink-0" />
         </div>
         <main id="main-content" className="flex-1 overflow-hidden">
           {children}

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -13,7 +14,7 @@ export default async function SymphonixSchedulerPage() {
     return (
       <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center space-y-6">
-          <h1 className="text-4xl font-bold tracking-tight">Symphonix Scheduler</h1>
+          <Image src="/images/asap-logo.svg" alt="ASAP Scheduler" width={200} height={91} className="mx-auto" priority />
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
             Automated scheduling platform for educational programs.
           </p>
@@ -40,7 +41,7 @@ export default async function SymphonixSchedulerPage() {
   return (
     <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
       <div className="text-center space-y-6">
-        <h1 className="text-4xl font-bold tracking-tight">Symphonix Scheduler</h1>
+        <Image src="/images/asap-logo.svg" alt="ASAP Scheduler" width={200} height={91} className="mx-auto" priority />
         <p className="text-muted-foreground text-lg max-w-md mx-auto">
           Automated scheduling platform for educational programs.
         </p>

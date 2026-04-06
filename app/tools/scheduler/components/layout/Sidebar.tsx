@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  CalendarDays,
   Calendar,
   Users,
   Tags,
@@ -35,7 +34,7 @@ interface SidebarProps {
   user?: UserProfile;
   /** Base path prefix for all nav hrefs */
   basePath?: string;
-  /** Custom header content (replaces the default Symphonix logo) */
+  /** Custom header content (replaces the default ASAP logo) */
   header?: React.ReactNode;
   /** Callback when user clicks the logout button */
   onLogout?: () => void;
@@ -118,9 +117,8 @@ export function Sidebar({
         {/* Header */}
         <div className="flex-shrink-0">
           {header ?? (
-            <div className="flex items-center gap-2.5 pb-6">
-              <CalendarDays className="w-7 h-7 text-blue-600 flex-shrink-0" />
-              <span className="text-xl font-bold text-white">Symphonix</span>
+            <div className="flex items-center pb-6">
+              <img src="/images/asap-logo.svg" alt="ASAP" className="h-8 flex-shrink-0 brightness-0 invert" />
             </div>
           )}
         </div>
