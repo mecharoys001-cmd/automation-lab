@@ -31,7 +31,11 @@ export function Tooltip({ text, position = 'top', className, style, children }: 
     const tooltip = tooltipRef.current;
     if (!trigger || !tooltip) return;
 
-    const tr = trigger.getBoundingClientRect();
+    // When display:contents is used, the trigger has no box — measure first child instead
+    let tr = trigger.getBoundingClientRect();
+    if (tr.width === 0 && tr.height === 0 && trigger.firstElementChild) {
+      tr = trigger.firstElementChild.getBoundingClientRect();
+    }
     const tt = tooltip.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -156,7 +160,7 @@ export function Tooltip({ text, position = 'top', className, style, children }: 
       onMouseEnter={show}
       onMouseLeave={hide}
       className={className}
-      style={{ ...style, display: style?.display ?? (style?.gridColumn !== undefined || style?.gridRow !== undefined ? 'flex' : 'inline-flex') }}
+      style={{ ...style, display: style?.display ?? (style?.gridColumn !== undefined || style?.gridRow !== undefined ? 'contents' : 'inline-flex') }}
     >
       {children}
       {visible && typeof document !== 'undefined' && createPortal(
