@@ -19,9 +19,11 @@ import {
   X,
   ChevronDown,
   ShieldAlert,
+  Copy,
 } from 'lucide-react';
 import type { Program, Admin, RoleLevel } from '@/types/database';
 import { ImportFromProgramModal } from '../../components/modals/ImportFromProgramModal';
+import { DuplicateProgramModal } from '../../components/modals/DuplicateProgramModal';
 import { requestCache } from '@/lib/requestCache';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -129,6 +131,7 @@ export default function SettingsPage() {
   const [programSaving, setProgramSaving] = useState(false);
   const [programError, setProgramError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [duplicatingProgram, setDuplicatingProgram] = useState<Program | null>(null);
 
   // ---- Admins state ----
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -1020,6 +1023,16 @@ export default function SettingsPage() {
                           >
                             <Pencil className="w-3 h-3" />
                             Edit
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Duplicate this program with its setup data">
+                          <button
+                            onClick={() => setDuplicatingProgram(p)}
+                            aria-label={`Duplicate ${p.name}`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-xs font-medium transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                            Duplicate
                           </button>
                         </Tooltip>
                         <Tooltip text="Permanently delete this program">
@@ -1989,6 +2002,17 @@ export default function SettingsPage() {
           programs={programs}
         />
       )}
+
+      {/* Duplicate program modal */}
+      <DuplicateProgramModal
+        open={!!duplicatingProgram}
+        onClose={() => setDuplicatingProgram(null)}
+        sourceProgram={duplicatingProgram}
+        onDuplicated={async (newProgram) => {
+          await refetchPrograms();
+          setSelectedProgramId(newProgram.id);
+        }}
+      />
     </div>
   );
 }
