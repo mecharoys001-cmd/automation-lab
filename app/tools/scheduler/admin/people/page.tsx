@@ -1884,7 +1884,7 @@ function PeoplePage() {
               </p>
               <div className="flex items-center gap-3 flex-wrap">
                 <ClickToCopy
-                  text={`https://tools.artsnwct.org/tools/scheduler/intake${selectedProgramId ? `?program=${selectedProgramId}` : ''}`}
+                  text={`${typeof window !== 'undefined' ? window.location.origin : ''}/tools/scheduler/intake${selectedProgramId ? `?program=${selectedProgramId}` : ''}`}
                   label="intake form link"
                 />
                 <a
