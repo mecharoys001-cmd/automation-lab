@@ -21,6 +21,7 @@ export interface InstructorFormData {
   start_year: string;
   is_active: boolean;
   skills: string[];
+  additional_tags: string[];
   availability_json: AvailabilityJson | null;
 }
 
@@ -34,6 +35,7 @@ export const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
   start_year: '',
   is_active: true,
   skills: [],
+  additional_tags: [],
   availability_json: null,
 };
 
@@ -83,6 +85,7 @@ export function InstructorEditModal({
           start_year: instructor.start_year != null ? String(instructor.start_year) : '',
           is_active: instructor.is_active,
           skills: instructor.skills ?? [],
+          additional_tags: (instructor as unknown as Record<string, unknown>).additional_tags as string[] ?? [],
           availability_json: instructor.availability_json ?? null,
         }
       : { ...EMPTY_INSTRUCTOR_FORM },
@@ -314,6 +317,19 @@ export function InstructorEditModal({
               placeholder="Select staff event types..."
             />
           </Tooltip>
+        </div>
+
+        {/* Additional Tags */}
+        <div>
+          <label htmlFor="instructor-additional-tags" className="block text-xs font-semibold text-slate-600 mb-2">Additional Tags</label>
+          <TagSelector
+            id="instructor-additional-tags"
+            value={form.additional_tags}
+            onChange={(tags) => setField('additional_tags', tags)}
+            programId={selectedProgramId ?? ''}
+            excludeCategories={['Space Types']}
+            placeholder="Select optional tags..."
+          />
         </div>
 
         {/* Bio */}

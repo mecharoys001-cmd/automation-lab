@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase.from('venues') as any)
-      .select('*')
+      .select('*, venue_tags(tag_id, tags:tags(id, name, emoji, category, description))')
       .order('name');
 
     if (!programId) {
@@ -31,7 +31,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return scopedJsonResponse({ venues: data ?? [] });
+    // Flatten venue_tags join into a top-level additional_tags array of names
+    const enriched = (data ?? []).map((v: Record<string, unknown>) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tagNames = ((v.venue_tags as any[]) ?? [])
+        .map((vt: { tags: { name: string } | null }) => vt.tags?.name)
+        .filter(Boolean);
+      const { venue_tags: _, ...rest } = v;
+      return { ...rest, additional_tags: tagNames };
+    });
+
+    return scopedJsonResponse({ venues: enriched });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
@@ -133,6 +143,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'buffer_minutes must be a non-negative number' }, { status: 400 });
     }
 
+    // Extract tags before inserting the venue record
+    const tagNames: string[] = body.additional_tags ?? [];
+    delete body.additional_tags;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('venues') as any)
       .insert(body)
@@ -143,7 +157,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ venue: data }, { status: 201 });
+    // Sync tags through junction table
+    if (tagNames.length > 0 && data?.id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: tags } = await (supabase.from('tags') as any)
+        .select('id, name')
+        .eq('program_id', body.program_id)
+        .in('name', tagNames);
+      if (tags?.length) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('venue_tags') as any)
+          .insert(tags.map((t: { id: string }) => ({ venue_id: data.id, tag_id: t.id })));
+      }
+    }
+
+    return NextResponse.json({ venue: { ...data, additional_tags: tagNames } }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

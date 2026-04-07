@@ -593,6 +593,9 @@ function VenueDetailModal({
   const [editAvailability, setEditAvailability] = useState<AvailabilityJson | null>(
     venue.availability_json ?? null
   );
+  const [venueAdditionalTags, setVenueAdditionalTags] = useState<string[]>(
+    (venue as unknown as Record<string, unknown>).additional_tags as string[] ?? []
+  );
 
   const handleSave = () => {
     const amenities: string[] = [];
@@ -608,6 +611,7 @@ function VenueDetailModal({
       availability_json: editAvailability,
       notes: notes.trim() || null,
       subjects: venueSubjects.length > 0 ? venueSubjects : null,
+      additional_tags: venueAdditionalTags.length > 0 ? venueAdditionalTags : [],
     });
   };
 
@@ -621,6 +625,7 @@ function VenueDetailModal({
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setEditAvailability(venue.availability_json ?? null);
     setNotes(venue.notes ?? '');
+    setVenueAdditionalTags((venue as unknown as Record<string, unknown>).additional_tags as string[] ?? []);
     setEditing(false);
   };
 
@@ -855,6 +860,19 @@ function VenueDetailModal({
               onChange={setVenueSubjects}
               programId={selectedProgramId ?? ''}
               placeholder="All event types (no restriction)"
+            />
+          </div>
+
+          {/* Additional Tags */}
+          <div>
+            <label htmlFor="venue-edit-additional-tags" className="block text-xs font-semibold text-slate-600 mb-1.5">Additional Tags</label>
+            <TagSelector
+              id="venue-edit-additional-tags"
+              value={venueAdditionalTags}
+              onChange={setVenueAdditionalTags}
+              programId={selectedProgramId ?? ''}
+              excludeCategories={['Space Types']}
+              placeholder="Select optional tags..."
             />
           </div>
 
@@ -1669,6 +1687,7 @@ function PeoplePage() {
         start_year: data.start_year.trim() ? parseInt(data.start_year.trim(), 10) : null,
         is_active: data.is_active,
         skills: data.skills.length > 0 ? data.skills : null,
+        additional_tags: data.additional_tags.length > 0 ? data.additional_tags : [],
         availability_json: data.availability_json,
       };
       if (isNew) body.program_id = selectedProgramId;

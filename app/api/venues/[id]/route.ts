@@ -42,7 +42,14 @@ export async function GET(
       if (accessErr) return accessErr;
     }
 
-    return NextResponse.json({ venue: data });
+    // Flatten venue_tags join into a top-level additional_tags array of names
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tagNames = ((data.venue_tags as any[]) ?? [])
+      .map((vt: { tags: { name: string } | null }) => vt.tags?.name)
+      .filter(Boolean);
+    const { venue_tags: _, ...venueRest } = data;
+
+    return NextResponse.json({ venue: { ...venueRest, additional_tags: tagNames } });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
@@ -118,6 +125,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'buffer_minutes must be a non-negative number' }, { status: 400 });
     }
 
+    // Extract tags before updating the venue record
+    let tagNames: string[] | undefined;
+    if ('additional_tags' in body) {
+      tagNames = body.additional_tags ?? [];
+      delete body.additional_tags;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('venues') as any)
       .update(body)
@@ -129,7 +143,28 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ venue: data });
+    // Sync tags through junction table if provided
+    if (tagNames !== undefined) {
+      // Delete existing venue_tags for this venue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('venue_tags') as any).delete().eq('venue_id', id);
+
+      if (tagNames.length > 0) {
+        // Resolve tag names to IDs
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: tags } = await (supabase.from('tags') as any)
+          .select('id, name')
+          .eq('program_id', currentVenue.program_id)
+          .in('name', tagNames);
+        if (tags?.length) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('venue_tags') as any)
+            .insert(tags.map((t: { id: string }) => ({ venue_id: id, tag_id: t.id })));
+        }
+      }
+    }
+
+    return NextResponse.json({ venue: { ...data, ...(tagNames !== undefined ? { additional_tags: tagNames } : {}) } });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
