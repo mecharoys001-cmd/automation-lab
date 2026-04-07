@@ -37,7 +37,7 @@ const YearView = dynamic(() => import('../components/calendar/YearView').then(m 
 import { EventContextMenu } from '../components/calendar/EventContextMenu';
 import type { ContextMenuAction } from '../components/calendar/EventContextMenu';
 import { EVENT_COLORS } from '../components/calendar/types';
-import type { CalendarEvent, EventType } from '../components/calendar/types';
+import type { CalendarEvent, EventType, SchoolCalendarEntry } from '../components/calendar/types';
 import { useEventEditPanel } from '../components/calendar/useEventEditPanel';
 import { TemplateFormModal } from '../components/modals/TemplateFormModal';
 import type { TemplateFormData } from '../components/modals/TemplateFormModal';
@@ -315,12 +315,7 @@ function CalendarDashboard() {
     position: { x: number; y: number };
   } | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [schoolCalendar, setSchoolCalendar] = useState<Array<{
-    date: string;
-    status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
-    description?: string | null;
-    early_dismissal_time?: string | null;
-  }>>([]);
+  const [schoolCalendar, setSchoolCalendar] = useState<SchoolCalendarEntry[]>([]);
   const [dbVenues, setDbVenues] = useState<Array<{ id: string; name: string }>>([]);
   const [eventTemplates, setEventTemplates] = useState<EventTemplate[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);

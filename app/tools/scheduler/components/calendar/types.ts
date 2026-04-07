@@ -15,6 +15,40 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   general: 'General',
 };
 
+export interface SchoolCalendarEntry {
+  date: string; // YYYY-MM-DD
+  status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
+  description?: string | null;
+  early_dismissal_time?: string | null;
+  target_instructor_id?: string | null;
+  instructor?: { id: string; first_name: string; last_name: string } | null;
+}
+
+export function buildStatusTooltip(entry: SchoolCalendarEntry): string {
+  const parts: string[] = [];
+
+  if (entry.status_type === 'no_school') {
+    parts.push('No School');
+  } else if (entry.status_type === 'early_dismissal') {
+    let label = 'Early Dismissal';
+    if (entry.early_dismissal_time) {
+      label += ' at ' + entry.early_dismissal_time.slice(0, 5);
+    }
+    parts.push(label);
+  } else if (entry.status_type === 'instructor_exception') {
+    parts.push('Staff Exception');
+    if (entry.instructor) {
+      parts.push(entry.instructor.first_name + ' ' + entry.instructor.last_name);
+    }
+  }
+
+  if (entry.description) {
+    parts.push(entry.description);
+  }
+
+  return parts.join(' — ');
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;

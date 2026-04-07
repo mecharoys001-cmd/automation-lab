@@ -3,8 +3,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Calendar, ChevronUp, Loader2, Ban, Clock } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
-import type { CalendarEvent, EventType } from './types';
-import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
+import type { CalendarEvent, EventType, SchoolCalendarEntry } from './types';
+import { EVENT_COLORS, EVENT_TYPE_LABELS, buildStatusTooltip } from './types';
 import { getSubjectColor } from '../../lib/subjectColors';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
@@ -25,12 +25,7 @@ interface YearViewProps {
   onDayClick?: (date: Date) => void;
   onTodayClick?: () => void;
   /** School calendar entries (no school, early dismissal, etc.) */
-  schoolCalendar?: Array<{
-    date: string; // YYYY-MM-DD
-    status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
-    description?: string | null;
-    early_dismissal_time?: string | null;
-  }>;
+  schoolCalendar?: SchoolCalendarEntry[];
   /** Called when user cancels a session via popover */
   onCancelSession?: (eventId: string) => void;
   /** Called when user wants to replace instructor */
@@ -218,7 +213,7 @@ function MonthGrid({
   month: number; // 1-based
   eventsByDate: Record<string, CalendarEvent[]>;
   todayKey: string;
-  schoolCalendarByDate: Record<string, { date: string; status_type: string; description?: string | null; early_dismissal_time?: string | null }>;
+  schoolCalendarByDate: Record<string, SchoolCalendarEntry>;
   selectedVenues: string[];
   multiLane: boolean;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
@@ -307,16 +302,23 @@ function MonthGrid({
                 {schoolEntry && (
                   <div className="mb-1 flex justify-center">
                     {schoolEntry.status_type === 'no_school' && (
-                      <Tooltip text={`No School${schoolEntry.description ? ': ' + schoolEntry.description : ''}`}>
+                      <Tooltip text={buildStatusTooltip(schoolEntry)}>
                         <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 border border-amber-300">
                           <Ban className="w-3 h-3 text-amber-800" />
                         </div>
                       </Tooltip>
                     )}
                     {schoolEntry.status_type === 'early_dismissal' && (
-                      <Tooltip text={`Early Dismissal${schoolEntry.early_dismissal_time ? ' at ' + schoolEntry.early_dismissal_time.slice(0, 5) : ''}`}>
+                      <Tooltip text={buildStatusTooltip(schoolEntry)}>
                         <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 border border-blue-300">
                           <Clock className="w-3 h-3 text-blue-700" />
+                        </div>
+                      </Tooltip>
+                    )}
+                    {schoolEntry.status_type === 'instructor_exception' && (
+                      <Tooltip text={buildStatusTooltip(schoolEntry)}>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 border border-purple-300">
+                          <Calendar className="w-3 h-3 text-purple-700" />
                         </div>
                       </Tooltip>
                     )}
