@@ -75,6 +75,8 @@ export interface Instructor {
   is_active: boolean;
   on_call: boolean;
   notes: string | null;
+  bio: string | null;
+  start_year: number | null;
   created_at: string;
   updated_at: string;
 }

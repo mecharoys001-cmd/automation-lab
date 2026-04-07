@@ -30,6 +30,8 @@ interface IntakeSubmitBody {
   last_name: string;
   email: string;
   phone?: string | null;
+  bio?: string | null;
+  start_year?: number | null;
   skills: string[];
   availability_json: AvailabilityJson;
   program_id: string;
@@ -38,7 +40,7 @@ interface IntakeSubmitBody {
 export async function POST(request: NextRequest) {
   try {
     const body: IntakeSubmitBody = await request.json();
-    const { first_name, last_name, email, phone, skills, availability_json, program_id } = body;
+    const { first_name, last_name, email, phone, bio, start_year, skills, availability_json, program_id } = body;
 
     if (!program_id) {
       return NextResponse.json(
@@ -83,6 +85,31 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'skills must be a non-empty array of strings' },
         { status: 400 }
       );
+    }
+
+    // Validate optional bio
+    if (bio !== undefined && bio !== null && typeof bio !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'bio must be a string' },
+        { status: 400 }
+      );
+    }
+    if (typeof bio === 'string' && bio.length > 1000) {
+      return NextResponse.json(
+        { success: false, error: 'bio must be 1000 characters or less' },
+        { status: 400 }
+      );
+    }
+
+    // Validate optional start_year
+    if (start_year !== undefined && start_year !== null) {
+      const currentYear = new Date().getFullYear();
+      if (typeof start_year !== 'number' || !Number.isInteger(start_year) || start_year < 1900 || start_year > currentYear + 1) {
+        return NextResponse.json(
+          { success: false, error: `start_year must be an integer between 1900 and ${currentYear + 1}` },
+          { status: 400 }
+        );
+      }
     }
 
     if (!availability_json || typeof availability_json !== 'object') {
@@ -140,17 +167,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Update existing record within the same program
+      // Preserve existing bio/start_year if the intake submission sends blank/null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updatePayload: Record<string, any> = {
+        first_name: first_name.trim(),
+        last_name: last_name.trim(),
+        phone: phone?.trim() || null,
+        skills,
+        availability_json,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      };
+      if (bio && bio.trim()) updatePayload.bio = bio.trim();
+      if (start_year != null) updatePayload.start_year = start_year;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ({ data, error } = await (supabase.from('staff') as any)
-        .update({
-          first_name: first_name.trim(),
-          last_name: last_name.trim(),
-          phone: phone?.trim() || null,
-          skills,
-          availability_json,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', existing.id)
         .select('id')
         .single());
@@ -163,6 +196,8 @@ export async function POST(request: NextRequest) {
           last_name: last_name.trim(),
           email: normalizedEmail,
           phone: phone?.trim() || null,
+          bio: bio?.trim() || null,
+          start_year: start_year ?? null,
           skills,
           availability_json,
           is_active: true,

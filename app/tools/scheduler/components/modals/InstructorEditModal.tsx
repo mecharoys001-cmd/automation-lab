@@ -17,6 +17,8 @@ export interface InstructorFormData {
   email: string;
   phone: string;
   notes: string;
+  bio: string;
+  start_year: string;
   is_active: boolean;
   skills: string[];
   availability_json: AvailabilityJson | null;
@@ -28,6 +30,8 @@ export const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
   email: '',
   phone: '',
   notes: '',
+  bio: '',
+  start_year: '',
   is_active: true,
   skills: [],
   availability_json: null,
@@ -75,6 +79,8 @@ export function InstructorEditModal({
           email: instructor.email ?? '',
           phone: instructor.phone ?? '',
           notes: instructor.notes ?? '',
+          bio: instructor.bio ?? '',
+          start_year: instructor.start_year != null ? String(instructor.start_year) : '',
           is_active: instructor.is_active,
           skills: instructor.skills ?? [],
           availability_json: instructor.availability_json ?? null,
@@ -84,6 +90,7 @@ export function InstructorEditModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [startYearError, setStartYearError] = useState('');
 
   // Duplicate name warning (non-blocking) — checks on both add and edit
   const duplicateName = form.first_name.trim() && form.last_name.trim()
@@ -100,6 +107,7 @@ export function InstructorEditModal({
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === 'email') setEmailError('');
     if (key === 'phone') setPhoneError('');
+    if (key === 'start_year') setStartYearError('');
   }
 
   const validateAndSave = () => {
@@ -110,6 +118,14 @@ export function InstructorEditModal({
     if (form.phone.trim() && !isValidPhone(form.phone)) {
       setPhoneError('Enter a valid phone number (7–15 digits, may include spaces, dashes, parentheses, dots, and +)');
       return;
+    }
+    if (form.start_year.trim()) {
+      const yr = parseInt(form.start_year.trim(), 10);
+      const currentYear = new Date().getFullYear();
+      if (!/^\d{4}$/.test(form.start_year.trim()) || yr < 1900 || yr > currentYear + 1) {
+        setStartYearError(`Enter a valid 4-digit year between 1900 and ${currentYear + 1}`);
+        return;
+      }
     }
     onSave(form);
   };
@@ -171,7 +187,7 @@ export function InstructorEditModal({
           <ModalButton
             variant="primary"
             onClick={validateAndSave}
-            disabled={saving || !form.first_name.trim() || !form.last_name.trim() || !!emailError || !!phoneError}
+            disabled={saving || !form.first_name.trim() || !form.last_name.trim() || !!emailError || !!phoneError || !!startYearError}
             loading={saving}
             icon={!saving ? <Save className="w-3.5 h-3.5" /> : undefined}
           >
@@ -272,6 +288,38 @@ export function InstructorEditModal({
           {phoneError && <p role="alert" className="text-xs text-red-700 mt-1">{phoneError}</p>}
         </div>
 
+        {/* Start Year */}
+        <div>
+          <label htmlFor="instructor-start-year" className="block text-sm font-semibold text-slate-600 mb-1.5">Start Year</label>
+          <Tooltip text="The year this staff member started working in this field" className="w-full">
+            <input
+              id="instructor-start-year"
+              type="number"
+              inputMode="numeric"
+              min="1900"
+              max={new Date().getFullYear() + 1}
+              value={form.start_year}
+              onChange={(e) => {
+                const filtered = e.target.value.replace(/\D/g, '').slice(0, 4);
+                setField('start_year', filtered);
+              }}
+              onBlur={() => {
+                if (form.start_year.trim()) {
+                  const yr = parseInt(form.start_year.trim(), 10);
+                  const currentYear = new Date().getFullYear();
+                  if (!/^\d{4}$/.test(form.start_year.trim()) || yr < 1900 || yr > currentYear + 1) {
+                    setStartYearError(`Enter a valid 4-digit year between 1900 and ${currentYear + 1}`);
+                  }
+                }
+              }}
+              maxLength={4}
+              placeholder="e.g. 2015"
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:ring-1 transition-colors ${startYearError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
+            />
+          </Tooltip>
+          {startYearError && <p role="alert" className="text-xs text-red-700 mt-1">{startYearError}</p>}
+        </div>
+
         {/* Event Type */}
         <div>
           <label htmlFor="instructor-event-type" className="block text-xs font-semibold text-slate-600 mb-2">Event Type</label>
@@ -283,6 +331,22 @@ export function InstructorEditModal({
               programId={selectedProgramId ?? ''}
               category="Event Type"
               placeholder="Select staff event types..."
+            />
+          </Tooltip>
+        </div>
+
+        {/* Bio */}
+        <div>
+          <label htmlFor="instructor-bio" className="block text-sm font-semibold text-slate-600 mb-1.5">Bio</label>
+          <Tooltip text="Public bio — background, interests, teaching style" className="w-full">
+            <textarea
+              id="instructor-bio"
+              value={form.bio}
+              onChange={(e) => setField('bio', e.target.value)}
+              maxLength={1000}
+              placeholder="A short bio about this staff member…"
+              rows={3}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
         </div>
