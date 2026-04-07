@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, ChevronLeft, ChevronRight, X, Mail, Phone,
   Accessibility, Clock, Home, StickyNote, Edit2, Copy,
-  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload,
+  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload, Tag, Music, Building2,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -25,6 +25,7 @@ import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 import { SKILL_STYLES } from '../../lib/subjectColors';
+import { FilterBar, type ActiveFilters, type FilterConfig } from '../../components/layout/FilterBar';
 import { useProgram } from '../ProgramContext';
 
 /* ── Constants ──────────────────────────────────────────────── */
@@ -592,6 +593,9 @@ function VenueDetailModal({
   const [editAvailability, setEditAvailability] = useState<AvailabilityJson | null>(
     venue.availability_json ?? null
   );
+  const [venueAdditionalTags, setVenueAdditionalTags] = useState<string[]>(
+    (venue as unknown as Record<string, unknown>).additional_tags as string[] ?? []
+  );
 
   const handleSave = () => {
     const amenities: string[] = [];
@@ -607,6 +611,7 @@ function VenueDetailModal({
       availability_json: editAvailability,
       notes: notes.trim() || null,
       subjects: venueSubjects.length > 0 ? venueSubjects : null,
+      additional_tags: venueAdditionalTags.length > 0 ? venueAdditionalTags : [],
     });
   };
 
@@ -620,6 +625,7 @@ function VenueDetailModal({
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setEditAvailability(venue.availability_json ?? null);
     setNotes(venue.notes ?? '');
+    setVenueAdditionalTags((venue as unknown as Record<string, unknown>).additional_tags as string[] ?? []);
     setEditing(false);
   };
 
@@ -854,6 +860,19 @@ function VenueDetailModal({
               onChange={setVenueSubjects}
               programId={selectedProgramId ?? ''}
               placeholder="All event types (no restriction)"
+            />
+          </div>
+
+          {/* Additional Tags */}
+          <div>
+            <label htmlFor="venue-edit-additional-tags" className="block text-xs font-semibold text-slate-600 mb-1.5">Additional Tags</label>
+            <TagSelector
+              id="venue-edit-additional-tags"
+              value={venueAdditionalTags}
+              onChange={setVenueAdditionalTags}
+              programId={selectedProgramId ?? ''}
+              excludeCategories={['Space Types']}
+              placeholder="Select optional tags..."
             />
           </div>
 
@@ -1461,6 +1480,10 @@ function PeoplePage() {
   const [staffPage, setStaffPage] = useState(1);
   const [venuePage, setVenuePage] = useState(1);
 
+  // Tag filter state (separate for staff and venues)
+  const [staffTagFilters, setStaffTagFilters] = useState<ActiveFilters>({});
+  const [venueTagFilters, setVenueTagFilters] = useState<ActiveFilters>({});
+
   /* ── Fetching ──────────────────────────────────────────── */
 
   const fetchInstructors = useCallback(async () => {
@@ -1664,6 +1687,7 @@ function PeoplePage() {
         start_year: data.start_year.trim() ? parseInt(data.start_year.trim(), 10) : null,
         is_active: data.is_active,
         skills: data.skills.length > 0 ? data.skills : null,
+        additional_tags: data.additional_tags.length > 0 ? data.additional_tags : [],
         availability_json: data.availability_json,
       };
       if (isNew) body.program_id = selectedProgramId;
@@ -1761,6 +1785,64 @@ function PeoplePage() {
     }
   }, [selectedProgramId]);
 
+  /* ── Derived filter configs (memoized) ────────────────── */
+
+  const staffFilterConfigs: FilterConfig[] = useMemo(() => {
+    const allSkills = new Set<string>();
+    for (const inst of allInstructors) {
+      for (const skill of inst.skills ?? []) allSkills.add(skill);
+    }
+    const sorted = [...allSkills].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return [
+      {
+        key: 'eventType',
+        label: 'Event Type',
+        icon: Music,
+        tooltip: 'Filter staff by event type / skill',
+        options: sorted.map((s) => ({
+          value: s,
+          label: s,
+          emoji: SKILL_STYLES[s]?.emoji ?? '🎵',
+        })),
+        emptyMessage: 'No event types found. Add skills to staff members first.',
+      },
+    ];
+  }, [allInstructors]);
+
+  const venueFilterConfigs: FilterConfig[] = useMemo(() => {
+    const allSpaceTypes = new Set<string>();
+    const allSubjects = new Set<string>();
+    for (const v of venues) {
+      if (v.space_type) allSpaceTypes.add(v.space_type);
+      for (const s of v.subjects ?? []) allSubjects.add(s);
+    }
+    const sortedTypes = [...allSpaceTypes].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const sortedSubjects = [...allSubjects].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const configs: FilterConfig[] = [];
+    configs.push({
+      key: 'spaceType',
+      label: 'Space Type',
+      icon: Building2,
+      tooltip: 'Filter venues by space type',
+      options: sortedTypes.map((t) => ({ value: t, label: t })),
+      emptyMessage: 'No space types found. Assign space types to venues first.',
+    });
+    if (sortedSubjects.length > 0) {
+      configs.push({
+        key: 'eventType',
+        label: 'Event Type',
+        icon: Music,
+        tooltip: 'Filter venues by event type',
+        options: sortedSubjects.map((s) => ({
+          value: s,
+          label: s,
+          emoji: SKILL_STYLES[s]?.emoji ?? '🎵',
+        })),
+      });
+    }
+    return configs;
+  }, [venues]);
+
   /* ── Derived state (memoized) ─────────────────────────── */
 
   const filteredVenues = useMemo(() => venues.filter((v) => {
@@ -1770,6 +1852,17 @@ function PeoplePage() {
     if (filterParam === 'missing_venue_availability') {
       if (v.availability_json && Object.keys(v.availability_json).length > 0) return false;
     }
+    // Venue tag filters (space type)
+    const spaceTypeFilter = venueTagFilters.spaceType;
+    if (spaceTypeFilter && spaceTypeFilter.length > 0) {
+      if (!v.space_type || !spaceTypeFilter.includes(v.space_type)) return false;
+    }
+    // Venue tag filters (event type / subjects)
+    const eventTypeFilter = venueTagFilters.eventType;
+    if (eventTypeFilter && eventTypeFilter.length > 0) {
+      const subjects = v.subjects ?? [];
+      if (!eventTypeFilter.some((t) => subjects.includes(t))) return false;
+    }
     if (venueSearch.trim()) {
       const q = venueSearch.toLowerCase();
       const name = (v.name ?? '').toLowerCase();
@@ -1777,7 +1870,7 @@ function PeoplePage() {
       return name.includes(q) || spaceType.includes(q);
     }
     return true;
-  }), [venues, venueSearch, filterParam]);
+  }), [venues, venueSearch, filterParam, venueTagFilters]);
 
   const filtered = useMemo(() => {
     const result = allInstructors.filter((inst) => {
@@ -1789,6 +1882,12 @@ function PeoplePage() {
       }
       if (filterStatus === 'active' && !inst.is_active) return false;
       if (filterStatus === 'inactive' && inst.is_active) return false;
+      // Staff tag filters (event type / skills)
+      const eventTypeFilter = staffTagFilters.eventType;
+      if (eventTypeFilter && eventTypeFilter.length > 0) {
+        const skills = inst.skills ?? [];
+        if (!eventTypeFilter.some((t) => skills.includes(t))) return false;
+      }
       if (search.trim()) {
         const q = search.toLowerCase();
         const name = `${inst.first_name} ${inst.last_name}`.toLowerCase();
@@ -1805,7 +1904,7 @@ function PeoplePage() {
       return (a.first_name ?? '').localeCompare(b.first_name ?? '', undefined, { sensitivity: 'base' });
     });
     return result;
-  }, [allInstructors, filterStatus, search, filterParam]);
+  }, [allInstructors, filterStatus, search, filterParam, staffTagFilters]);
 
   const staffTotalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safeStaffPage = Math.min(staffPage, staffTotalPages);
@@ -1828,9 +1927,9 @@ function PeoplePage() {
 
   // Reset to page 1 when filters change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setStaffPage(1); }, [search, filterStatus]);
+  useEffect(() => { setStaffPage(1); }, [search, filterStatus, staffTagFilters]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setVenuePage(1); }, [venueSearch]);
+  useEffect(() => { setVenuePage(1); }, [venueSearch, venueTagFilters]);
 
   /* ── Render ────────────────────────────────────────────── */
 
@@ -1967,13 +2066,39 @@ function PeoplePage() {
             </Button>
           </div>
 
+          {/* Staff Tag Filters */}
+          {staffFilterConfigs.some((f) => f.options.length > 0) && (
+            <FilterBar
+              filters={staffFilterConfigs}
+              activeFilters={staffTagFilters}
+              onFiltersChange={setStaffTagFilters}
+              totalCount={allInstructors.length}
+              filteredCount={filtered.length}
+              className="rounded-lg border border-slate-200 !bg-slate-50/50"
+            />
+          )}
+
           {loadingAll ? (
             <CardGridSkeleton />
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-600">
               {allInstructors.length === 0
                 ? 'No staff found.'
-                : 'No staff match your filters.'}
+                : (
+                  <div className="space-y-2">
+                    <p>No staff match your filters.</p>
+                    {Object.keys(staffTagFilters).length > 0 && (
+                      <Tooltip text="Remove all tag filters to see all staff">
+                        <button
+                          onClick={() => setStaffTagFilters({})}
+                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          Clear tag filters
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
+                )}
             </div>
           ) : (
             <VirtualizedCardGrid
@@ -2086,13 +2211,39 @@ function PeoplePage() {
             </Button>
           </div>
 
+          {/* Venue Tag Filters */}
+          {venueFilterConfigs.some((f) => f.options.length > 0) && (
+            <FilterBar
+              filters={venueFilterConfigs}
+              activeFilters={venueTagFilters}
+              onFiltersChange={setVenueTagFilters}
+              totalCount={venues.length}
+              filteredCount={filteredVenues.length}
+              className="rounded-lg border border-slate-200 !bg-slate-50/50"
+            />
+          )}
+
           {loadingVenues ? (
             <CardGridSkeleton count={3} />
           ) : filteredVenues.length === 0 ? (
             <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-700">
               {venues.length === 0
                 ? 'No venues found.'
-                : 'No venues match your search.'}
+                : (
+                  <div className="space-y-2">
+                    <p>No venues match your filters.</p>
+                    {Object.keys(venueTagFilters).length > 0 && (
+                      <Tooltip text="Remove all tag filters to see all venues">
+                        <button
+                          onClick={() => setVenueTagFilters({})}
+                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          Clear tag filters
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
+                )}
             </div>
           ) : (
             <VirtualizedCardGrid
