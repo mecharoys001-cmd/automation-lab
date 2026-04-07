@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight, Ban, Clock, CalendarDays } from 'lucide-reac
 import Link from 'next/link';
 import { Tooltip } from '../ui/Tooltip';
 import { Button } from '../ui/Button';
-import type { CalendarEvent } from './types';
-import { EVENT_COLORS, EVENT_TYPE_LABELS } from './types';
+import type { CalendarEvent, SchoolCalendarEntry } from './types';
+import { EVENT_COLORS, EVENT_TYPE_LABELS, buildStatusTooltip } from './types';
 import { getSubjectColor } from '../../lib/subjectColors';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
@@ -26,12 +26,7 @@ interface MonthViewProps {
   onDayClick?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
   /** School calendar entries (no school, early dismissal, etc.) */
-  schoolCalendar?: Array<{
-    date: string; // YYYY-MM-DD
-    status_type: 'no_school' | 'early_dismissal' | 'instructor_exception';
-    description?: string | null;
-    early_dismissal_time?: string | null;
-  }>;
+  schoolCalendar?: SchoolCalendarEntry[];
   /** Called when user cancels a session via popover */
   onCancelSession?: (eventId: string) => void;
   /** Called when user wants to replace instructor (with optional substitute ID) */
@@ -447,22 +442,33 @@ export function MonthView({
                   </span>
 
                   {schoolEntry && (
-                    <div className="mb-2 flex justify-center">
-                      {schoolEntry.status_type === 'no_school' && (
-                        <Tooltip text={`No School${schoolEntry.description ? ': ' + schoolEntry.description : ''}`}>
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 border border-amber-300">
-                            <Ban className="w-3.5 h-3.5 text-amber-800" />
-                          </div>
-                        </Tooltip>
-                      )}
-                      {schoolEntry.status_type === 'early_dismissal' && (
-                        <Tooltip text={`Early Dismissal${schoolEntry.early_dismissal_time ? ' at ' + schoolEntry.early_dismissal_time.slice(0, 5) : ''}`}>
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 border border-blue-300">
-                            <Clock className="w-3.5 h-3.5 text-blue-700" />
-                          </div>
-                        </Tooltip>
-                      )}
-                    </div>
+                    <Tooltip text={buildStatusTooltip(schoolEntry)}>
+                      <div className={`mb-2 rounded-md px-1.5 py-1 text-[10px] leading-tight ${
+                        schoolEntry.status_type === 'no_school'
+                          ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                          : schoolEntry.status_type === 'early_dismissal'
+                          ? 'bg-blue-50 border border-blue-200 text-blue-800'
+                          : 'bg-purple-50 border border-purple-200 text-purple-800'
+                      }`}>
+                        <div className="flex items-center gap-1 font-semibold">
+                          {schoolEntry.status_type === 'no_school' && <Ban className="w-3 h-3 shrink-0" />}
+                          {schoolEntry.status_type === 'early_dismissal' && <Clock className="w-3 h-3 shrink-0" />}
+                          {schoolEntry.status_type === 'instructor_exception' && <CalendarDays className="w-3 h-3 shrink-0" />}
+                          <span className="truncate">
+                            {schoolEntry.status_type === 'no_school' ? 'No School'
+                              : schoolEntry.status_type === 'early_dismissal'
+                              ? `Early Dismissal${schoolEntry.early_dismissal_time ? ' ' + schoolEntry.early_dismissal_time.slice(0, 5) : ''}`
+                              : 'Staff Exception'}
+                          </span>
+                        </div>
+                        {schoolEntry.description && (
+                          <div className="mt-0.5 truncate opacity-80">{schoolEntry.description}</div>
+                        )}
+                        {schoolEntry.status_type === 'instructor_exception' && schoolEntry.instructor && (
+                          <div className="mt-0.5 truncate opacity-80">{schoolEntry.instructor.first_name} {schoolEntry.instructor.last_name}</div>
+                        )}
+                      </div>
+                    </Tooltip>
                   )}
 
                   {multiLane ? (

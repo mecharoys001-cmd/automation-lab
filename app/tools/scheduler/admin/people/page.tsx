@@ -333,11 +333,17 @@ const StaffCard = memo(function StaffCard({
       </div>
 
       {/* Contact — single line, no icon components (saves ~8 DOM nodes) */}
-      {(inst.email || inst.phone) && (
+      {(inst.email || inst.phone || inst.start_year) && (
         <p className="text-xs text-slate-600 truncate">
           {inst.email && <span className="text-blue-600">{inst.email}</span>}
           {inst.email && inst.phone && <span className="mx-1.5 text-slate-600">|</span>}
           {inst.phone && <span>{inst.phone}</span>}
+          {inst.start_year && (
+            <>
+              {(inst.email || inst.phone) && <span className="mx-1.5 text-slate-600">|</span>}
+              <span className="text-slate-700">Since {inst.start_year}</span>
+            </>
+          )}
         </p>
       )}
 
@@ -1018,7 +1024,21 @@ function InstructorDetailModal({
             buttonClassName="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
           />
         )}
+        {instructor.start_year && (
+          <span className="text-[13px] text-slate-600">Since {instructor.start_year}</span>
+        )}
       </div>
+
+      {/* Bio */}
+      {instructor.bio && (
+        <>
+          <div className="h-px bg-slate-200" />
+          <div className="px-6 py-3">
+            <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">Bio</h3>
+            <p className="text-sm text-slate-600 whitespace-pre-wrap">{instructor.bio}</p>
+          </div>
+        </>
+      )}
 
       <div className="h-px bg-slate-200" />
 
@@ -1640,6 +1660,8 @@ function PeoplePage() {
         email: data.email.trim() || null,
         phone: data.phone.trim() || null,
         notes: data.notes.trim() || null,
+        bio: data.bio.trim() || null,
+        start_year: data.start_year.trim() ? parseInt(data.start_year.trim(), 10) : null,
         is_active: data.is_active,
         skills: data.skills.length > 0 ? data.skills : null,
         availability_json: data.availability_json,

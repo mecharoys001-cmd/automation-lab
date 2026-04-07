@@ -133,6 +133,8 @@ interface FormData {
   last_name: string;
   email: string;
   phone: string;
+  bio: string;
+  start_year: string;
 }
 
 interface FormErrors {
@@ -140,6 +142,8 @@ interface FormErrors {
   last_name?: string;
   email?: string;
   phone?: string;
+  bio?: string;
+  start_year?: string;
   skills?: string;
   availability?: string;
 }
@@ -163,6 +167,8 @@ function IntakeForm() {
     last_name: '',
     email: '',
     phone: '',
+    bio: '',
+    start_year: '',
   });
   // Honeypot field — invisible to humans, bots auto-fill it
   const [honeypot, setHoneypot] = useState('');
@@ -241,7 +247,7 @@ function IntakeForm() {
   const dragMode = useRef<'select' | 'deselect'>('select');
 
   const handleFieldChange = useCallback(
-    (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
       if (errors[field as keyof FormErrors]) {
         setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -384,6 +390,13 @@ function IntakeForm() {
     if (form.phone.trim() && !isValidPhone(form.phone)) {
       newErrors.phone = 'Please enter a valid phone number (e.g. (555) 123-4567)';
     }
+    if (form.start_year.trim()) {
+      const yr = parseInt(form.start_year.trim(), 10);
+      const currentYear = new Date().getFullYear();
+      if (!/^\d{4}$/.test(form.start_year.trim()) || yr < 1900 || yr > currentYear + 1) {
+        newErrors.start_year = `Enter a valid 4-digit year between 1900 and ${currentYear + 1}`;
+      }
+    }
     if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one event type';
     if (selectedSlots.size === 0) newErrors.availability = 'Please select your availability';
     setErrors(newErrors);
@@ -411,6 +424,8 @@ function IntakeForm() {
         last_name: form.last_name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim() || null,
+        bio: form.bio.trim() || null,
+        start_year: form.start_year.trim() ? parseInt(form.start_year.trim(), 10) : null,
         skills: Array.from(selectedSkills),
         availability_json: availability,
         program_id: programId,
@@ -446,7 +461,7 @@ function IntakeForm() {
   );
 
   const resetForm = useCallback(() => {
-    setForm({ first_name: '', last_name: '', email: '', phone: '' });
+    setForm({ first_name: '', last_name: '', email: '', phone: '', bio: '', start_year: '' });
     setHoneypot('');
     setSelectedSkills(new Set());
     setSelectedSlots(new Set());
@@ -660,6 +675,56 @@ function IntakeForm() {
                 <p id="phone-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.phone ?? ''}</p>
                 <p id="phone-hint" className="mt-0.5 text-[11px] text-muted-foreground">Format: (555) 123-4567</p>
               </div>
+            </div>
+
+            {/* Start Year */}
+            <div className="mt-4">
+              <label htmlFor="start_year" className="block text-sm font-medium text-muted-foreground mb-1.5">
+                What Year Did You Start?
+              </label>
+              <Tooltip text="The year you started working in this field (optional)" className="w-full">
+                <input
+                  id="start_year"
+                  type="number"
+                  inputMode="numeric"
+                  min="1900"
+                  max={new Date().getFullYear() + 1}
+                  aria-invalid={!!errors.start_year}
+                  aria-describedby={errors.start_year ? 'start_year-error' : 'start_year-hint'}
+                  value={form.start_year}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setForm((prev) => ({ ...prev, start_year: filtered }));
+                    if (errors.start_year) setErrors((prev) => ({ ...prev, start_year: undefined }));
+                  }}
+                  className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    errors.start_year ? 'border-red-500' : 'border-border'
+                  }`}
+                  placeholder="e.g. 2015"
+                />
+              </Tooltip>
+              <p id="start_year-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.start_year ?? ''}</p>
+              <p id="start_year-hint" className="mt-0.5 text-[11px] text-muted-foreground">4-digit year (optional)</p>
+            </div>
+
+            {/* Bio */}
+            <div className="mt-4">
+              <label htmlFor="bio" className="block text-sm font-medium text-muted-foreground mb-1.5">
+                Bio
+              </label>
+              <Tooltip text="Tell us a bit about yourself — background, interests, teaching style (optional)" className="w-full">
+                <textarea
+                  id="bio"
+                  value={form.bio}
+                  onChange={handleFieldChange('bio')}
+                  maxLength={1000}
+                  rows={3}
+                  aria-describedby="bio-hint"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                  placeholder="A short bio about yourself…"
+                />
+              </Tooltip>
+              <p id="bio-hint" className="mt-0.5 text-[11px] text-muted-foreground">Up to 1,000 characters (optional)</p>
             </div>
           </div>
 
