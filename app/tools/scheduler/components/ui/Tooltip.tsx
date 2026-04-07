@@ -156,7 +156,7 @@ export function Tooltip({ text, position = 'top', className, style, children }: 
       onMouseEnter={show}
       onMouseLeave={hide}
       className={className}
-      style={{ ...style, display: style?.display ?? (style?.gridColumn !== undefined || style?.gridRow !== undefined ? 'contents' : 'inline-flex') }}
+      style={{ ...style, display: style?.display ?? 'inline-flex' }}
     >
       {children}
       {visible && typeof document !== 'undefined' && createPortal(
