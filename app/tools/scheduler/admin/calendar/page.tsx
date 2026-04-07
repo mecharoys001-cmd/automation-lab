@@ -9,11 +9,13 @@ import { Modal, ModalButton } from '../../components/ui/Modal';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
+import { exportCsvFile } from '../../lib/csvExport';
 import {
   ChevronLeft,
   ChevronRight,
   Plus,
   Upload,
+  Download,
   Search,
   Filter,
   X,
@@ -519,6 +521,22 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchEntries();
   }, [fetchEntries]);
+
+  const exportCalendarCsv = useCallback(() => {
+    const filename = `school-calendar-${new Date().toISOString().slice(0, 10)}.csv`;
+    const count = exportCsvFile(
+      filename,
+      CALENDAR_CSV_COLUMNS,
+      entries.map((entry) => ({
+        date: entry.date ?? '',
+        description: entry.description ?? '',
+        status_type: entry.status_type ?? '',
+        early_dismissal_time: entry.early_dismissal_time ? entry.early_dismissal_time.slice(0, 5) : '',
+        target_instructor_id: entry.target_instructor_id ?? '',
+      })),
+    );
+    setToast({ message: `Exported ${count} calendar ${count === 1 ? 'entry' : 'entries'} to CSV`, type: 'success', id: Date.now() });
+  }, [entries]);
 
   // Reset cached instructors when program changes so they're re-fetched
   useEffect(() => {
@@ -1249,6 +1267,17 @@ export default function CalendarPage() {
               <span className="md:hidden">{isPublishing ? '…' : 'Publish'}</span>
             </Button>
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
+            <Button
+              variant="secondary"
+              size="md"
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export calendar entries as CSV in the same format used for import"
+              onClick={exportCalendarCsv}
+              disabled={entries.length === 0 || isSaving || isPublishing}
+            >
+              <span className="hidden md:inline">Export CSV</span>
+              <span className="md:hidden">Export</span>
+            </Button>
             <Button
               variant="secondary"
               size="md"

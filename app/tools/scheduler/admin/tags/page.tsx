@@ -9,6 +9,7 @@ import { EmojiPicker } from '../../components/ui/EmojiPicker';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
+import { exportCsvFile } from '../../lib/csvExport';
 
 // ── Toast Notification ───────────────────────────────────────
 
@@ -43,6 +44,7 @@ function ToastNotification({ toast, onDismiss }: { toast: ToastState; onDismiss:
 interface Tag {
   id: string;
   name: string;
+  color?: string | null;
   description?: string | null;
   emoji?: string | null;
   category: string;
@@ -176,6 +178,22 @@ export default function TagsPage() {
   }, []);
 
   const spaceTypeCount = tags.filter(t => t.category === 'Space Types').length;
+
+  const exportTagsCsv = useCallback(() => {
+    const filename = `tags-${new Date().toISOString().slice(0, 10)}.csv`;
+    const count = exportCsvFile(
+      filename,
+      TAG_CSV_COLUMNS,
+      tags.map((tag) => ({
+        name: tag.name ?? '',
+        color: tag.color ?? '',
+        description: tag.description ?? '',
+        category: tag.category ?? '',
+        emoji: tag.emoji ?? '',
+      })),
+    );
+    showToast(`${count} tag(s) exported to CSV`, 'success');
+  }, [showToast, tags]);
 
   const installDefaults = async () => {
     setInstallDefaultsLoading(true);
@@ -614,8 +632,18 @@ export default function TagsPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
+              onClick={exportTagsCsv}
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export tags as CSV in the same format used for import"
+              disabled={tags.length === 0}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => setCsvImportOpen(true)}
               icon={<Upload className="w-4 h-4" />}
+              tooltip="Import tags from CSV"
             >
               Import CSV
             </Button>

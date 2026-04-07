@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, ChevronLeft, ChevronRight, X, Mail, Phone,
   Accessibility, Clock, Home, StickyNote, Edit2, Copy,
-  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload, Tag, Music, Building2,
+  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload, Download, Tag, Music, Building2,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -23,6 +23,7 @@ import { VirtualizedCardGrid } from '../../components/ui/VirtualizedCardGrid';
 import type { InstructorFormData } from '../../components/modals/InstructorEditModal';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
+import { exportCsvFile, stringifyAvailability } from '../../lib/csvExport';
 import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 import { SKILL_STYLES } from '../../lib/subjectColors';
 import { FilterBar, type ActiveFilters, type FilterConfig } from '../../components/layout/FilterBar';
@@ -213,6 +214,10 @@ function getTimePeriodAvailability(
   if (coveredHours === 0) return 'none';
   if (coveredHours === totalHours) return 'full';
   return 'partial';
+}
+
+function getDayAvailabilityCsv(availability: AvailabilityJson | null | undefined) {
+  return stringifyAvailability(availability);
 }
 
 /* ── Skeleton ───────────────────────────────────────────────── */
@@ -1519,6 +1524,65 @@ function PeoplePage() {
     fetchVenues();
   }, [fetchInstructors, fetchVenues]);
 
+  const exportStaffCsv = useCallback(() => {
+    const filename = `staff-${new Date().toISOString().slice(0, 10)}.csv`;
+    const count = exportCsvFile(
+      filename,
+      INSTRUCTOR_CSV_COLUMNS,
+      allInstructors.map((instructor) => ({
+        first_name: instructor.first_name ?? '',
+        last_name: instructor.last_name ?? '',
+        email: instructor.email ?? '',
+        phone: instructor.phone ?? '',
+        skills: (instructor.skills ?? []).join(';'),
+        availability_json: instructor.availability_json ? JSON.stringify(instructor.availability_json) : '',
+        is_active: instructor.is_active,
+        on_call: instructor.on_call,
+        notes: instructor.notes ?? '',
+      })),
+    );
+    setToast({ message: `Exported ${count} staff member(s) to CSV`, type: 'success', id: Date.now() });
+  }, [allInstructors]);
+
+  const exportVenuesCsv = useCallback(() => {
+    const filename = `venues-${new Date().toISOString().slice(0, 10)}.csv`;
+    const count = exportCsvFile(
+      filename,
+      VENUE_CSV_COLUMNS,
+      venues.map((venue) => {
+        const availability = getDayAvailabilityCsv(venue.availability_json);
+        return {
+          name: venue.name ?? '',
+          space_type: venue.space_type ?? '',
+          max_capacity: venue.max_capacity ?? '',
+          address: venue.address ?? '',
+          is_virtual: venue.is_virtual,
+          amenities: (venue.amenities ?? []).join(';'),
+          description: venue.description ?? '',
+          monday: availability.monday,
+          tuesday: availability.tuesday,
+          wednesday: availability.wednesday,
+          thursday: availability.thursday,
+          friday: availability.friday,
+          saturday: availability.saturday,
+          sunday: availability.sunday,
+          notes: venue.notes ?? '',
+          min_booking_duration_minutes: venue.min_booking_duration_minutes ?? '',
+          max_booking_duration_minutes: venue.max_booking_duration_minutes ?? '',
+          buffer_minutes: venue.buffer_minutes ?? '',
+          advance_booking_days: venue.advance_booking_days ?? '',
+          cancellation_window_hours: venue.cancellation_window_hours ?? '',
+          cost_per_hour: venue.cost_per_hour ?? '',
+          max_concurrent_bookings: venue.max_concurrent_bookings ?? '',
+          blackout_dates: (venue.blackout_dates ?? []).join(';'),
+          is_wheelchair_accessible: venue.is_wheelchair_accessible,
+          subjects: (venue.subjects ?? []).join(';'),
+        };
+      }),
+    );
+    setToast({ message: `Exported ${count} venue(s) to CSV`, type: 'success', id: Date.now() });
+  }, [venues]);
+
   // Performance: measure time from mount to data ready
   useEffect(() => {
     if (!loadingAll && !loadingVenues) {
@@ -2050,6 +2114,15 @@ function PeoplePage() {
 
             <Button
               variant="ghost"
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export staff as CSV in the same format used for import"
+              onClick={exportStaffCsv}
+              disabled={allInstructors.length === 0}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="ghost"
               icon={<Upload className="w-4 h-4" />}
               tooltip="Import staff from CSV"
               onClick={() => setInstructorImportOpen(true)}
@@ -2193,6 +2266,15 @@ function PeoplePage() {
               </div>
             </Tooltip>
 
+            <Button
+              variant="ghost"
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export venues as CSV in the same format used for import"
+              onClick={exportVenuesCsv}
+              disabled={venues.length === 0}
+            >
+              Export CSV
+            </Button>
             <Button
               variant="ghost"
               icon={<Upload className="w-4 h-4" />}

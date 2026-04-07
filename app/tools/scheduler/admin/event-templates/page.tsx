@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Plus, Loader2, Check, AlertTriangle, Upload, X,
+  Plus, Loader2, Check, AlertTriangle, Upload, Download, X,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Tooltip } from '../../components/ui/Tooltip';
@@ -20,6 +20,7 @@ import type {
 } from '@/types/database';
 import { getSubjectColor } from '../../lib/subjectColors';
 import { requestCache } from '@/lib/requestCache';
+import { exportCsvFile } from '../../lib/csvExport';
 
 /* ── Constants ──────────────────────────────────────────────── */
 
@@ -51,6 +52,8 @@ const TEMPLATE_CSV_COLUMNS: CsvColumnDef[] = [
   { csvHeader: 'week_in_cycle', label: 'Week in Cycle' },
   { csvHeader: 'additional_tags', label: 'Additional Tags' },
 ];
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 
 const VALID_DAYS = new Set([
   'sunday', 'sun', 'monday', 'mon', 'tuesday', 'tue',
@@ -296,6 +299,36 @@ function EventTemplatesPage() {
     ),
     [tagOptions]
   );
+
+  const exportTemplatesCsv = useCallback(() => {
+    const filename = `event-templates-${new Date().toISOString().slice(0, 10)}.csv`;
+    const dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const count = exportCsvFile(
+      filename,
+      csvColumns,
+      templates.map((template) => ({
+        name: template.name ?? '',
+        day: template.day_of_week === null ? '' : dayLabels[template.day_of_week] ?? '',
+        start_time: template.start_time ? template.start_time.slice(0, 5) : '',
+        end_time: template.end_time ? template.end_time.slice(0, 5) : '',
+        session_duration: '',
+        venue: template.venue?.name ?? '',
+        instructor: template.instructor ? `${template.instructor.first_name} ${template.instructor.last_name}`.trim() : '',
+        subjects: (template.required_skills ?? []).join(';'),
+        grades: (template.grade_groups ?? []).join(';'),
+        scheduling_mode: template.scheduling_mode ?? '',
+        starts_on: template.starts_on ?? '',
+        ends_on: template.ends_on ?? '',
+        duration_weeks: template.duration_weeks ?? '',
+        session_count: template.session_count ?? '',
+        within_weeks: template.within_weeks ?? '',
+        week_cycle_length: template.week_cycle_length ?? '',
+        week_in_cycle: template.week_in_cycle ?? '',
+        additional_tags: (template.additional_tags ?? []).join(';'),
+      })),
+    );
+    setToast({ message: `Exported ${count} template(s) to CSV`, type: 'success', id: Date.now() });
+  }, [csvColumns, templates]);
 
   /* ── Form helpers ───────────────────────────────────────── */
 
@@ -569,6 +602,10 @@ function EventTemplatesPage() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button variant="secondary" onClick={exportTemplatesCsv} tooltip="Export event templates as CSV in the same format used for import" disabled={templates.length === 0}>
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
             <Button variant="secondary" onClick={() => setImportOpen(true)} tooltip="Import templates from CSV">
               <Upload className="w-4 h-4" />
               Import CSV
