@@ -7,6 +7,11 @@ export async function POST(request: Request) {
   try {
     const { provider, redirectTo } = await request.json()
 
+    // [DEBUG] Preview auth redirect diagnosis — remove after investigation
+    const incomingOrigin = request.headers.get('origin') || request.headers.get('referer') || '(none)'
+    console.log('[oauth-debug] incoming origin:', incomingOrigin)
+    console.log('[oauth-debug] redirectTo from client:', redirectTo)
+
     if (!provider) {
       return NextResponse.json({ error: 'Provider is required' }, { status: 400 })
     }
@@ -34,7 +39,11 @@ export async function POST(request: Request) {
       options: { redirectTo },
     })
 
+    // [DEBUG] Log the OAuth URL supabase returned
+    console.log('[oauth-debug] supabase OAuth URL:', data.url)
+
     if (error) {
+      console.warn('[oauth-debug] supabase OAuth error:', error.message)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 

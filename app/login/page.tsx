@@ -186,6 +186,24 @@ function LoginPageContent() {
               {oauthLoading ? 'Redirecting...' : 'Sign in with Google'}
             </button>
 
+            {/* [DEBUG] Preview auth redirect diagnosis — remove after investigation */}
+            {typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') && (
+              <p
+                style={{
+                  fontSize: '10px',
+                  color: '#999',
+                  background: '#f0f0f0',
+                  borderRadius: '4px',
+                  padding: '6px 8px',
+                  margin: '8px 0 0',
+                  fontFamily: 'monospace',
+                  wordBreak: 'break-all',
+                }}
+              >
+                [debug] redirectTo: {window.location.origin + '/auth/callback?next=' + encodeURIComponent(next)}
+              </p>
+            )}
+
             {/* Divider */}
             <div
               style={{

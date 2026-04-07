@@ -9,6 +9,12 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/tools'
 
+  // [DEBUG] Preview auth redirect diagnosis — remove after investigation
+  console.log('[callback-debug] request.url:', request.url)
+  console.log('[callback-debug] parsed origin:', origin)
+  console.log('[callback-debug] next:', next)
+  console.log('[callback-debug] code present:', !!code)
+
   if (code) {
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -28,6 +34,7 @@ export async function GET(request: NextRequest) {
       }
     )
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+    console.log('[callback-debug] exchangeCodeForSession:', error ? `FAILED — ${error.message}` : 'SUCCESS')
     if (!error) {
       // Fire-and-forget: log OAuth login activity
       supabase.auth.getUser().then(({ data: { user } }) => {
