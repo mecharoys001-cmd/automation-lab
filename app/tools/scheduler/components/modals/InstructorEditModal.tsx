@@ -119,14 +119,7 @@ export function InstructorEditModal({
       setPhoneError('Enter a valid phone number (7–15 digits, may include spaces, dashes, parentheses, dots, and +)');
       return;
     }
-    if (form.start_year.trim()) {
-      const yr = parseInt(form.start_year.trim(), 10);
-      const currentYear = new Date().getFullYear();
-      if (!/^\d{4}$/.test(form.start_year.trim()) || yr < 1900 || yr > currentYear + 1) {
-        setStartYearError(`Enter a valid 4-digit year between 1900 and ${currentYear + 1}`);
-        return;
-      }
-    }
+    // start_year validation is handled by the dropdown (only valid years or empty)
     onSave(form);
   };
 
@@ -292,32 +285,20 @@ export function InstructorEditModal({
         <div>
           <label htmlFor="instructor-start-year" className="block text-sm font-semibold text-slate-600 mb-1.5">Start Year</label>
           <Tooltip text="The year this staff member started working in this field" className="w-full">
-            <input
+            <select
               id="instructor-start-year"
-              type="number"
-              inputMode="numeric"
-              min="1900"
-              max={new Date().getFullYear() + 1}
               value={form.start_year}
               onChange={(e) => {
-                const filtered = e.target.value.replace(/\D/g, '').slice(0, 4);
-                setField('start_year', filtered);
+                setField('start_year', e.target.value);
               }}
-              onBlur={() => {
-                if (form.start_year.trim()) {
-                  const yr = parseInt(form.start_year.trim(), 10);
-                  const currentYear = new Date().getFullYear();
-                  if (!/^\d{4}$/.test(form.start_year.trim()) || yr < 1900 || yr > currentYear + 1) {
-                    setStartYearError(`Enter a valid 4-digit year between 1900 and ${currentYear + 1}`);
-                  }
-                }
-              }}
-              maxLength={4}
-              placeholder="e.g. 2015"
-              className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:ring-1 transition-colors ${startYearError ? 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500'}`}
-            />
+              className="w-full border rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-1 transition-colors border-slate-200 focus-visible:border-blue-500 focus-visible:ring-blue-500"
+            >
+              <option value="">Select year (optional)</option>
+              {Array.from({ length: new Date().getFullYear() - 1970 + 1 }, (_, i) => new Date().getFullYear() - i).map((yr) => (
+                <option key={yr} value={String(yr)}>{yr}</option>
+              ))}
+            </select>
           </Tooltip>
-          {startYearError && <p role="alert" className="text-xs text-red-700 mt-1">{startYearError}</p>}
         </div>
 
         {/* Event Type */}

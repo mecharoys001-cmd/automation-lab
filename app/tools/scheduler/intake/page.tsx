@@ -390,13 +390,7 @@ function IntakeForm() {
     if (form.phone.trim() && !isValidPhone(form.phone)) {
       newErrors.phone = 'Please enter a valid phone number (e.g. (555) 123-4567)';
     }
-    if (form.start_year.trim()) {
-      const yr = parseInt(form.start_year.trim(), 10);
-      const currentYear = new Date().getFullYear();
-      if (!/^\d{4}$/.test(form.start_year.trim()) || yr < 1900 || yr > currentYear + 1) {
-        newErrors.start_year = `Enter a valid 4-digit year between 1900 and ${currentYear + 1}`;
-      }
-    }
+    // start_year validation is handled by the dropdown (only valid years or empty)
     if (selectedSkills.size === 0) newErrors.skills = 'Please select at least one event type';
     if (selectedSlots.size === 0) newErrors.availability = 'Please select your availability';
     setErrors(newErrors);
@@ -683,28 +677,26 @@ function IntakeForm() {
                 What Year Did You Start?
               </label>
               <Tooltip text="The year you started working in this field (optional)" className="w-full">
-                <input
+                <select
                   id="start_year"
-                  type="number"
-                  inputMode="numeric"
-                  min="1900"
-                  max={new Date().getFullYear() + 1}
                   aria-invalid={!!errors.start_year}
-                  aria-describedby={errors.start_year ? 'start_year-error' : 'start_year-hint'}
+                  aria-describedby="start_year-hint"
                   value={form.start_year}
                   onChange={(e) => {
-                    const filtered = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    setForm((prev) => ({ ...prev, start_year: filtered }));
+                    setForm((prev) => ({ ...prev, start_year: e.target.value }));
                     if (errors.start_year) setErrors((prev) => ({ ...prev, start_year: undefined }));
                   }}
                   className={`w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     errors.start_year ? 'border-red-500' : 'border-border'
                   }`}
-                  placeholder="e.g. 2015"
-                />
+                >
+                  <option value="">Select year (optional)</option>
+                  {Array.from({ length: new Date().getFullYear() - 1970 + 1 }, (_, i) => new Date().getFullYear() - i).map((yr) => (
+                    <option key={yr} value={String(yr)}>{yr}</option>
+                  ))}
+                </select>
               </Tooltip>
-              <p id="start_year-error" role="alert" aria-live="assertive" className="mt-1 text-xs text-red-700">{errors.start_year ?? ''}</p>
-              <p id="start_year-hint" className="mt-0.5 text-[11px] text-muted-foreground">4-digit year (optional)</p>
+              <p id="start_year-hint" className="mt-0.5 text-[11px] text-muted-foreground">Optional</p>
             </div>
 
             {/* Bio */}
