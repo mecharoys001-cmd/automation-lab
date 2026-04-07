@@ -289,7 +289,7 @@ function MonthGrid({
 
           // Empty cell before month starts or after month ends
           if (day < 1 || day > daysInMonth) {
-            return <div key={cellIndex} className={`h-10 sm:h-12 border-b border-slate-200 bg-slate-50/40 ${cellIndex % 7 < 6 ? 'border-r border-slate-200' : ''}`} />;
+            return <div key={cellIndex} className={`h-14 sm:h-16 border-b border-slate-200 bg-slate-50/40 ${cellIndex % 7 < 6 ? 'border-r border-slate-200' : ''}`} />;
           }
 
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -331,7 +331,7 @@ function MonthGrid({
               <div
                 onMouseDown={(e) => onDayMouseDown(dateStr, e)}
                 onMouseEnter={() => onDayMouseEnter(dateStr)}
-                className={`h-10 sm:h-12 border-b border-slate-200 flex flex-col items-center justify-center transition-colors cursor-pointer select-none box-border ${
+                className={`h-14 sm:h-16 border-b border-slate-200 flex flex-col items-center justify-start pt-1 transition-colors cursor-pointer select-none box-border ${
                   dayOfWeek < 6 ? 'border-r border-slate-200' : ''
                 } ${
                   isSelected
@@ -360,14 +360,20 @@ function MonthGrid({
                   {day}
                 </span>
 
-                {/* Status dots */}
+                {/* Status details */}
                 {dayEntries.length > 0 && (
-                  <div className="flex items-center gap-0.5 mt-0.5">
-                    {dayEntries.slice(0, 3).map((entry, idx) => (
-                      <span
-                        key={idx}
-                        className={`h-1.5 w-1.5 rounded-full ${STATUS_COLORS[entry.status_type].dot}`}
-                      />
+                  <div className="flex flex-col items-center gap-0.5 mt-0.5 w-full px-1 overflow-hidden">
+                    {dayEntries.slice(0, 2).map((entry, idx) => (
+                      <div key={idx} className="flex items-center gap-0.5 max-w-full">
+                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${STATUS_COLORS[entry.status_type].dot}`} />
+                        <span className="text-[9px] leading-tight truncate">
+                          {entry.status_type === 'early_dismissal' && entry.early_dismissal_time
+                            ? formatTime(entry.early_dismissal_time)
+                            : entry.description
+                            ? entry.description
+                            : STATUS_LABELS[entry.status_type]}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 )}
