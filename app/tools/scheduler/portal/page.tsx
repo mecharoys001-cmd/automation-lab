@@ -6,7 +6,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { Instructor, Session, Venue, Program } from '@/types/database';
 import { Tooltip } from '../components/ui/Tooltip';
+import { RichNotes } from '../components/ui/RichNotes';
 import { ViewToggle } from '../components/ui/ViewToggle';
+import { TimeOffTab } from '../components/ui/TimeOffTab';
 import type { CalendarView } from '../components/ui/ViewToggle';
 import type { CalendarEvent } from '../components/calendar/types';
 import { sessionToCalendarEvent } from '../lib/sessionToCalendarEvent';
@@ -22,7 +24,7 @@ const YearView = dynamic(() => import('../components/calendar/YearView').then(m 
 interface SessionDisplay extends Session {
   venue?: Venue | null;
   program?: Program | null;
-  instructor?: { id: string; first_name: string; last_name: string } | null;
+  instructor?: { id: string; first_name: string; last_name: string; public_notes?: string | null } | null;
 }
 
 // ── Schedule mode ─────────────────────────────────────────────────
@@ -32,6 +34,8 @@ type ScheduleMode = 'my' | 'full';
 // ── View filter ────────────────────────────────────────────────────
 
 type ViewFilter = 'upcoming' | 'past' | 'all';
+
+type PortalSection = 'schedule' | 'time-off';
 
 // ── Component ──────────────────────────────────────────────────────
 
@@ -57,6 +61,7 @@ export default function InstructorPortalPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeProgramIds, setActiveProgramIds] = useState<Set<string>>(new Set());
+  const [portalSection, setPortalSection] = useState<PortalSection>('schedule');
 
   async function handleSignOut() {
     await fetch('/api/auth/signout', { method: 'POST' });
@@ -215,11 +220,18 @@ export default function InstructorPortalPage() {
         {/* Header — sticky */}
         <div className="pt-6 pb-4 shrink-0 bg-white z-10">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold sm:text-3xl text-slate-900">
-              {instructor
-                ? `${instructor.first_name} ${instructor.last_name}`
-                : 'Staff Portal'}
-            </h1>
+            <div>
+              <h1 className="text-2xl font-bold sm:text-3xl text-slate-900">
+                {instructor
+                  ? `${instructor.first_name} ${instructor.last_name}`
+                  : 'Staff Portal'}
+              </h1>
+              {instructor?.public_notes && (
+                <p className="mt-1 text-sm text-slate-600">
+                  <RichNotes text={instructor.public_notes} />
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <Tooltip text="Return to scheduler home">
                 <Link
@@ -244,11 +256,42 @@ export default function InstructorPortalPage() {
             </div>
           </div>
           <p className="text-sm text-slate-500">
-            {scheduleMode === 'full' ? 'Full program schedule (read-only)' : 'Your teaching schedule (read-only)'}
+            {portalSection === 'time-off'
+              ? 'Submit and track your time off requests'
+              : scheduleMode === 'full' ? 'Full program schedule (read-only)' : 'Your teaching schedule (read-only)'}
           </p>
+
+          {/* Section toggle: Schedule / Time Off */}
+          <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 mt-3 w-fit">
+            {([
+              { key: 'schedule' as const, label: 'Schedule', tip: 'View your teaching schedule' },
+              { key: 'time-off' as const, label: 'Time Off', tip: 'Submit and view time off requests' },
+            ]).map(({ key, label, tip }) => (
+              <Tooltip key={key} text={tip}>
+                <button
+                  onClick={() => setPortalSection(key)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    portalSection === key
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              </Tooltip>
+            ))}
+          </div>
         </div>
 
-        {error ? (
+        {portalSection === 'time-off' ? (
+          <div className="flex-1 overflow-y-auto py-2">
+            {instructor ? (
+              <TimeOffTab staffId={instructor.id} />
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">Staff profile not loaded.</p>
+            )}
+          </div>
+        ) : error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center">
             <p className="text-sm text-red-700">{error}</p>
           </div>

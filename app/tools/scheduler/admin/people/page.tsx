@@ -27,6 +27,8 @@ import type { Instructor, Venue, AvailabilityJson, DayOfWeek, TimeBlock } from '
 import { SKILL_STYLES } from '../../lib/subjectColors';
 import { FilterBar, type ActiveFilters, type FilterConfig } from '../../components/layout/FilterBar';
 import { useProgram } from '../ProgramContext';
+import { RichNotes } from '../../components/ui/RichNotes';
+import { TimeOffReviewPanel } from '../../components/ui/TimeOffReviewPanel';
 
 /* ── Constants ──────────────────────────────────────────────── */
 
@@ -589,7 +591,8 @@ function VenueDetailModal({
   const [bufferMinutes, setBufferMinutes] = useState<string>(
     venue.buffer_minutes != null ? String(venue.buffer_minutes) : ''
   );
-  const [notes, setNotes] = useState(venue.notes ?? '');
+  const [publicNotes, setPublicNotes] = useState(venue.public_notes ?? '');
+  const [adminNotes, setAdminNotes] = useState(venue.admin_notes ?? '');
   const [editAvailability, setEditAvailability] = useState<AvailabilityJson | null>(
     venue.availability_json ?? null
   );
@@ -609,7 +612,8 @@ function VenueDetailModal({
       is_wheelchair_accessible: accessible,
       buffer_minutes: bufferMinutes ? Number(bufferMinutes) : null,
       availability_json: editAvailability,
-      notes: notes.trim() || null,
+      public_notes: publicNotes.trim() || null,
+      admin_notes: adminNotes.trim() || null,
       subjects: venueSubjects.length > 0 ? venueSubjects : null,
       additional_tags: venueAdditionalTags.length > 0 ? venueAdditionalTags : [],
     });
@@ -624,7 +628,8 @@ function VenueDetailModal({
     setAccessible(venue.is_wheelchair_accessible ?? (venue.amenities ?? []).includes('wheelchair_accessible'));
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setEditAvailability(venue.availability_json ?? null);
-    setNotes(venue.notes ?? '');
+    setPublicNotes(venue.public_notes ?? '');
+    setAdminNotes(venue.admin_notes ?? '');
     setVenueAdditionalTags(venue.additional_tags ?? []);
     setEditing(false);
   };
@@ -780,14 +785,29 @@ function VenueDetailModal({
             <AvailabilityGrid availability={venue.availability_json} />
           </div>
 
-          {/* Notes */}
+          {/* Public Notes */}
           <div className="px-6 py-3">
             <div className="flex items-center gap-1.5 mb-1.5">
               <StickyNote className="w-4 h-4 text-slate-700" />
-              <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Notes</span>
+              <Tooltip text="Visible to staff in the portal">
+                <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Public Notes</span>
+              </Tooltip>
             </div>
             <p className="text-sm text-slate-600 whitespace-pre-wrap">
-              {venue.notes || <span className="text-slate-700">No notes added</span>}
+              {venue.public_notes ? <RichNotes text={venue.public_notes} /> : <span className="text-slate-700">No public notes added</span>}
+            </p>
+          </div>
+
+          {/* Admin Notes */}
+          <div className="px-6 py-3">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <StickyNote className="w-4 h-4 text-slate-700" />
+              <Tooltip text="Only visible to admins">
+                <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Admin Notes</span>
+              </Tooltip>
+            </div>
+            <p className="text-sm text-slate-600 whitespace-pre-wrap">
+              {venue.admin_notes ? <RichNotes text={venue.admin_notes} /> : <span className="text-slate-700">No admin notes added</span>}
             </p>
           </div>
         </div>
@@ -912,19 +932,38 @@ function VenueDetailModal({
             </Tooltip>
           </div>
 
-          {/* Notes */}
+          {/* Public Notes */}
           <div>
-            <label htmlFor="venue-edit-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
-            <Tooltip text="Additional notes or special instructions for this venue">
+            <label htmlFor="venue-edit-public-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Public Notes</label>
+            <Tooltip text="Visible to staff in the portal">
               <textarea
-                id="venue-edit-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes about this venue…"
-                rows={3}
+                id="venue-edit-public-notes"
+                value={publicNotes}
+                onChange={(e) => setPublicNotes(e.target.value)}
+                maxLength={500}
+                placeholder="Notes visible to staff…"
+                rows={2}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
               />
             </Tooltip>
+            <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
+          </div>
+
+          {/* Admin Notes */}
+          <div>
+            <label htmlFor="venue-edit-admin-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Admin Notes</label>
+            <Tooltip text="Only visible to admins">
+              <textarea
+                id="venue-edit-admin-notes"
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                maxLength={500}
+                placeholder="Internal admin-only notes…"
+                rows={2}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+              />
+            </Tooltip>
+            <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
           </div>
         </div>
       )}
@@ -1129,7 +1168,8 @@ interface VenueFormData {
   is_wheelchair_accessible: boolean;
   buffer_minutes: string;
   availability_json: AvailabilityJson | null;
-  notes: string;
+  public_notes: string;
+  admin_notes: string;
   subjects: string[];
 }
 
@@ -1141,7 +1181,8 @@ const EMPTY_VENUE_FORM: VenueFormData = {
   is_wheelchair_accessible: false,
   buffer_minutes: '',
   availability_json: null,
-  notes: '',
+  public_notes: '',
+  admin_notes: '',
   subjects: [],
 };
 
@@ -1402,19 +1443,38 @@ function VenueCreateModal({
           />
         </div>
 
-        {/* Notes */}
+        {/* Public Notes */}
         <div>
-          <label htmlFor="venue-form-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
-          <Tooltip text="Internal notes about this venue" className="w-full">
+          <label htmlFor="venue-form-public-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Public Notes</label>
+          <Tooltip text="Visible to staff in the portal" className="w-full">
             <textarea
-              id="venue-form-notes"
-              value={form.notes}
-              onChange={(e) => setField('notes', e.target.value)}
-              placeholder="Add notes about this venue…"
-              rows={3}
+              id="venue-form-public-notes"
+              value={form.public_notes}
+              onChange={(e) => setField('public_notes', e.target.value)}
+              maxLength={500}
+              placeholder="Notes visible to staff…"
+              rows={2}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
+          <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
+        </div>
+
+        {/* Admin Notes */}
+        <div>
+          <label htmlFor="venue-form-admin-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Admin Notes</label>
+          <Tooltip text="Only visible to admins" className="w-full">
+            <textarea
+              id="venue-form-admin-notes"
+              value={form.admin_notes}
+              onChange={(e) => setField('admin_notes', e.target.value)}
+              maxLength={500}
+              placeholder="Internal admin-only notes…"
+              rows={2}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+            />
+          </Tooltip>
+          <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
         </div>
       </form>
     </Modal>
@@ -1682,7 +1742,8 @@ function PeoplePage() {
         last_name: data.last_name.trim(),
         email: data.email.trim() || null,
         phone: data.phone.trim() || null,
-        notes: data.notes.trim() || null,
+        public_notes: data.public_notes.trim() || null,
+        admin_notes: data.admin_notes.trim() || null,
         bio: data.bio.trim() || null,
         start_year: data.start_year.trim() ? parseInt(data.start_year.trim(), 10) : null,
         is_active: data.is_active,
@@ -1761,7 +1822,8 @@ function PeoplePage() {
         is_wheelchair_accessible: data.is_wheelchair_accessible,
         buffer_minutes: data.buffer_minutes ? Number(data.buffer_minutes) : null,
         availability_json: data.availability_json,
-        notes: data.notes.trim() || null,
+        public_notes: data.public_notes.trim() || null,
+        admin_notes: data.admin_notes.trim() || null,
         subjects: data.subjects.length > 0 ? data.subjects : null,
         program_id: selectedProgramId,
       };
@@ -2004,6 +2066,11 @@ function PeoplePage() {
 
       {/* ── Content Area ─────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+
+        {/* ── Time Off Review ──────────────────────────────── */}
+        {selectedProgramId && (
+          <TimeOffReviewPanel programId={selectedProgramId} />
+        )}
 
         {/* ── Share Intake Form Section ────────────────────── */}
         <section className="bg-gradient-to-r from-blue-50 to-violet-50 rounded-lg border border-blue-200 p-4 sm:p-5">
@@ -2433,7 +2500,8 @@ function PeoplePage() {
             friday: r.friday || '',
             saturday: r.saturday || '',
             sunday: r.sunday || '',
-            notes: r.notes || '',
+            admin_notes: r.notes || '',
+            public_notes: '',
             min_booking_duration_minutes: r.min_booking_duration_minutes || '',
             max_booking_duration_minutes: r.max_booking_duration_minutes || '',
             buffer_minutes: r.buffer_minutes || '',
@@ -2483,7 +2551,8 @@ function PeoplePage() {
             availability_json: r.availability_json || '',
             is_active: r.is_active || '',
             on_call: r.on_call || '',
-            notes: r.notes || '',
+            admin_notes: r.notes || '',
+            public_notes: '',
           }));
           const res = await fetch('/api/staff/import', {
             method: 'POST',
