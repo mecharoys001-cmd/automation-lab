@@ -16,5 +16,13 @@ ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_email_key;
 -- 2. Add program-scoped uniqueness: same email allowed across programs,
 --    unique within a single program.  NULLs are not considered equal by
 --    Postgres UNIQUE, so multiple NULL emails per program are fine.
-ALTER TABLE staff
-  ADD CONSTRAINT staff_program_id_email_key UNIQUE (program_id, email);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'staff_program_id_email_key'
+  ) THEN
+    ALTER TABLE staff
+      ADD CONSTRAINT staff_program_id_email_key UNIQUE (program_id, email);
+  END IF;
+END
+$$;

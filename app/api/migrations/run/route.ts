@@ -3,12 +3,22 @@ import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 
 const PROJECT_REF = 'uxjdencafxnugkoewvwq';
 
-interface Migration {
+interface ColumnMigration {
   name: string;
   checkTable: string;
   checkColumn: string;
   sql: string;
+  idempotent?: false;
 }
+
+interface IdempotentMigration {
+  name: string;
+  sql: string;
+  /** When true, always runs — the SQL itself must be safe for repeated execution. */
+  idempotent: true;
+}
+
+type Migration = ColumnMigration | IdempotentMigration;
 
 const MIGRATIONS: Migration[] = [
   {
@@ -35,6 +45,26 @@ const MIGRATIONS: Migration[] = [
     checkTable: 'sessions',
     checkColumn: 'name',
     sql: `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS name TEXT;`,
+  },
+  {
+    name: 'staff_email_program_scoped_unique',
+    idempotent: true,
+    sql: `
+-- Drop stale global unique constraint on staff.email
+ALTER TABLE staff DROP CONSTRAINT IF EXISTS instructors_email_key;
+ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_email_key;
+
+-- Add program-scoped uniqueness (idempotent via pg_constraint check)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'staff_program_id_email_key'
+  ) THEN
+    ALTER TABLE staff
+      ADD CONSTRAINT staff_program_id_email_key UNIQUE (program_id, email);
+  END IF;
+END
+$$;`,
   },
 ];
 
@@ -80,11 +110,17 @@ export async function POST(request: Request) {
     const skipped: string[] = [];
 
     for (const m of MIGRATIONS) {
-      const exists = await checkColumnExists(supabaseUrl, serviceKey, m.checkTable, m.checkColumn);
-      if (exists) {
-        skipped.push(m.name);
-      } else {
+      if (m.idempotent) {
+        // Idempotent migrations always run — their SQL is safe for repeated execution
         pending.push(m);
+      } else {
+        const cm = m as ColumnMigration;
+        const exists = await checkColumnExists(supabaseUrl, serviceKey, cm.checkTable, cm.checkColumn);
+        if (exists) {
+          skipped.push(m.name);
+        } else {
+          pending.push(m);
+        }
       }
     }
 
