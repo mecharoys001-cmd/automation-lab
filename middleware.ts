@@ -41,7 +41,7 @@ function buildCspHeader(nonce: string): string {
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com`,
     `img-src 'self' data: blob:`,
-    `connect-src 'self' https://*.supabase.co`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co`,
     `media-src 'self' https://vid.cdn-website.com blob:`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
