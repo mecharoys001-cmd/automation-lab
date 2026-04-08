@@ -46,8 +46,13 @@ export default function CsvDedupPage() {
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Feature chips */}
+      {/* Tool embed */}
+      <CsvDedupEmbed />
+
+      {/* Feature chips */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2.5rem 1.5rem 0" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2.5rem" }}>
           {features.map(f => (
             <div key={f.label} style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1rem", display: "flex", gap: "10px", alignItems: "flex-start", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -60,9 +65,6 @@ export default function CsvDedupPage() {
           ))}
         </div>
       </div>
-
-      {/* Tool embed */}
-      <CsvDedupEmbed />
 
       {/* About */}
       <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 1.5rem 5rem" }}>
