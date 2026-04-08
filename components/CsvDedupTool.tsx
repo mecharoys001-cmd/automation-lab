@@ -118,7 +118,7 @@ export default function CsvDedupTool() {
           setS(p => ({ ...p, error: "Failed to parse file. Check the file format.", dragging: false }));
         }
       };
-      reader.readAsText(file);
+      reader.readAsText(file, "UTF-8");
     }
   }, [handleParsed]);
 
@@ -213,9 +213,9 @@ export default function CsvDedupTool() {
       const buf = XLSX.write(wb, { bookType: fmt === ".xls" ? "xls" : "xlsx", type: "array" });
       blob = new Blob([buf], { type: "application/octet-stream" });
     } else if (fmt === ".tsv") {
-      blob = new Blob([toTSV(s.headers, outputRows)], { type: "text/tab-separated-values" });
+      blob = new Blob(["\uFEFF" + toTSV(s.headers, outputRows)], { type: "text/tab-separated-values;charset=utf-8" });
     } else {
-      blob = new Blob([toCSV(s.headers, outputRows)], { type: "text/csv" });
+      blob = new Blob(["\uFEFF" + toCSV(s.headers, outputRows)], { type: "text/csv;charset=utf-8" });
     }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url;
