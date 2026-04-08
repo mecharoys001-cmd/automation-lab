@@ -319,10 +319,11 @@ function CalendarDashboard() {
   const [dbVenues, setDbVenues] = useState<Array<{ id: string; name: string }>>([]);
   const [eventTemplates, setEventTemplates] = useState<EventTemplate[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [currentUserRoleLevel, setCurrentUserRoleLevel] = useState<'master' | 'standard' | 'editor'>('editor');
   const [publishConfirm, setPublishConfirm] = useState<{
     error: string;
     sessions_missing_event_type: number;
-    affected_templates: string[];
+    affected_template_names: string[];
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -601,8 +602,24 @@ function CalendarDashboard() {
     [events, markRecentlyModified],
   );
 
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const roleLevel = data?.role_level;
+        if (roleLevel === 'master' || roleLevel === 'standard' || roleLevel === 'editor') {
+          setCurrentUserRoleLevel(roleLevel);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Publish all draft sessions via the publish API
   const handlePublishSchedule = useCallback(async (skipIncomplete = false) => {
+    if (currentUserRoleLevel === 'editor') {
+      showToast('Publishing requires Admin or Master Admin access', 'error');
+      return;
+    }
     if (events.length === 0) {
       showToast('No sessions to publish — generate a schedule first', 'info');
       return;
@@ -645,12 +662,12 @@ function CalendarDashboard() {
       );
 
       showToast(`${count} session${count !== 1 ? 's' : ''} published!`);
-    } catch {
-      showToast('Failed to publish schedule', 'error');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to publish schedule', 'error');
     } finally {
       setIsPublishing(false);
     }
-  }, [events, selectedProgramId]);
+  }, [currentUserRoleLevel, events, selectedProgramId]);
 
   // Compute the date range to fetch from the API based on the current view.
   // Plain function — not memoized — to avoid creating extra callback identities
@@ -1390,7 +1407,7 @@ function CalendarDashboard() {
                 </button>
                 <button
                   onClick={() => { handlePublishSchedule(); setShowOverflowMenu(false); }}
-                  disabled={isPublishing}
+                  disabled={isPublishing || currentUserRoleLevel === 'editor'}
                   className="flex items-center gap-2 w-full px-4 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left disabled:opacity-50"
                 >
                   <Upload className="w-3.5 h-3.5 text-slate-700" />
@@ -1420,9 +1437,9 @@ function CalendarDashboard() {
           <ReadinessWidget programId={selectedProgramId} />
           <Button
             variant="primary"
-            tooltip="Change all draft sessions to published"
+            tooltip={currentUserRoleLevel === 'editor' ? 'Publishing requires Admin or Master Admin access' : 'Change all draft sessions to published'}
             onClick={() => handlePublishSchedule()}
-            disabled={isPublishing}
+            disabled={isPublishing || currentUserRoleLevel === 'editor'}
           >
             {isPublishing ? 'Publishing...' : 'Publish Sessions'}
           </Button>
@@ -1816,13 +1833,13 @@ function CalendarDashboard() {
         }
       >
         <p className="text-sm text-slate-700 mb-3">{publishConfirm?.error}</p>
-        {publishConfirm?.affected_templates && publishConfirm.affected_templates.length > 0 && (
+        {publishConfirm?.affected_template_names && publishConfirm.affected_template_names.length > 0 && (
           <div>
             <p className="text-sm font-medium text-slate-700 mb-1">
               Affected templates ({publishConfirm.sessions_missing_event_type} session{publishConfirm.sessions_missing_event_type !== 1 ? 's' : ''}):
             </p>
             <ul className="list-disc list-inside text-sm text-slate-600 space-y-0.5">
-              {publishConfirm.affected_templates.map((name) => (
+              {publishConfirm.affected_template_names.map((name) => (
                 <li key={name}>{name}</li>
               ))}
             </ul>
