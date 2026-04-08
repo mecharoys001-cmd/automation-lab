@@ -50,7 +50,7 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: admin } = await (serviceClient.from('admins') as any)
       .select('id, google_email, display_name, role_level')
-      .eq('google_email', user.email)
+      .ilike('google_email', user.email!)
       .maybeSingle();
 
     if (admin) {
@@ -77,7 +77,7 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: instructor } = await (serviceClient.from('staff') as any)
       .select('id, first_name, last_name, email')
-      .eq('email', user.email)
+      .ilike('email', user.email!)
       .eq('is_active', true)
       .maybeSingle();
 

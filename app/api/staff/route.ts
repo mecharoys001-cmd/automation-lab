@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('staff') as any)
         .select('*')
-        .eq('email', email.trim().toLowerCase())
+        .ilike('email', email.trim())
         .maybeSingle();
 
       if (error) {

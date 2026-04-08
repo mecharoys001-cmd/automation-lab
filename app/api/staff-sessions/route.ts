@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: instructor, error: instrError } = await (supabase.from('staff') as any)
         .select('id')
-        .eq('email', email.trim().toLowerCase())
+        .ilike('email', email.trim())
         .maybeSingle();
 
       if (instrError) {
