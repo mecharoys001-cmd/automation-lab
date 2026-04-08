@@ -76,7 +76,8 @@ export interface Instructor {
   is_active: boolean;
   on_call: boolean;
   additional_tags?: string[] | null;
-  notes: string | null;
+  public_notes: string | null;
+  admin_notes: string | null;
   bio: string | null;
   start_year: number | null;
   created_at: string;
@@ -91,7 +92,8 @@ export interface Venue {
   max_capacity: number | null;
   availability_json: AvailabilityJson | null;
   is_virtual: boolean;
-  notes: string | null;
+  public_notes: string | null;
+  admin_notes: string | null;
   min_booking_duration_minutes: number | null;
   max_booking_duration_minutes: number | null;
   buffer_minutes: number | null;
@@ -156,6 +158,8 @@ export interface SessionTemplate {
   additional_tags: string[] | null;
   sort_order: number | null;
   is_active: boolean;
+  public_notes: string | null;
+  admin_notes: string | null;
   /** Multi-week cycle length. null or 1 = weekly (every week). 2+ = repeats every N weeks. */
   week_cycle_length: number | null;
   /** 0-indexed week position within the cycle. e.g. 0 = Week 1, 1 = Week 2, etc. */
@@ -427,6 +431,18 @@ export interface Database {
     };
   };
 }
+
+// ============================================================
+// Staff Time Off (re-exported from dedicated module)
+// ============================================================
+
+export type {
+  TimeOffRequestType,
+  TimeOffRequestStatus,
+  StaffTimeOffRequest,
+  TimeOffRequestWithStaff,
+  TimeOffImpactWarning,
+} from './staff-time-off';
 
 /** JSONB snapshot stored inside schedule_versions */
 export interface ScheduleSnapshot {
