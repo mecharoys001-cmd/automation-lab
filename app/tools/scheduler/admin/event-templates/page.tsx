@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Plus, Loader2, Check, AlertTriangle, Upload, X,
+  Plus, Loader2, Check, AlertTriangle, Upload, Download, X,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Tooltip } from '../../components/ui/Tooltip';
@@ -174,6 +174,60 @@ Piano Lab,Monday,09:00,10:00,,Classroom 101,John Smith,Piano,3rd;4th,ongoing,,,,
 Strings,Tuesday,10:00,11:30,,Stage,Jane Doe,Strings,5th;6th,date_range,2026-09-01,2026-12-15,,,2,1,
 Choir,Wednesday,13:00,14:00,,Cafe,,Choral,K;1st;2nd,duration,2026-09-01,,12,,,,Performance;Holiday
 Guitar,Thursday,,,45,Classroom 101,,Guitar,7th;8th,session_count,2026-09-01,,,10,20,,`;
+
+/* ── CSV Export helpers ─────────────────────────────────────── */
+
+function escapeCsvField(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function exportTemplatesCsv(
+  templateList: TemplateWithRelations[],
+  getInstructorName: (id: string | null) => string,
+  getVenueName: (t: TemplateWithRelations) => string,
+): number {
+  const headers = TEMPLATE_CSV_COLUMNS.map((c) => c.csvHeader);
+  const rows = templateList.map((t) => {
+    const instName = getInstructorName(t.instructor_id);
+    const venueName = getVenueName(t);
+    const values: Record<string, string> = {
+      name: t.name ?? '',
+      day: '',
+      start_time: t.start_time ?? '',
+      end_time: t.end_time ?? '',
+      session_duration: t.duration_minutes != null ? String(t.duration_minutes) : '',
+      venue: venueName !== '\u2014' ? venueName : '',
+      instructor: instName !== '\u2014' ? instName : '',
+      subjects: (t.required_skills ?? []).join(';'),
+      grades: (t.grade_groups ?? []).join(';'),
+      scheduling_mode: t.scheduling_mode ?? 'ongoing',
+      starts_on: t.starts_on ?? '',
+      ends_on: t.ends_on ?? '',
+      duration_weeks: t.duration_weeks != null ? String(t.duration_weeks) : '',
+      session_count: t.session_count != null ? String(t.session_count) : '',
+      within_weeks: t.within_weeks != null ? String(t.within_weeks) : '',
+      week_cycle_length: t.week_cycle_length != null ? String(t.week_cycle_length) : '',
+      week_in_cycle: t.week_in_cycle != null ? String(t.week_in_cycle) : '',
+      additional_tags: (t.additional_tags ?? []).join(';'),
+    };
+    return headers.map((h) => escapeCsvField(values[h] ?? '')).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `symphonix-event-templates-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return templateList.length;
+}
 
 /* ── Toast ──────────────────────────────────────────────────── */
 
@@ -569,6 +623,24 @@ function EventTemplatesPage() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="secondary"
+              tooltip="Export currently displayed templates to CSV"
+              onClick={() => {
+                const source = selectedTag
+                  ? templates.filter((t) =>
+                      [...(t.required_skills ?? []), ...(t.additional_tags ?? [])].some(
+                        (tag) => tag.toLowerCase() === selectedTag.toLowerCase()
+                      )
+                    )
+                  : templates;
+                const count = exportTemplatesCsv(source, getInstructorName, getVenueName);
+                setToast({ message: `Exported ${count} template${count !== 1 ? 's' : ''}`, type: 'success', id: Date.now() });
+              }}
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
             <Button variant="secondary" onClick={() => setImportOpen(true)} tooltip="Import templates from CSV">
               <Upload className="w-4 h-4" />
               Import CSV

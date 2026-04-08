@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Users, MapPin, Search, Plus, ChevronDown, ChevronLeft, ChevronRight, X, Mail, Phone,
   Accessibility, Clock, Home, StickyNote, Edit2, Copy,
-  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload, Tag, Music, Building2,
+  Check, AlertTriangle, Loader2, Trash2, Save, RefreshCw, Upload, Download, Tag, Music, Building2,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -178,6 +178,92 @@ function validateInstructorCsvRow(row: CsvRow, rowIndex: number): ValidationErro
     }
   }
   return errors;
+}
+
+/* ── CSV Export helpers ─────────────────────────────────────── */
+
+function escapeCsvField(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function downloadCsvBlob(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportStaffCsv(instructors: Instructor[]): number {
+  const headers = INSTRUCTOR_CSV_COLUMNS.map((c) => c.csvHeader);
+  const rows = instructors
+    .slice()
+    .sort((a, b) => (a.last_name ?? '').localeCompare(b.last_name ?? ''))
+    .map((inst) => {
+      const values: Record<string, string> = {
+        first_name: inst.first_name ?? '',
+        last_name: inst.last_name ?? '',
+        email: inst.email ?? '',
+        phone: inst.phone ?? '',
+        skills: (inst.skills ?? []).join(';'),
+        availability_json: inst.availability_json ? JSON.stringify(inst.availability_json) : '',
+        is_active: inst.is_active ? 'true' : 'false',
+        on_call: inst.on_call ? 'true' : 'false',
+        notes: inst.public_notes ?? '',
+      };
+      return headers.map((h) => escapeCsvField(values[h] ?? '')).join(',');
+    });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const today = new Date().toISOString().slice(0, 10);
+  downloadCsvBlob(csv, `symphonix-staff-${today}.csv`);
+  return instructors.length;
+}
+
+function exportVenuesCsv(venueList: Venue[]): number {
+  const headers = VENUE_CSV_COLUMNS.map((c) => c.csvHeader);
+  const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+  const rows = venueList
+    .slice()
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+    .map((v) => {
+      const avail = v.availability_json ?? {};
+      const values: Record<string, string> = {
+        name: v.name ?? '',
+        space_type: v.space_type ?? '',
+        max_capacity: v.max_capacity != null ? String(v.max_capacity) : '',
+        address: v.address ?? '',
+        is_virtual: v.is_virtual ? 'true' : 'false',
+        amenities: (v.amenities ?? []).join(';'),
+        description: v.description ?? '',
+        notes: v.public_notes ?? '',
+        min_booking_duration_minutes: v.min_booking_duration_minutes != null ? String(v.min_booking_duration_minutes) : '',
+        max_booking_duration_minutes: v.max_booking_duration_minutes != null ? String(v.max_booking_duration_minutes) : '',
+        buffer_minutes: v.buffer_minutes != null ? String(v.buffer_minutes) : '',
+        advance_booking_days: v.advance_booking_days != null ? String(v.advance_booking_days) : '',
+        cancellation_window_hours: v.cancellation_window_hours != null ? String(v.cancellation_window_hours) : '',
+        cost_per_hour: v.cost_per_hour != null ? String(v.cost_per_hour) : '',
+        max_concurrent_bookings: v.max_concurrent_bookings != null ? String(v.max_concurrent_bookings) : '',
+        blackout_dates: (v.blackout_dates ?? []).join(';'),
+        is_wheelchair_accessible: v.is_wheelchair_accessible ? 'true' : 'false',
+        subjects: (v.subjects ?? []).join(';'),
+      };
+      for (const day of dayKeys) {
+        const blocks = avail[day] ?? [];
+        values[day] = blocks.map((b: { start: string; end: string }) => `${b.start}-${b.end}`).join(';');
+      }
+      return headers.map((h) => escapeCsvField(values[h] ?? '')).join(',');
+    });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const today = new Date().toISOString().slice(0, 10);
+  downloadCsvBlob(csv, `symphonix-venues-${today}.csv`);
+  return venueList.length;
 }
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -2158,6 +2244,17 @@ function PeoplePage() {
 
             <Button
               variant="ghost"
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export currently displayed staff to CSV"
+              onClick={() => {
+                const count = exportStaffCsv(filtered);
+                setToast({ message: `Exported ${count} staff member${count !== 1 ? 's' : ''}`, type: 'success', id: Date.now() });
+              }}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="ghost"
               icon={<Upload className="w-4 h-4" />}
               tooltip="Import staff from CSV"
               onClick={() => setInstructorImportOpen(true)}
@@ -2301,6 +2398,17 @@ function PeoplePage() {
               </div>
             </Tooltip>
 
+            <Button
+              variant="ghost"
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export currently displayed venues to CSV"
+              onClick={() => {
+                const count = exportVenuesCsv(filteredVenues);
+                setToast({ message: `Exported ${count} venue${count !== 1 ? 's' : ''}`, type: 'success', id: Date.now() });
+              }}
+            >
+              Export CSV
+            </Button>
             <Button
               variant="ghost"
               icon={<Upload className="w-4 h-4" />}

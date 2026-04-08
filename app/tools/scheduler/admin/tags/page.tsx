@@ -106,6 +106,44 @@ function validateTagCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   return errors;
 }
 
+/* ── CSV Export helpers ─────────────────────────────────────── */
+
+function escapeCsvField(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function exportTagsCsv(tagList: Tag[]): number {
+  const headers = TAG_CSV_COLUMNS.map((c) => c.csvHeader);
+  const rows = tagList
+    .slice()
+    .sort((a, b) => (a.category ?? '').localeCompare(b.category ?? '') || a.name.localeCompare(b.name))
+    .map((t) => {
+      const values: Record<string, string> = {
+        name: t.name,
+        color: '',
+        description: t.description ?? '',
+        category: t.category ?? '',
+        emoji: t.emoji ?? '',
+      };
+      return headers.map((h) => escapeCsvField(values[h] ?? '')).join(',');
+    });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `symphonix-tags-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return tagList.length;
+}
+
 function getEmojiForTag(name: string): string | null {
   const lower = name.toLowerCase();
   for (const entry of TAG_EMOJI_MAP) {
@@ -704,8 +742,20 @@ export default function TagsPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
+              onClick={() => {
+                const count = exportTagsCsv(tags);
+                showToast(`Exported ${count} tag${count !== 1 ? 's' : ''}`, 'success');
+              }}
+              icon={<Download className="w-4 h-4" />}
+              tooltip="Export all tags for the current program to CSV"
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => setCsvImportOpen(true)}
               icon={<Upload className="w-4 h-4" />}
+              tooltip="Import tags from CSV"
             >
               Import CSV
             </Button>
