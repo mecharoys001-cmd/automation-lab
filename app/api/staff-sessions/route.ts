@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           *,
           venue:venues(*),
           program:programs(*),
-          instructor:staff!sessions_staff_id_fkey(id, first_name, last_name),
+          instructor:staff!sessions_staff_id_fkey(id, first_name, last_name, public_notes),
           template:session_templates(*),
           session_tags(tag:tags(*))
         `)
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
         *,
         venue:venues(*),
         program:programs(*),
-        instructor:staff!sessions_staff_id_fkey(id, first_name, last_name),
+        instructor:staff!sessions_staff_id_fkey(id, first_name, last_name, public_notes),
         template:session_templates(*),
         session_tags(tag:tags(*))
       `)

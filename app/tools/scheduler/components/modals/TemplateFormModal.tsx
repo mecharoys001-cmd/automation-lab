@@ -7,6 +7,7 @@ import {
 import { Button } from '../ui/Button';
 import { TagSelector } from '../ui/TagSelector';
 import { Modal, ModalButton } from '../ui/Modal';
+import { Tooltip } from '../ui/Tooltip';
 import type {
   Instructor, Venue, SchedulingMode,
 } from '@/types/database';
@@ -42,6 +43,8 @@ export interface TemplateFormData {
   session_count: number | null;
   within_weeks: number | null;
   sessions_per_week: number;
+  public_notes: string;
+  admin_notes: string;
 }
 
 const EMPTY_FORM: TemplateFormData = {
@@ -63,6 +66,8 @@ const EMPTY_FORM: TemplateFormData = {
   session_count: null,
   within_weeks: null,
   sessions_per_week: 1,
+  public_notes: '',
+  admin_notes: '',
 };
 
 /* ── Props ──────────────────────────────────────────────────── */
@@ -835,6 +840,40 @@ export function TemplateFormModal({
             placeholder="Select optional tags..."
           />
         </FormField>
+
+        {/* Public Notes */}
+        <div>
+          <label htmlFor="template-public-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Public Notes</label>
+          <Tooltip text="Visible to staff in the portal" className="w-full">
+            <textarea
+              id="template-public-notes"
+              value={form.public_notes}
+              onChange={(e) => updateForm({ public_notes: e.target.value })}
+              maxLength={500}
+              placeholder="Notes visible to staff…"
+              rows={2}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+            />
+          </Tooltip>
+          <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
+        </div>
+
+        {/* Admin Notes */}
+        <div>
+          <label htmlFor="template-admin-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">Admin Notes</label>
+          <Tooltip text="Only visible to admins" className="w-full">
+            <textarea
+              id="template-admin-notes"
+              value={form.admin_notes}
+              onChange={(e) => updateForm({ admin_notes: e.target.value })}
+              maxLength={500}
+              placeholder="Internal admin-only notes…"
+              rows={2}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+            />
+          </Tooltip>
+          <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
+        </div>
 
         {/* Active toggle */}
         <div className="flex items-center gap-2.5">

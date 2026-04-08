@@ -16,7 +16,8 @@ export interface InstructorFormData {
   last_name: string;
   email: string;
   phone: string;
-  notes: string;
+  public_notes: string;
+  admin_notes: string;
   bio: string;
   start_year: string;
   is_active: boolean;
@@ -30,7 +31,8 @@ export const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
   last_name: '',
   email: '',
   phone: '',
-  notes: '',
+  public_notes: '',
+  admin_notes: '',
   bio: '',
   start_year: '',
   is_active: true,
@@ -80,7 +82,8 @@ export function InstructorEditModal({
           last_name: instructor.last_name,
           email: instructor.email ?? '',
           phone: instructor.phone ?? '',
-          notes: instructor.notes ?? '',
+          public_notes: instructor.public_notes ?? '',
+          admin_notes: instructor.admin_notes ?? '',
           bio: instructor.bio ?? '',
           start_year: instructor.start_year != null ? String(instructor.start_year) : '',
           is_active: instructor.is_active,
@@ -348,20 +351,38 @@ export function InstructorEditModal({
           </Tooltip>
         </div>
 
-        {/* Notes */}
+        {/* Public Notes */}
         <div>
-          <label htmlFor="instructor-notes" className="block text-sm font-semibold text-slate-600 mb-1.5">Notes</label>
-          <Tooltip text="Internal notes about this staff member" className="w-full">
+          <label htmlFor="instructor-public-notes" className="block text-sm font-semibold text-slate-600 mb-1.5">Public Notes</label>
+          <Tooltip text="Visible to staff in the portal" className="w-full">
             <textarea
-              id="instructor-notes"
-              value={form.notes}
-              onChange={(e) => setField('notes', e.target.value)}
+              id="instructor-public-notes"
+              value={form.public_notes}
+              onChange={(e) => setField('public_notes', e.target.value)}
               maxLength={500}
-              placeholder="Add notes about this staff member…"
+              placeholder="Notes visible to this staff member…"
               rows={3}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
             />
           </Tooltip>
+          <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
+        </div>
+
+        {/* Admin Notes */}
+        <div>
+          <label htmlFor="instructor-admin-notes" className="block text-sm font-semibold text-slate-600 mb-1.5">Admin Notes</label>
+          <Tooltip text="Only visible to admins" className="w-full">
+            <textarea
+              id="instructor-admin-notes"
+              value={form.admin_notes}
+              onChange={(e) => setField('admin_notes', e.target.value)}
+              maxLength={500}
+              placeholder="Internal admin-only notes…"
+              rows={3}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 resize-none transition-colors"
+            />
+          </Tooltip>
+          <p className="text-[11px] text-slate-500 mt-1">Use [text](url) to add links</p>
         </div>
 
         {/* Availability */}
