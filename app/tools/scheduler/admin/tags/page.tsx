@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
@@ -170,6 +170,7 @@ export default function TagsPage() {
   // Drag-and-drop state
   const [dragTagId, setDragTagId] = useState<string | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
+  const dragExpandTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -247,6 +248,9 @@ export default function TagsPage() {
   // Get all unique categories (from tags + custom ones)
   const categoriesFromTags = Array.from(new Set(tags.map(t => normalizeCategory(t.category || 'General'))));
   const categories = Array.from(new Set([...categoriesFromTags, ...customCategories.map(normalizeCategory)])).sort();
+
+  // Resolve the tag object being dragged (for ghost preview)
+  const draggedTag = useMemo(() => dragTagId ? tags.find(t => t.id === dragTagId) ?? null : null, [dragTagId, tags]);
 
   // Quick add tag(s) - supports comma-separated values
   const handleQuickAdd = async () => {
@@ -465,6 +469,17 @@ export default function TagsPage() {
     e.dataTransfer.dropEffect = 'move';
     if (dragOverCategory !== category) {
       setDragOverCategory(category);
+      // Auto-expand collapsed categories after a short hover delay
+      if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+      if (collapsedCategories.has(category)) {
+        dragExpandTimer.current = setTimeout(() => {
+          setCollapsedCategories(prev => {
+            const next = new Set(prev);
+            next.delete(category);
+            return next;
+          });
+        }, 400);
+      }
     }
   };
 
@@ -472,12 +487,17 @@ export default function TagsPage() {
     // Only clear if we're actually leaving the drop zone (not entering a child)
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setDragOverCategory(null);
+      if (dragExpandTimer.current) {
+        clearTimeout(dragExpandTimer.current);
+        dragExpandTimer.current = null;
+      }
     }
   };
 
   const handleDrop = async (e: React.DragEvent, targetCategory: string) => {
     e.preventDefault();
     setDragOverCategory(null);
+    if (dragExpandTimer.current) { clearTimeout(dragExpandTimer.current); dragExpandTimer.current = null; }
     const tagId = e.dataTransfer.getData('text/plain') || dragTagId;
     setDragTagId(null);
     if (!tagId) return;
@@ -516,6 +536,7 @@ export default function TagsPage() {
   const handleDragEnd = () => {
     setDragTagId(null);
     setDragOverCategory(null);
+    if (dragExpandTimer.current) { clearTimeout(dragExpandTimer.current); dragExpandTimer.current = null; }
   };
 
   // Quick add tag(s) to specific category (supports comma-separated values)
@@ -884,19 +905,29 @@ export default function TagsPage() {
                       <div className={`px-5 py-6 text-center border-t border-slate-100 transition-colors ${
                         dragOverCategory === category ? 'bg-blue-50' : ''
                       }`}>
-                        <p className="text-sm text-slate-700 mb-3">
-                          {dragTagId ? 'Drop here to move tag to this category' : 'No tags in this category yet.'}
-                        </p>
-                        <button
-                          onClick={() => {
-                            setCategoryQuickAdd(category);
-                            setCategoryQuickAddValue('');
-                          }}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add your first {category} tag
-                        </button>
+                        {draggedTag && dragOverCategory === category && normalizeCategory(draggedTag.category || 'General') !== category ? (
+                          <div className="flex items-center gap-3 px-5 py-3 border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-lg mx-auto max-w-md animate-pulse-subtle">
+                            <span className="text-2xl shrink-0 opacity-50">{draggedTag.emoji || '🎵'}</span>
+                            <span className="text-sm font-semibold text-blue-700 opacity-70">{draggedTag.name}</span>
+                            <span className="ml-auto text-xs text-blue-500">Drop to move here</span>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-slate-700 mb-3">
+                              {dragTagId ? 'Drop here to move tag to this category' : 'No tags in this category yet.'}
+                            </p>
+                            <button
+                              onClick={() => {
+                                setCategoryQuickAdd(category);
+                                setCategoryQuickAddValue('');
+                              }}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add your first {category} tag
+                            </button>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-slate-100 border-t border-slate-100">
@@ -1014,6 +1045,21 @@ export default function TagsPage() {
                         </div>
                       );
                     })}
+                        {/* Ghost card preview for the tag being dragged into this category */}
+                        {draggedTag && dragOverCategory === category && normalizeCategory(draggedTag.category || 'General') !== category && (
+                          <div className="px-5 py-3 bg-blue-50/60 border-2 border-dashed border-blue-300 transition-all">
+                            <div className="flex items-center gap-3 opacity-60">
+                              <span className="text-slate-300 shrink-0">
+                                <GripVertical className="w-4 h-4" />
+                              </span>
+                              <span className="text-2xl shrink-0">{draggedTag.emoji || '🎵'}</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-semibold text-blue-700">{draggedTag.name}</span>
+                              </div>
+                              <span className="text-xs text-blue-500 font-medium">Drop to move here</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
