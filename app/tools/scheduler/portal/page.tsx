@@ -189,9 +189,9 @@ export default function InstructorPortalPage() {
 
   return (
     <div className="h-screen flex flex-col bg-white text-slate-900">
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-6 flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
-        <div className="mb-6 shrink-0">
+      <div className="mx-auto w-full max-w-[1400px] px-4 flex flex-col flex-1 overflow-hidden">
+        {/* Header — sticky */}
+        <div className="pt-6 pb-4 shrink-0 bg-white z-10">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold sm:text-3xl text-slate-900">
               {instructor
