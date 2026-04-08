@@ -10,6 +10,7 @@ import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { VenueToggle } from '../ui/VenueToggle';
 import type { VenueOption } from '../ui/VenueToggle';
+import { useResizableRows } from './useResizableRows';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -196,6 +197,22 @@ function LoadingIndicator() {
   );
 }
 
+function WeekResizeHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      className="relative h-2 cursor-row-resize group flex items-center justify-center hover:bg-blue-50/50 transition-colors select-none"
+      onMouseDown={onMouseDown}
+    >
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-slate-200 group-hover:bg-blue-300 transition-colors" />
+      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <div className="w-1 h-1 rounded-full bg-blue-400" />
+        <div className="w-1 h-1 rounded-full bg-blue-400" />
+        <div className="w-1 h-1 rounded-full bg-blue-400" />
+      </div>
+    </div>
+  );
+}
+
 function MonthGrid({
   year,
   month,
@@ -204,7 +221,6 @@ function MonthGrid({
   schoolCalendarByDate,
   selectedVenues,
   multiLane,
-  expandDays,
   onEventHover,
   onEventLeave,
   onEventClick,
@@ -217,7 +233,6 @@ function MonthGrid({
   schoolCalendarByDate: Record<string, SchoolCalendarEntry>;
   selectedVenues: string[];
   multiLane: boolean;
-  expandDays: boolean;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
   onEventLeave: () => void;
   onEventClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -227,6 +242,7 @@ function MonthGrid({
   const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [year, month]);
   const firstDayOfWeek = useMemo(() => new Date(year, jsMonth, 1).getDay(), [year, jsMonth]);
   const monthKey = formatMonthKey(year, month);
+  const { rowHeights, startDrag } = useResizableRows(6, 110);
   const eventCount = Object.keys(eventsByDate).reduce((sum, key) => {
     if (key.startsWith(monthKey)) return sum + eventsByDate[key].length;
     return sum;
@@ -248,106 +264,125 @@ function MonthGrid({
         )}
       </div>
 
-      {/* Day Headers + Day Cells — single flat grid */}
-      <div className="grid grid-cols-7" style={{ width: '100%', minWidth: 0 }}>
-        {/* Day Headers — pinned to grid-row 1 */}
-        {DAY_HEADERS.map((label, idx) => (
-          <div
-            key={label}
-            style={{ gridRow: 1 }}
-            className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-700 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
-              idx < 6 ? 'border-r border-slate-200' : ''
-            }`}
-          >
-            {label}
-          </div>
-        ))}
-        {/* Day Cells — auto-flow into rows 2+, first day uses grid-column-start */}
-        {/* ⚠️ 42-CELL GRID — DO NOT change to daysInMonth! See CALENDAR-GRID-WARNING.md */}
-        {Array.from({ length: 42 }, (_, cellIndex) => {
-          const dayNumber = cellIndex - firstDayOfWeek + 1;
-
-          // Empty cell before month starts or after month ends
-          if (dayNumber < 1 || dayNumber > daysInMonth) {
-            return <div key={cellIndex} className="border-b border-slate-200 bg-slate-50/30" />;
-          }
-
-          const date = new Date(year, jsMonth, dayNumber);
-          const dateKey = formatDateKey(date);
-          const isToday = dateKey === todayKey;
-          const dayEvents = eventsByDate[dateKey] || [];
-          const schoolEntry = schoolCalendarByDate[dateKey];
-          const dayOfWeek = cellIndex % 7;
-
-          return (
-            <Tooltip
-              key={cellIndex}
-              text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${dayNumber}${
-                dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+      {/* Day Headers + Resizable Week Rows */}
+      <div style={{ width: '100%', minWidth: 0 }}>
+        <div className="grid grid-cols-7">
+          {DAY_HEADERS.map((label, idx) => (
+            <div
+              key={label}
+              className={`px-1.5 py-2 text-center text-[11px] font-semibold text-slate-700 tracking-[1px] uppercase border-b border-slate-200 bg-white sticky top-0 z-10 box-border ${
+                idx < 6 ? 'border-r border-slate-200' : ''
               }`}
-              style={{ gridColumn: 'auto' }}
             >
-              <div
-                className={`px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors min-h-[100px] border-b border-slate-200 bg-white box-border ${
-                  dayOfWeek < 6 ? 'border-r border-slate-200' : ''
-                }`}
-                onClick={() => onDayClick?.(date)}
-              >
-                <span
-                  className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
-                    isToday ? 'bg-blue-600 text-white' : 'text-slate-900'
-                  }`}
-                >
-                  {dayNumber}
-                </span>
+              {label}
+            </div>
+          ))}
+        </div>
 
-                {schoolEntry && (
-                  <div className="mb-1 flex justify-center">
-                    {schoolEntry.status_type === 'no_school' && (
-                      <Tooltip text={buildStatusTooltip(schoolEntry)}>
-                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 border border-amber-300">
-                          <Ban className="w-3 h-3 text-amber-800" />
-                        </div>
-                      </Tooltip>
-                    )}
-                    {schoolEntry.status_type === 'early_dismissal' && (
-                      <Tooltip text={buildStatusTooltip(schoolEntry)}>
-                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 border border-blue-300">
-                          <Clock className="w-3 h-3 text-blue-700" />
-                        </div>
-                      </Tooltip>
-                    )}
-                    {schoolEntry.status_type === 'instructor_exception' && (
-                      <Tooltip text={buildStatusTooltip(schoolEntry)}>
-                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 border border-purple-300">
-                          <Calendar className="w-3 h-3 text-purple-700" />
-                        </div>
-                      </Tooltip>
-                    )}
-                  </div>
-                )}
+        {Array.from({ length: 6 }, (_, weekIdx) => (
+          <div key={weekIdx}>
+            <div className="grid grid-cols-7" style={{ height: rowHeights[weekIdx] }}>
+              {Array.from({ length: 7 }, (_, dayIdx) => {
+                const cellIndex = weekIdx * 7 + dayIdx;
+                const dayNumber = cellIndex - firstDayOfWeek + 1;
 
-                {multiLane ? (
-                  <div className="flex gap-px">
-                    {selectedVenues.map((venueId, laneIdx) => {
-                      const laneEvents = dayEvents.filter(
-                        (e) => e.venue === venueId,
-                      );
-                      return (
-                        <div
-                          key={venueId}
-                          className="flex-1 min-w-0"
-                          style={{
-                            backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
-                            borderRadius: '3px',
-                            padding: '1px',
-                          }}
+                if (dayNumber < 1 || dayNumber > daysInMonth) {
+                  return <div key={cellIndex} className="border-b border-slate-200 bg-slate-50/30" />;
+                }
+
+                const date = new Date(year, jsMonth, dayNumber);
+                const dateKey = formatDateKey(date);
+                const isToday = dateKey === todayKey;
+                const dayEvents = eventsByDate[dateKey] || [];
+                const schoolEntry = schoolCalendarByDate[dateKey];
+                const dayOfWeek = cellIndex % 7;
+
+                return (
+                  <Tooltip
+                    key={cellIndex}
+                    text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[jsMonth]} ${dayNumber}${
+                      dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+                    }`}
+                    style={{ gridColumn: 'auto' }}
+                  >
+                    <div
+                      className={`relative flex flex-col cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-200 bg-white box-border overflow-hidden ${
+                        dayOfWeek < 6 ? 'border-r border-slate-200' : ''
+                      } ${isToday ? 'bg-blue-50/30' : ''}`}
+                      onClick={() => onDayClick?.(date)}
+                    >
+                      <div className="shrink-0 px-1.5 py-2">
+                        <span
+                          className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
+                            isToday ? 'bg-blue-600 text-white' : 'text-slate-900'
+                          }`}
                         >
-                          <div className="text-[8px] font-bold text-slate-700 text-center leading-tight mb-0.5 truncate">
-                            {venueAbbrev(venueId)}
+                          {dayNumber}
+                        </span>
+
+                        {schoolEntry && (
+                          <div className="mb-1 flex justify-center">
+                            {schoolEntry.status_type === 'no_school' && (
+                              <Tooltip text={buildStatusTooltip(schoolEntry)}>
+                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 border border-amber-300">
+                                  <Ban className="w-3 h-3 text-amber-800" />
+                                </div>
+                              </Tooltip>
+                            )}
+                            {schoolEntry.status_type === 'early_dismissal' && (
+                              <Tooltip text={buildStatusTooltip(schoolEntry)}>
+                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 border border-blue-300">
+                                  <Clock className="w-3 h-3 text-blue-700" />
+                                </div>
+                              </Tooltip>
+                            )}
+                            {schoolEntry.status_type === 'instructor_exception' && (
+                              <Tooltip text={buildStatusTooltip(schoolEntry)}>
+                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 border border-purple-300">
+                                  <Calendar className="w-3 h-3 text-purple-700" />
+                                </div>
+                              </Tooltip>
+                            )}
                           </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto min-h-0 px-1.5 pb-1">
+                        {multiLane ? (
+                          <div className="flex gap-px">
+                            {selectedVenues.map((venueId, laneIdx) => {
+                              const laneEvents = dayEvents.filter((e) => e.venue === venueId);
+                              return (
+                                <div
+                                  key={venueId}
+                                  className="flex-1 min-w-0"
+                                  style={{
+                                    backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
+                                    borderRadius: '3px',
+                                    padding: '1px',
+                                  }}
+                                >
+                                  <div className="text-[8px] font-bold text-slate-700 text-center leading-tight mb-0.5 truncate">
+                                    {venueAbbrev(venueId)}
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    {laneEvents.map((event) => (
+                                      <EventChip
+                                        key={event.id}
+                                        event={event}
+                                        onHover={onEventHover}
+                                        onLeave={onEventLeave}
+                                        onClick={onEventClick}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
                           <div className="space-y-0.5">
-                            {(expandDays ? laneEvents : laneEvents.slice(0, 1)).map((event) => (
+                            {dayEvents.map((event) => (
                               <EventChip
                                 key={event.id}
                                 event={event}
@@ -356,38 +391,17 @@ function MonthGrid({
                                 onClick={onEventClick}
                               />
                             ))}
-                            {!expandDays && laneEvents.length > 1 && (
-                              <div className="text-[7px] text-slate-700 text-center">
-                                +{laneEvents.length - 1}
-                              </div>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="space-y-0.5">
-                    {(expandDays ? dayEvents : dayEvents.slice(0, 2)).map((event) => (
-                      <EventChip
-                        key={event.id}
-                        event={event}
-                        onHover={onEventHover}
-                        onLeave={onEventLeave}
-                        onClick={onEventClick}
-                      />
-                    ))}
-                    {!expandDays && dayEvents.length > 2 && (
-                      <div className="text-[8px] text-slate-700 text-center leading-tight">
-                        +{dayEvents.length - 2}
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Tooltip>
-          );
-        })}
+                    </div>
+                  </Tooltip>
+                );
+              })}
+            </div>
+            {weekIdx < 5 && <WeekResizeHandle onMouseDown={(e) => startDrag(weekIdx, e)} />}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -416,7 +430,6 @@ export function YearView({
   const [loadingTop, setLoadingTop] = useState(false);
   const [loadingBottom, setLoadingBottom] = useState(false);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
-  const [expandDays, setExpandDays] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -666,21 +679,12 @@ export function YearView({
     <div className="flex-1 flex flex-col overflow-hidden relative">
       {/* ------- Venue Toggle ------- */}
       {allVenues.length > 1 && (
-        <div className="bg-white px-6 py-3 border-b border-slate-200 shrink-0 flex items-center gap-4">
+        <div className="bg-white px-6 py-3 border-b border-slate-200 shrink-0">
           <VenueToggle
             venues={allVenues}
             selectedVenues={selectedVenues}
             onChange={setSelectedVenues}
           />
-          <div className="flex-1" />
-          <Tooltip text={expandDays ? "Show only first event per day" : "Expand to show all events per day"}>
-            <button
-              onClick={() => setExpandDays(!expandDays)}
-              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none rounded px-2 py-1"
-            >
-              {expandDays ? 'Collapse Days' : 'Expand Days'}
-            </button>
-          </Tooltip>
         </div>
       )}
 
@@ -708,7 +712,6 @@ export function YearView({
                   schoolCalendarByDate={schoolCalendarByDate}
                   selectedVenues={selectedVenues}
                   multiLane={multiLane}
-                  expandDays={expandDays}
                   onEventHover={showPopover}
                   onEventLeave={hidePopover}
                   onEventClick={handleEventClick}

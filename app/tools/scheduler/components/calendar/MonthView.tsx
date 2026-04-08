@@ -12,6 +12,7 @@ import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { VenueToggle } from '../ui/VenueToggle';
 import type { VenueOption } from '../ui/VenueToggle';
+import { useResizableRows } from './useResizableRows';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -52,7 +53,7 @@ const MONTH_NAMES = [
 
 const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
-/** Abbreviate a venue name for mini-lane headers (e.g. "Auditorium" → "Aud") */
+/** Abbreviate a venue name for mini-lane headers (e.g. "Auditorium" -> "Aud") */
 function venueAbbrev(name: string): string {
   if (name.length <= 4) return name;
   // Use first 3 chars
@@ -73,6 +74,22 @@ function formatDateKey(date: Date): string {
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+
+function WeekResizeHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      className="relative h-2 cursor-row-resize group flex items-center justify-center hover:bg-blue-50/50 transition-colors select-none"
+      onMouseDown={onMouseDown}
+    >
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-slate-200 group-hover:bg-blue-300 transition-colors" />
+      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <div className="w-1 h-1 rounded-full bg-blue-400" />
+        <div className="w-1 h-1 rounded-full bg-blue-400" />
+        <div className="w-1 h-1 rounded-full bg-blue-400" />
+      </div>
+    </div>
+  );
+}
 
 function EventChip({
   event,
@@ -154,7 +171,7 @@ export function MonthView({
     () => currentDate ?? new Date(),
   );
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
-  const [expandDays, setExpandDays] = useState(false);
+  const { rowHeights, startDrag } = useResizableRows(6, 120);
 
   // Sync viewDate when parent changes currentDate externally
   useEffect(() => {
@@ -349,25 +366,16 @@ export function MonthView({
 
       {/* ------- Venue Toggle ------- */}
       {allVenues.length > 1 && (
-        <div className="bg-white px-6 py-3 border-b border-slate-200 shrink-0 flex items-center gap-4">
+        <div className="bg-white px-6 py-3 border-b border-slate-200 shrink-0">
           <VenueToggle
             venues={allVenues}
             selectedVenues={selectedVenues}
             onChange={setSelectedVenues}
           />
-          <div className="flex-1" />
-          <Tooltip text={expandDays ? "Show limited events per day" : "Expand to show all events per day"}>
-            <button
-              onClick={() => setExpandDays(!expandDays)}
-              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none rounded px-2 py-1"
-            >
-              {expandDays ? 'Collapse Days' : 'Expand Days'}
-            </button>
-          </Tooltip>
         </div>
       )}
 
-      {/* ------- Unified Grid (sticky headers + day columns) ------- */}
+      {/* ------- Calendar Grid (sticky headers + resizable week rows) ------- */}
       <div className="flex-1 overflow-auto bg-white relative" style={{ minWidth: 0 }}>
         {events.length === 0 && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
@@ -390,119 +398,145 @@ export function MonthView({
             </div>
           </div>
         )}
-        <div
-          className="grid min-h-full"
-          style={{
-            gridTemplateColumns,
-            gridTemplateRows: 'auto',
-            gridAutoRows: 'auto',
-          }}
-        >
-          {/* Row 1: Sticky day headers */}
-          {DAY_HEADERS.map((label, idx) => (
-            <div
-              key={`hdr-${idx}`}
-              className={`sticky top-0 z-10 bg-white px-1.5 py-2 border-b border-slate-300 text-center box-border ${
-                idx < 6 ? 'border-r border-slate-200' : ''
-              }`}
-              style={{ gridRow: 1 }}
-            >
-              <div className="text-[11px] font-semibold tracking-[1px] text-slate-700">{label}</div>
-            </div>
-          ))}
 
-          {/* Rows 2+: Day cells */}
-          {/* ⚠️ 42-CELL GRID — DO NOT change to daysInMonth! See CALENDAR-GRID-WARNING.md */}
-          {Array.from({ length: 42 }, (_, cellIndex) => {
-            const dayNumber = cellIndex - firstDayOfWeek + 1;
-
-            // Empty cell before month starts or after month ends
-            if (dayNumber < 1 || dayNumber > daysInMonth) {
-              return <div key={cellIndex} className="border-b border-slate-200 bg-slate-50/30" />;
-            }
-
-            const date = new Date(year, month, dayNumber);
-            const dateKey = formatDateKey(date);
-            const isToday = dateKey === todayKey;
-            const dayEvents = eventsByDate[dateKey] || [];
-            const schoolEntry = schoolCalendarByDate[dateKey];
-            const dayOfWeek = cellIndex % 7;
-
-            return (
-              <Tooltip
-                key={cellIndex}
-                text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${dayNumber}${
-                  dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+        <div>
+          {/* Sticky day-of-week headers */}
+          <div
+            className="sticky top-0 z-10 grid bg-white"
+            style={{ gridTemplateColumns }}
+          >
+            {DAY_HEADERS.map((label, idx) => (
+              <div
+                key={`hdr-${idx}`}
+                className={`px-1.5 py-2 border-b border-slate-300 text-center box-border ${
+                  idx < 6 ? 'border-r border-slate-200' : ''
                 }`}
-                style={{ gridColumn: 'auto' }}
               >
-                <div
-                  className={`relative px-1.5 py-2 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-200 box-border min-h-[100px] overflow-hidden ${
-                    dayOfWeek < 6 ? 'border-r border-slate-200' : ''
-                  } ${isToday ? 'bg-blue-50/30' : ''}`}
-                  style={{ minWidth: 0 }}
-                  onClick={() => onDayClick?.(date)}
-                >
-                  <span
-                    className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
-                      isToday ? 'bg-blue-600 text-white' : 'text-slate-900'
-                    }`}
-                  >
-                    {dayNumber}
-                  </span>
+                <div className="text-[11px] font-semibold tracking-[1px] text-slate-700">{label}</div>
+              </div>
+            ))}
+          </div>
 
-                  {schoolEntry && (
-                    <Tooltip text={buildStatusTooltip(schoolEntry)}>
-                      <div className={`mb-2 rounded-md px-1.5 py-1 text-[10px] leading-tight ${
-                        schoolEntry.status_type === 'no_school'
-                          ? 'bg-amber-50 border border-amber-200 text-amber-800'
-                          : schoolEntry.status_type === 'early_dismissal'
-                          ? 'bg-blue-50 border border-blue-200 text-blue-800'
-                          : 'bg-purple-50 border border-purple-200 text-purple-800'
-                      }`}>
-                        <div className="flex items-center gap-1 font-semibold">
-                          {schoolEntry.status_type === 'no_school' && <Ban className="w-3 h-3 shrink-0" />}
-                          {schoolEntry.status_type === 'early_dismissal' && <Clock className="w-3 h-3 shrink-0" />}
-                          {schoolEntry.status_type === 'instructor_exception' && <CalendarDays className="w-3 h-3 shrink-0" />}
-                          <span className="truncate">
-                            {schoolEntry.status_type === 'no_school' ? 'No School'
-                              : schoolEntry.status_type === 'early_dismissal'
-                              ? `Early Dismissal${schoolEntry.early_dismissal_time ? ' ' + schoolEntry.early_dismissal_time.slice(0, 5) : ''}`
-                              : 'Staff Exception'}
-                          </span>
-                        </div>
-                        {schoolEntry.description && (
-                          <div className="mt-0.5 truncate opacity-80">{schoolEntry.description}</div>
-                        )}
-                        {schoolEntry.status_type === 'instructor_exception' && schoolEntry.instructor && (
-                          <div className="mt-0.5 truncate opacity-80">{schoolEntry.instructor.first_name} {schoolEntry.instructor.last_name}</div>
-                        )}
-                      </div>
-                    </Tooltip>
-                  )}
+          {/* Week rows with drag-to-resize dividers */}
+          {/* 6 rows x 7 cols = 42 cells — DO NOT change to daysInMonth! See CALENDAR-GRID-WARNING.md */}
+          {Array.from({ length: 6 }, (_, weekIdx) => (
+            <div key={weekIdx}>
+              <div
+                className="grid"
+                style={{ gridTemplateColumns, height: rowHeights[weekIdx] }}
+              >
+                {Array.from({ length: 7 }, (_, dayIdx) => {
+                  const cellIndex = weekIdx * 7 + dayIdx;
+                  const dayNumber = cellIndex - firstDayOfWeek + 1;
 
-                  {multiLane ? (
-                    /* Mini-lane rendering per day cell */
-                    <div className="flex gap-px">
-                      {selectedVenues.map((venueId, laneIdx) => {
-                        const laneEvents = dayEvents.filter(
-                          (e) => e.venue === venueId,
-                        );
-                        return (
-                          <div
-                            key={venueId}
-                            className="flex-1 min-w-0"
-                            style={{
-                              backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
-                              borderRadius: '3px',
-                              padding: '1px',
-                            }}
+                  // Empty cell before month starts or after month ends
+                  if (dayNumber < 1 || dayNumber > daysInMonth) {
+                    return <div key={cellIndex} className="border-b border-slate-200 bg-slate-50/30" />;
+                  }
+
+                  const date = new Date(year, month, dayNumber);
+                  const dateKey = formatDateKey(date);
+                  const isToday = dateKey === todayKey;
+                  const dayEvents = eventsByDate[dateKey] || [];
+                  const schoolEntry = schoolCalendarByDate[dateKey];
+                  const dayOfWeek = cellIndex % 7;
+
+                  return (
+                    <Tooltip
+                      key={cellIndex}
+                      text={`${DAY_HEADERS[dayOfWeek]}, ${MONTH_NAMES[month]} ${dayNumber}${
+                        dayEvents.length ? ` — ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''
+                      }`}
+                      style={{ gridColumn: 'auto' }}
+                    >
+                      <div
+                        className={`relative flex flex-col cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-200 box-border overflow-hidden ${
+                          dayOfWeek < 6 ? 'border-r border-slate-200' : ''
+                        } ${isToday ? 'bg-blue-50/30' : ''}`}
+                        style={{ minWidth: 0, height: '100%' }}
+                        onClick={() => onDayClick?.(date)}
+                      >
+                        {/* Date number + school status (fixed at top) */}
+                        <div className="shrink-0 px-1.5 pt-2">
+                          <span
+                            className={`inline-flex items-center justify-center text-xs font-semibold w-6 h-6 rounded-full mb-0.5 ${
+                              isToday ? 'bg-blue-600 text-white' : 'text-slate-900'
+                            }`}
                           >
-                            <div className="text-[8px] font-bold text-slate-700 text-center leading-tight mb-0.5 truncate">
-                              {venueAbbrev(venueId)}
+                            {dayNumber}
+                          </span>
+
+                          {schoolEntry && (
+                            <Tooltip text={buildStatusTooltip(schoolEntry)}>
+                              <div className={`mb-2 rounded-md px-1.5 py-1 text-[10px] leading-tight ${
+                                schoolEntry.status_type === 'no_school'
+                                  ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                                  : schoolEntry.status_type === 'early_dismissal'
+                                  ? 'bg-blue-50 border border-blue-200 text-blue-800'
+                                  : 'bg-purple-50 border border-purple-200 text-purple-800'
+                              }`}>
+                                <div className="flex items-center gap-1 font-semibold">
+                                  {schoolEntry.status_type === 'no_school' && <Ban className="w-3 h-3 shrink-0" />}
+                                  {schoolEntry.status_type === 'early_dismissal' && <Clock className="w-3 h-3 shrink-0" />}
+                                  {schoolEntry.status_type === 'instructor_exception' && <CalendarDays className="w-3 h-3 shrink-0" />}
+                                  <span className="truncate">
+                                    {schoolEntry.status_type === 'no_school' ? 'No School'
+                                      : schoolEntry.status_type === 'early_dismissal'
+                                      ? `Early Dismissal${schoolEntry.early_dismissal_time ? ' ' + schoolEntry.early_dismissal_time.slice(0, 5) : ''}`
+                                      : 'Staff Exception'}
+                                  </span>
+                                </div>
+                                {schoolEntry.description && (
+                                  <div className="mt-0.5 truncate opacity-80">{schoolEntry.description}</div>
+                                )}
+                                {schoolEntry.status_type === 'instructor_exception' && schoolEntry.instructor && (
+                                  <div className="mt-0.5 truncate opacity-80">{schoolEntry.instructor.first_name} {schoolEntry.instructor.last_name}</div>
+                                )}
+                              </div>
+                            </Tooltip>
+                          )}
+                        </div>
+
+                        {/* Scrollable events area */}
+                        <div className="flex-1 overflow-y-auto min-h-0 px-1.5 pb-1">
+                          {multiLane ? (
+                            /* Mini-lane rendering per day cell */
+                            <div className="flex gap-px">
+                              {selectedVenues.map((venueId, laneIdx) => {
+                                const laneEvents = dayEvents.filter(
+                                  (e) => e.venue === venueId,
+                                );
+                                return (
+                                  <div
+                                    key={venueId}
+                                    className="flex-1 min-w-0"
+                                    style={{
+                                      backgroundColor: LANE_BACKGROUNDS[laneIdx % LANE_BACKGROUNDS.length],
+                                      borderRadius: '3px',
+                                      padding: '1px',
+                                    }}
+                                  >
+                                    <div className="text-[8px] font-bold text-slate-700 text-center leading-tight mb-0.5 truncate">
+                                      {venueAbbrev(venueId)}
+                                    </div>
+                                    <div className="space-y-0.5">
+                                      {laneEvents.map((event) => (
+                                        <EventChip
+                                          key={event.id}
+                                          event={event}
+                                          onHover={showPopover}
+                                          onLeave={hidePopover}
+                                          onClick={handleEventClick}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
+                          ) : (
                             <div className="space-y-0.5">
-                              {(expandDays ? laneEvents : laneEvents.slice(0, 2)).map((event) => (
+                              {dayEvents.map((event) => (
                                 <EventChip
                                   key={event.id}
                                   event={event}
@@ -511,41 +545,19 @@ export function MonthView({
                                   onClick={handleEventClick}
                                 />
                               ))}
-                              {!expandDays && laneEvents.length > 2 && (
-                                <div className="text-[8px] text-slate-700 text-center">
-                                  +{laneEvents.length - 2}
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="space-y-0.5">
-                      {(expandDays ? dayEvents : dayEvents.slice(0, 3)).map((event) => (
-                        <EventChip
-                          key={event.id}
-                          event={event}
-                          onHover={showPopover}
-                          onLeave={hidePopover}
-                          onClick={handleEventClick}
-                        />
-                      ))}
-                      {!expandDays && dayEvents.length > 3 && (
-                        <button
-                          className="w-full text-[10px] font-medium text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
-                          onClick={(e) => { e.stopPropagation(); onDayClick?.(date); }}
-                        >
-                          +{dayEvents.length - 3} more
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Tooltip>
-            );
-          })}
+                          )}
+                        </div>
+                      </div>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+              {weekIdx < 5 && (
+                <WeekResizeHandle onMouseDown={(e) => startDrag(weekIdx, e)} />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
