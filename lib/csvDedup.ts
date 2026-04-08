@@ -16,6 +16,25 @@ export interface DedupResult {
   groups: DuplicateGroup[];
 }
 
+// ── HTML Entity Decoding ─────────────────────────────────────────────────────
+
+const ENTITY_MAP: Record<string, string> = {
+  "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"',
+  "&apos;": "'", "&#39;": "'", "&#x27;": "'",
+  "&nbsp;": " ", "&#160;": " ",
+};
+const ENTITY_RE = /&(?:#(?:x[0-9a-fA-F]+|\d+)|[a-zA-Z]+);/g;
+
+/** Decode common HTML/XML entities so visible values stay clean. */
+export function decodeEntities(s: string): string {
+  return s.replace(ENTITY_RE, (m) => {
+    if (ENTITY_MAP[m]) return ENTITY_MAP[m];
+    if (m.startsWith("&#x")) return String.fromCharCode(parseInt(m.slice(3, -1), 16));
+    if (m.startsWith("&#"))  return String.fromCharCode(parseInt(m.slice(2, -1), 10));
+    return m; // unknown named entity — leave as-is
+  });
+}
+
 // ── Delimited Text Parsing ───────────────────────────────────────────────────
 
 function parseLine(line: string, delim: string = ","): string[] {
@@ -48,13 +67,13 @@ export function parseCSV(text: string): { headers: string[]; rows: CsvRow[] } {
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   if (lines[0]?.charCodeAt(0) === 0xfeff) lines[0] = lines[0].slice(1);
   const delim = detectDelimiter(lines[0] ?? "");
-  const headers = parseLine(lines[0] ?? "", delim);
+  const headers = parseLine(lines[0] ?? "", delim).map(decodeEntities);
   const rows: CsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {
     if (!lines[i]?.trim()) continue;
     const vals = parseLine(lines[i], delim);
     const row: CsvRow = {};
-    headers.forEach((h, j) => { row[h] = vals[j] ?? ""; });
+    headers.forEach((h, j) => { row[h] = decodeEntities(vals[j] ?? ""); });
     rows.push(row);
   }
   return { headers, rows };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo } from "react";
-import { parseCSV, toCSV, toTSV, detectColumnSets, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
+import { parseCSV, toCSV, toTSV, detectColumnSets, deduplicate, decodeEntities, DedupResult, CsvRow } from "@/lib/csvDedup";
 import * as XLSX from "xlsx";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
@@ -93,7 +93,7 @@ export default function CsvDedupTool() {
           for (let i = 1; i < jsonRows.length; i++) {
             if (!jsonRows[i].some(c => String(c).trim())) continue;
             const row: CsvRow = {};
-            headers.forEach((h, j) => { row[h] = cellToString(jsonRows[i][j]); });
+            headers.forEach((h, j) => { row[h] = decodeEntities(cellToString(jsonRows[i][j])); });
             rows.push(row);
           }
           const rawCsv = toCSV(headers, rows);
