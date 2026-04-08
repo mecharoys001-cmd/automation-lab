@@ -1226,8 +1226,8 @@ export default function CalendarPage() {
     <div className="h-full overflow-y-auto overflow-x-hidden">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* ── Page Header ─────────────────────────────────────── */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex flex-col gap-2">
             <div>
               <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</h1>
               <p className="text-sm text-slate-600 mt-1">
@@ -1236,14 +1236,14 @@ export default function CalendarPage() {
             </div>
             {isDirty && (
               <Tooltip text="You have unsaved changes">
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
+                <span className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
                   <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
                   <span className="text-xs font-medium text-amber-800">Unsaved</span>
                 </span>
               </Tooltip>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:self-start">
             <Button
               variant="secondary"
               size="md"
