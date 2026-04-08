@@ -48,16 +48,17 @@ export async function getOrgMembership(userEmail: string | undefined): Promise<O
     return { role: 'admin', adminLevel: 'master', instructorId: null };
   }
 
-  // Check instructors table
+  // Check instructors table (use .limit(1) instead of .maybeSingle() to handle
+  // staff with the same email in multiple programs)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: instructor } = await (supabase.from('staff') as any)
+  const { data: instructors } = await (supabase.from('staff') as any)
     .select('id')
     .ilike('email', userEmail)
     .eq('is_active', true)
-    .maybeSingle();
+    .limit(1);
 
-  if (instructor) {
-    return { role: 'staff', adminLevel: null, instructorId: instructor.id };
+  if (instructors && instructors.length > 0) {
+    return { role: 'staff', adminLevel: null, instructorId: instructors[0].id };
   }
 
   return NO_MEMBERSHIP;

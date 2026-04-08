@@ -276,14 +276,14 @@ export async function middleware(request: NextRequest) {
 
     // Check staff member
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: staffMember } = await (svc.from('staff') as any)
+    const { data: staffMembers } = await (svc.from('staff') as any)
       .select('id')
       .ilike('email', email)
       .eq('is_active', true)
-      .maybeSingle()
+      .limit(1)
 
     const isAdmin = !!admin || isSiteAdminUser
-    const isStaff = !!staffMember
+    const isStaff = staffMembers && staffMembers.length > 0
 
     // Non-org members → redirect to tools list
     if (!isAdmin && !isStaff) {

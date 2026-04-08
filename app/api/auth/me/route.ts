@@ -75,12 +75,13 @@ export async function GET() {
 
     // Check instructors table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: instructor } = await (serviceClient.from('staff') as any)
+    const { data: instructors } = await (serviceClient.from('staff') as any)
       .select('id, first_name, last_name, email')
       .ilike('email', user.email!)
       .eq('is_active', true)
-      .maybeSingle();
+      .limit(1);
 
+    const instructor = instructors?.[0];
     if (instructor) {
       return NextResponse.json({
         id: instructor.id,
