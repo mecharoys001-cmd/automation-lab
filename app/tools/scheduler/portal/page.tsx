@@ -45,7 +45,15 @@ export default function InstructorPortalPage() {
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('my');
   const [viewFilter, setViewFilter] = useState<ViewFilter>('upcoming');
   const [fullScheduleLoading, setFullScheduleLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<CalendarView>('week');
+  const [currentView, setCurrentView] = useState<CalendarView>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('scheduler-portal-view');
+      if (saved && ['day', 'week', 'month', 'year'].includes(saved)) return saved as CalendarView;
+    }
+    return 'week';
+  });
+  // Persist view preference
+  useEffect(() => { localStorage.setItem('scheduler-portal-view', currentView); }, [currentView]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeProgramIds, setActiveProgramIds] = useState<Set<string>>(new Set());

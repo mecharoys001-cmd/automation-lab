@@ -302,7 +302,15 @@ export default function CalendarDashboardPage() {
 }
 
 function CalendarDashboard() {
-  const [currentView, setCurrentView] = useState<CalendarView>('week');
+  const [currentView, setCurrentView] = useState<CalendarView>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('scheduler-calendar-view');
+      if (saved && ['day', 'week', 'month', 'year'].includes(saved)) return saved as CalendarView;
+    }
+    return 'week';
+  });
+  // Persist view preference
+  useEffect(() => { localStorage.setItem('scheduler-calendar-view', currentView); }, [currentView]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [filterOptions, setFilterOptions] = useState({
