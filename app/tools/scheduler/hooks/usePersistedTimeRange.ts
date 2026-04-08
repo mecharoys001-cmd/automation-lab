@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProgram } from '../admin/ProgramContext';
 
 const PREF_KEY = 'calendar_time_range';
+const LS_PREFIX = 'cal_time_range_';
 const DEBOUNCE_MS = 500;
 
 interface TimeRangeState {
@@ -11,10 +12,38 @@ interface TimeRangeState {
   setEndHour: (h: number) => void;
 }
 
+/** Read from localStorage (synchronous, always available). */
+function readLocal(programId: string): { startHour: number; endHour: number } | null {
+  try {
+    const raw = localStorage.getItem(`${LS_PREFIX}${programId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const s = Number(parsed.startHour);
+    const e = Number(parsed.endHour);
+    if (!Number.isNaN(s) && !Number.isNaN(e) && s < e) return { startHour: s, endHour: e };
+  } catch { /* ignore */ }
+  return null;
+}
+
+/** Write to localStorage (synchronous, always available). */
+function writeLocal(programId: string, start: number, end: number) {
+  try {
+    localStorage.setItem(
+      `${LS_PREFIX}${programId}`,
+      JSON.stringify({ startHour: start, endHour: end }),
+    );
+  } catch { /* quota errors etc. */ }
+}
+
 /**
- * Manages calendar visible-time-range state with account-level persistence.
- * Persists per authenticated user and per selected program via /api/user-preferences.
- * Falls back to the provided defaults when no persisted value exists or on error.
+ * Manages calendar visible-time-range state with layered persistence.
+ *
+ * 1. localStorage — synchronous, always available, provides instant restore.
+ * 2. DB via /api/user-preferences — cross-device, per-user + per-program.
+ *
+ * On load: restore from localStorage immediately, then attempt DB fetch
+ * (DB wins if it responds successfully with a value).
+ * On save: write to localStorage immediately, then debounced DB save.
  */
 export function usePersistedTimeRange(
   defaultStart = 8,
@@ -28,13 +57,23 @@ export function usePersistedTimeRange(
 
   // ── Load persisted value when program changes ──────────────────────
   useEffect(() => {
-    // Reset to defaults immediately so we never show stale values
-    // from a previous program while the fetch is in-flight.
-    setStartHourRaw(defaultStart);
-    setEndHourRaw(defaultEnd);
+    if (!selectedProgramId) {
+      setStartHourRaw(defaultStart);
+      setEndHourRaw(defaultEnd);
+      return;
+    }
 
-    if (!selectedProgramId) return;
+    // Restore from localStorage immediately (synchronous, no flash)
+    const local = readLocal(selectedProgramId);
+    if (local) {
+      setStartHourRaw(local.startHour);
+      setEndHourRaw(local.endHour);
+    } else {
+      setStartHourRaw(defaultStart);
+      setEndHourRaw(defaultEnd);
+    }
 
+    // Attempt DB fetch — if it succeeds with a value, it takes precedence
     let cancelled = false;
 
     fetch(
@@ -49,11 +88,13 @@ export function usePersistedTimeRange(
           if (!Number.isNaN(s) && !Number.isNaN(e) && s < e) {
             setStartHourRaw(s);
             setEndHourRaw(e);
+            // Sync DB value back to localStorage
+            writeLocal(selectedProgramId, s, e);
           }
         }
       })
       .catch(() => {
-        // Silently fall back to defaults — persistence is best-effort
+        // DB unavailable — localStorage value (or defaults) already applied
       });
 
     return () => {
@@ -65,6 +106,11 @@ export function usePersistedTimeRange(
   const persist = useCallback(
     (start: number, end: number) => {
       if (!selectedProgramId) return;
+
+      // Write to localStorage immediately (synchronous)
+      writeLocal(selectedProgramId, start, end);
+
+      // Debounced DB save
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         fetch('/api/user-preferences', {
@@ -76,7 +122,7 @@ export function usePersistedTimeRange(
             value: { startHour: start, endHour: end },
           }),
         }).catch(() => {
-          // Best-effort persistence
+          // DB unavailable — localStorage already has the value
         });
       }, DEBOUNCE_MS);
     },
