@@ -2069,7 +2069,10 @@ function PeoplePage() {
 
         {/* ── Time Off Review ──────────────────────────────── */}
         {selectedProgramId && (
-          <TimeOffReviewPanel programId={selectedProgramId} />
+          <TimeOffReviewPanel
+            programId={selectedProgramId}
+            onReviewAction={() => window.dispatchEvent(new Event('time-off-reviewed'))}
+          />
         )}
 
         {/* ── Share Intake Form Section ────────────────────── */}

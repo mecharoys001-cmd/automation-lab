@@ -35,6 +35,8 @@ interface AdminNavItem {
   tooltip: string;
   /** Minimum role_level required to see this item. Defaults to 'editor' (all admins). */
   minRole?: RoleLevel;
+  /** Show a red attention dot on this nav item */
+  attention?: boolean;
 }
 
 const ROLE_RANK: Record<RoleLevel, number> = { master: 3, standard: 2, editor: 1 };
@@ -56,13 +58,21 @@ const adminNavItems: AdminNavItem[] = [
  * Return sidebar items the given role is allowed to see.
  * Returns an empty array when roleLevel is null (role not yet verified).
  */
-function getNavItemsForRole(roleLevel: RoleLevel | null): AdminNavItem[] {
+function getNavItemsForRole(
+  roleLevel: RoleLevel | null,
+  attentionMap?: Record<string, boolean>,
+): AdminNavItem[] {
   if (!roleLevel) return [];
   const userRank = ROLE_RANK[roleLevel] ?? 0;
-  return adminNavItems.filter((item) => {
-    const requiredRank = ROLE_RANK[item.minRole ?? 'editor'] ?? 0;
-    return userRank >= requiredRank;
-  });
+  return adminNavItems
+    .filter((item) => {
+      const requiredRank = ROLE_RANK[item.minRole ?? 'editor'] ?? 0;
+      return userRank >= requiredRank;
+    })
+    .map((item) => ({
+      ...item,
+      attention: attentionMap?.[item.href] ?? false,
+    }));
 }
 
 function SidebarProgramSelector() {
@@ -118,6 +128,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const prevProgramIdRef = useRef<string | null>(null);
+  const [pendingTimeOffCount, setPendingTimeOffCount] = useState(0);
+  const [timeOffPopupDismissed, setTimeOffPopupDismissed] = useState(false);
 
   // Show/hide onboarding based on per-program wizard_completed state
   useEffect(() => {
@@ -134,6 +146,31 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       setShowOnboarding(false);
     }
   }, [selectedProgram, selectedProgramId]);
+
+  // Fetch pending time off count for sidebar attention dot
+  const fetchPendingCount = useCallback(async () => {
+    if (!selectedProgramId) return;
+    try {
+      const res = await fetch(`/api/staff-time-off/pending?program_id=${selectedProgramId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPendingTimeOffCount(data.count ?? 0);
+        // Reset popup dismissal when count changes from 0 to >0
+        if (data.count > 0) setTimeOffPopupDismissed(false);
+      }
+    } catch {
+      // Silently fail
+    }
+  }, [selectedProgramId]);
+
+  useEffect(() => { fetchPendingCount(); }, [fetchPendingCount]);
+
+  // Listen for time off review actions to refresh count
+  useEffect(() => {
+    const handler = () => fetchPendingCount();
+    window.addEventListener('time-off-reviewed', handler);
+    return () => window.removeEventListener('time-off-reviewed', handler);
+  }, [fetchPendingCount]);
 
   // Listen for custom events
   useEffect(() => {
@@ -215,7 +252,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       </a>
       {/* Dark sidebar with program selector */}
       <Sidebar
-        navItems={getNavItemsForRole(roleLevel)}
+        navItems={getNavItemsForRole(roleLevel, {
+          '/admin/people': pendingTimeOffCount > 0,
+        })}
         header={<SidebarProgramSelector />}
         onLogout={handleLogout}
         user={user}
@@ -243,6 +282,34 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Onboarding Checklist (bottom-right corner) — per-program */}
       {showOnboarding && <OnboardingChecklist onClose={handleCloseOnboarding} />}
+
+      {/* Time Off pending popup */}
+      {pendingTimeOffCount > 0 && !timeOffPopupDismissed && (
+        <div className="fixed bottom-6 right-6 z-50 w-72 bg-white border border-amber-200 rounded-xl shadow-lg p-4 animate-in fade-in slide-in-from-bottom-2">
+          <div className="flex items-start gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-50 shrink-0">
+              <span className="text-amber-700 text-sm font-bold">{pendingTimeOffCount}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-slate-900">
+                Pending Time Off
+              </p>
+              <p className="text-[12px] text-slate-500 mt-0.5">
+                {pendingTimeOffCount} request{pendingTimeOffCount !== 1 ? 's' : ''} awaiting review on Staff &amp; Venues.
+              </p>
+            </div>
+            <button
+              onClick={() => setTimeOffPopupDismissed(true)}
+              className="p-1 rounded hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600 shrink-0"
+              aria-label="Dismiss notification"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Persistent ARIA live regions for toast notifications */}
       <ToastContainer />

@@ -19,6 +19,8 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   tooltip: string;
+  /** Show a red attention dot after the label */
+  attention?: boolean;
 }
 
 interface UserProfile {
@@ -143,6 +145,12 @@ export function Sidebar({
                     className={`w-5 h-5 flex-shrink-0 ${active ? 'text-blue-600' : 'text-slate-300'}`}
                   />
                   <span className="text-sm">{item.label}</span>
+                  {item.attention && (
+                    <span
+                      className="w-2 h-2 rounded-full bg-red-500 shrink-0 ml-auto"
+                      aria-label="Pending items need attention"
+                    />
+                  )}
                 </Link>
               </Tooltip>
             );
