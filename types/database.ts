@@ -14,7 +14,8 @@ export type RoleLevel = 'master' | 'standard' | 'editor';
 export type CalendarStatusType =
   | 'no_school'
   | 'early_dismissal'
-  | 'instructor_exception';
+  | 'instructor_exception'
+  | 'asap_exception';
 
 export type SessionStatus = 'draft' | 'published' | 'canceled' | 'completed';
 
@@ -130,6 +131,8 @@ export interface SchoolCalendar {
   status_type: CalendarStatusType;
   early_dismissal_time: string | null; // TIME as HH:MM:SS
   target_instructor_id: string | null;
+  exception_start_time: string | null; // TIME as HH:MM:SS (asap_exception)
+  exception_end_time: string | null;   // TIME as HH:MM:SS (asap_exception)
   created_at: string;
 }
 

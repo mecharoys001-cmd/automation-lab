@@ -41,6 +41,7 @@ const STATUS_LABELS: Record<CalendarStatusType, string> = {
   no_school: 'No School',
   early_dismissal: 'Early Dismissal',
   instructor_exception: 'Staff Exception',
+  asap_exception: 'ASAP Exception',
 };
 
 const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; cell: string }> = {
@@ -59,12 +60,18 @@ const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; ce
     dot: 'bg-blue-600',
     cell: 'bg-blue-50 text-blue-700 border border-blue-200',
   },
+  asap_exception: {
+    badge: 'bg-green-100 text-green-700 border-green-200',
+    dot: 'bg-green-600',
+    cell: 'bg-green-50 text-green-700 border border-green-200',
+  },
 };
 
 const STATUS_TOOLTIPS: Record<CalendarStatusType, string> = {
   no_school: 'No events on this date',
   early_dismissal: 'Events end earlier than usual',
   instructor_exception: 'Schedule exception for a specific staff member',
+  asap_exception: 'ASAP program exception',
 };
 
 const CALENDAR_CSV_COLUMNS: CsvColumnDef[] = [
@@ -83,7 +90,7 @@ const CALENDAR_CSV_EXAMPLE = `date,description,status_type,early_dismissal_time,
 2026-03-10,Staff PD - Mr. Smith,instructor_exception,,abc-123`;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const VALID_STATUS_SET = new Set(['no_school', 'early_dismissal', 'instructor_exception']);
+const VALID_STATUS_SET = new Set(['no_school', 'early_dismissal', 'instructor_exception', 'asap_exception']);
 
 function validateCalendarCsvRow(row: CsvRow, rowIndex: number): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -394,6 +401,8 @@ interface EntryForm {
   status_type: CalendarStatusType;
   early_dismissal_time: string;
   target_instructor_id: string;
+  exception_start_time: string;
+  exception_end_time: string;
 }
 
 const EMPTY_FORM: EntryForm = {
@@ -402,6 +411,8 @@ const EMPTY_FORM: EntryForm = {
   status_type: 'no_school',
   early_dismissal_time: '',
   target_instructor_id: '',
+  exception_start_time: '',
+  exception_end_time: '',
 };
 
 // ── Main page ────────────────────────────────────────────────
@@ -704,7 +715,7 @@ export default function CalendarPage() {
       map.set(entry.date, existing);
     }
     // Sort entries within each day: no_school first, then early_dismissal, then instructor_exception
-    const priority: Record<CalendarStatusType, number> = { no_school: 0, early_dismissal: 1, instructor_exception: 2 };
+    const priority: Record<CalendarStatusType, number> = { no_school: 0, early_dismissal: 1, instructor_exception: 2, asap_exception: 3 };
     for (const [, arr] of map) {
       arr.sort((a, b) => priority[a.status_type] - priority[b.status_type]);
     }
@@ -774,6 +785,8 @@ export default function CalendarPage() {
       status_type: entry.status_type,
       early_dismissal_time: entry.early_dismissal_time ?? '',
       target_instructor_id: entry.target_instructor_id ?? '',
+      exception_start_time: entry.exception_start_time ?? '',
+      exception_end_time: entry.exception_end_time ?? '',
     };
     editOriginalRef.current = { ...formValues };
     setEditingId(entry.id);
@@ -1079,6 +1092,7 @@ export default function CalendarPage() {
     no_school: 'No School',
     early_dismissal: 'Early Dismissal',
     instructor_exception: 'Staff Exception',
+    asap_exception: 'ASAP Exception',
     clear: 'Clear Status',
   };
 
