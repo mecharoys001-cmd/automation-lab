@@ -26,6 +26,7 @@ export default function CsvDedupTool() {
     headers: [], rows: [], nameCol: "", addrCol: "",
     result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "",
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const toolSession = useRef<ReturnType<typeof startToolSession> | null>(null);
 
@@ -224,31 +225,44 @@ export default function CsvDedupTool() {
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
-          <div>
-            <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Name Column</label>
-            <select style={selectStyle} value={s.nameCol} onChange={sel("nameCol")}>
-              {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Address Column</label>
-            <select style={selectStyle} value={s.addrCol} onChange={sel("addrCol")}>
-              {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
-            </select>
-          </div>
+        <div style={{ color: "#64748b", fontSize: "12px", marginBottom: "4px", textAlign: "center" }}>
+          Duplicates are detected automatically. Review each group below before downloading.
         </div>
 
-        <button onClick={runDedup} style={{
-          backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: "10px",
-          padding: "12px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
-          boxShadow: `0 0 20px ${ACCENT}40`, width: "100%",
-        }}>
-          🔍 Rerun Duplicate Analysis
+        <button
+          onClick={() => setShowAdvanced(v => !v)}
+          style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "12px", padding: "4px 0", display: "flex", alignItems: "center", gap: "4px", margin: "0 auto" }}
+        >
+          <span style={{ display: "inline-block", transform: showAdvanced ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▸</span>
+          Wrong columns? Adjust detection
         </button>
-        <div style={{ color: "#64748b", fontSize: "12px", marginTop: "8px", textAlign: "center" }}>
-          Duplicates are detected automatically on upload. Change columns above and rerun if needed. Review each proposed change below before downloading.
-        </div>
+
+        {showAdvanced && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.75rem", marginBottom: "1rem" }}>
+              <div>
+                <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Name Column</label>
+                <select style={selectStyle} value={s.nameCol} onChange={sel("nameCol")}>
+                  {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Address Column</label>
+                <select style={selectStyle} value={s.addrCol} onChange={sel("addrCol")}>
+                  {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <button onClick={runDedup} style={{
+              backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: "10px",
+              padding: "10px 24px", fontSize: "14px", fontWeight: 700, cursor: "pointer",
+              boxShadow: `0 0 20px ${ACCENT}40`, width: "100%",
+            }}>
+              🔍 Rerun Analysis
+            </button>
+          </>
+        )}
         {s.error && <div style={{ color: "#f87171", marginTop: "1rem", fontSize: "14px" }}>⚠️ {s.error}</div>}
       </div>
 
