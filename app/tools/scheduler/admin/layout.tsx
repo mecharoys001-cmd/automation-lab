@@ -22,7 +22,7 @@ import {
   BarChart3,
   GitBranch,
   Settings,
-  Upload,
+
   Menu,
 } from 'lucide-react';
 
@@ -47,7 +47,7 @@ const adminNavItems: AdminNavItem[] = [
   { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar', minRole: 'standard' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'Reports', minRole: 'standard' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Versions', minRole: 'standard' },
-  { href: '/admin/import', label: 'Import Data', icon: Upload, tooltip: 'Import Data', minRole: 'standard' },
+
   { href: '/admin/settings', label: 'Settings', icon: Settings, tooltip: 'Settings', minRole: 'master' },
   { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck, tooltip: 'Role Management', minRole: 'master' },
 ];
