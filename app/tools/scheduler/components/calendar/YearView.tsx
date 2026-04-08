@@ -204,6 +204,7 @@ function MonthGrid({
   schoolCalendarByDate,
   selectedVenues,
   multiLane,
+  expandDays,
   onEventHover,
   onEventLeave,
   onEventClick,
@@ -216,6 +217,7 @@ function MonthGrid({
   schoolCalendarByDate: Record<string, SchoolCalendarEntry>;
   selectedVenues: string[];
   multiLane: boolean;
+  expandDays: boolean;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
   onEventLeave: () => void;
   onEventClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -345,7 +347,7 @@ function MonthGrid({
                             {venueAbbrev(venueId)}
                           </div>
                           <div className="space-y-0.5">
-                            {laneEvents.slice(0, 1).map((event) => (
+                            {(expandDays ? laneEvents : laneEvents.slice(0, 1)).map((event) => (
                               <EventChip
                                 key={event.id}
                                 event={event}
@@ -354,7 +356,7 @@ function MonthGrid({
                                 onClick={onEventClick}
                               />
                             ))}
-                            {laneEvents.length > 1 && (
+                            {!expandDays && laneEvents.length > 1 && (
                               <div className="text-[7px] text-slate-700 text-center">
                                 +{laneEvents.length - 1}
                               </div>
@@ -366,7 +368,7 @@ function MonthGrid({
                   </div>
                 ) : (
                   <div className="space-y-0.5">
-                    {dayEvents.slice(0, 2).map((event) => (
+                    {(expandDays ? dayEvents : dayEvents.slice(0, 2)).map((event) => (
                       <EventChip
                         key={event.id}
                         event={event}
@@ -375,7 +377,7 @@ function MonthGrid({
                         onClick={onEventClick}
                       />
                     ))}
-                    {dayEvents.length > 2 && (
+                    {!expandDays && dayEvents.length > 2 && (
                       <div className="text-[8px] text-slate-700 text-center leading-tight">
                         +{dayEvents.length - 2}
                       </div>
@@ -414,6 +416,7 @@ export function YearView({
   const [loadingTop, setLoadingTop] = useState(false);
   const [loadingBottom, setLoadingBottom] = useState(false);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+  const [expandDays, setExpandDays] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -663,12 +666,21 @@ export function YearView({
     <div className="flex-1 flex flex-col overflow-hidden relative">
       {/* ------- Venue Toggle ------- */}
       {allVenues.length > 1 && (
-        <div className="bg-white px-6 border-b border-slate-200 shrink-0">
+        <div className="bg-white px-6 py-3 border-b border-slate-200 shrink-0 flex items-center gap-4">
           <VenueToggle
             venues={allVenues}
             selectedVenues={selectedVenues}
             onChange={setSelectedVenues}
           />
+          <div className="flex-1" />
+          <Tooltip text={expandDays ? "Show only first event per day" : "Expand to show all events per day"}>
+            <button
+              onClick={() => setExpandDays(!expandDays)}
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none rounded px-2 py-1"
+            >
+              {expandDays ? 'Collapse Days' : 'Expand Days'}
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -696,6 +708,7 @@ export function YearView({
                   schoolCalendarByDate={schoolCalendarByDate}
                   selectedVenues={selectedVenues}
                   multiLane={multiLane}
+                  expandDays={expandDays}
                   onEventHover={showPopover}
                   onEventLeave={hidePopover}
                   onEventClick={handleEventClick}
