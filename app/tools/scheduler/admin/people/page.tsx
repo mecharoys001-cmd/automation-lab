@@ -1747,6 +1747,7 @@ function PeoplePage() {
         bio: data.bio.trim() || null,
         start_year: data.start_year.trim() ? parseInt(data.start_year.trim(), 10) : null,
         is_active: data.is_active,
+        on_call: data.on_call,
         skills: data.skills.length > 0 ? data.skills : null,
         additional_tags: data.additional_tags.length > 0 ? data.additional_tags : [],
         availability_json: data.availability_json,

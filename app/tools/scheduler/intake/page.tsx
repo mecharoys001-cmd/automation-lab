@@ -172,6 +172,7 @@ function IntakeForm() {
   });
   // Honeypot field — invisible to humans, bots auto-fill it
   const [honeypot, setHoneypot] = useState('');
+  const [onCall, setOnCall] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<FormErrors>({});
@@ -422,6 +423,7 @@ function IntakeForm() {
         start_year: form.start_year.trim() ? parseInt(form.start_year.trim(), 10) : null,
         skills: Array.from(selectedSkills),
         availability_json: availability,
+        on_call: onCall,
         program_id: programId,
       };
 
@@ -457,6 +459,7 @@ function IntakeForm() {
   const resetForm = useCallback(() => {
     setForm({ first_name: '', last_name: '', email: '', phone: '', bio: '', start_year: '' });
     setHoneypot('');
+    setOnCall(false);
     setSelectedSkills(new Set());
     setSelectedSlots(new Set());
     setErrors({});
@@ -717,6 +720,25 @@ function IntakeForm() {
                 />
               </Tooltip>
               <p id="bio-hint" className="mt-0.5 text-[11px] text-muted-foreground">Up to 1,000 characters (optional)</p>
+            </div>
+
+            {/* On Call */}
+            <div className="mt-4">
+              <Tooltip text={onCall ? 'Available for last-minute substitutions' : 'Mark yourself as available for substitutions'}>
+                <label htmlFor="on_call" className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    id="on_call"
+                    type="checkbox"
+                    checked={onCall}
+                    onChange={(e) => setOnCall(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-emerald-600 focus-visible:ring-emerald-500 cursor-pointer accent-emerald-500"
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Available for on-call substitutions
+                  </span>
+                </label>
+              </Tooltip>
+              <p className="mt-0.5 text-[11px] text-muted-foreground ml-6">Check if you can fill in for last-minute schedule changes (optional)</p>
             </div>
           </div>
 

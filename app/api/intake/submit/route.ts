@@ -32,6 +32,7 @@ interface IntakeSubmitBody {
   phone?: string | null;
   bio?: string | null;
   start_year?: number | null;
+  on_call?: boolean;
   skills: string[];
   availability_json: AvailabilityJson;
   program_id: string;
@@ -40,7 +41,7 @@ interface IntakeSubmitBody {
 export async function POST(request: NextRequest) {
   try {
     const body: IntakeSubmitBody = await request.json();
-    const { first_name, last_name, email, phone, bio, start_year, skills, availability_json, program_id } = body;
+    const { first_name, last_name, email, phone, bio, start_year, on_call, skills, availability_json, program_id } = body;
 
     if (!program_id) {
       return NextResponse.json(
@@ -180,6 +181,7 @@ export async function POST(request: NextRequest) {
       };
       if (bio && bio.trim()) updatePayload.bio = bio.trim();
       if (start_year != null) updatePayload.start_year = start_year;
+      if (on_call != null) updatePayload.on_call = !!on_call;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ({ data, error } = await (supabase.from('staff') as any)
@@ -201,6 +203,7 @@ export async function POST(request: NextRequest) {
           skills,
           availability_json,
           is_active: true,
+          on_call: !!on_call,
           updated_at: new Date().toISOString(),
           program_id,
         })

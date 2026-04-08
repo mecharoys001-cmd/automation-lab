@@ -21,6 +21,7 @@ export interface InstructorFormData {
   bio: string;
   start_year: string;
   is_active: boolean;
+  on_call: boolean;
   skills: string[];
   additional_tags: string[];
   availability_json: AvailabilityJson | null;
@@ -36,6 +37,7 @@ export const EMPTY_INSTRUCTOR_FORM: InstructorFormData = {
   bio: '',
   start_year: '',
   is_active: true,
+  on_call: false,
   skills: [],
   additional_tags: [],
   availability_json: null,
@@ -87,6 +89,7 @@ export function InstructorEditModal({
           bio: instructor.bio ?? '',
           start_year: instructor.start_year != null ? String(instructor.start_year) : '',
           is_active: instructor.is_active,
+          on_call: instructor.on_call,
           skills: instructor.skills ?? [],
           additional_tags: (instructor as unknown as Record<string, unknown>).additional_tags as string[] ?? [],
           availability_json: instructor.availability_json ?? null,
@@ -425,6 +428,25 @@ export function InstructorEditModal({
           </Tooltip>
         </div>
         )}
+
+        {/* On Call Toggle */}
+        <div>
+          <label htmlFor="instructor-on-call" className="block text-sm font-semibold text-slate-600 mb-1.5">On Call</label>
+          <Tooltip text={form.on_call ? 'Available for last-minute substitutions' : 'Mark as available for substitutions'}>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                id="instructor-on-call"
+                type="checkbox"
+                checked={form.on_call}
+                onChange={(e) => setField('on_call', e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus-visible:ring-emerald-500 cursor-pointer accent-emerald-500"
+              />
+              <span className="text-sm text-slate-700">
+                {form.on_call ? 'On Call' : 'Not On Call'}
+              </span>
+            </label>
+          </Tooltip>
+        </div>
       </form>
     </Modal>
   );
