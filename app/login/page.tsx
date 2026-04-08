@@ -55,7 +55,9 @@ function LoginPageContent() {
         setError(data.error || 'Sign in failed')
         setLoading(false)
       } else {
-        router.push(next)
+        // Force a full navigation so freshly-set auth cookies are present on
+        // the very first post-login request (especially important on previews).
+        window.location.assign(next)
       }
     } catch {
       setError('Something went wrong. Please try again.')
