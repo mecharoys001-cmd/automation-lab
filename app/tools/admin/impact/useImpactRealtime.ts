@@ -20,6 +20,8 @@ interface UseImpactRealtimeOptions {
  * Calls onEvent (debounced) so consumers can refetch data.
  * Returns the current connection status.
  */
+let channelCounter = 0;
+
 export function useImpactRealtime({
   onEvent,
   debounceMs = 2000,
@@ -27,6 +29,7 @@ export function useImpactRealtime({
 }: UseImpactRealtimeOptions = {}): ConnectionStatus {
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const channelIdRef = useRef(`impact-dashboard-${++channelCounter}`);
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
@@ -46,7 +49,7 @@ export function useImpactRealtime({
     setStatus('connecting');
 
     const channel: RealtimeChannel = supabase
-      .channel('impact-dashboard')
+      .channel(channelIdRef.current)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'activity_log' },
