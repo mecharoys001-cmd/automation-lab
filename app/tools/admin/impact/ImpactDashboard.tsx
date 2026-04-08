@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ToolUsageStats, ToolConfig } from '@/types/usage';
 import { calculateExpectedRuns } from '@/lib/usage-calculations';
+import { useImpactRealtime, type ConnectionStatus } from './useImpactRealtime';
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -142,10 +143,11 @@ export default function ImpactDashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  useEffect(() => {
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+  // Realtime: debounced refresh on new inserts
+  const connectionStatus = useImpactRealtime({
+    onEvent: fetchData,
+    debounceMs: 2000,
+  });
 
   const internalStats = stats.filter(s => !s.is_external);
   const externalStats = stats.filter(s => s.is_external);
@@ -696,6 +698,21 @@ export default function ImpactDashboard() {
 
   return (
     <div>
+      {/* Connection status */}
+      {connectionStatus !== 'live' && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '0.75rem',
+          fontSize: '11px', fontWeight: 600,
+          color: connectionStatus === 'offline' ? '#94a3b8' : '#f59e0b',
+        }}>
+          <span style={{
+            width: '7px', height: '7px', borderRadius: '50%',
+            background: connectionStatus === 'offline' ? '#94a3b8' : '#f59e0b',
+          }} />
+          {connectionStatus === 'connecting' ? 'Connecting...' : connectionStatus === 'reconnecting' ? 'Reconnecting...' : 'Offline'}
+        </div>
+      )}
+
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2.5rem' }}>
         <div style={cardStyle}>
