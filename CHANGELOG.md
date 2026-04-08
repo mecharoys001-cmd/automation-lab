@@ -32,3 +32,8 @@
 
 ### 🐛 Bug Fixes
 - avoid large bulk update query
+
+### 🐛 Bug Fixes
+- make staff portal header sticky so it stays visible when scrolling
+- prevent select text overlap with dropdown arrow
+- case-insensitive email matching in RBAC and middleware
