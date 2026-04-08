@@ -87,6 +87,8 @@ const sectionDescClass = 'text-[13px] text-slate-600 mt-0.5';
 const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
 const inputClass =
   'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors';
+const selectClass =
+  'w-full h-10 appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors cursor-pointer';
 const btnPrimary =
   'inline-flex items-center gap-1.5 rounded-lg bg-blue-600 text-white px-4 py-2 text-[13px] font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none';
 const btnSecondary =
@@ -665,7 +667,7 @@ export default function RolesPage() {
                           <select
                             value={editRole}
                             onChange={(e) => setEditRole(e.target.value as AppRole)}
-                            className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                            className="h-8 appearance-none rounded-md border border-slate-200 bg-white px-2 pr-8 text-xs text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 cursor-pointer"
                           >
                             {getAllowedRoleOptions(currentUserRole).map((roleValue) => (
                               <option key={roleValue} value={roleValue}>
@@ -845,7 +847,7 @@ export default function RolesPage() {
                     id="scheduler-add-user-role"
                     value={form.role}
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as AppRole }))}
-                    className={inputClass}
+                    className={selectClass}
                   >
                     {getAllowedRoleOptions(currentUserRole).map((roleValue) => (
                       <option key={roleValue} value={roleValue}>

@@ -26,3 +26,9 @@
 
 ### 🧹 Cleanup
 - **Removed Import Data Page** — Redundant with CSV imports on each page. Page still exists at `/admin/import` but removed from sidebar.
+
+### 🧹 Other
+- add changelog for 2026-04-07 session
+
+### 🐛 Bug Fixes
+- avoid large bulk update query

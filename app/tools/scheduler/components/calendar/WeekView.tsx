@@ -74,6 +74,7 @@ export interface WeekViewProps {
 
 const HOUR_HEIGHT = 72; // px per hour slot
 const TIME_COL_WIDTH = 72; // px for the time gutter
+const GRID_TOP_PAD = Math.round(HOUR_HEIGHT * 0.25); // 15-min breathing room so the first time label isn't clipped
 const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -217,7 +218,7 @@ function WeekEventBlock({
   const endHour = event.endTime ? parseTimeToHour(event.endTime) : startHour + 1;
   const duration = Math.max(endHour - startHour, 0.25);
 
-  const top = (startHour - dayStartHour) * HOUR_HEIGHT;
+  const top = GRID_TOP_PAD + (startHour - dayStartHour) * HOUR_HEIGHT;
   const height = duration * HOUR_HEIGHT - 2;
   const isCompact = height < 36; // ≤30min events: show title only
 
@@ -585,7 +586,7 @@ export function WeekView({
     }
     const rect = e.currentTarget.getBoundingClientRect();
     const cursorY = e.clientY - rect.top;
-    const rawHour = dayStartHour + cursorY / HOUR_HEIGHT;
+    const rawHour = dayStartHour + (cursorY - GRID_TOP_PAD) / HOUR_HEIGHT;
     const snapped = snapTo15Min(rawHour);
     const time = formatDecimalToTime(snapped);
 
@@ -731,7 +732,7 @@ export function WeekView({
     [dayStartHour, dayEndHour],
   );
 
-  const totalHeight = hours.length * HOUR_HEIGHT;
+  const totalHeight = hours.length * HOUR_HEIGHT + GRID_TOP_PAD;
 
   const navigate = useCallback((delta: number) => {
     if (visibleDayCount < 7) {
@@ -785,7 +786,7 @@ export function WeekView({
       const template = JSON.parse(raw) as EventTemplate;
       const rect = e.currentTarget.getBoundingClientRect();
       const dropY = e.clientY - rect.top;
-      const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
+      const rawHour = dayStartHour + (dropY - GRID_TOP_PAD) / HOUR_HEIGHT;
       const snapped = snapTo15Min(rawHour);
 
       // Detect venue lane from horizontal drop position in multi-lane mode
@@ -975,6 +976,7 @@ export function WeekView({
             className="sticky left-0 z-[5] border-r border-slate-200 bg-slate-50"
             style={{ gridRow: 2 }}
           >
+            <div style={{ height: `${GRID_TOP_PAD}px` }} />
             {hours.map((hour) => (
               <div
                 key={hour}
@@ -1014,7 +1016,7 @@ export function WeekView({
                         if ((e.target as HTMLElement).closest('[data-event-block]')) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         const clickY = e.clientY - rect.top;
-                        const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
+                        const rawHour = dayStartHour + (clickY - GRID_TOP_PAD) / HOUR_HEIGHT;
                         const snapped = snapTo15Min(rawHour);
                         // Determine venue lane if multi-lane
                         let clickedVenueId: string | undefined;
@@ -1042,7 +1044,7 @@ export function WeekView({
                         const dropY = e.clientY - rect.top;
 
                         if (isTemplate) {
-                          const rawHour = dayStartHour + dropY / HOUR_HEIGHT;
+                          const rawHour = dayStartHour + (dropY - GRID_TOP_PAD) / HOUR_HEIGHT;
                           const snapped = snapTo15Min(rawHour);
                           const tpl = draggingTemplateRef.current;
                           const durationHours = tpl && tpl.duration_minutes > 0 ? tpl.duration_minutes / 60 : 1;
@@ -1068,7 +1070,7 @@ export function WeekView({
                         } else if (draggingEventRef.current) {
                           // Event drag preview – same math as the drop handler
                           const evData = draggingEventRef.current;
-                          const rawHour = dayStartHour + dropY / HOUR_HEIGHT - evData.grabOffsetHours;
+                          const rawHour = dayStartHour + (dropY - GRID_TOP_PAD) / HOUR_HEIGHT - evData.grabOffsetHours;
                           const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
 
                           // Check if event's template has a fixed venue
@@ -1125,7 +1127,7 @@ export function WeekView({
                           };
                           const rect = e.currentTarget.getBoundingClientRect();
                           const dropY = e.clientY - rect.top;
-                          const rawHour = dayStartHour + dropY / HOUR_HEIGHT - grabOffsetHours;
+                          const rawHour = dayStartHour + (dropY - GRID_TOP_PAD) / HOUR_HEIGHT - grabOffsetHours;
                           const snappedStart = snapTo15Min(Math.max(dayStartHour, rawHour));
                           const snappedEnd = snapTo15Min(snappedStart + duration);
                           const newDate = visibleDateKeys[dayIdx];
@@ -1190,7 +1192,7 @@ export function WeekView({
                     key={hour}
                     className="absolute left-0 right-0 border-b border-slate-100"
                     style={{
-                      top: `${hIdx * HOUR_HEIGHT}px`,
+                      top: `${GRID_TOP_PAD + hIdx * HOUR_HEIGHT}px`,
                       height: `${HOUR_HEIGHT}px`,
                     }}
                   />
@@ -1202,7 +1204,7 @@ export function WeekView({
                     key={`half-${hour}`}
                     className="absolute left-0 right-0 border-b border-dashed border-slate-50"
                     style={{
-                      top: `${hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
+                      top: `${GRID_TOP_PAD + hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
                     }}
                   />
                 ))}
@@ -1252,7 +1254,7 @@ export function WeekView({
                 {/* Snap-line indicator at hovered time */}
                 {hoverState && hoverState.dayIdx === dayIdx && (() => {
                   const snappedHour = parseTimeToHour(hoverState.time);
-                  const lineY = (snappedHour - dayStartHour) * HOUR_HEIGHT;
+                  const lineY = GRID_TOP_PAD + (snappedHour - dayStartHour) * HOUR_HEIGHT;
                   return (
                     <div
                       className="absolute left-0 right-0 pointer-events-none z-[2]"
@@ -1311,7 +1313,7 @@ export function WeekView({
                         <div
                           className={`absolute rounded-md border-2 pointer-events-none z-[5] transition-all duration-75 ${isEventDrag ? '' : 'border-dashed'}`}
                           style={{
-                            top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
+                            top: GRID_TOP_PAD + (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
                             height: dropPreview.durationHours * HOUR_HEIGHT,
                             left: laneIdx >= 0 ? `${(laneIdx / laneCount) * 100}%` : '4px',
                             width: laneIdx >= 0 ? `${(1 / laneCount) * 100}%` : 'calc(100% - 8px)',
@@ -1364,7 +1366,7 @@ export function WeekView({
                         <div
                           className={`absolute left-1 right-1 rounded-md border-2 pointer-events-none z-[5] transition-all duration-75 ${isEventDrag ? '' : 'border-dashed'}`}
                           style={{
-                            top: (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
+                            top: GRID_TOP_PAD + (dropPreview.hour - dayStartHour) * HOUR_HEIGHT,
                             height: dropPreview.durationHours * HOUR_HEIGHT,
                             borderColor: ghostColor,
                             backgroundColor: ghostColor + (isEventDrag ? '25' : '15'),

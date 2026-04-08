@@ -54,6 +54,7 @@ interface DayViewProps {
 const DEFAULT_START = 8;   // 8 AM
 const DEFAULT_END = 15;    // 3 PM
 const HOUR_HEIGHT = 64;    // px per hour
+const GRID_TOP_PAD = Math.round(HOUR_HEIGHT * 0.25); // 15-min breathing room so the first time label isn't clipped
 const LANE_BACKGROUNDS = ['#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1'];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -145,7 +146,7 @@ function DayEventBlock({
   const endHour = event.endTime ? parseTimeToHour(event.endTime) : startHour + 1;
   const duration = Math.max(endHour - startHour, 0.5);
 
-  const top = (startHour - gridStartHour) * HOUR_HEIGHT;
+  const top = GRID_TOP_PAD + (startHour - gridStartHour) * HOUR_HEIGHT;
   const height = duration * HOUR_HEIGHT - 4;
   const isCompact = height < 32; // ≤30min events: single-line display
 
@@ -355,7 +356,7 @@ export function DayView({
     (_, i) => dayStartHour + i,
   );
 
-  const totalHeight = hours.length * HOUR_HEIGHT;
+  const totalHeight = hours.length * HOUR_HEIGHT + GRID_TOP_PAD;
 
   const navigate = (delta: number) => {
     const next = new Date(viewDate);
@@ -503,6 +504,7 @@ export function DayView({
             className="border-r border-slate-200 bg-slate-50"
             style={{ gridRow: multiLane ? 2 : 1 }}
           >
+            <div style={{ height: `${GRID_TOP_PAD}px` }} />
             {hours.map((hour) => (
               <div
                 key={hour}
@@ -524,7 +526,7 @@ export function DayView({
                     if ((e.target as HTMLElement).closest('[data-event-block]')) return;
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickY = e.clientY - rect.top;
-                    const rawHour = dayStartHour + clickY / HOUR_HEIGHT;
+                    const rawHour = dayStartHour + (clickY - GRID_TOP_PAD) / HOUR_HEIGHT;
                     const snapped = snapTo15Min(rawHour);
                     onEmptySlotClick(formatDateKey(viewDate), formatDecimalTo24h(snapped));
                   }
@@ -537,7 +539,7 @@ export function DayView({
                 key={hour}
                 className="absolute left-0 right-0 border-b border-slate-100"
                 style={{
-                  top: `${hIdx * HOUR_HEIGHT}px`,
+                  top: `${GRID_TOP_PAD + hIdx * HOUR_HEIGHT}px`,
                   height: `${HOUR_HEIGHT}px`,
                 }}
               />
@@ -549,7 +551,7 @@ export function DayView({
                 key={`half-${hour}`}
                 className="absolute left-0 right-0 border-b border-dashed border-slate-50"
                 style={{
-                  top: `${hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
+                  top: `${GRID_TOP_PAD + hIdx * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`,
                 }}
               />
             ))}
