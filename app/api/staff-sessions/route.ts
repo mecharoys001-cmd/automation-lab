@@ -82,15 +82,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Resolve instructor ID from email if needed
-    let resolvedId = instructorId;
-    if (!resolvedId && email) {
+    // Resolve instructor ID(s) from email if needed
+    let resolvedIds: string[] = [];
+    if (instructorId) {
+      resolvedIds = [instructorId];
+    } else if (email) {
+      // Find ALL staff records for this email (across programs)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: instructors, error: instrError } = await (supabase.from('staff') as any)
         .select('id')
         .ilike('email', email.trim())
-        .eq('is_active', true)
-        .limit(1);
+        .eq('is_active', true);
 
       if (instrError) {
         return NextResponse.json(
@@ -98,21 +100,27 @@ export async function GET(request: NextRequest) {
           { status: 500 }
         );
       }
-      const instructor = instructors?.[0] ?? null;
 
-      if (!instructor) {
+      if (!instructors || instructors.length === 0) {
         return NextResponse.json(
           { error: 'No instructor found with that email' },
           { status: 404 }
         );
       }
 
-      resolvedId = (instructor as { id: string }).id;
+      resolvedIds = instructors.map((i: { id: string }) => i.id);
+    }
+
+    if (resolvedIds.length === 0) {
+      return NextResponse.json(
+        { error: 'Either instructor_id or email is required' },
+        { status: 400 }
+      );
     }
 
     // Instructors can only view their own sessions
     if (auth.user.orgRole === 'staff') {
-      if (resolvedId !== auth.user.id) {
+      if (!resolvedIds.includes(auth.user.id)) {
         return NextResponse.json(
           { error: 'Staff members can only view their own schedule' },
           { status: 403 },
@@ -138,7 +146,7 @@ export async function GET(request: NextRequest) {
         template:session_templates(*),
         session_tags(tag:tags(*))
       `)
-      .eq('staff_id', resolvedId)
+      .in('staff_id', resolvedIds)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 

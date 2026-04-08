@@ -91,9 +91,9 @@ export default function InstructorPortalPage() {
       const resolvedInstructor = instructors[0] as Instructor;
       setInstructor(resolvedInstructor);
 
-      // Fetch all sessions for this instructor (both past and upcoming)
+      // Fetch sessions using email to get sessions across ALL programs
       const sessParams = new URLSearchParams({
-        instructor_id: resolvedInstructor.id,
+        email: authData.email,
         status: 'published',
       });
       const sessRes = await fetch(`/api/staff-sessions?${sessParams}`);
