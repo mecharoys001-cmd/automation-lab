@@ -1260,6 +1260,26 @@ function CalendarDashboard() {
           </Tooltip>
         )}
 
+        {/* Always-visible CSV export buttons */}
+        <Tooltip text={`Download ${currentView} view events as CSV`}>
+          <button
+            onClick={() => handleExportCsv('current')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-lg border bg-white text-slate-700 border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            CSV — Current View
+          </button>
+        </Tooltip>
+        <Tooltip text="Download all events for the full program year as CSV">
+          <button
+            onClick={() => handleExportCsv('full')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-lg border bg-white text-slate-700 border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            CSV — Full Year
+          </button>
+        </Tooltip>
+
         {/* Export Calendar — hidden below lg, shown in overflow menu instead */}
         <div className="relative hidden lg:block">
           <Tooltip text="Export schedule as CSV or PDF">
