@@ -232,6 +232,17 @@ export interface NotificationLog {
   created_at: string;
 }
 
+/** user_preferences — Per-user, per-program UI preferences (JSONB value) */
+export interface UserPreference {
+  id: string;
+  user_email: string;
+  program_id: string;
+  key: string;
+  value: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
 /** program_rules — Recurring blackout/makeup day rules */
 export interface ProgramRule {
   id: string;

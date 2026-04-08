@@ -11,6 +11,7 @@ import { getSubjectColor } from '../../lib/subjectColors';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { TimeRangeSelector } from './TimeRangeSelector';
+import { usePersistedTimeRange } from '../../hooks/usePersistedTimeRange';
 import { VenueToggle } from '../ui/VenueToggle';
 import type { VenueOption } from '../ui/VenueToggle';
 
@@ -222,8 +223,7 @@ export function DayView({
   const [viewDate, setViewDate] = useState(
     () => currentDate ?? new Date(),
   );
-  const [dayStartHour, setDayStartHour] = useState(initialStartHour);
-  const [dayEndHour, setDayEndHour] = useState(initialEndHour);
+  const { startHour: dayStartHour, endHour: dayEndHour, setStartHour: setDayStartHour, setEndHour: setDayEndHour } = usePersistedTimeRange(initialStartHour, initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
 
   // Sync viewDate when parent changes currentDate externally

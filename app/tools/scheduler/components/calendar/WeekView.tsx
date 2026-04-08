@@ -11,6 +11,7 @@ import { getSubjectColor } from '../../lib/subjectColors';
 import { EventPopover } from './EventPopover';
 import { useEventPopover } from './useEventPopover';
 import { TimeRangeSelector } from './TimeRangeSelector';
+import { usePersistedTimeRange } from '../../hooks/usePersistedTimeRange';
 import { VenueToggle } from '../ui/VenueToggle';
 import type { VenueOption } from '../ui/VenueToggle';
 
@@ -507,8 +508,7 @@ export function WeekView({
   onTemplateSelect,
 }: WeekViewProps) {
   const [viewDate, setViewDate] = useState(() => currentDate ?? new Date());
-  const [dayStartHour, setDayStartHour] = useState(initialStartHour);
-  const [dayEndHour, setDayEndHour] = useState(initialEndHour);
+  const { startHour: dayStartHour, endHour: dayEndHour, setStartHour: setDayStartHour, setEndHour: setDayEndHour } = usePersistedTimeRange(initialStartHour, initialEndHour);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const calendarContentRef = useRef<HTMLDivElement>(null);
