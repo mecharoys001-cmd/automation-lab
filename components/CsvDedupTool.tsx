@@ -39,6 +39,20 @@ export default function CsvDedupTool() {
   const ACCEPTED_EXTS = [".csv", ".tsv", ".txt", ".xlsx", ".xls"];
   const isExcel = (name: string) => name.endsWith(".xlsx") || name.endsWith(".xls");
 
+  /** Format a JS Date (from Excel cellDates) as a human-readable string. */
+  const fmtDate = (d: Date): string => {
+    const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+    const hh = d.getHours(), mm = d.getMinutes(), ss = d.getSeconds();
+    const datePart = `${m}/${day}/${y}`;
+    return hh || mm || ss ? `${datePart} ${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}` : datePart;
+  };
+
+  /** Stringify a cell value, preserving Date objects as readable strings. */
+  const cellToString = (v: unknown): string => {
+    if (v instanceof Date && !isNaN(v.getTime())) return fmtDate(v);
+    return String(v ?? "");
+  };
+
   const handleParsed = useCallback((headers: string[], rows: CsvRow[], fileName: string, rawCsv: string) => {
     const { nameCol: detectedName, addrCol: detectedAddr } = detectColumns(headers);
     const nameCol = detectedName ?? headers[0] ?? "";
@@ -70,16 +84,16 @@ export default function CsvDedupTool() {
       reader.onload = e => {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const wb = XLSX.read(data, { type: "array" });
+          const wb = XLSX.read(data, { type: "array", cellDates: true });
           const ws = wb.Sheets[wb.SheetNames[0]];
-          const jsonRows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+          const jsonRows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
           if (!jsonRows.length) throw new Error("Empty spreadsheet");
           const headers = jsonRows[0].map(String);
           const rows: CsvRow[] = [];
           for (let i = 1; i < jsonRows.length; i++) {
             if (!jsonRows[i].some(c => String(c).trim())) continue;
             const row: CsvRow = {};
-            headers.forEach((h, j) => { row[h] = String(jsonRows[i][j] ?? ""); });
+            headers.forEach((h, j) => { row[h] = cellToString(jsonRows[i][j]); });
             rows.push(row);
           }
           const rawCsv = toCSV(headers, rows);
@@ -181,6 +195,19 @@ export default function CsvDedupTool() {
     let blob: Blob;
     if (fmt === ".xlsx" || fmt === ".xls") {
       const ws = XLSX.utils.json_to_sheet(outputRows, { header: s.headers });
+      // Restore date-looking string cells to real Date objects so Excel formats them as dates
+      const dateRe = /^\d{1,2}\/\d{1,2}\/\d{4}(\s\d{2}:\d{2}:\d{2})?$/;
+      const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
+      for (let R = range.s.r + 1; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+          const addr = XLSX.utils.encode_cell({ r: R, c: C });
+          const cell = ws[addr];
+          if (cell && typeof cell.v === "string" && dateRe.test(cell.v)) {
+            const d = new Date(cell.v);
+            if (!isNaN(d.getTime())) { cell.t = "d"; cell.v = d; }
+          }
+        }
+      }
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Cleaned");
       const buf = XLSX.write(wb, { bookType: fmt === ".xls" ? "xls" : "xlsx", type: "array" });
