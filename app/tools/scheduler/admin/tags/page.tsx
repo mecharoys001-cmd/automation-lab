@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -166,6 +166,10 @@ export default function TagsPage() {
 
   // Install defaults
   const [installDefaultsLoading, setInstallDefaultsLoading] = useState(false);
+
+  // Drag-and-drop state
+  const [dragTagId, setDragTagId] = useState<string | null>(null);
+  const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
 
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -447,6 +451,71 @@ export default function TagsPage() {
     setShowNewCategoryInput(false);
     showToast(`Category "${trimmed}" created`, 'success');
     quickAddRef.current?.focus();
+  };
+
+  // ── Drag-and-drop category reassignment ─────────────────────
+  const handleDragStart = (e: React.DragEvent, tagId: string) => {
+    setDragTagId(tagId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tagId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, category: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverCategory !== category) {
+      setDragOverCategory(category);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're actually leaving the drop zone (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverCategory(null);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetCategory: string) => {
+    e.preventDefault();
+    setDragOverCategory(null);
+    const tagId = e.dataTransfer.getData('text/plain') || dragTagId;
+    setDragTagId(null);
+    if (!tagId) return;
+
+    const tag = tags.find(t => t.id === tagId);
+    if (!tag) return;
+
+    const sourceCategory = normalizeCategory(tag.category || 'General');
+    if (sourceCategory === targetCategory) return; // Same category — no-op
+
+    // Optimistic update
+    const previousTags = [...tags];
+    setTags(prev => prev.map(t => t.id === tagId ? { ...t, category: targetCategory } : t));
+
+    try {
+      const res = await fetch(`/api/tags/${tagId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: targetCategory }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+
+      requestCache.invalidate(/\/api\/tags/);
+      showToast(`Moved "${tag.name}" to ${targetCategory}`, 'success');
+    } catch (err) {
+      // Rollback
+      setTags(previousTags);
+      showToast(err instanceof Error ? err.message : 'Failed to move tag', 'error');
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDragTagId(null);
+    setDragOverCategory(null);
   };
 
   // Quick add tag(s) to specific category (supports comma-separated values)
@@ -732,7 +801,17 @@ export default function TagsPage() {
             const isCollapsed = collapsedCategories.has(category);
 
             return (
-              <div key={category} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div
+                key={category}
+                className={`bg-white rounded-xl border-2 overflow-hidden transition-colors ${
+                  dragOverCategory === category
+                    ? 'border-blue-400 bg-blue-50/30 ring-2 ring-blue-200'
+                    : 'border-slate-200'
+                }`}
+                onDragOver={(e) => handleDragOver(e, category)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, category)}
+              >
                 {/* Category Header */}
                 <div className="bg-slate-50 border-b border-slate-200">
                   <button
@@ -802,8 +881,12 @@ export default function TagsPage() {
                 {!isCollapsed && (
                   <>
                     {categoryTags.length === 0 ? (
-                      <div className="px-5 py-6 text-center border-t border-slate-100">
-                        <p className="text-sm text-slate-700 mb-3">No tags in this category yet.</p>
+                      <div className={`px-5 py-6 text-center border-t border-slate-100 transition-colors ${
+                        dragOverCategory === category ? 'bg-blue-50' : ''
+                      }`}>
+                        <p className="text-sm text-slate-700 mb-3">
+                          {dragTagId ? 'Drop here to move tag to this category' : 'No tags in this category yet.'}
+                        </p>
                         <button
                           onClick={() => {
                             setCategoryQuickAdd(category);
@@ -821,9 +904,19 @@ export default function TagsPage() {
                       const isEditing = editingId === tag.id;
                       const isDeleting = deletingId === tag.id;
                       const sessionCount = sessionCounts[tag.id] || 0;
+                      const isDragging = dragTagId === tag.id;
+                      const canDrag = !isEditing && !isDeleting;
 
                       return (
-                        <div key={tag.id} className="px-5 py-3 bg-white hover:bg-slate-50 transition-colors">
+                        <div
+                          key={tag.id}
+                          className={`px-5 py-3 bg-white transition-colors ${
+                            isDragging ? 'opacity-40' : 'hover:bg-slate-50'
+                          }`}
+                          draggable={canDrag}
+                          onDragStart={canDrag ? (e) => handleDragStart(e, tag.id) : undefined}
+                          onDragEnd={handleDragEnd}
+                        >
                           {isEditing ? (
                             // Edit Mode
                             <div className="space-y-3">
@@ -876,6 +969,14 @@ export default function TagsPage() {
                           ) : (
                             // View Mode
                             <div className="flex items-center gap-3">
+                              <Tooltip text="Drag to move to another category">
+                                <span
+                                  className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
+                                  aria-label="Drag to reorder"
+                                >
+                                  <GripVertical className="w-4 h-4" />
+                                </span>
+                              </Tooltip>
                               <span className="text-2xl shrink-0">{tag.emoji || '🎵'}</span>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
