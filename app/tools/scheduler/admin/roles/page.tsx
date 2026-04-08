@@ -849,15 +849,11 @@ export default function RolesPage() {
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as AppRole }))}
                     className={selectClass}
                   >
-                    {(() => {
-                      const options = getAllowedRoleOptions(currentUserRole);
-                      console.log('[Add User Modal] currentUserRole:', currentUserRole, '| allowed options:', options);
-                      return options.map((roleValue) => (
-                        <option key={roleValue} value={roleValue}>
-                          {ROLE_META[roleValue].label} — {ROLE_META[roleValue].description}
-                        </option>
-                      ));
-                    })()}
+                    {getAllowedRoleOptions(currentUserRole).map((roleValue) => (
+                      <option key={roleValue} value={roleValue}>
+                        {ROLE_META[roleValue].label} — {ROLE_META[roleValue].description}
+                      </option>
+                    ))}
                   </select>
                 </Tooltip>
               </div>
