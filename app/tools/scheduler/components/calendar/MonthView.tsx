@@ -154,6 +154,7 @@ export function MonthView({
     () => currentDate ?? new Date(),
   );
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+  const [expandDays, setExpandDays] = useState(false);
 
   // Sync viewDate when parent changes currentDate externally
   useEffect(() => {
@@ -348,12 +349,21 @@ export function MonthView({
 
       {/* ------- Venue Toggle ------- */}
       {allVenues.length > 1 && (
-        <div className="bg-white px-6 border-b border-slate-200 shrink-0">
+        <div className="bg-white px-6 py-3 border-b border-slate-200 shrink-0 flex items-center gap-4">
           <VenueToggle
             venues={allVenues}
             selectedVenues={selectedVenues}
             onChange={setSelectedVenues}
           />
+          <div className="flex-1" />
+          <Tooltip text={expandDays ? "Show limited events per day" : "Expand to show all events per day"}>
+            <button
+              onClick={() => setExpandDays(!expandDays)}
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none rounded px-2 py-1"
+            >
+              {expandDays ? 'Collapse Days' : 'Expand Days'}
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -492,7 +502,7 @@ export function MonthView({
                               {venueAbbrev(venueId)}
                             </div>
                             <div className="space-y-0.5">
-                              {laneEvents.slice(0, 2).map((event) => (
+                              {(expandDays ? laneEvents : laneEvents.slice(0, 2)).map((event) => (
                                 <EventChip
                                   key={event.id}
                                   event={event}
@@ -501,7 +511,7 @@ export function MonthView({
                                   onClick={handleEventClick}
                                 />
                               ))}
-                              {laneEvents.length > 2 && (
+                              {!expandDays && laneEvents.length > 2 && (
                                 <div className="text-[8px] text-slate-700 text-center">
                                   +{laneEvents.length - 2}
                                 </div>
@@ -513,7 +523,7 @@ export function MonthView({
                     </div>
                   ) : (
                     <div className="space-y-0.5">
-                      {dayEvents.slice(0, 3).map((event) => (
+                      {(expandDays ? dayEvents : dayEvents.slice(0, 3)).map((event) => (
                         <EventChip
                           key={event.id}
                           event={event}
@@ -522,7 +532,7 @@ export function MonthView({
                           onClick={handleEventClick}
                         />
                       ))}
-                      {dayEvents.length > 3 && (
+                      {!expandDays && dayEvents.length > 3 && (
                         <button
                           className="w-full text-[10px] font-medium text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors cursor-pointer text-left"
                           onClick={(e) => { e.stopPropagation(); onDayClick?.(date); }}
