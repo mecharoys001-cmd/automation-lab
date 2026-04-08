@@ -5,7 +5,7 @@
  * via Supabase for auditing and delivery tracking.
  */
 
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase-service';
 import type { NotificationChannel, NotificationStatus, NotificationLogInsert } from '@/types/database';
 
 // ============================================================
@@ -42,6 +42,8 @@ export async function logNotification(
     message_preview: params.messagePreview ?? null,
     sent_at: params.sentAt ?? null,
   };
+
+  const supabase = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from('notification_log') as any)

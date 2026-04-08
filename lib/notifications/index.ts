@@ -6,7 +6,7 @@
  * actual delivery gated behind a config flag.
  */
 
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase-service';
 import type { Instructor, NotificationChannel } from '@/types/database';
 import type { TemplateKey } from './templates';
 import { renderTemplate } from './templates';
@@ -61,6 +61,8 @@ export async function notify(payload: NotificationPayload): Promise<Notification
   // ----------------------------------------------------------
   // 1. Look up instructor
   // ----------------------------------------------------------
+  const supabase = createServiceClient();
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: instructorData, error: lookupError } = await (supabase.from('staff') as any)
     .select('*')
