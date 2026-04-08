@@ -195,17 +195,12 @@ export function MonthView({
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [venuesProp, events]);
 
-  // Initialize venue selection once, then preserve it across re-renders/data refreshes.
-  // If the available venue list changes, keep any still-valid selections and only
-  // fall back to "all selected" when nothing is selected yet.
+  // Always sync selectedVenues to include all available venues on view/data change
   useEffect(() => {
-    if (allVenues.length === 0) return;
-    const allVenueIds = allVenues.map((v) => v.id);
-    setSelectedVenues((prev) => {
-      if (prev.length === 0) return allVenueIds;
-      const next = prev.filter((id) => allVenueIds.includes(id));
-      return next.length > 0 ? next : allVenueIds;
-    });
+    if (allVenues.length > 0) {
+      const allVenueIds = allVenues.map((v) => v.id);
+      setSelectedVenues(allVenueIds);
+    }
   }, [allVenues]);
 
   const multiLane = selectedVenues.length > 1;
