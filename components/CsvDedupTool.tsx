@@ -27,6 +27,7 @@ export default function CsvDedupTool() {
     result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "",
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showGroups, setShowGroups] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const toolSession = useRef<ReturnType<typeof startToolSession> | null>(null);
 
@@ -269,96 +270,120 @@ export default function CsvDedupTool() {
       {/* Results */}
       {s.result && (
         <>
-          {/* Summary bar */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
-            {[
-              { label: "Rows In", value: s.rows.length.toLocaleString(), color: "#94a3b8" },
-              { label: "Removing", value: totalRemoved.toLocaleString(), color: "#f87171" },
-              { label: "Rows Out", value: outputRows.length.toLocaleString(), color: "#4ade80" },
-            ].map(item => (
-              <div key={item.label} style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "12px", padding: "1.25rem", textAlign: "center" }}>
-                <div style={{ fontSize: "1.75rem", fontWeight: 800, color: item.color }}>{item.value}</div>
-                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.label}</div>
+          {/* Summary + primary action */}
+          <div style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "16px", padding: "1.5rem" }}>
+            {s.result.groups.length > 0 ? (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.25rem" }}>
+                  {[
+                    { label: "Rows In", value: s.rows.length.toLocaleString(), color: "#94a3b8" },
+                    { label: "Groups Found", value: s.result.groups.length.toLocaleString(), color: "#facc15" },
+                    { label: "Removing", value: totalRemoved.toLocaleString(), color: "#f87171" },
+                    { label: "Rows Out", value: outputRows.length.toLocaleString(), color: "#4ade80" },
+                  ].map(item => (
+                    <div key={item.label} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 800, color: item.color }}>{item.value}</div>
+                      <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ color: "#94a3b8", fontSize: "13px", textAlign: "center", marginBottom: "1.25rem" }}>
+                  {approvedCount} of {s.result.groups.length} group{s.result.groups.length !== 1 ? "s" : ""} approved
+                  {s.result.groups.length - approvedCount > 0 && (<span style={{ color: "#f87171" }}> · {s.result.groups.length - approvedCount} rejected</span>)}
+                </div>
+
+                {/* Download — primary action */}
+                <button onClick={download} style={{
+                  backgroundColor: "#16a34a", color: "#fff", border: "none", borderRadius: "10px",
+                  padding: "14px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
+                  boxShadow: "0 0 20px rgba(22,163,74,0.3)", width: "100%",
+                }}>
+                  ⬇️ Download Cleaned CSV ({outputRows.length.toLocaleString()} rows)
+                </button>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", color: "#64748b", padding: "1rem 0" }}>
+                ✅ No duplicates found. Your list is clean!
               </div>
-            ))}
+            )}
           </div>
 
-          {/* Duplicate groups with review */}
-          {s.result.groups.length > 0 ? (
+          {/* Collapsible review section */}
+          {s.result.groups.length > 0 && (
             <div style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "16px", padding: "1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexWrap: "wrap", gap: "8px" }}>
-                <div style={{ fontWeight: 700, fontSize: "15px" }}>
-                  🔁 {s.result.groups.length} Duplicate Group{s.result.groups.length !== 1 ? "s" : ""} Found
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={() => bulkSetApprovals(true)} style={{
-                    background: "none", border: "1px solid #16a34a60", borderRadius: "6px",
-                    color: "#4ade80", padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
-                  }}>
-                    Approve All
-                  </button>
-                  <button onClick={() => bulkSetApprovals(false)} style={{
-                    background: "none", border: "1px solid #dc262660", borderRadius: "6px",
-                    color: "#f87171", padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
-                  }}>
-                    Reject All
-                  </button>
-                </div>
-              </div>
-              <div style={{ color: "#64748b", fontSize: "13px", marginBottom: "1rem" }}>
-                Review each group below. Approved groups will have duplicates removed; rejected groups keep all records. ({approvedCount} of {s.result.groups.length} approved)
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {s.result.groups.map((g, i) => {
-                  const approved = !!s.approvals[i];
-                  return (
-                    <div key={i} style={{
-                      backgroundColor: "#0f172a", borderRadius: "10px", padding: "1rem",
-                      border: `1px solid ${approved ? "#16a34a40" : "#334155"}`,
-                      opacity: approved ? 1 : 0.65,
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <div style={{ fontSize: "12px", color: "#64748b" }}>📍 {g.address}</div>
-                        <button onClick={() => toggleApproval(i)} style={{
-                          background: approved ? "#16a34a25" : "#dc262625",
-                          border: `1px solid ${approved ? "#16a34a60" : "#dc262660"}`,
-                          borderRadius: "6px", color: approved ? "#4ade80" : "#f87171",
-                          padding: "3px 10px", cursor: "pointer", fontSize: "11px", fontWeight: 700,
-                        }}>
-                          {approved ? "✓ Approved" : "✗ Rejected"}
-                        </button>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          <span style={{ fontSize: "11px", backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40", borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>✓ KEPT</span>
-                          <span style={{ fontSize: "14px", fontWeight: 600 }}>{g.kept[s.nameCol]}</span>
-                        </div>
-                        {g.dropped.map((r, j) => (
-                          <div key={j} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            <span style={{ fontSize: "11px", backgroundColor: approved ? "#dc262620" : "#33415540", color: approved ? "#f87171" : "#64748b", border: `1px solid ${approved ? "#dc262640" : "#33415560"}`, borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>{approved ? "✗ DROP" : "— KEEP"}</span>
-                            <span style={{ fontSize: "14px", color: "#64748b" }}>{r[s.nameCol]}</span>
-                          </div>
-                        ))}
-                      </div>
+              <button
+                onClick={() => setShowGroups(v => !v)}
+                style={{ background: "none", border: "none", color: "#e2e8f0", cursor: "pointer", fontSize: "14px", fontWeight: 700, padding: 0, display: "flex", alignItems: "center", gap: "6px", width: "100%" }}
+              >
+                <span style={{ display: "inline-block", transform: showGroups ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s", fontSize: "12px" }}>▸</span>
+                🔁 Review {s.result.groups.length} Duplicate Group{s.result.groups.length !== 1 ? "s" : ""}
+                <span style={{ color: "#64748b", fontWeight: 400, fontSize: "13px", marginLeft: "auto" }}>
+                  {approvedCount} approved · {s.result.groups.length - approvedCount} rejected
+                </span>
+              </button>
+
+              {showGroups && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", marginBottom: "4px", flexWrap: "wrap", gap: "8px" }}>
+                    <div style={{ color: "#64748b", fontSize: "13px" }}>
+                      Approved groups will have duplicates removed; rejected groups keep all records.
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "16px", padding: "2rem", textAlign: "center", color: "#64748b" }}>
-              ✅ No duplicates found. Your list is clean!
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button onClick={() => bulkSetApprovals(true)} style={{
+                        background: "none", border: "1px solid #16a34a60", borderRadius: "6px",
+                        color: "#4ade80", padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
+                      }}>
+                        Approve All
+                      </button>
+                      <button onClick={() => bulkSetApprovals(false)} style={{
+                        background: "none", border: "1px solid #dc262660", borderRadius: "6px",
+                        color: "#f87171", padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
+                      }}>
+                        Reject All
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                    {s.result.groups.map((g, i) => {
+                      const approved = !!s.approvals[i];
+                      return (
+                        <div key={i} style={{
+                          backgroundColor: "#0f172a", borderRadius: "10px", padding: "1rem",
+                          border: `1px solid ${approved ? "#16a34a40" : "#334155"}`,
+                          opacity: approved ? 1 : 0.65,
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>📍 {g.address}</div>
+                            <button onClick={() => toggleApproval(i)} style={{
+                              background: approved ? "#16a34a25" : "#dc262625",
+                              border: `1px solid ${approved ? "#16a34a60" : "#dc262660"}`,
+                              borderRadius: "6px", color: approved ? "#4ade80" : "#f87171",
+                              padding: "3px 10px", cursor: "pointer", fontSize: "11px", fontWeight: 700,
+                            }}>
+                              {approved ? "✓ Approved" : "✗ Rejected"}
+                            </button>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              <span style={{ fontSize: "11px", backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40", borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>✓ KEPT</span>
+                              <span style={{ fontSize: "14px", fontWeight: 600 }}>{g.kept[s.nameCol]}</span>
+                            </div>
+                            {g.dropped.map((r, j) => (
+                              <div key={j} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                <span style={{ fontSize: "11px", backgroundColor: approved ? "#dc262620" : "#33415540", color: approved ? "#f87171" : "#64748b", border: `1px solid ${approved ? "#dc262640" : "#33415560"}`, borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>{approved ? "✗ DROP" : "— KEEP"}</span>
+                                <span style={{ fontSize: "14px", color: "#64748b" }}>{r[s.nameCol]}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
-
-          {/* Download */}
-          <button onClick={download} style={{
-            backgroundColor: "#16a34a", color: "#fff", border: "none", borderRadius: "10px",
-            padding: "14px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 0 20px rgba(22,163,74,0.3)",
-          }}>
-            ⬇️ Download Cleaned CSV ({outputRows.length.toLocaleString()} rows)
-          </button>
         </>
       )}
     </div>
