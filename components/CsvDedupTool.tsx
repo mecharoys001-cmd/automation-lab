@@ -206,24 +206,33 @@ export default function CsvDedupTool() {
     const fmt = s.exportFormat;
     let blob: Blob;
     if (fmt === ".xlsx" || fmt === ".xls") {
-      const ws = XLSX.utils.json_to_sheet(outputRows, { header: s.headers });
-      // Restore date-looking string cells to real Date objects so Excel formats them as dates
+      // Build array-of-arrays for predictable worksheet generation (avoids
+      // json_to_sheet artifacts from inconsistent object keys).
+      const aoa: unknown[][] = [s.headers];
       const dateRe = /^\d{1,2}\/\d{1,2}\/\d{4}(\s\d{2}:\d{2}:\d{2})?$/;
-      const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
-      for (let R = range.s.r + 1; R <= range.e.r; R++) {
-        for (let C = range.s.c; C <= range.e.c; C++) {
-          const addr = XLSX.utils.encode_cell({ r: R, c: C });
-          const cell = ws[addr];
-          if (cell && typeof cell.v === "string" && dateRe.test(cell.v)) {
-            const d = new Date(cell.v);
-            if (!isNaN(d.getTime())) { cell.t = "d"; cell.v = d; }
+      const isXlsx = fmt === ".xlsx";
+      for (const row of outputRows) {
+        aoa.push(s.headers.map(h => {
+          const v = row[h] ?? "";
+          // Restore date strings to Date objects only for .xlsx – the BIFF8
+          // writer used for .xls does not reliably handle cell type "d" and
+          // produces rendering artifacts, so leave dates as strings there.
+          if (isXlsx && typeof v === "string" && dateRe.test(v)) {
+            const d = new Date(v);
+            if (!isNaN(d.getTime())) return d;
           }
-        }
+          return v;
+        }));
       }
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Cleaned");
-      const buf = XLSX.write(wb, { bookType: fmt === ".xls" ? "xls" : "xlsx", type: "array" });
-      blob = new Blob([buf], { type: "application/octet-stream" });
+      const bookType = isXlsx ? "xlsx" : "biff8";
+      const mime = isXlsx
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/vnd.ms-excel";
+      const buf = XLSX.write(wb, { bookType, type: "array" });
+      blob = new Blob([buf], { type: mime });
     } else if (fmt === ".tsv") {
       blob = new Blob(["\uFEFF" + toTSV(s.headers, outputRows)], { type: "text/tab-separated-values;charset=utf-8" });
     } else {
