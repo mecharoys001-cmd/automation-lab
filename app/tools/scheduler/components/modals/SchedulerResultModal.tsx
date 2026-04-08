@@ -17,6 +17,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { ExceptionsImpactTable } from '../reports/ExceptionsImpactTable';
 import { showToast } from '../../lib/toast';
 
 // ---------------------------------------------------------------------------
@@ -804,6 +805,11 @@ export function SchedulerResultModal({
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Exceptions Impact — approved time off vs scheduled sessions */}
+          {programId && isPreview && (
+            <ExceptionsImpactTable programId={programId} />
           )}
 
           {/* Skipped dates */}
