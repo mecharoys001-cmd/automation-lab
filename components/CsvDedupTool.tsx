@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo } from "react";
-import { parseCSV, toCSV, toTSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
+import { parseCSV, toCSV, toTSV, detectColumnSets, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
 import * as XLSX from "xlsx";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
@@ -12,8 +12,8 @@ const EXPORT_FORMATS: ExportFormat[] = [".csv", ".tsv", ".txt", ".xlsx", ".xls"]
 interface State {
   headers: string[];
   rows: CsvRow[];
-  nameCol: string;
-  addrCol: string;
+  nameCols: string[];
+  addrCols: string[];
   result: DedupResult | null;
   /** Per-group approval: true = approved (drop duplicates), false = rejected (keep all) */
   approvals: Record<number, boolean>;
@@ -27,7 +27,7 @@ interface State {
 
 export default function CsvDedupTool() {
   const [s, setS] = useState<State>({
-    headers: [], rows: [], nameCol: "", addrCol: "",
+    headers: [], rows: [], nameCols: [], addrCols: [],
     result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "",
     inputExt: ".csv", exportFormat: ".csv",
   });
@@ -54,17 +54,17 @@ export default function CsvDedupTool() {
   };
 
   const handleParsed = useCallback((headers: string[], rows: CsvRow[], fileName: string, rawCsv: string) => {
-    const { nameCol: detectedName, addrCol: detectedAddr } = detectColumns(headers);
-    const nameCol = detectedName ?? headers[0] ?? "";
-    const addrCol = detectedAddr ?? headers[1] ?? "";
+    const detected = detectColumnSets(headers);
+    const nameCols = detected.nameCols.length ? detected.nameCols : [headers[0] ?? ""];
+    const addrCols = detected.addrCols.length ? detected.addrCols : [headers[1] ?? ""];
     const ext = (fileName.slice(fileName.lastIndexOf(".")).toLowerCase() || ".csv") as ExportFormat;
     // Auto-run dedup on load
-    const result = deduplicate(rows, nameCol, addrCol);
+    const result = deduplicate(rows, nameCols, addrCols);
     const approvals: Record<number, boolean> = {};
     result.groups.forEach((_, i) => { approvals[i] = true; });
     setS(p => ({
       ...p, headers, rows, fileName, rawCsv,
-      nameCol, addrCol,
+      nameCols, addrCols,
       result, approvals, error: null, dragging: false,
       inputExt: ext, exportFormat: ext,
     }));
@@ -129,8 +129,8 @@ export default function CsvDedupTool() {
   }, [loadFile]);
 
   const runDedup = () => {
-    if (!s.nameCol || !s.addrCol) { setS(p => ({ ...p, error: "Select both columns." })); return; }
-    const result = deduplicate(s.rows, s.nameCol, s.addrCol);
+    if (!s.nameCols.length || !s.addrCols.length) { setS(p => ({ ...p, error: "Select both columns." })); return; }
+    const result = deduplicate(s.rows, s.nameCols, s.addrCols);
     const approvals: Record<number, boolean> = {};
     result.groups.forEach((_, i) => { approvals[i] = true; });
     setS(p => ({ ...p, result, approvals, error: null }));
@@ -223,10 +223,12 @@ export default function CsvDedupTool() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "", inputExt: ".csv", exportFormat: ".csv" });
+  const reset = () => setS({ headers: [], rows: [], nameCols: [], addrCols: [], result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "", inputExt: ".csv", exportFormat: ".csv" });
 
-  const sel = (field: "nameCol" | "addrCol") => (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setS(p => ({ ...p, [field]: e.target.value, result: null, approvals: {} }));
+  const selName = (e: React.ChangeEvent<HTMLSelectElement>) =>
+    setS(p => ({ ...p, nameCols: [e.target.value], result: null, approvals: {} }));
+  const selAddr = (e: React.ChangeEvent<HTMLSelectElement>) =>
+    setS(p => ({ ...p, addrCols: [e.target.value], result: null, approvals: {} }));
 
   const dropZoneStyle: React.CSSProperties = {
     border: `2px dashed ${s.dragging ? ACCENT : "#334155"}`,
@@ -289,15 +291,21 @@ export default function CsvDedupTool() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.75rem", marginBottom: "1rem" }}>
               <div>
                 <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Name Column</label>
-                <select style={selectStyle} value={s.nameCol} onChange={sel("nameCol")}>
+                <select style={selectStyle} value={s.nameCols[0] ?? ""} onChange={selName}>
                   {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
+                {s.nameCols.length > 1 && (
+                  <div style={{ fontSize: "11px", color: "#6366f1", marginTop: "4px" }}>Using composite: {s.nameCols.join(" + ")}</div>
+                )}
               </div>
               <div>
                 <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Address Column</label>
-                <select style={selectStyle} value={s.addrCol} onChange={sel("addrCol")}>
+                <select style={selectStyle} value={s.addrCols[0] ?? ""} onChange={selAddr}>
                   {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
+                {s.addrCols.length > 1 && (
+                  <div style={{ fontSize: "11px", color: "#6366f1", marginTop: "4px" }}>Using composite: {s.addrCols.join(" + ")}</div>
+                )}
               </div>
             </div>
 
@@ -430,12 +438,12 @@ export default function CsvDedupTool() {
                           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                               <span style={{ fontSize: "11px", backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40", borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>✓ KEPT</span>
-                              <span style={{ fontSize: "14px", fontWeight: 600 }}>{g.kept[s.nameCol]}</span>
+                              <span style={{ fontSize: "14px", fontWeight: 600 }}>{s.nameCols.map(c => g.kept[c] ?? "").join(" ").trim()}</span>
                             </div>
                             {g.dropped.map((r, j) => (
                               <div key={j} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                                 <span style={{ fontSize: "11px", backgroundColor: approved ? "#dc262620" : "#33415540", color: approved ? "#f87171" : "#64748b", border: `1px solid ${approved ? "#dc262640" : "#33415560"}`, borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>{approved ? "✗ DROP" : "— KEEP"}</span>
-                                <span style={{ fontSize: "14px", color: "#64748b" }}>{r[s.nameCol]}</span>
+                                <span style={{ fontSize: "14px", color: "#64748b" }}>{s.nameCols.map(c => r[c] ?? "").join(" ").trim()}</span>
                               </div>
                             ))}
                           </div>

@@ -82,18 +82,74 @@ export function toTSV(headers: string[], rows: CsvRow[]): string {
 
 // ── Column Detection ─────────────────────────────────────────────────────────
 
-const NAME_HINTS = ["name", "fullname", "full name", "customer", "contact", "recipient", "person"];
-const ADDR_HINTS = ["address", "addr", "street", "mailing", "location", "shipping"];
+const ADDR_EXCLUDE = /\b(email|ip|web|url|mac)\b/i;
+const STATE_EXCLUDE = /\b(estate|statement|status)\b/i;
 
-export function detectColumns(headers: string[]): { nameCol: string | null; addrCol: string | null } {
-  let nameCol: string | null = null;
-  let addrCol: string | null = null;
+const COL_PATTERNS: Record<string, { hints: string[]; exclude?: RegExp }> = {
+  firstName: { hints: ["first name", "firstname", "fname", "given name"] },
+  lastName:  { hints: ["last name", "lastname", "lname", "surname", "family name"] },
+  fullName:  { hints: ["name", "fullname", "full name", "customer", "contact", "recipient", "person", "donor", "member", "company", "organization"] },
+  street:    { hints: ["address", "addr", "street", "mailing", "location", "shipping"], exclude: ADDR_EXCLUDE },
+  city:      { hints: ["city", "town", "municipality"] },
+  state:     { hints: ["state", "province", "region"], exclude: STATE_EXCLUDE },
+  zip:       { hints: ["zip", "zipcode", "zip code", "postal", "postal code", "postcode"] },
+};
+
+function matchesHints(header: string, hints: string[], exclude?: RegExp): boolean {
+  const hl = header.toLowerCase().trim();
+  if (exclude && exclude.test(hl)) return false;
+  return hints.some(hint => {
+    if (hl === hint) return true;
+    const re = new RegExp(`\\b${hint.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+    return re.test(hl);
+  });
+}
+
+function findCol(headers: string[], key: string, skip: Set<string>): string | null {
+  const { hints, exclude } = COL_PATTERNS[key];
   for (const h of headers) {
-    const hl = h.toLowerCase().trim();
-    if (!nameCol && NAME_HINTS.some(x => hl.includes(x))) nameCol = h;
-    if (!addrCol && ADDR_HINTS.some(x => hl.includes(x))) addrCol = h;
+    if (skip.has(h)) continue;
+    if (matchesHints(h, hints, exclude)) return h;
   }
-  return { nameCol, addrCol };
+  return null;
+}
+
+export interface ColumnSets { nameCols: string[]; addrCols: string[] }
+
+/** Detect name and address column sets, supporting split columns (First/Last, Street/City/State/Zip). */
+export function detectColumnSets(headers: string[]): ColumnSets {
+  const used = new Set<string>();
+
+  // Name: prefer first+last, fall back to full name
+  let nameCols: string[] = [];
+  const first = findCol(headers, "firstName", used);
+  const last = findCol(headers, "lastName", used);
+  if (first && last) {
+    nameCols = [first, last];
+    used.add(first); used.add(last);
+  } else {
+    const full = findCol(headers, "fullName", used);
+    if (full) { nameCols = [full]; used.add(full); }
+  }
+
+  // Address: street + optional city/state/zip for composite key
+  const addrCols: string[] = [];
+  const street = findCol(headers, "street", used);
+  if (street) { addrCols.push(street); used.add(street); }
+  const city = findCol(headers, "city", used);
+  if (city) { addrCols.push(city); used.add(city); }
+  const state = findCol(headers, "state", used);
+  if (state) { addrCols.push(state); used.add(state); }
+  const zip = findCol(headers, "zip", used);
+  if (zip) { addrCols.push(zip); used.add(zip); }
+
+  return { nameCols, addrCols };
+}
+
+/** Legacy single-column detection — delegates to detectColumnSets. */
+export function detectColumns(headers: string[]): { nameCol: string | null; addrCol: string | null } {
+  const { nameCols, addrCols } = detectColumnSets(headers);
+  return { nameCol: nameCols[0] ?? null, addrCol: addrCols[0] ?? null };
 }
 
 // ── Normalization ────────────────────────────────────────────────────────────
@@ -212,16 +268,18 @@ class UnionFind {
 
 // ── Main Dedup ────────────────────────────────────────────────────────────────
 
-function bestRecord(records: CsvRow[], nameCol: string): CsvRow {
-  return records.reduce((best, r) =>
-    (r[nameCol]?.length ?? 0) > (best[nameCol]?.length ?? 0) ? r : best
-  );
+function bestRecord(records: CsvRow[], nameCols: string[]): CsvRow {
+  return records.reduce((best, r) => {
+    const rLen = nameCols.reduce((sum, c) => sum + (r[c]?.length ?? 0), 0);
+    const bLen = nameCols.reduce((sum, c) => sum + (best[c]?.length ?? 0), 0);
+    return rLen > bLen ? r : best;
+  });
 }
 
-export function deduplicate(rows: CsvRow[], nameCol: string, addrCol: string): DedupResult {
+export function deduplicate(rows: CsvRow[], nameCols: string[], addrCols: string[]): DedupResult {
   const addrGroups = new Map<string, number[]>();
   rows.forEach((row, i) => {
-    const key = normalizeAddress(row[addrCol] ?? "");
+    const key = normalizeAddress(addrCols.map(c => row[c] ?? "").join(" "));
     addrGroups.set(key, [...(addrGroups.get(key) ?? []), i]);
   });
 
@@ -229,7 +287,9 @@ export function deduplicate(rows: CsvRow[], nameCol: string, addrCol: string): D
   for (const indices of addrGroups.values()) {
     for (let a = 0; a < indices.length; a++) {
       for (let b = a + 1; b < indices.length; b++) {
-        if (namesAreLikelySame(rows[indices[a]][nameCol] ?? "", rows[indices[b]][nameCol] ?? ""))
+        const nameA = nameCols.map(c => rows[indices[a]][c] ?? "").join(" ");
+        const nameB = nameCols.map(c => rows[indices[b]][c] ?? "").join(" ");
+        if (namesAreLikelySame(nameA, nameB))
           uf.union(indices[a], indices[b]);
       }
     }
@@ -241,9 +301,13 @@ export function deduplicate(rows: CsvRow[], nameCol: string, addrCol: string): D
 
   for (const indices of uf.groups().values()) {
     const cluster = indices.map(i => rows[i]);
-    const kept = bestRecord(cluster, nameCol);
+    const kept = bestRecord(cluster, nameCols);
     if (cluster.length > 1) {
-      groups.push({ address: cluster[0][addrCol] ?? "", kept, dropped: cluster.filter(r => r !== kept) });
+      groups.push({
+        address: addrCols.map(c => cluster[0][c] ?? "").filter(Boolean).join(", "),
+        kept,
+        dropped: cluster.filter(r => r !== kept),
+      });
     }
     result.push(kept);
     removed += cluster.length - 1;
