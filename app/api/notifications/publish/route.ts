@@ -114,17 +114,50 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Update selected draft sessions to published
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updatedSessions, error: updateError } = await (supabase.from('sessions') as any)
-      .update({ status: 'published', updated_at: new Date().toISOString() })
-      .in('id', idsToPublish)
-      .select('id');
+    // Update selected draft sessions to published.
+    // Use filter-based update instead of .in() to avoid PostgREST URL-length
+    // limits when there are many session IDs (the .in() query parameter can
+    // exceed the max URL size and return a 400 "Bad Request").
+    let updatedSessions: { id: string }[] | null = null;
+    let updateError: { message: string; details?: string; hint?: string; code?: string } | null = null;
+
+    if (skip_incomplete && publishable.length < allDrafts.length) {
+      // Only publish the subset — must use .in() but the list is smaller
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (supabase.from('sessions') as any)
+        .update({ status: 'published', updated_at: new Date().toISOString() })
+        .in('id', idsToPublish)
+        .select('id');
+      updatedSessions = result.data;
+      updateError = result.error;
+    } else {
+      // Publish ALL drafts for this program — use filter-based update
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (supabase.from('sessions') as any)
+        .update({ status: 'published', updated_at: new Date().toISOString() })
+        .eq('program_id', programId)
+        .eq('status', 'draft')
+        .select('id');
+      updatedSessions = result.data;
+      updateError = result.error;
+    }
 
     if (updateError) {
-      console.error('Update draft sessions error:', updateError);
+      console.error('Update draft sessions error:', JSON.stringify({
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        code: updateError.code,
+        sessionCount: idsToPublish.length,
+      }));
       return NextResponse.json(
-        { success: false, error: `Failed to publish sessions: ${updateError.message}` },
+        {
+          success: false,
+          error: `Failed to publish sessions: ${updateError.message}`,
+          details: updateError.details || null,
+          hint: updateError.hint || null,
+          code: updateError.code || null,
+        },
         { status: 500 }
       );
     }

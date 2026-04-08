@@ -649,7 +649,10 @@ function CalendarDashboard() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Publish failed');
+        const parts = [data.error || 'Publish failed'];
+        if (data.details) parts.push(data.details);
+        if (data.hint) parts.push(`Hint: ${data.hint}`);
+        throw new Error(parts.join(' — '));
       }
 
       const result = await res.json();
