@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { parseCSV, toCSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
 import * as XLSX from "xlsx";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
@@ -13,6 +13,8 @@ interface State {
   nameCol: string;
   addrCol: string;
   result: DedupResult | null;
+  /** Per-group approval: true = approved (drop duplicates), false = rejected (keep all) */
+  approvals: Record<number, boolean>;
   error: string | null;
   fileName: string;
   dragging: boolean;
@@ -22,7 +24,7 @@ interface State {
 export default function CsvDedupTool() {
   const [s, setS] = useState<State>({
     headers: [], rows: [], nameCol: "", addrCol: "",
-    result: null, error: null, fileName: "", dragging: false, rawCsv: "",
+    result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "",
   });
   const fileRef = useRef<HTMLInputElement>(null);
   const toolSession = useRef<ReturnType<typeof startToolSession> | null>(null);
@@ -31,12 +33,17 @@ export default function CsvDedupTool() {
   const isExcel = (name: string) => name.endsWith(".xlsx") || name.endsWith(".xls");
 
   const handleParsed = useCallback((headers: string[], rows: CsvRow[], fileName: string, rawCsv: string) => {
-    const { nameCol, addrCol } = detectColumns(headers);
+    const { nameCol: detectedName, addrCol: detectedAddr } = detectColumns(headers);
+    const nameCol = detectedName ?? headers[0] ?? "";
+    const addrCol = detectedAddr ?? headers[1] ?? "";
+    // Auto-run dedup on load
+    const result = deduplicate(rows, nameCol, addrCol);
+    const approvals: Record<number, boolean> = {};
+    result.groups.forEach((_, i) => { approvals[i] = true; });
     setS(p => ({
       ...p, headers, rows, fileName, rawCsv,
-      nameCol: nameCol ?? headers[0] ?? "",
-      addrCol: addrCol ?? headers[1] ?? "",
-      result: null, error: null, dragging: false,
+      nameCol, addrCol,
+      result, approvals, error: null, dragging: false,
     }));
   }, []);
 
@@ -101,7 +108,9 @@ export default function CsvDedupTool() {
   const runDedup = () => {
     if (!s.nameCol || !s.addrCol) { setS(p => ({ ...p, error: "Select both columns." })); return; }
     const result = deduplicate(s.rows, s.nameCol, s.addrCol);
-    setS(p => ({ ...p, result, error: null }));
+    const approvals: Record<number, boolean> = {};
+    result.groups.forEach((_, i) => { approvals[i] = true; });
+    setS(p => ({ ...p, result, approvals, error: null }));
 
     // Complete the session with hash for dedup tracking
     hashCSVContent(s.rawCsv).then((hash) => {
@@ -127,9 +136,38 @@ export default function CsvDedupTool() {
     });
   };
 
+  // Compute output rows: start with all rows, then for each approved group remove the dropped records
+  const outputRows = useMemo(() => {
+    if (!s.result) return [];
+    const droppedSet = new Set<CsvRow>();
+    s.result.groups.forEach((g, i) => {
+      if (s.approvals[i]) g.dropped.forEach(r => droppedSet.add(r));
+    });
+    return s.rows.filter(r => !droppedSet.has(r));
+  }, [s.result, s.approvals, s.rows]);
+
+  const approvedCount = useMemo(() =>
+    s.result ? s.result.groups.filter((_, i) => s.approvals[i]).length : 0,
+  [s.result, s.approvals]);
+
+  const totalRemoved = useMemo(() => {
+    if (!s.result) return 0;
+    return s.result.groups.reduce((sum, g, i) => sum + (s.approvals[i] ? g.dropped.length : 0), 0);
+  }, [s.result, s.approvals]);
+
+  const toggleApproval = (idx: number) =>
+    setS(p => ({ ...p, approvals: { ...p.approvals, [idx]: !p.approvals[idx] } }));
+
+  const bulkSetApprovals = (value: boolean) =>
+    setS(p => {
+      const approvals: Record<number, boolean> = {};
+      p.result?.groups.forEach((_, i) => { approvals[i] = value; });
+      return { ...p, approvals };
+    });
+
   const download = () => {
     if (!s.result) return;
-    const csv = toCSV(s.headers, s.result.rows);
+    const csv = toCSV(s.headers, outputRows);
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url;
     const baseName = s.fileName.replace(/\.[^.]+$/, "");
@@ -137,10 +175,10 @@ export default function CsvDedupTool() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, error: null, fileName: "", dragging: false, rawCsv: "" });
+  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "" });
 
   const sel = (field: "nameCol" | "addrCol") => (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setS(p => ({ ...p, [field]: e.target.value, result: null }));
+    setS(p => ({ ...p, [field]: e.target.value, result: null, approvals: {} }));
 
   const dropZoneStyle: React.CSSProperties = {
     border: `2px dashed ${s.dragging ? ACCENT : "#334155"}`,
@@ -206,8 +244,11 @@ export default function CsvDedupTool() {
           padding: "12px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
           boxShadow: `0 0 20px ${ACCENT}40`, width: "100%",
         }}>
-          🔍 Run Deduplication
+          🔍 Rerun Duplicate Analysis
         </button>
+        <div style={{ color: "#64748b", fontSize: "12px", marginTop: "8px", textAlign: "center" }}>
+          Duplicates are detected automatically on upload. Change columns above and rerun if needed. Review each proposed change below before downloading.
+        </div>
         {s.error && <div style={{ color: "#f87171", marginTop: "1rem", fontSize: "14px" }}>⚠️ {s.error}</div>}
       </div>
 
@@ -218,8 +259,8 @@ export default function CsvDedupTool() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
             {[
               { label: "Rows In", value: s.rows.length.toLocaleString(), color: "#94a3b8" },
-              { label: "Removed", value: s.result.removed.toLocaleString(), color: "#f87171" },
-              { label: "Rows Out", value: s.result.rows.length.toLocaleString(), color: "#4ade80" },
+              { label: "Removing", value: totalRemoved.toLocaleString(), color: "#f87171" },
+              { label: "Rows Out", value: outputRows.length.toLocaleString(), color: "#4ade80" },
             ].map(item => (
               <div key={item.label} style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "12px", padding: "1.25rem", textAlign: "center" }}>
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, color: item.color }}>{item.value}</div>
@@ -228,30 +269,66 @@ export default function CsvDedupTool() {
             ))}
           </div>
 
-          {/* Duplicate groups */}
+          {/* Duplicate groups with review */}
           {s.result.groups.length > 0 ? (
             <div style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "16px", padding: "1.5rem" }}>
-              <div style={{ fontWeight: 700, fontSize: "15px", marginBottom: "1rem" }}>
-                🔁 {s.result.groups.length} Duplicate Group{s.result.groups.length !== 1 ? "s" : ""} Found
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ fontWeight: 700, fontSize: "15px" }}>
+                  🔁 {s.result.groups.length} Duplicate Group{s.result.groups.length !== 1 ? "s" : ""} Found
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => bulkSetApprovals(true)} style={{
+                    background: "none", border: "1px solid #16a34a60", borderRadius: "6px",
+                    color: "#4ade80", padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
+                  }}>
+                    Approve All
+                  </button>
+                  <button onClick={() => bulkSetApprovals(false)} style={{
+                    background: "none", border: "1px solid #dc262660", borderRadius: "6px",
+                    color: "#f87171", padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
+                  }}>
+                    Reject All
+                  </button>
+                </div>
+              </div>
+              <div style={{ color: "#64748b", fontSize: "13px", marginBottom: "1rem" }}>
+                Review each group below. Approved groups will have duplicates removed; rejected groups keep all records. ({approvedCount} of {s.result.groups.length} approved)
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {s.result.groups.map((g, i) => (
-                  <div key={i} style={{ backgroundColor: "#0f172a", borderRadius: "10px", padding: "1rem", border: "1px solid #1e293b" }}>
-                    <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>📍 {g.address}</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        <span style={{ fontSize: "11px", backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40", borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>✓ KEPT</span>
-                        <span style={{ fontSize: "14px", fontWeight: 600 }}>{g.kept[s.nameCol]}</span>
+                {s.result.groups.map((g, i) => {
+                  const approved = !!s.approvals[i];
+                  return (
+                    <div key={i} style={{
+                      backgroundColor: "#0f172a", borderRadius: "10px", padding: "1rem",
+                      border: `1px solid ${approved ? "#16a34a40" : "#334155"}`,
+                      opacity: approved ? 1 : 0.65,
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <div style={{ fontSize: "12px", color: "#64748b" }}>📍 {g.address}</div>
+                        <button onClick={() => toggleApproval(i)} style={{
+                          background: approved ? "#16a34a25" : "#dc262625",
+                          border: `1px solid ${approved ? "#16a34a60" : "#dc262660"}`,
+                          borderRadius: "6px", color: approved ? "#4ade80" : "#f87171",
+                          padding: "3px 10px", cursor: "pointer", fontSize: "11px", fontWeight: 700,
+                        }}>
+                          {approved ? "✓ Approved" : "✗ Rejected"}
+                        </button>
                       </div>
-                      {g.dropped.map((r, j) => (
-                        <div key={j} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          <span style={{ fontSize: "11px", backgroundColor: "#dc262620", color: "#f87171", border: "1px solid #dc262640", borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>✗ DROP</span>
-                          <span style={{ fontSize: "14px", color: "#64748b" }}>{r[s.nameCol]}</span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                          <span style={{ fontSize: "11px", backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40", borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>✓ KEPT</span>
+                          <span style={{ fontSize: "14px", fontWeight: 600 }}>{g.kept[s.nameCol]}</span>
                         </div>
-                      ))}
+                        {g.dropped.map((r, j) => (
+                          <div key={j} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <span style={{ fontSize: "11px", backgroundColor: approved ? "#dc262620" : "#33415540", color: approved ? "#f87171" : "#64748b", border: `1px solid ${approved ? "#dc262640" : "#33415560"}`, borderRadius: "6px", padding: "2px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>{approved ? "✗ DROP" : "— KEEP"}</span>
+                            <span style={{ fontSize: "14px", color: "#64748b" }}>{r[s.nameCol]}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -266,7 +343,7 @@ export default function CsvDedupTool() {
             padding: "14px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
             boxShadow: "0 0 20px rgba(22,163,74,0.3)",
           }}>
-            ⬇️ Download Cleaned CSV ({s.result.rows.length.toLocaleString()} rows)
+            ⬇️ Download Cleaned CSV ({outputRows.length.toLocaleString()} rows)
           </button>
         </>
       )}
