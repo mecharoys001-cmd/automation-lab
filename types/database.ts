@@ -74,6 +74,7 @@ export interface Instructor {
   availability_json: AvailabilityJson | null;
   is_active: boolean;
   on_call: boolean;
+  additional_tags?: string[] | null;
   notes: string | null;
   bio: string | null;
   start_year: number | null;
@@ -103,6 +104,7 @@ export interface Venue {
   description: string | null;
   is_wheelchair_accessible: boolean;
   subjects?: string[] | null;
+  additional_tags?: string[] | null;
   created_at: string;
 }
 

@@ -594,7 +594,7 @@ function VenueDetailModal({
     venue.availability_json ?? null
   );
   const [venueAdditionalTags, setVenueAdditionalTags] = useState<string[]>(
-    (venue as unknown as Record<string, unknown>).additional_tags as string[] ?? []
+    venue.additional_tags ?? []
   );
 
   const handleSave = () => {
@@ -625,7 +625,7 @@ function VenueDetailModal({
     setBufferMinutes(venue.buffer_minutes != null ? String(venue.buffer_minutes) : '');
     setEditAvailability(venue.availability_json ?? null);
     setNotes(venue.notes ?? '');
-    setVenueAdditionalTags((venue as unknown as Record<string, unknown>).additional_tags as string[] ?? []);
+    setVenueAdditionalTags(venue.additional_tags ?? []);
     setEditing(false);
   };
 
@@ -1789,11 +1789,14 @@ function PeoplePage() {
 
   const staffFilterConfigs: FilterConfig[] = useMemo(() => {
     const allSkills = new Set<string>();
+    const allAdditionalTags = new Set<string>();
     for (const inst of allInstructors) {
       for (const skill of inst.skills ?? []) allSkills.add(skill);
+      for (const tag of inst.additional_tags ?? []) allAdditionalTags.add(tag);
     }
     const sorted = [...allSkills].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    return [
+    const sortedTags = [...allAdditionalTags].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const configs: FilterConfig[] = [
       {
         key: 'eventType',
         label: 'Event Type',
@@ -1807,17 +1810,30 @@ function PeoplePage() {
         emptyMessage: 'No event types found. Add skills to staff members first.',
       },
     ];
+    if (sortedTags.length > 0) {
+      configs.push({
+        key: 'additionalTags',
+        label: 'Tags',
+        icon: Tag,
+        tooltip: 'Filter staff by assigned tags (e.g. Volunteer, Lead)',
+        options: sortedTags.map((t) => ({ value: t, label: t })),
+      });
+    }
+    return configs;
   }, [allInstructors]);
 
   const venueFilterConfigs: FilterConfig[] = useMemo(() => {
     const allSpaceTypes = new Set<string>();
     const allSubjects = new Set<string>();
+    const allAdditionalTags = new Set<string>();
     for (const v of venues) {
       if (v.space_type) allSpaceTypes.add(v.space_type);
       for (const s of v.subjects ?? []) allSubjects.add(s);
+      for (const tag of v.additional_tags ?? []) allAdditionalTags.add(tag);
     }
     const sortedTypes = [...allSpaceTypes].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     const sortedSubjects = [...allSubjects].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const sortedTags = [...allAdditionalTags].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     const configs: FilterConfig[] = [];
     configs.push({
       key: 'spaceType',
@@ -1838,6 +1854,15 @@ function PeoplePage() {
           label: s,
           emoji: SKILL_STYLES[s]?.emoji ?? '🎵',
         })),
+      });
+    }
+    if (sortedTags.length > 0) {
+      configs.push({
+        key: 'additionalTags',
+        label: 'Tags',
+        icon: Tag,
+        tooltip: 'Filter venues by assigned tags',
+        options: sortedTags.map((t) => ({ value: t, label: t })),
       });
     }
     return configs;
@@ -1863,6 +1888,12 @@ function PeoplePage() {
       const subjects = v.subjects ?? [];
       if (!eventTypeFilter.some((t) => subjects.includes(t))) return false;
     }
+    // Venue tag filters (additional tags)
+    const additionalTagFilter = venueTagFilters.additionalTags;
+    if (additionalTagFilter && additionalTagFilter.length > 0) {
+      const tags = v.additional_tags ?? [];
+      if (!additionalTagFilter.some((t) => tags.includes(t))) return false;
+    }
     if (venueSearch.trim()) {
       const q = venueSearch.toLowerCase();
       const name = (v.name ?? '').toLowerCase();
@@ -1887,6 +1918,12 @@ function PeoplePage() {
       if (eventTypeFilter && eventTypeFilter.length > 0) {
         const skills = inst.skills ?? [];
         if (!eventTypeFilter.some((t) => skills.includes(t))) return false;
+      }
+      // Staff tag filters (additional tags)
+      const additionalTagFilter = staffTagFilters.additionalTags;
+      if (additionalTagFilter && additionalTagFilter.length > 0) {
+        const tags = inst.additional_tags ?? [];
+        if (!additionalTagFilter.some((t) => tags.includes(t))) return false;
       }
       if (search.trim()) {
         const q = search.toLowerCase();
