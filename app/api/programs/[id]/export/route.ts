@@ -51,9 +51,10 @@ export async function GET(
       sb.from('session_templates').select('*, template_placements(*)').eq('program_id', id),
       sb.from('sessions').select('*, session_tags(tag_id)').eq('program_id', id),
       sb.from('school_calendar').select('*').eq('program_id', id),
-      // schedule_versions doesn't have program_id — skip it
+      // schedule_versions doesn't have program_id — skip
       Promise.resolve({ data: [], error: null }),
-      sb.from('settings').select('*').eq('program_id', id),
+      // settings doesn't have program_id — fetch all (single global row)
+      sb.from('settings').select('*'),
       sb.from('program_rules').select('*').eq('program_id', id),
     ]);
 
