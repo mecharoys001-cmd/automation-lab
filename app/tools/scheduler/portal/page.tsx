@@ -188,10 +188,10 @@ export default function InstructorPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <div className="mx-auto max-w-[1400px] px-4 py-6">
+    <div className="h-screen flex flex-col bg-white text-slate-900">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-6 flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold sm:text-3xl text-slate-900">
               {instructor
@@ -233,7 +233,7 @@ export default function InstructorPortalPage() {
         ) : (
           <>
             {/* Controls row */}
-            <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4 shrink-0">
               {/* Schedule mode toggle */}
               <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
                 {([
@@ -295,7 +295,7 @@ export default function InstructorPortalPage() {
                 <span className="ml-2 text-sm text-slate-500">Loading full schedule...</span>
               </div>
             ) : (
-              <div className="min-h-[600px]">
+              <div className="flex-1 flex flex-col min-h-0">
                 {currentView === 'week' && (
                   <WeekView
                     events={filteredEvents}
