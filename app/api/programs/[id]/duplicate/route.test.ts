@@ -107,6 +107,32 @@ describe('copyResources — staff duplication', () => {
     tableResults = {};
   });
 
+  it('should surface instructors_email_key violation as a clear error (stale global constraint)', async () => {
+    // Regression: a stale global UNIQUE(email) constraint caused program
+    // duplication to fail when the same staff email existed across programs.
+    // The fix (migration 20260407_staff_email_program_scoped_unique) replaces
+    // the global constraint with UNIQUE(program_id, email).  If the migration
+    // hasn't been applied, the insert will still fail — verify we surface it.
+    setTableResult('staff', {
+      selectData: sourceStaff,
+      insertError: {
+        message: 'duplicate key value violates unique constraint "instructors_email_key"',
+        code: '23505',
+      },
+    });
+
+    const opts: CopyOptions = {
+      copy_staff: true,
+      copy_venues: false,
+      copy_tags: false,
+      copy_templates: false,
+    };
+
+    await expect(
+      copyResources(makeSupabase(), 'source-1', 'new-1', opts)
+    ).rejects.toThrow('Failed to copy staff');
+  });
+
   it('should throw when staff insert returns an error (not silently succeed)', async () => {
     setTableResult('staff', {
       selectData: sourceStaff,
