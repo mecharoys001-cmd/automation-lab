@@ -303,6 +303,7 @@ export default function InstructorPortalPage() {
                     currentDate={selectedDate}
                     onDateChange={setSelectedDate}
                     onEventClick={handleEventClick}
+                    readOnly
                   />
                 )}
                 {currentView === 'day' && (

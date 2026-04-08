@@ -64,6 +64,8 @@ export interface WeekViewProps {
   onEmptySlotClick?: (date: string, time: string, venueId?: string) => void;
   /** Called when a template is dropped or clicked on the calendar */
   onTemplateSelect?: (template: EventTemplate, date?: string, time?: string, venueId?: string) => void;
+  /** Hide admin-only UI (setup links, edit actions) — used by staff portal */
+  readOnly?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -506,6 +508,7 @@ export function WeekView({
   onEventResize,
   onEmptySlotClick,
   onTemplateSelect,
+  readOnly = false,
 }: WeekViewProps) {
   const [viewDate, setViewDate] = useState(() => currentDate ?? new Date());
   const { startHour: dayStartHour, endHour: dayEndHour, setStartHour: setDayStartHour, setEndHour: setDayEndHour } = usePersistedTimeRange(initialStartHour, initialEndHour);
@@ -906,18 +909,20 @@ export function WeekView({
               <CalendarDays className="w-8 h-8 text-slate-600" />
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-600">No sessions scheduled yet</p>
-                <p className="text-sm text-slate-700 mt-1">Set up templates and staff to start generating your schedule.</p>
+                <p className="text-sm text-slate-700 mt-1">{readOnly ? 'No sessions found for the current week.' : 'Set up templates and staff to start generating your schedule.'}</p>
               </div>
-              <div className="flex flex-col items-center gap-1.5 mt-1">
-                <Link href="/tools/scheduler/admin/event-templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
-                  Set up Event Templates
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-                <Link href="/tools/scheduler/admin/people" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
-                  Add Staff &amp; Venues
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
+              {!readOnly && (
+                <div className="flex flex-col items-center gap-1.5 mt-1">
+                  <Link href="/tools/scheduler/admin/event-templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
+                    Set up Event Templates
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                  <Link href="/tools/scheduler/admin/people" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors">
+                    Add Staff &amp; Venues
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
