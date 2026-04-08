@@ -48,7 +48,7 @@ export default function InstructorPortalPage() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+  const [activeProgramIds, setActiveProgramIds] = useState<Set<string>>(new Set());
 
   async function handleSignOut() {
     await fetch('/api/auth/signout', { method: 'POST' });
@@ -112,9 +112,7 @@ export default function InstructorPortalPage() {
         new Map(typedSessions.map((s: SessionDisplay) => [s.program_id, s.program])).values()
       ).filter((p): p is Program => p != null);
       setPrograms(uniquePrograms);
-      if (uniquePrograms.length > 0) {
-        setSelectedProgramId(uniquePrograms[0].id);
-      }
+      setActiveProgramIds(new Set(uniquePrograms.map(p => p.id)));
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
@@ -124,26 +122,29 @@ export default function InstructorPortalPage() {
 
   // Load full schedule when switching to that mode or changing program
   useEffect(() => {
-    if (scheduleMode === 'full' && instructor && selectedProgramId) {
+    if (scheduleMode === 'full' && instructor && activeProgramIds.size > 0) {
       loadFullSchedule();
     }
-  }, [scheduleMode, selectedProgramId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scheduleMode, activeProgramIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadFullSchedule() {
-    if (!instructor || !selectedProgramId) return;
-    const programId = selectedProgramId;
+    if (!instructor || activeProgramIds.size === 0) return;
 
     setFullScheduleLoading(true);
     try {
-      const params = new URLSearchParams({
-        program_id: programId,
-        status: 'published',
-      });
-      const res = await fetch(`/api/staff-sessions?${params}`);
-      if (res.ok) {
-        const { sessions: data } = await res.json();
-        setFullSessions((data as SessionDisplay[]) ?? []);
-      }
+      // Fetch full schedule for all active programs
+      const results = await Promise.all(
+        Array.from(activeProgramIds).map(async (pid) => {
+          const params = new URLSearchParams({ program_id: pid, status: 'published' });
+          const res = await fetch(`/api/staff-sessions?${params}`);
+          if (res.ok) {
+            const { sessions: data } = await res.json();
+            return (data as SessionDisplay[]) ?? [];
+          }
+          return [];
+        })
+      );
+      setFullSessions(results.flat());
     } catch {
       // Silently fail — user can retry by toggling
     } finally {
@@ -151,11 +152,11 @@ export default function InstructorPortalPage() {
     }
   }
 
-  // Filter sessions by program and view, then convert to CalendarEvents
+  // Filter sessions by active programs and view, then convert to CalendarEvents
   const today = new Date().toISOString().split('T')[0];
   const baseSessions = scheduleMode === 'full' ? fullSessions : sessions;
-  const activeSessions = selectedProgramId
-    ? baseSessions.filter((s) => s.program_id === selectedProgramId)
+  const activeSessions = activeProgramIds.size > 0
+    ? baseSessions.filter((s) => activeProgramIds.has(s.program_id))
     : baseSessions;
 
   const filteredEvents = useMemo(() => {
@@ -268,24 +269,39 @@ export default function InstructorPortalPage() {
                 ))}
               </div>
 
-              {/* Program selector (only if multiple programs) */}
+              {/* Program toggles (only if multiple programs) */}
               {programs.length > 1 && (
-                <Tooltip text="Switch between your programs">
-                  <select
-                    value={selectedProgramId ?? ''}
-                    onChange={(e) => {
-                      setSelectedProgramId(e.target.value);
-                      setFullSessions([]);
-                    }}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {programs.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </Tooltip>
+                <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                  {programs.map((p) => {
+                    const isActive = activeProgramIds.has(p.id);
+                    return (
+                      <Tooltip key={p.id} text={isActive ? `Hide ${p.name} sessions` : `Show ${p.name} sessions`}>
+                        <button
+                          onClick={() => {
+                            setActiveProgramIds(prev => {
+                              const next = new Set(prev);
+                              if (next.has(p.id)) {
+                                // Don't allow deselecting all
+                                if (next.size > 1) next.delete(p.id);
+                              } else {
+                                next.add(p.id);
+                              }
+                              return next;
+                            });
+                            setFullSessions([]);
+                          }}
+                          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'bg-white text-slate-900 shadow-sm'
+                              : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          {p.name}
+                        </button>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
               )}
 
               {/* View filter tabs */}
