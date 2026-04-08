@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo } from "react";
-import { parseCSV, toCSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
+import { parseCSV, toCSV, toTSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
 import * as XLSX from "xlsx";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
 const ACCENT = "#6366f1";
+type ExportFormat = ".csv" | ".tsv" | ".txt" | ".xlsx" | ".xls";
+const EXPORT_FORMATS: ExportFormat[] = [".csv", ".tsv", ".txt", ".xlsx", ".xls"];
 
 interface State {
   headers: string[];
@@ -19,12 +21,15 @@ interface State {
   fileName: string;
   dragging: boolean;
   rawCsv: string;
+  inputExt: ExportFormat;
+  exportFormat: ExportFormat;
 }
 
 export default function CsvDedupTool() {
   const [s, setS] = useState<State>({
     headers: [], rows: [], nameCol: "", addrCol: "",
     result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "",
+    inputExt: ".csv", exportFormat: ".csv",
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
@@ -38,6 +43,7 @@ export default function CsvDedupTool() {
     const { nameCol: detectedName, addrCol: detectedAddr } = detectColumns(headers);
     const nameCol = detectedName ?? headers[0] ?? "";
     const addrCol = detectedAddr ?? headers[1] ?? "";
+    const ext = (fileName.slice(fileName.lastIndexOf(".")).toLowerCase() || ".csv") as ExportFormat;
     // Auto-run dedup on load
     const result = deduplicate(rows, nameCol, addrCol);
     const approvals: Record<number, boolean> = {};
@@ -46,6 +52,7 @@ export default function CsvDedupTool() {
       ...p, headers, rows, fileName, rawCsv,
       nameCol, addrCol,
       result, approvals, error: null, dragging: false,
+      inputExt: ext, exportFormat: ext,
     }));
   }, []);
 
@@ -169,15 +176,27 @@ export default function CsvDedupTool() {
 
   const download = () => {
     if (!s.result) return;
-    const csv = toCSV(s.headers, outputRows);
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const a = document.createElement("a"); a.href = url;
     const baseName = s.fileName.replace(/\.[^.]+$/, "");
-    a.download = `${baseName}-cleaned.csv`;
+    const fmt = s.exportFormat;
+    let blob: Blob;
+    if (fmt === ".xlsx" || fmt === ".xls") {
+      const ws = XLSX.utils.json_to_sheet(outputRows, { header: s.headers });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Cleaned");
+      const buf = XLSX.write(wb, { bookType: fmt === ".xls" ? "xls" : "xlsx", type: "array" });
+      blob = new Blob([buf], { type: "application/octet-stream" });
+    } else if (fmt === ".tsv") {
+      blob = new Blob([toTSV(s.headers, outputRows)], { type: "text/tab-separated-values" });
+    } else {
+      blob = new Blob([toCSV(s.headers, outputRows)], { type: "text/csv" });
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `${baseName}-cleaned${fmt}`;
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "" });
+  const reset = () => setS({ headers: [], rows: [], nameCol: "", addrCol: "", result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "", inputExt: ".csv", exportFormat: ".csv" });
 
   const sel = (field: "nameCol" | "addrCol") => (e: React.ChangeEvent<HTMLSelectElement>) =>
     setS(p => ({ ...p, [field]: e.target.value, result: null, approvals: {} }));
@@ -293,14 +312,31 @@ export default function CsvDedupTool() {
                   {s.result.groups.length - approvedCount > 0 && (<span style={{ color: "#f87171" }}> · {s.result.groups.length - approvedCount} rejected</span>)}
                 </div>
 
-                {/* Download — primary action */}
-                <button onClick={download} style={{
-                  backgroundColor: "#16a34a", color: "#fff", border: "none", borderRadius: "10px",
-                  padding: "14px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
-                  boxShadow: "0 0 20px rgba(22,163,74,0.3)", width: "100%",
-                }}>
-                  ⬇️ Download Cleaned CSV ({outputRows.length.toLocaleString()} rows)
-                </button>
+                {/* Download — primary action with format picker */}
+                <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
+                  <button onClick={download} style={{
+                    backgroundColor: "#16a34a", color: "#fff", border: "none", borderRadius: "10px",
+                    padding: "14px 28px", fontSize: "15px", fontWeight: 700, cursor: "pointer",
+                    boxShadow: "0 0 20px rgba(22,163,74,0.3)", flex: 1,
+                  }}>
+                    ⬇️ Download Cleaned {s.exportFormat.replace(".", "").toUpperCase()} ({outputRows.length.toLocaleString()} rows)
+                  </button>
+                  <select
+                    value={s.exportFormat}
+                    onChange={e => setS(p => ({ ...p, exportFormat: e.target.value as ExportFormat }))}
+                    style={{
+                      backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "10px",
+                      color: "#e2e8f0", padding: "0 12px", fontSize: "13px", fontWeight: 600,
+                      cursor: "pointer", minWidth: "80px",
+                    }}
+                  >
+                    {EXPORT_FORMATS.map(f => (
+                      <option key={f} value={f}>
+                        {f.replace(".", "").toUpperCase()}{f === s.inputExt ? " *" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </>
             ) : (
               <div style={{ textAlign: "center", color: "#64748b", padding: "1rem 0" }}>

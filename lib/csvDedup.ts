@@ -70,6 +70,16 @@ export function toCSV(headers: string[], rows: CsvRow[]): string {
   ].join("\n");
 }
 
+export function toTSV(headers: string[], rows: CsvRow[]): string {
+  const esc = (v: string) =>
+    v.includes("\t") || v.includes('"') || v.includes("\n")
+      ? `"${v.replace(/"/g, '""')}"` : v;
+  return [
+    headers.map(esc).join("\t"),
+    ...rows.map(r => headers.map(h => esc(r[h] ?? "")).join("\t")),
+  ].join("\n");
+}
+
 // ── Column Detection ─────────────────────────────────────────────────────────
 
 const NAME_HINTS = ["name", "fullname", "full name", "customer", "contact", "recipient", "person"];
