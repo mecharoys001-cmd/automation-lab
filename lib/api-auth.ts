@@ -264,12 +264,13 @@ export async function requireOrgMember(): Promise<OrgAuthSuccess | OrgAuthFailur
 
   // Check staff table
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: instructor } = await (service.from('staff') as any)
+  const { data: instructors } = await (service.from('staff') as any)
     .select('id')
-    .eq('email', user.email)
+    .ilike('email', user.email!)
     .eq('is_active', true)
-    .maybeSingle();
+    .limit(1);
 
+  const instructor = instructors?.[0];
   if (instructor) {
     return {
       user: {
