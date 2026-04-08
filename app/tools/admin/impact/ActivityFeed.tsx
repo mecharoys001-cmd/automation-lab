@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { ActivityFeedItem, ActivityFeedResponse } from '@/types/activity';
+import { useImpactRealtime, type ConnectionStatus } from './useImpactRealtime';
 
 type FilterType = 'all' | 'login' | 'tool' | 'error';
 
@@ -51,6 +52,29 @@ function filterToParam(filter: FilterType): string | undefined {
   }
 }
 
+const STATUS_CONFIG: Record<ConnectionStatus, { color: string; label: string }> = {
+  connecting: { color: '#f59e0b', label: 'Connecting' },
+  live: { color: '#10b981', label: 'Live' },
+  reconnecting: { color: '#f59e0b', label: 'Reconnecting' },
+  offline: { color: '#94a3b8', label: 'Offline' },
+};
+
+function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
+  const { color, label } = STATUS_CONFIG[status];
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '5px',
+      fontSize: '11px', fontWeight: 600, color, opacity: status === 'live' ? 0.7 : 1,
+    }}>
+      <span style={{
+        width: '7px', height: '7px', borderRadius: '50%', background: color,
+        animation: status === 'live' ? 'none' : 'pulse 1.5s infinite',
+      }} />
+      {label}
+    </span>
+  );
+}
+
 export default function ActivityFeed() {
   const [items, setItems] = useState<ActivityFeedItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -85,11 +109,11 @@ export default function ActivityFeed() {
     fetchFeed(1, false);
   }, [fetchFeed]);
 
-  // Auto-refresh every 30s
-  useEffect(() => {
-    const interval = setInterval(() => fetchFeed(1, false), 30000);
-    return () => clearInterval(interval);
-  }, [fetchFeed]);
+  // Realtime: refetch page 1 on new inserts
+  const connectionStatus = useImpactRealtime({
+    onEvent: () => fetchFeed(1, false),
+    debounceMs: 1500,
+  });
 
   const filters: { label: string; value: FilterType }[] = [
     { label: 'All', value: 'all' },
@@ -112,9 +136,12 @@ export default function ActivityFeed() {
 
   return (
     <div>
-      <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
-        Activity Feed
-      </h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e', margin: 0 }}>
+          Activity Feed
+        </h2>
+        <ConnectionIndicator status={connectionStatus} />
+      </div>
 
       {/* Filter buttons */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>

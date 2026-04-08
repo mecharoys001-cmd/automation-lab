@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ImpactDashboard from './ImpactDashboard';
 import ActivityFeed from './ActivityFeed';
 import AdminAccounts from './AdminAccounts';
@@ -9,8 +9,27 @@ import SuiteManagement from './SuiteManagement';
 
 type Tab = 'stats' | 'feed' | 'accounts' | 'access' | 'suites';
 
+const VALID_TABS: Tab[] = ['stats', 'feed', 'accounts', 'access', 'suites'];
+const TAB_STORAGE_KEY = 'impact-dashboard-tab';
+
+function getStoredTab(): Tab {
+  if (typeof window === 'undefined') return 'stats';
+  const stored = localStorage.getItem(TAB_STORAGE_KEY);
+  return stored && VALID_TABS.includes(stored as Tab) ? (stored as Tab) : 'stats';
+}
+
 export default function ImpactPage() {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
+
+  // Restore persisted tab on mount
+  useEffect(() => {
+    setActiveTab(getStoredTab());
+  }, []);
+
+  function handleTabChange(tab: Tab) {
+    setActiveTab(tab);
+    localStorage.setItem(TAB_STORAGE_KEY, tab);
+  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'stats', label: 'Impact Stats' },
@@ -36,7 +55,7 @@ export default function ImpactPage() {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               style={{
                 padding: '10px 20px',
                 border: 'none',
