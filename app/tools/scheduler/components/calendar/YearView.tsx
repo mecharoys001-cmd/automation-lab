@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect, type RefCallback } from 'react';
 import { Calendar, ChevronUp, Loader2, Ban, Clock } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import type { CalendarEvent, EventType, SchoolCalendarEntry } from './types';
@@ -66,6 +66,12 @@ const LOAD_INCREMENT = 3;
 
 /** Brief delay (ms) to show loading indicator for perceived smoothness */
 const LOAD_DELAY = 150;
+
+/** How many off-screen months (above/below) to keep rendered for smooth scrolling */
+const VIRTUALIZE_OVERSCAN = 2;
+
+/** Fallback height (px) for a month card that hasn't been measured yet */
+const MONTH_PLACEHOLDER_HEIGHT = 620;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -408,6 +414,104 @@ function MonthGrid({
 }
 
 // ---------------------------------------------------------------------------
+// Month-level virtualization hook
+// ---------------------------------------------------------------------------
+
+/**
+ * Tracks which month indices are near the viewport and caches their measured
+ * heights so off-screen months can be replaced by fixed-height placeholders.
+ */
+function useMonthVirtualization(
+  monthCount: number,
+  scrollRoot: React.RefObject<HTMLDivElement | null>,
+) {
+  // Set of indices currently intersecting (+ overscan is handled via rootMargin)
+  const [nearViewport, setNearViewport] = useState<Set<number>>(() => {
+    // On first render, assume the middle chunk is visible so we don't flash placeholders
+    const initial = new Set<number>();
+    const center = Math.floor(monthCount / 2);
+    for (let i = Math.max(0, center - VIRTUALIZE_OVERSCAN); i <= Math.min(monthCount - 1, center + VIRTUALIZE_OVERSCAN); i++) {
+      initial.add(i);
+    }
+    return initial;
+  });
+
+  // Measured heights for each month wrapper
+  const heightCache = useRef<Map<number, number>>(new Map());
+
+  // One DOM ref per month wrapper – used by the observer AND for height measurement
+  const wrapperRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Stable observer ref
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Provide a ref-callback factory so each month wrapper registers itself
+  const getWrapperRef = useCallback(
+    (index: number): RefCallback<HTMLDivElement> =>
+      (node) => {
+        const prev = wrapperRefs.current.get(index);
+        if (prev && prev !== node) {
+          observerRef.current?.unobserve(prev);
+        }
+        if (node) {
+          wrapperRefs.current.set(index, node);
+          observerRef.current?.observe(node);
+        } else {
+          wrapperRefs.current.delete(index);
+        }
+      },
+    [],
+  );
+
+  // Create / recreate the IntersectionObserver when the scroll root is available
+  useEffect(() => {
+    const root = scrollRoot.current;
+    if (!root) return;
+
+    // rootMargin adds generous overscan so cards start rendering before
+    // they actually enter the viewport.
+    const overscanPx = VIRTUALIZE_OVERSCAN * MONTH_PLACEHOLDER_HEIGHT;
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        setNearViewport((prev) => {
+          const next = new Set(prev);
+          let changed = false;
+          for (const entry of entries) {
+            // Recover the index from a data attribute
+            const idx = Number((entry.target as HTMLElement).dataset.vIdx);
+            if (Number.isNaN(idx)) continue;
+
+            if (entry.isIntersecting) {
+              if (!next.has(idx)) { next.add(idx); changed = true; }
+              // Update height cache while the element is live
+              const h = (entry.target as HTMLElement).getBoundingClientRect().height;
+              if (h > 0) heightCache.current.set(idx, h);
+            } else {
+              // Measure one last time before hiding
+              const h = (entry.target as HTMLElement).getBoundingClientRect().height;
+              if (h > 0) heightCache.current.set(idx, h);
+              if (next.has(idx)) { next.delete(idx); changed = true; }
+            }
+          }
+          return changed ? next : prev;
+        });
+      },
+      { root, rootMargin: `${overscanPx}px 0px` },
+    );
+
+    // Observe any already-registered wrappers (from initial render)
+    wrapperRefs.current.forEach((el) => observerRef.current!.observe(el));
+
+    return () => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+    };
+  }, [scrollRoot]);
+
+  return { nearViewport, heightCache: heightCache.current, getWrapperRef };
+}
+
+// ---------------------------------------------------------------------------
 // YearView (Infinite-Scroll Monthly View)
 // ---------------------------------------------------------------------------
 
@@ -485,6 +589,12 @@ export function YearView({
   }, [allVenues]);
 
   const multiLane = selectedVenues.length > 1;
+
+  // Month-level virtualization – only render months near the viewport
+  const { nearViewport, heightCache, getWrapperRef } = useMonthVirtualization(
+    visibleMonths.length,
+    scrollRef,
+  );
 
   // Unique event types for legend
   const activeTypes = useMemo(() => {
@@ -697,13 +807,42 @@ export function YearView({
         {loadingTop && <LoadingIndicator />}
 
         <div className="max-w-5xl mx-auto space-y-6">
-          {visibleMonths.map(({ year, month }) => {
+          {visibleMonths.map(({ year, month }, index) => {
             const key = formatMonthKey(year, month);
             const isTodayMonth =
               year === todayMonth.year && month === todayMonth.month;
+            const isRendered = nearViewport.has(index);
+
+            // Off-screen: render a lightweight placeholder preserving scroll height
+            if (!isRendered) {
+              const h = heightCache.get(index) ?? MONTH_PLACEHOLDER_HEIGHT;
+              return (
+                <div
+                  key={key}
+                  ref={(node) => {
+                    getWrapperRef(index)(node);
+                    // Also wire up todayRef so scroll-to-today still works
+                    if (isTodayMonth) {
+                      (todayRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+                    }
+                  }}
+                  data-v-idx={index}
+                  style={{ height: h, minHeight: h }}
+                />
+              );
+            }
 
             return (
-              <div key={key} ref={isTodayMonth ? todayRef : undefined}>
+              <div
+                key={key}
+                ref={(node) => {
+                  getWrapperRef(index)(node);
+                  if (isTodayMonth) {
+                    (todayRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+                  }
+                }}
+                data-v-idx={index}
+              >
                 <MonthGrid
                   year={year}
                   month={month}
