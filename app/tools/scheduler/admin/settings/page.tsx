@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ShieldAlert,
   Copy,
+  Download,
 } from 'lucide-react';
 import type { Program, Admin, RoleLevel } from '@/types/database';
 import { ImportFromProgramModal } from '../../components/modals/ImportFromProgramModal';
@@ -160,6 +161,9 @@ export default function SettingsPage() {
   const [seedModalOpen, setSeedModalOpen] = useState(false);
   const [seedModalDataset, setSeedModalDataset] = useState<'small' | 'medium' | 'full'>('medium');
   const [seedConfirmText, setSeedConfirmText] = useState('');
+
+  // ---- Export state ----
+  const [exporting, setExporting] = useState(false);
 
   // ---- Clear data state ----
   const [clearModalOpen, setClearModalOpen] = useState(false);
@@ -690,6 +694,35 @@ export default function SettingsPage() {
     } finally {
       setClearing(false);
       setClearProgress(null);
+    }
+  }
+
+  async function handleExport() {
+    if (!selectedProgramId) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/programs/${selectedProgramId}/export`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? 'Export failed');
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const match = disposition.match(/filename="(.+)"/);
+      const filename = match?.[1] ?? 'program_export.json';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setToast({ message: 'Program data exported successfully', type: 'success', id: Date.now() });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Export failed', type: 'error', id: Date.now() });
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -1284,6 +1317,34 @@ export default function SettingsPage() {
           </button>
         </Tooltip>
       </section>
+
+      {/* ================================================================= */}
+      {/* SECTION 5 — Backup & Export                                       */}
+      {/* ================================================================= */}
+      {selectedProgramId && (
+        <section className={cardBodyClass}>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-50">
+              <Download className="w-[18px] h-[18px] text-emerald-600" />
+            </div>
+            <div>
+              <h2 className={sectionTitleClass}>Backup &amp; Export</h2>
+              <p className={sectionDescClass}>Download a complete backup of this program&apos;s data</p>
+            </div>
+          </div>
+
+          <p className="text-[13px] text-slate-600 mb-4">
+            Export all staff, venues, tags, templates, sessions, calendar, rules, and settings for the selected program as a JSON file.
+          </p>
+
+          <Tooltip text="Download all program data as a JSON file">
+            <button onClick={handleExport} disabled={exporting} className={btnPrimary}>
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {exporting ? 'Exporting...' : 'Export Program Data'}
+            </button>
+          </Tooltip>
+        </section>
+      )}
 
       {/* ================================================================= */}
       {/* DANGER ZONE — Collapsible section for destructive actions         */}
