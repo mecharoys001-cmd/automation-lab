@@ -161,7 +161,7 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center py-4">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center py-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
@@ -175,7 +175,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative z-[70] rounded-2xl bg-white shadow-xl flex flex-col overflow-hidden max-h-[calc(100vh-2rem)] ${className}`}
+        className={`relative z-[1010] rounded-2xl bg-white shadow-xl flex flex-col overflow-hidden max-h-[calc(100vh-2rem)] ${className}`}
         style={{ width }}
       >
         {/* ── Header (sticky top) ──────────────────────────── */}

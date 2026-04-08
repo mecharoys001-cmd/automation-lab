@@ -341,7 +341,7 @@ export function FilterBar({
   }, [filters]);
 
   return (
-    <div className={`bg-white border-b border-slate-200 relative z-[100] ${className}`}>
+    <div className={`bg-white border-b border-slate-200 relative z-[10] ${className}`}>
       {/* Filter buttons row */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 px-3 sm:px-6 py-2.5 overflow-x-auto">
         {filters.map((filter) => (
