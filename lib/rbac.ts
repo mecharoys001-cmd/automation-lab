@@ -30,7 +30,7 @@ export async function getOrgMembership(userEmail: string | undefined): Promise<O
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: admin } = await (supabase.from('admins') as any)
     .select('role_level')
-    .eq('google_email', userEmail)
+    .ilike('google_email', userEmail)
     .maybeSingle();
 
   if (admin) {
@@ -52,7 +52,7 @@ export async function getOrgMembership(userEmail: string | undefined): Promise<O
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: instructor } = await (supabase.from('staff') as any)
     .select('id')
-    .eq('email', userEmail)
+    .ilike('email', userEmail)
     .eq('is_active', true)
     .maybeSingle();
 

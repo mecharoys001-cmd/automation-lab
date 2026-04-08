@@ -271,14 +271,14 @@ export async function middleware(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: admin } = await (svc.from('admins') as any)
       .select('role_level')
-      .eq('google_email', email)
+      .ilike('google_email', email)
       .maybeSingle()
 
     // Check staff member
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: staffMember } = await (svc.from('staff') as any)
       .select('id')
-      .eq('email', email)
+      .ilike('email', email)
       .eq('is_active', true)
       .maybeSingle()
 
