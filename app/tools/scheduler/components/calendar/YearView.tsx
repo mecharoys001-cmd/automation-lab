@@ -221,6 +221,8 @@ function MonthGrid({
   schoolCalendarByDate,
   selectedVenues,
   multiLane,
+  rowHeights,
+  startDrag,
   onEventHover,
   onEventLeave,
   onEventClick,
@@ -233,6 +235,8 @@ function MonthGrid({
   schoolCalendarByDate: Record<string, SchoolCalendarEntry>;
   selectedVenues: string[];
   multiLane: boolean;
+  rowHeights: number[];
+  startDrag: (rowIndex: number, e: React.MouseEvent) => void;
   onEventHover: (event: CalendarEvent, el: HTMLElement) => void;
   onEventLeave: () => void;
   onEventClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -242,7 +246,6 @@ function MonthGrid({
   const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [year, month]);
   const firstDayOfWeek = useMemo(() => new Date(year, jsMonth, 1).getDay(), [year, jsMonth]);
   const monthKey = formatMonthKey(year, month);
-  const { rowHeights, startDrag } = useResizableRows(6, 110);
   const eventCount = Object.keys(eventsByDate).reduce((sum, key) => {
     if (key.startsWith(monthKey)) return sum + eventsByDate[key].length;
     return sum;
@@ -485,6 +488,7 @@ export function YearView({
   }, [allVenues]);
 
   const multiLane = selectedVenues.length > 1;
+  const { rowHeights, startDrag } = useResizableRows(6, 110);
 
   // Unique event types for legend
   const activeTypes = useMemo(() => {
@@ -712,6 +716,8 @@ export function YearView({
                   schoolCalendarByDate={schoolCalendarByDate}
                   selectedVenues={selectedVenues}
                   multiLane={multiLane}
+                  rowHeights={rowHeights}
+                  startDrag={startDrag}
                   onEventHover={showPopover}
                   onEventLeave={hidePopover}
                   onEventClick={handleEventClick}
