@@ -34,13 +34,14 @@ export async function GET(request: NextRequest) {
       const { data, error } = await (supabase.from('staff') as any)
         .select('*')
         .ilike('email', email.trim())
-        .maybeSingle();
+        .eq('is_active', true)
+        .limit(1);
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      return scopedJsonResponse({ instructors: data ? [data] : [] });
+      return scopedJsonResponse({ instructors: data ?? [] });
     }
 
     // All other operations require admin

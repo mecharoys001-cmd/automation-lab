@@ -86,10 +86,11 @@ export async function GET(request: NextRequest) {
     let resolvedId = instructorId;
     if (!resolvedId && email) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: instructor, error: instrError } = await (supabase.from('staff') as any)
+      const { data: instructors, error: instrError } = await (supabase.from('staff') as any)
         .select('id')
         .ilike('email', email.trim())
-        .maybeSingle();
+        .eq('is_active', true)
+        .limit(1);
 
       if (instrError) {
         return NextResponse.json(
@@ -97,6 +98,7 @@ export async function GET(request: NextRequest) {
           { status: 500 }
         );
       }
+      const instructor = instructors?.[0] ?? null;
 
       if (!instructor) {
         return NextResponse.json(
