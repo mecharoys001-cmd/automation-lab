@@ -16,9 +16,9 @@ export interface DedupResult {
   groups: DuplicateGroup[];
 }
 
-// ── CSV Parsing ──────────────────────────────────────────────────────────────
+// ── Delimited Text Parsing ───────────────────────────────────────────────────
 
-function parseLine(line: string): string[] {
+function parseLine(line: string, delim: string = ","): string[] {
   const fields: string[] = [];
   let cur = "";
   let inQ = false;
@@ -26,7 +26,7 @@ function parseLine(line: string): string[] {
     if (line[i] === '"') {
       if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
       else inQ = !inQ;
-    } else if (line[i] === "," && !inQ) {
+    } else if (line[i] === delim && !inQ) {
       fields.push(cur.trim());
       cur = "";
     } else {
@@ -37,14 +37,22 @@ function parseLine(line: string): string[] {
   return fields;
 }
 
+/** Detect delimiter from the first line of a text file (supports comma, tab). */
+export function detectDelimiter(firstLine: string): string {
+  const tabs = (firstLine.match(/\t/g) ?? []).length;
+  const commas = (firstLine.match(/,/g) ?? []).length;
+  return tabs > commas ? "\t" : ",";
+}
+
 export function parseCSV(text: string): { headers: string[]; rows: CsvRow[] } {
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   if (lines[0]?.charCodeAt(0) === 0xfeff) lines[0] = lines[0].slice(1);
-  const headers = parseLine(lines[0] ?? "");
+  const delim = detectDelimiter(lines[0] ?? "");
+  const headers = parseLine(lines[0] ?? "", delim);
   const rows: CsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {
     if (!lines[i]?.trim()) continue;
-    const vals = parseLine(lines[i]);
+    const vals = parseLine(lines[i], delim);
     const row: CsvRow = {};
     headers.forEach((h, j) => { row[h] = vals[j] ?? ""; });
     rows.push(row);

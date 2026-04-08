@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { parseCSV, toCSV, detectColumns, deduplicate, DedupResult, CsvRow } from "@/lib/csvDedup";
+import * as XLSX from "xlsx";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
 const ACCENT = "#6366f1";
@@ -26,34 +27,70 @@ export default function CsvDedupTool() {
   const fileRef = useRef<HTMLInputElement>(null);
   const toolSession = useRef<ReturnType<typeof startToolSession> | null>(null);
 
+  const ACCEPTED_EXTS = [".csv", ".tsv", ".txt", ".xlsx", ".xls"];
+  const isExcel = (name: string) => name.endsWith(".xlsx") || name.endsWith(".xls");
+
+  const handleParsed = useCallback((headers: string[], rows: CsvRow[], fileName: string, rawCsv: string) => {
+    const { nameCol, addrCol } = detectColumns(headers);
+    setS(p => ({
+      ...p, headers, rows, fileName, rawCsv,
+      nameCol: nameCol ?? headers[0] ?? "",
+      addrCol: addrCol ?? headers[1] ?? "",
+      result: null, error: null, dragging: false,
+    }));
+  }, []);
+
   const loadFile = useCallback((file: File) => {
-    if (!file.name.endsWith(".csv")) {
-      setS(p => ({ ...p, error: "Please upload a .csv file." }));
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!ACCEPTED_EXTS.includes(ext)) {
+      setS(p => ({ ...p, error: "Unsupported file type. Upload a .csv, .tsv, .txt, .xlsx, or .xls file." }));
       return;
     }
-    const reader = new FileReader();
     // Start a new usage tracking session on file upload
     toolSession.current = startToolSession('csv-dedup');
 
-    reader.onload = e => {
-      try {
-        const text = e.target?.result as string;
-        const { headers, rows } = parseCSV(text);
-        const { nameCol, addrCol } = detectColumns(headers);
-        setS(p => ({
-          ...p, headers, rows, fileName: file.name, rawCsv: text,
-          nameCol: nameCol ?? headers[0] ?? "",
-          addrCol: addrCol ?? headers[1] ?? "",
-          result: null, error: null, dragging: false,
-        }));
-      } catch {
-        toolSession.current?.error("Failed to parse CSV");
-        toolSession.current = null;
-        setS(p => ({ ...p, error: "Failed to parse CSV. Check the file format.", dragging: false }));
-      }
-    };
-    reader.readAsText(file);
-  }, []);
+    if (isExcel(file.name)) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const wb = XLSX.read(data, { type: "array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const jsonRows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+          if (!jsonRows.length) throw new Error("Empty spreadsheet");
+          const headers = jsonRows[0].map(String);
+          const rows: CsvRow[] = [];
+          for (let i = 1; i < jsonRows.length; i++) {
+            if (!jsonRows[i].some(c => String(c).trim())) continue;
+            const row: CsvRow = {};
+            headers.forEach((h, j) => { row[h] = String(jsonRows[i][j] ?? ""); });
+            rows.push(row);
+          }
+          const rawCsv = toCSV(headers, rows);
+          handleParsed(headers, rows, file.name, rawCsv);
+        } catch {
+          toolSession.current?.error("Failed to parse Excel file");
+          toolSession.current = null;
+          setS(p => ({ ...p, error: "Failed to parse Excel file. Check the file format.", dragging: false }));
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const text = e.target?.result as string;
+          const { headers, rows } = parseCSV(text);
+          handleParsed(headers, rows, file.name, text);
+        } catch {
+          toolSession.current?.error("Failed to parse file");
+          toolSession.current = null;
+          setS(p => ({ ...p, error: "Failed to parse file. Check the file format.", dragging: false }));
+        }
+      };
+      reader.readAsText(file);
+    }
+  }, [handleParsed]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -95,7 +132,8 @@ export default function CsvDedupTool() {
     const csv = toCSV(s.headers, s.result.rows);
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url;
-    a.download = s.fileName.replace(".csv", "-cleaned.csv");
+    const baseName = s.fileName.replace(/\.[^.]+$/, "");
+    a.download = `${baseName}-cleaned.csv`;
     a.click(); URL.revokeObjectURL(url);
   };
 
@@ -124,11 +162,11 @@ export default function CsvDedupTool() {
         onDrop={onDrop}
         onClick={() => fileRef.current?.click()}
       >
-        <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }}
+        <input ref={fileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" style={{ display: "none" }}
           onChange={e => { const f = e.target.files?.[0]; if (f) loadFile(f); }} />
         <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>📂</div>
-        <div style={{ fontWeight: 700, fontSize: "16px", marginBottom: "8px" }}>Drop your CSV here</div>
-        <div style={{ color: "#64748b", fontSize: "14px" }}>or click to browse · must have a name column and an address column</div>
+        <div style={{ fontWeight: 700, fontSize: "16px", marginBottom: "8px" }}>Drop your file here</div>
+        <div style={{ color: "#64748b", fontSize: "14px" }}>or click to browse · CSV, TSV, TXT, XLSX, XLS · must have a name column and an address column</div>
       </div>
       {s.error && <div style={{ color: "#f87171", marginTop: "1rem", fontSize: "14px" }}>⚠️ {s.error}</div>}
     </div>
