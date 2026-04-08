@@ -47,6 +47,8 @@ export default function InstructorPortalPage() {
   const [fullScheduleLoading, setFullScheduleLoading] = useState(false);
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
 
   async function handleSignOut() {
     await fetch('/api/auth/signout', { method: 'POST' });
@@ -102,7 +104,17 @@ export default function InstructorPortalPage() {
       }
 
       const { sessions: sessionData } = await sessRes.json();
-      setSessions((sessionData as SessionDisplay[]) ?? []);
+      const typedSessions = (sessionData as SessionDisplay[]) ?? [];
+      setSessions(typedSessions);
+
+      // Derive unique programs from session data
+      const uniquePrograms = Array.from(
+        new Map(typedSessions.map((s: SessionDisplay) => [s.program_id, s.program])).values()
+      ).filter((p): p is Program => p != null);
+      setPrograms(uniquePrograms);
+      if (uniquePrograms.length > 0) {
+        setSelectedProgramId(uniquePrograms[0].id);
+      }
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
@@ -110,18 +122,16 @@ export default function InstructorPortalPage() {
     }
   }
 
-  // Load full schedule when switching to that mode
+  // Load full schedule when switching to that mode or changing program
   useEffect(() => {
-    if (scheduleMode === 'full' && fullSessions.length === 0 && instructor) {
+    if (scheduleMode === 'full' && instructor && selectedProgramId) {
       loadFullSchedule();
     }
-  }, [scheduleMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scheduleMode, selectedProgramId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadFullSchedule() {
-    if (!instructor || !sessions.length) return;
-    // Determine program_id from the user's sessions
-    const programId = sessions[0]?.program_id;
-    if (!programId) return;
+    if (!instructor || !selectedProgramId) return;
+    const programId = selectedProgramId;
 
     setFullScheduleLoading(true);
     try {
@@ -141,9 +151,12 @@ export default function InstructorPortalPage() {
     }
   }
 
-  // Filter sessions by view and convert to CalendarEvents
+  // Filter sessions by program and view, then convert to CalendarEvents
   const today = new Date().toISOString().split('T')[0];
-  const activeSessions = scheduleMode === 'full' ? fullSessions : sessions;
+  const baseSessions = scheduleMode === 'full' ? fullSessions : sessions;
+  const activeSessions = selectedProgramId
+    ? baseSessions.filter((s) => s.program_id === selectedProgramId)
+    : baseSessions;
 
   const filteredEvents = useMemo(() => {
     const filtered = activeSessions.filter((s) => {
@@ -254,6 +267,26 @@ export default function InstructorPortalPage() {
                   </Tooltip>
                 ))}
               </div>
+
+              {/* Program selector (only if multiple programs) */}
+              {programs.length > 1 && (
+                <Tooltip text="Switch between your programs">
+                  <select
+                    value={selectedProgramId ?? ''}
+                    onChange={(e) => {
+                      setSelectedProgramId(e.target.value);
+                      setFullSessions([]);
+                    }}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {programs.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </Tooltip>
+              )}
 
               {/* View filter tabs */}
               <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
