@@ -238,7 +238,7 @@ function jaroWinkler(a: string, b: string): number {
 
 // ── Name Similarity ───────────────────────────────────────────────────────────
 
-function namesAreLikelySame(n1: string, n2: string): boolean {
+function namesAreLikelySame(n1: string, n2: string, threshold = 0.82): boolean {
   const a = norm(n1), b = norm(n2);
   if (!a || !b) return false;
   if (a === b) return true;
@@ -262,7 +262,7 @@ function namesAreLikelySame(n1: string, n2: string): boolean {
     }
     if (!f1 || !f2) return lastSim >= 0.88;
   }
-  return jaroWinkler(a, b) >= 0.82;
+  return jaroWinkler(a, b) >= threshold;
 }
 
 // ── Union-Find ────────────────────────────────────────────────────────────────
@@ -295,10 +295,23 @@ function bestRecord(records: CsvRow[], nameCols: string[]): CsvRow {
   });
 }
 
-export function deduplicate(rows: CsvRow[], nameCols: string[], addrCols: string[]): DedupResult {
+export interface DedupOptions {
+  /** Extra normalization substitutions applied to the grouping key */
+  extraNormSubs?: [RegExp, string][];
+  /** Override Jaro-Winkler name similarity threshold */
+  nameThreshold?: number;
+}
+
+export function deduplicate(rows: CsvRow[], nameCols: string[], addrCols: string[], opts: DedupOptions = {}): DedupResult {
+  const { extraNormSubs, nameThreshold } = opts;
+
   const addrGroups = new Map<string, number[]>();
   rows.forEach((row, i) => {
-    const key = normalizeAddress(addrCols.map(c => row[c] ?? "").join(" "));
+    let key = normalizeAddress(addrCols.map(c => row[c] ?? "").join(" "));
+    if (extraNormSubs) {
+      for (const [re, rep] of extraNormSubs) key = key.replace(re, rep);
+      key = key.replace(/\s+/g, " ").trim();
+    }
     addrGroups.set(key, [...(addrGroups.get(key) ?? []), i]);
   });
 
@@ -308,7 +321,7 @@ export function deduplicate(rows: CsvRow[], nameCols: string[], addrCols: string
       for (let b = a + 1; b < indices.length; b++) {
         const nameA = nameCols.map(c => rows[indices[a]][c] ?? "").join(" ");
         const nameB = nameCols.map(c => rows[indices[b]][c] ?? "").join(" ");
-        if (namesAreLikelySame(nameA, nameB))
+        if (namesAreLikelySame(nameA, nameB, nameThreshold))
           uf.union(indices[a], indices[b]);
       }
     }

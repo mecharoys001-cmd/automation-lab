@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo } from "react";
-import { parseCSV, toCSV, toTSV, detectColumnSets, deduplicate, decodeEntities, DedupResult, CsvRow } from "@/lib/csvDedup";
+import { parseCSV, toCSV, toTSV, deduplicate, decodeEntities, DedupResult, CsvRow } from "@/lib/csvDedup";
+import { DEDUP_MODES, DEFAULT_MODE_ID, getModeById, DedupMode } from "@/lib/dedupModes";
 import * as XLSX from "xlsx";
 import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
@@ -10,6 +11,7 @@ type ExportFormat = ".csv" | ".tsv" | ".txt" | ".xlsx" | ".xls";
 const EXPORT_FORMATS: ExportFormat[] = [".csv", ".tsv", ".txt", ".xlsx", ".xls"];
 
 interface State {
+  modeId: string;
   headers: string[];
   rows: CsvRow[];
   nameCols: string[];
@@ -27,10 +29,12 @@ interface State {
 
 export default function CsvDedupTool() {
   const [s, setS] = useState<State>({
+    modeId: DEFAULT_MODE_ID,
     headers: [], rows: [], nameCols: [], addrCols: [],
     result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "",
     inputExt: ".csv", exportFormat: ".csv",
   });
+  const mode: DedupMode = getModeById(s.modeId);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -54,20 +58,25 @@ export default function CsvDedupTool() {
   };
 
   const handleParsed = useCallback((headers: string[], rows: CsvRow[], fileName: string, rawCsv: string) => {
-    const detected = detectColumnSets(headers);
-    const nameCols = detected.nameCols.length ? detected.nameCols : [headers[0] ?? ""];
-    const addrCols = detected.addrCols.length ? detected.addrCols : [headers[1] ?? ""];
-    const ext = (fileName.slice(fileName.lastIndexOf(".")).toLowerCase() || ".csv") as ExportFormat;
-    // Auto-run dedup on load
-    const result = deduplicate(rows, nameCols, addrCols);
-    const approvals: Record<number, boolean> = {};
-    result.groups.forEach((_, i) => { approvals[i] = true; });
-    setS(p => ({
-      ...p, headers, rows, fileName, rawCsv,
-      nameCols, addrCols,
-      result, approvals, error: null, dragging: false,
-      inputExt: ext, exportFormat: ext,
-    }));
+    setS(p => {
+      const currentMode = getModeById(p.modeId);
+      const detected = currentMode.detectColumns(headers);
+      const nameCols = detected.nameCols.length ? detected.nameCols : [headers[0] ?? ""];
+      const addrCols = detected.addrCols.length ? detected.addrCols : [headers[1] ?? ""];
+      const ext = (fileName.slice(fileName.lastIndexOf(".")).toLowerCase() || ".csv") as ExportFormat;
+      const result = deduplicate(rows, nameCols, addrCols, {
+        extraNormSubs: currentMode.extraNormSubs,
+        nameThreshold: currentMode.nameThreshold,
+      });
+      const approvals: Record<number, boolean> = {};
+      result.groups.forEach((_, i) => { approvals[i] = true; });
+      return {
+        ...p, headers, rows, fileName, rawCsv,
+        nameCols, addrCols,
+        result, approvals, error: null, dragging: false,
+        inputExt: ext, exportFormat: ext,
+      };
+    });
   }, []);
 
   const loadFile = useCallback((file: File) => {
@@ -130,7 +139,10 @@ export default function CsvDedupTool() {
 
   const runDedup = () => {
     if (!s.nameCols.length || !s.addrCols.length) { setS(p => ({ ...p, error: "Select both columns." })); return; }
-    const result = deduplicate(s.rows, s.nameCols, s.addrCols);
+    const result = deduplicate(s.rows, s.nameCols, s.addrCols, {
+      extraNormSubs: mode.extraNormSubs,
+      nameThreshold: mode.nameThreshold,
+    });
     const approvals: Record<number, boolean> = {};
     result.groups.forEach((_, i) => { approvals[i] = true; });
     setS(p => ({ ...p, result, approvals, error: null }));
@@ -223,7 +235,7 @@ export default function CsvDedupTool() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const reset = () => setS({ headers: [], rows: [], nameCols: [], addrCols: [], result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "", inputExt: ".csv", exportFormat: ".csv" });
+  const reset = () => setS(p => ({ modeId: p.modeId, headers: [], rows: [], nameCols: [], addrCols: [], result: null, approvals: {}, error: null, fileName: "", dragging: false, rawCsv: "", inputExt: ".csv", exportFormat: ".csv" }));
 
   const selName = (e: React.ChangeEvent<HTMLSelectElement>) =>
     setS(p => ({ ...p, nameCols: [e.target.value], result: null, approvals: {} }));
@@ -242,8 +254,43 @@ export default function CsvDedupTool() {
     color: "#e2e8f0", padding: "8px 12px", fontSize: "14px", width: "100%",
   };
 
+  const modeSelector = (
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+      <label style={{ fontSize: "13px", color: "#94a3b8", fontWeight: 600, whiteSpace: "nowrap" }}>Mode</label>
+      <select
+        value={s.modeId}
+        onChange={e => {
+          const newMode = getModeById(e.target.value);
+          setS(p => {
+            if (!p.headers.length) return { ...p, modeId: e.target.value };
+            const detected = newMode.detectColumns(p.headers);
+            const nameCols = detected.nameCols.length ? detected.nameCols : [p.headers[0] ?? ""];
+            const addrCols = detected.addrCols.length ? detected.addrCols : [p.headers[1] ?? ""];
+            const result = deduplicate(p.rows, nameCols, addrCols, {
+              extraNormSubs: newMode.extraNormSubs,
+              nameThreshold: newMode.nameThreshold,
+            });
+            const approvals: Record<number, boolean> = {};
+            result.groups.forEach((_, i) => { approvals[i] = true; });
+            return { ...p, modeId: e.target.value, nameCols, addrCols, result, approvals, error: null };
+          });
+        }}
+        style={{
+          backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px",
+          color: "#e2e8f0", padding: "8px 12px", fontSize: "14px", flex: 1, maxWidth: "280px",
+        }}
+      >
+        {DEDUP_MODES.map(m => (
+          <option key={m.id} value={m.id}>{m.label}</option>
+        ))}
+      </select>
+      <span style={{ fontSize: "12px", color: "#64748b" }}>{mode.description}</span>
+    </div>
+  );
+
   if (!s.rows.length) return (
     <div>
+      {modeSelector}
       <div style={dropZoneStyle}
         onDragOver={e => { e.preventDefault(); setS(p => ({ ...p, dragging: true })); }}
         onDragLeave={() => setS(p => ({ ...p, dragging: false }))}
@@ -254,7 +301,7 @@ export default function CsvDedupTool() {
           onChange={e => { const f = e.target.files?.[0]; if (f) loadFile(f); }} />
         <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>📂</div>
         <div style={{ fontWeight: 700, fontSize: "16px", marginBottom: "8px" }}>Drop your file here</div>
-        <div style={{ color: "#64748b", fontSize: "14px" }}>or click to browse · CSV, TSV, TXT, XLSX, XLS · must have a name column and an address column</div>
+        <div style={{ color: "#64748b", fontSize: "14px" }}>or click to browse · {mode.uploadHint}</div>
       </div>
       {s.error && <div style={{ color: "#f87171", marginTop: "1rem", fontSize: "14px" }}>⚠️ {s.error}</div>}
     </div>
@@ -262,6 +309,7 @@ export default function CsvDedupTool() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {modeSelector}
       {/* File info + column picker */}
       <div style={{ backgroundColor: "#111827", border: "1px solid #1e293b", borderRadius: "16px", padding: "1.5rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
@@ -290,7 +338,7 @@ export default function CsvDedupTool() {
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.75rem", marginBottom: "1rem" }}>
               <div>
-                <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Name Column</label>
+                <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{mode.columnLabels.primary}</label>
                 <select style={selectStyle} value={s.nameCols[0] ?? ""} onChange={selName}>
                   {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
@@ -299,7 +347,7 @@ export default function CsvDedupTool() {
                 )}
               </div>
               <div>
-                <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Address Column</label>
+                <label style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{mode.columnLabels.secondary}</label>
                 <select style={selectStyle} value={s.addrCols[0] ?? ""} onChange={selAddr}>
                   {s.headers.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
