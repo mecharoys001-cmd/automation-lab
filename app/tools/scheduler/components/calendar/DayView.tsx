@@ -351,6 +351,9 @@ export function DayView({
     [dayEvents, multiLane, selectedVenues],
   );
 
+  // Render grid starting 15 minutes (0.25 hours) before the visible start time
+  // so the top time label has breathing room and isn't clipped
+  const gridStartHour = dayStartHour - 0.25;
   const hours = Array.from(
     { length: dayEndHour - dayStartHour + 1 },
     (_, i) => dayStartHour + i,

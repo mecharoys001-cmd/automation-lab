@@ -187,6 +187,7 @@ function snapTo15Min(decimal: number): number {
 function WeekEventBlock({
   event,
   dayStartHour,
+  gridStartHour,
   onHover,
   onLeave,
   onClick,
@@ -199,6 +200,7 @@ function WeekEventBlock({
 }: {
   event: CalendarEvent;
   dayStartHour: number;
+  gridStartHour: number;
   onHover: (event: CalendarEvent, el: HTMLElement) => void;
   onLeave: () => void;
   onClick: (event: CalendarEvent, el: HTMLElement) => void;
@@ -218,7 +220,7 @@ function WeekEventBlock({
   const endHour = event.endTime ? parseTimeToHour(event.endTime) : startHour + 1;
   const duration = Math.max(endHour - startHour, 0.25);
 
-  const top = GRID_TOP_PAD + (startHour - dayStartHour) * HOUR_HEIGHT;
+  const top = GRID_TOP_PAD + (startHour - gridStartHour) * HOUR_HEIGHT;
   const height = duration * HOUR_HEIGHT - 2;
   const isCompact = height < 36; // ≤30min events: show title only
 
@@ -727,6 +729,9 @@ export function WeekView({
     return map;
   }, [events, weekDateKeys]);
 
+  // Render grid starting 15 minutes (0.25 hours) before the visible start time
+  // so the top time label has breathing room and isn't clipped
+  const gridStartHour = dayStartHour - 0.25;
   const hours = useMemo(
     () => Array.from({ length: dayEndHour - dayStartHour }, (_, i) => dayStartHour + i),
     [dayStartHour, dayEndHour],
@@ -1287,6 +1292,7 @@ export function WeekView({
                               key={event.id}
                               event={event}
                               dayStartHour={dayStartHour}
+                              gridStartHour={gridStartHour}
                               onHover={showPopover}
                               onLeave={hidePopover}
                               onClick={handleEventClick}
@@ -1347,6 +1353,7 @@ export function WeekView({
                         key={event.id}
                         event={event}
                         dayStartHour={dayStartHour}
+                        gridStartHour={gridStartHour}
                         onHover={showPopover}
                         onLeave={hidePopover}
                         onClick={handleEventClick}
