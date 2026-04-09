@@ -5,7 +5,7 @@
  * and presents itself to the user. Add new modes by appending to DEDUP_MODES.
  */
 
-import { ColumnSets, detectColumnSets } from "./csvDedup";
+import { ColumnSets, CsvRow, detectColumnSets, cleanSpringAppealRow } from "./csvDedup";
 
 export interface DedupMode {
   id: string;
@@ -21,6 +21,8 @@ export interface DedupMode {
   nameThreshold?: number;
   /** Drop-zone helper text shown before file upload */
   uploadHint: string;
+  /** Optional row-level cleaning applied to output rows (visible values) */
+  cleanRow?: (row: CsvRow, headers: string[]) => CsvRow;
 }
 
 // ── Mode Definitions ──────────────────────────────────────────────────────────
@@ -57,6 +59,27 @@ export const DEDUP_MODES: DedupMode[] = [
     extraNormSubs: MAILING_EXTRA_SUBS,
     uploadHint: "CSV, TSV, TXT, XLSX, XLS \u00B7 needs a name column and an address column",
     nameThreshold: 0.80,
+  },
+  {
+    id: "spring-appeal-mailing-list",
+    label: "Spring Appeal Mailing List",
+    description: "Built for spring appeal donor mailing exports, with address-based dedupe and mailing cleanup.",
+    columnLabels: { primary: "Transaction Name Column", secondary: "Mailing Address Column" },
+    detectColumns: (headers) => {
+      const tx = headers.find(h => /^transaction name$/i.test(h));
+      const street = headers.find(h => /^household mailing street$/i.test(h));
+      const city = headers.find(h => /^household city$/i.test(h));
+      const state = headers.find(h => /^household state$/i.test(h));
+      const zip = headers.find(h => /^household zip code$/i.test(h));
+      return {
+        nameCols: tx ? [tx] : detectColumnSets(headers).nameCols,
+        addrCols: [street, city, state, zip].filter(Boolean) as string[],
+      };
+    },
+    extraNormSubs: MAILING_EXTRA_SUBS,
+    uploadHint: "Spring appeal XLS/CSV export with Transaction Name and household mailing columns",
+    nameThreshold: 0.78,
+    cleanRow: cleanSpringAppealRow,
   },
 ];
 

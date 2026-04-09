@@ -285,6 +285,108 @@ class UnionFind {
   }
 }
 
+// ── Spring Appeal Cleaning Utilities ──────────────────────────────────────
+
+const US_STATES: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+  kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
+  missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
+  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+  "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
+  oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
+  virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI",
+  wyoming: "WY", "district of columbia": "DC",
+};
+
+const VALID_ABBREVS = new Set(Object.values(US_STATES));
+
+export function standardizeState(s: string): string {
+  const trimmed = s.trim();
+  if (!trimmed) return trimmed;
+  const upper = trimmed.toUpperCase();
+  if (VALID_ABBREVS.has(upper)) return upper;
+  return US_STATES[trimmed.toLowerCase()] ?? trimmed;
+}
+
+export function standardizePOBox(s: string): string {
+  return s.replace(/\b[Pp]\.?\s*[Oo]\.?\s*[Bb][Oo][Xx]\b/g, "PO Box");
+}
+
+const STREET_ABBREVS: [RegExp, string][] = [
+  [/\b[Rr][Dd]\.?\b/g, "Rd."], [/\b[Ss][Tt]\.?\b/g, "St."], [/\b[Aa][Vv][Ee]\.?\b/g, "Ave."],
+  [/\b[Bb][Ll][Vv][Dd]\.?\b/g, "Blvd."], [/\b[Dd][Rr]\.?\b/g, "Dr."], [/\b[Cc][Tt]\.?\b/g, "Ct."],
+  [/\b[Pp][Ll]\.?\b/g, "Pl."], [/\b[Ll][Nn]\.?\b/g, "Ln."], [/\b[Cc][Ii][Rr]\.?\b/g, "Cir."],
+  [/\b[Hh][Ww][Yy]\.?\b/g, "Hwy."], [/\b[Pp][Kk][Ww][Yy]\.?\b/g, "Pkwy."],
+  [/\b[Tt][Ee][Rr]\.?\b/g, "Ter."], [/\b[Tt][Rr][Ll]\.?\b/g, "Trl."],
+  [/\b[Aa][Pp][Tt]\.?\b/g, "Apt."], [/\b[Ss][Tt][Ee]\.?\b/g, "Ste."],
+  [/\b[Ff][Ll]\.?\b/g, "Fl."],
+];
+
+export function standardizeStreetAbbrevs(s: string): string {
+  let out = s;
+  for (const [re, rep] of STREET_ABBREVS) out = out.replace(re, rep);
+  return out;
+}
+
+const SMALL_WORDS = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "if", "in", "nor", "of", "on", "or", "so", "the", "to", "up", "yet"]);
+
+function titleCase(s: string): string {
+  return s.replace(/\S+/g, (word, idx) => {
+    if (idx !== 0 && SMALL_WORDS.has(word.toLowerCase())) return word.toLowerCase();
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  });
+}
+
+function isAllCaps(s: string): boolean {
+  const letters = s.replace(/[^A-Za-z]/g, "");
+  return letters.length > 1 && letters === letters.toUpperCase();
+}
+
+export function fixCapitalization(s: string): string {
+  if (!s.trim() || !isAllCaps(s)) return s;
+  return titleCase(s);
+}
+
+export function cleanSpringAppealRow(row: CsvRow, headers: string[]): CsvRow {
+  const cleaned = { ...row };
+  const stateCol = headers.find(h => /\bstate\b/i.test(h));
+  const streetCol = headers.find(h => /\bstreet\b/i.test(h) || /\baddress\b/i.test(h) || /\bmailing\b/i.test(h));
+  const nameLikeCols = headers.filter(h =>
+    /\bname\b/i.test(h) || /\bgreeting\b/i.test(h) || /\borganization\b/i.test(h)
+  );
+  const addrLikeCols = headers.filter(h =>
+    /\bstreet\b/i.test(h) || /\bcity\b/i.test(h) || /\baddress\b/i.test(h) || /\bmailing\b/i.test(h)
+  );
+
+  for (const h of headers) {
+    let v = cleaned[h] ?? "";
+    if (!v.trim()) continue;
+
+    // Fix ALL CAPS on names, addresses, cities
+    if (nameLikeCols.includes(h) || addrLikeCols.includes(h)) {
+      v = fixCapitalization(v);
+    }
+
+    // Standardize state
+    if (h === stateCol) {
+      v = standardizeState(v);
+    }
+
+    // Standardize PO Box and street abbreviations on street columns
+    if (h === streetCol) {
+      v = standardizePOBox(v);
+      v = standardizeStreetAbbrevs(v);
+    }
+
+    cleaned[h] = v;
+  }
+  return cleaned;
+}
+
 // ── Main Dedup ────────────────────────────────────────────────────────────────
 
 function bestRecord(records: CsvRow[], nameCols: string[]): CsvRow {

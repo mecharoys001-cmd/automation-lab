@@ -171,15 +171,17 @@ export default function CsvDedupTool() {
     });
   };
 
-  // Compute output rows: start with all rows, then for each approved group remove the dropped records
+  // Compute output rows: start with all rows, then for each approved group remove the dropped records.
+  // Apply mode-specific visible-value cleanup only after approval filtering.
   const outputRows = useMemo(() => {
     if (!s.result) return [];
     const droppedSet = new Set<CsvRow>();
     s.result.groups.forEach((g, i) => {
       if (s.approvals[i]) g.dropped.forEach(r => droppedSet.add(r));
     });
-    return s.rows.filter(r => !droppedSet.has(r));
-  }, [s.result, s.approvals, s.rows]);
+    const filtered = s.rows.filter(r => !droppedSet.has(r));
+    return mode.cleanRow ? filtered.map(r => mode.cleanRow!(r, s.headers)) : filtered;
+  }, [s.result, s.approvals, s.rows, s.headers, mode]);
 
   const approvedCount = useMemo(() =>
     s.result ? s.result.groups.filter((_, i) => s.approvals[i]).length : 0,
