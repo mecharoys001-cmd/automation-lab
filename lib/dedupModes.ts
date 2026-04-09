@@ -5,7 +5,7 @@
  * and presents itself to the user. Add new modes by appending to DEDUP_MODES.
  */
 
-import { ColumnSets, CsvRow, detectColumnSets, cleanSpringAppealRow } from "./csvDedup";
+import { ColumnSets, CsvRow, detectColumnSets, cleanSpringAppealRow, springAppealNamesMatcher } from "./csvDedup";
 
 export interface DedupMode {
   id: string;
@@ -23,6 +23,8 @@ export interface DedupMode {
   uploadHint: string;
   /** Optional row-level cleaning applied to output rows (visible values) */
   cleanRow?: (row: CsvRow, headers: string[]) => CsvRow;
+  /** Custom name comparison function (replaces namesAreLikelySame when provided) */
+  namesMatcher?: (n1: string, n2: string, threshold?: number) => boolean;
 }
 
 // ── Mode Definitions ──────────────────────────────────────────────────────────
@@ -38,6 +40,19 @@ const MAILING_EXTRA_SUBS: [RegExp, string][] = [
   [/\bfloor\b/g, "fl"],
   [/\bdepartment\b/g, "dept"],
   [/\bunit\b/g, "unit"],
+];
+
+const SPRING_APPEAL_EXTRA_SUBS: [RegExp, string][] = [
+  ...MAILING_EXTRA_SUBS,
+  // Zip+4 → zip5 for grouping
+  [/\b(\d{5})-\d{4}\b/g, "$1"],
+  // More PO Box patterns
+  [/\bpost\s*office\s*box\b/g, "pobox"],
+  [/\bp\.?\s*o\.?\s*b\.?\b/g, "pobox"],
+  // # → unit for apartment/unit normalization
+  [/\b#\s*/g, "unit "],
+  // Normalize "and" in address (e.g. "route 5 and main st")
+  [/\band\b/g, "&"],
 ];
 
 export const DEDUP_MODES: DedupMode[] = [
@@ -76,10 +91,11 @@ export const DEDUP_MODES: DedupMode[] = [
         addrCols: [street, city, state, zip].filter(Boolean) as string[],
       };
     },
-    extraNormSubs: MAILING_EXTRA_SUBS,
+    extraNormSubs: SPRING_APPEAL_EXTRA_SUBS,
     uploadHint: "Spring appeal XLS/CSV export with Transaction Name and household mailing columns",
     nameThreshold: 0.78,
     cleanRow: cleanSpringAppealRow,
+    namesMatcher: springAppealNamesMatcher,
   },
 ];
 

@@ -238,7 +238,7 @@ function jaroWinkler(a: string, b: string): number {
 
 // ── Name Similarity ───────────────────────────────────────────────────────────
 
-function namesAreLikelySame(n1: string, n2: string, threshold = 0.82): boolean {
+export function namesAreLikelySame(n1: string, n2: string, threshold = 0.82): boolean {
   const a = norm(n1), b = norm(n2);
   if (!a || !b) return false;
   if (a === b) return true;
@@ -387,6 +387,91 @@ export function cleanSpringAppealRow(row: CsvRow, headers: string[]): CsvRow {
   return cleaned;
 }
 
+// ── Spring Appeal Name Matching ───────────────────────────────────────────────
+
+const HONORIFICS_RE = /\b(mr|mrs|ms|miss|dr|rev|hon|prof|sir|dame|sgt|sergeant|capt|captain|col|colonel|maj|major)\.?\s+/gi;
+const SUFFIXES_RE = /[,\s]+\b(jr|sr|ii|iii|iv|v|esq|phd|md|dds|cpa)\.?\s*$/gi;
+const TX_LABEL_TAIL_RE = /\s*[-–—]\s*(annual|recurring|one[- ]?time|monthly|quarterly|gift|donation|pledge|payment|contribution).*$/i;
+const TX_LABEL_PAREN_RE = /\s*\((annual|recurring|one[- ]?time|monthly|quarterly|gift|donation|pledge|payment|contribution)[^)]*\)\s*$/i;
+const TX_LABEL_LEAD_RE = /^(gift|donation|contribution|payment|pledge)\s+(from|by|of)\s+/i;
+
+/** Strip honorifics, suffixes, transaction label noise, and normalize punctuation for donor names. */
+export function cleanDonorName(raw: string): string {
+  let s = decodeEntities(raw);
+  // Strip transaction label noise (common in donor export Transaction Name)
+  s = s.replace(TX_LABEL_TAIL_RE, "");
+  s = s.replace(TX_LABEL_PAREN_RE, "");
+  s = s.replace(TX_LABEL_LEAD_RE, "");
+  // Strip honorifics
+  s = s.replace(HONORIFICS_RE, "");
+  // Strip suffixes
+  s = s.replace(SUFFIXES_RE, "");
+  // Normalize curly/smart quotes and dashes
+  s = s.replace(/[\u2018\u2019\u0060]/g, "'");
+  s = s.replace(/[\u201C\u201D]/g, '"');
+  s = s.replace(/[\u2013\u2014]/g, " ");
+  // Strip punctuation except apostrophes (preserve O'Brien, etc.)
+  s = s.replace(/[.,"()[\]{}]/g, " ");
+  // Collapse whitespace
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+/** Extract middle initial from "First M Last" pattern, returns [initial, nameWithout] or null. */
+function extractMiddleInitial(name: string): { initial: string; stripped: string } | null {
+  const m = name.match(/^(\S+)\s+([A-Za-z])\.?\s+(\S+.*)$/);
+  if (!m) return null;
+  return { initial: m[2].toLowerCase(), stripped: `${m[1]} ${m[3]}` };
+}
+
+/** Split "John and Jane Doe" or "John & Jane Doe" into individual names with shared last name. */
+function splitHouseholdNames(name: string): string[] | null {
+  const m = name.match(/^(.+?)\s+(?:and|&)\s+(.+)$/i);
+  if (!m) return null;
+  const left = m[1].trim();
+  const right = m[2].trim();
+  const rightParts = right.split(/\s+/);
+  const leftParts = left.split(/\s+/);
+  // If left is just a first name and right has a last name, share the last name
+  if (leftParts.length === 1 && rightParts.length >= 2) {
+    const lastName = rightParts[rightParts.length - 1];
+    return [`${left} ${lastName}`, right];
+  }
+  return [left, right];
+}
+
+/** Spring Appeal name matcher — wraps namesAreLikelySame with donor-specific edge case handling. */
+export function springAppealNamesMatcher(rawA: string, rawB: string, threshold = 0.78): boolean {
+  const a = cleanDonorName(rawA);
+  const b = cleanDonorName(rawB);
+
+  // Direct comparison after cleaning
+  if (namesAreLikelySame(a, b, threshold)) return true;
+
+  // Middle initial handling: "John P Doe" vs "John Doe"
+  // Only match if at most one has a middle initial, or both have the same initial
+  const midA = extractMiddleInitial(a);
+  const midB = extractMiddleInitial(b);
+  if (midA || midB) {
+    const strippedA = midA?.stripped ?? a;
+    const strippedB = midB?.stripped ?? b;
+    const initA = midA?.initial ?? null;
+    const initB = midB?.initial ?? null;
+    // Avoid matching "John A Doe" with "John B Doe"
+    if (!initA || !initB || initA === initB) {
+      if (namesAreLikelySame(strippedA, strippedB, threshold)) return true;
+    }
+  }
+
+  // Household: "John and Jane Doe" vs "John Doe" at same address
+  const splitA = splitHouseholdNames(a);
+  const splitB = splitHouseholdNames(b);
+  if (splitA && splitA.some(n => namesAreLikelySame(n, b, threshold))) return true;
+  if (splitB && splitB.some(n => namesAreLikelySame(a, n, threshold))) return true;
+
+  return false;
+}
+
 // ── Main Dedup ────────────────────────────────────────────────────────────────
 
 function bestRecord(records: CsvRow[], nameCols: string[]): CsvRow {
@@ -402,10 +487,13 @@ export interface DedupOptions {
   extraNormSubs?: [RegExp, string][];
   /** Override Jaro-Winkler name similarity threshold */
   nameThreshold?: number;
+  /** Custom name comparison function (replaces namesAreLikelySame when provided) */
+  namesMatcher?: (n1: string, n2: string, threshold?: number) => boolean;
 }
 
 export function deduplicate(rows: CsvRow[], nameCols: string[], addrCols: string[], opts: DedupOptions = {}): DedupResult {
-  const { extraNormSubs, nameThreshold } = opts;
+  const { extraNormSubs, nameThreshold, namesMatcher } = opts;
+  const matchNames = namesMatcher ?? namesAreLikelySame;
 
   const addrGroups = new Map<string, number[]>();
   rows.forEach((row, i) => {
@@ -423,7 +511,7 @@ export function deduplicate(rows: CsvRow[], nameCols: string[], addrCols: string
       for (let b = a + 1; b < indices.length; b++) {
         const nameA = nameCols.map(c => rows[indices[a]][c] ?? "").join(" ");
         const nameB = nameCols.map(c => rows[indices[b]][c] ?? "").join(" ");
-        if (namesAreLikelySame(nameA, nameB, nameThreshold))
+        if (matchNames(nameA, nameB, nameThreshold))
           uf.union(indices[a], indices[b]);
       }
     }

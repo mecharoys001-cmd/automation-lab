@@ -67,6 +67,7 @@ export default function CsvDedupTool() {
       const result = deduplicate(rows, nameCols, addrCols, {
         extraNormSubs: currentMode.extraNormSubs,
         nameThreshold: currentMode.nameThreshold,
+        namesMatcher: currentMode.namesMatcher,
       });
       const approvals: Record<number, boolean> = {};
       result.groups.forEach((_, i) => { approvals[i] = true; });
@@ -142,6 +143,7 @@ export default function CsvDedupTool() {
     const result = deduplicate(s.rows, s.nameCols, s.addrCols, {
       extraNormSubs: mode.extraNormSubs,
       nameThreshold: mode.nameThreshold,
+      namesMatcher: mode.namesMatcher,
     });
     const approvals: Record<number, boolean> = {};
     result.groups.forEach((_, i) => { approvals[i] = true; });
@@ -280,6 +282,7 @@ export default function CsvDedupTool() {
             const result = deduplicate(p.rows, nameCols, addrCols, {
               extraNormSubs: newMode.extraNormSubs,
               nameThreshold: newMode.nameThreshold,
+              namesMatcher: newMode.namesMatcher,
             });
             const approvals: Record<number, boolean> = {};
             result.groups.forEach((_, i) => { approvals[i] = true; });
