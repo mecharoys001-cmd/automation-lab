@@ -12,6 +12,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { tool_id, content_hash, metadata, status, duration_seconds, error_message, usage_session_id } = body;
 
+    const metadataWithSession = {
+      ...(metadata || {}),
+      ...(usage_session_id ? { usage_session_id } : {}),
+    };
+
     if (!tool_id) {
       return NextResponse.json({ error: 'tool_id is required' }, { status: 400 });
     }
@@ -50,7 +55,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert usage event — user_email/user_id come from session, NEVER from body
+    // Insert usage event — user_email/user_id come from session, NEVER from body.
+    // usage_session_id is stored inside metadata for compatibility with the current DB schema.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (svc.from('tool_usage') as any).insert({
       tool_id,
@@ -60,8 +66,7 @@ export async function POST(request: NextRequest) {
       status: status || 'completed',
       duration_seconds: duration_seconds ?? null,
       error_message: error_message || null,
-      usage_session_id: usage_session_id || null,
-      metadata: metadata || {},
+      metadata: metadataWithSession,
     });
 
     if (error) {

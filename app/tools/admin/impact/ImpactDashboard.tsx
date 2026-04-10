@@ -67,6 +67,12 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.03em',
 };
 
+const TRACKING_METHOD_OPTIONS = [
+  { value: 'per_use', label: 'Per Use' },
+  { value: 'per_csv_upload', label: 'Per CSV Upload' },
+  { value: 'per_schedule_run', label: 'Per Schedule Run' },
+] as const;
+
 export default function ImpactDashboard() {
   const [stats, setStats] = useState<ToolUsageStats[]>([]);
   const [configs, setConfigs] = useState<ToolConfig[]>([]);
@@ -76,6 +82,7 @@ export default function ImpactDashboard() {
   const [editDays, setEditDays] = useState('0');
   const [editHours, setEditHours] = useState('0');
   const [editMinutes, setEditMinutes] = useState('0');
+  const [editTrackingMethod, setEditTrackingMethod] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Log Usage state
@@ -94,6 +101,7 @@ export default function ImpactDashboard() {
   const [editExtFirstRunDate, setEditExtFirstRunDate] = useState('');
   const [editExtDescription, setEditExtDescription] = useState('');
   const [editExtTrackingNotes, setEditExtTrackingNotes] = useState('');
+  const [editExtTrackingMethod, setEditExtTrackingMethod] = useState('per_use');
   const [editExtSaving, setEditExtSaving] = useState(false);
 
   // Save + backfill success message
@@ -111,6 +119,7 @@ export default function ImpactDashboard() {
   const [newHours, setNewHours] = useState('0');
   const [newMinutes, setNewMinutes] = useState('0');
   const [newTrackingNotes, setNewTrackingNotes] = useState('');
+  const [newTrackingMethod, setNewTrackingMethod] = useState('per_use');
   const [newDescription, setNewDescription] = useState('');
   const [newRunFrequency, setNewRunFrequency] = useState('');
   const [newCustomInterval, setNewCustomInterval] = useState('30');
@@ -160,13 +169,18 @@ export default function ImpactDashboard() {
   const totalHours = stats.reduce((sum, s) => sum + s.total_hours_saved, 0);
   const totalUses = stats.reduce((sum, s) => sum + s.total_uses, 0);
 
-  async function saveMinutes(toolId: string) {
+  async function saveToolSettings(toolId: string) {
     setSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        tool_id: toolId,
+        minutes_per_use: (Number(editDays) * 24 * 60) + (Number(editHours) * 60) + Number(editMinutes),
+      };
+      if (editTrackingMethod) payload.tracking_method = editTrackingMethod;
       const res = await fetch('/api/usage/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool_id: toolId, minutes_per_use: (Number(editDays) * 24 * 60) + (Number(editHours) * 60) + Number(editMinutes) }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
       setEditingTool(null);
@@ -212,6 +226,7 @@ export default function ImpactDashboard() {
     setEditExtFirstRunDate(s.first_run_date || '');
     setEditExtDescription(s.description || '');
     setEditExtTrackingNotes(s.tracking_notes || '');
+    setEditExtTrackingMethod(s.tracking_method || 'per_use');
     setSaveSuccess('');
     setEditExtTool(s.tool_id);
   }
@@ -228,6 +243,7 @@ export default function ImpactDashboard() {
           tool_id: toolId,
           display_name: editExtDisplayName,
           minutes_per_use: minutes,
+          tracking_method: editExtTrackingMethod,
           run_frequency: editExtRunFrequency || null,
           run_interval_days: editExtRunFrequency === 'custom' ? Number(editExtCustomInterval) || 30 : null,
           first_run_date: editExtFirstRunDate || null,
@@ -292,7 +308,7 @@ export default function ImpactDashboard() {
           tool_id: newToolId,
           display_name: newDisplayName,
           minutes_per_use: minutes,
-          tracking_method: 'per_use',
+          tracking_method: newTrackingMethod,
           description: newDescription || null,
           is_external: true,
           tracking_notes: newTrackingNotes || null,
@@ -312,6 +328,7 @@ export default function ImpactDashboard() {
       setNewHours('0');
       setNewMinutes('0');
       setNewTrackingNotes('');
+      setNewTrackingMethod('per_use');
       setNewDescription('');
       setNewRunFrequency('');
       setNewCustomInterval('30');
@@ -346,26 +363,43 @@ export default function ImpactDashboard() {
   function renderTimeEditor(s: ToolUsageStats) {
     if (editingTool === s.tool_id) {
       return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-            <input type="number" min="0" value={editDays} onChange={(e) => setEditDays(e.target.value)} style={{ width: '50px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
-            <span style={{ fontSize: '11px', color: '#64748b' }}>d</span>
-          </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-            <input type="number" min="0" max="23" value={editHours} onChange={(e) => setEditHours(e.target.value)} style={{ width: '50px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
-            <span style={{ fontSize: '11px', color: '#64748b' }}>h</span>
-          </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-            <input type="number" min="0" max="59" value={editMinutes} onChange={(e) => setEditMinutes(e.target.value)} style={{ width: '50px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
-            <span style={{ fontSize: '11px', color: '#64748b' }}>m</span>
-          </span>
-          <button onClick={() => saveMinutes(s.tool_id)} disabled={saving} style={{ background: '#0F7490', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '12px' }}>
-            Save
-          </button>
-          <button onClick={() => setEditingTool(null)} style={{ background: 'none', color: '#64748b', border: 'none', cursor: 'pointer', fontSize: '12px' }}>
-            Cancel
-          </button>
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#f8fafc', borderRadius: '8px', padding: '10px 14px', border: '1px solid #e2e8f0', marginTop: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', minWidth: '70px' }}>Time/Use:</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <input type="number" min="0" value={editDays} onChange={(e) => setEditDays(e.target.value)} style={{ width: '50px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
+              <span style={{ fontSize: '11px', color: '#64748b' }}>d</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <input type="number" min="0" max="23" value={editHours} onChange={(e) => setEditHours(e.target.value)} style={{ width: '50px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
+              <span style={{ fontSize: '11px', color: '#64748b' }}>h</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <input type="number" min="0" max="59" value={editMinutes} onChange={(e) => setEditMinutes(e.target.value)} style={{ width: '50px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '2px 6px', textAlign: 'center' }} />
+              <span style={{ fontSize: '11px', color: '#64748b' }}>m</span>
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', minWidth: '70px' }}>Tracking:</span>
+            <select
+              value={editTrackingMethod}
+              onChange={(e) => setEditTrackingMethod(e.target.value)}
+              style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '3px 8px', fontSize: '12px' }}
+            >
+              {TRACKING_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+            <button onClick={() => saveToolSettings(s.tool_id)} disabled={saving} style={{ background: '#0F7490', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={() => setEditingTool(null)} style={{ background: 'none', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '4px 12px', cursor: 'pointer', fontSize: '12px' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
       );
     }
     return (
@@ -374,8 +408,9 @@ export default function ImpactDashboard() {
         setEditDays(String(Math.floor(total / (24 * 60))));
         setEditHours(String(Math.floor((total % (24 * 60)) / 60)));
         setEditMinutes(String(total % 60));
+        setEditTrackingMethod(s.tracking_method || 'per_use');
         setEditingTool(s.tool_id);
-      }} style={{ cursor: 'pointer', borderBottom: '1px dashed #94a3b8' }} title="Click to edit">
+      }} style={{ cursor: 'pointer', borderBottom: '1px dashed #94a3b8' }} title="Click to edit time/use and tracking method">
         <strong>{formatMinutesPerUse(s.minutes_per_use)}</strong>
       </span>
     );
@@ -391,6 +426,14 @@ export default function ImpactDashboard() {
           <div>
             <label style={labelStyle}>Display Name</label>
             <input type="text" value={editExtDisplayName} onChange={(e) => setEditExtDisplayName(e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Tracking Method</label>
+            <select value={editExtTrackingMethod} onChange={(e) => setEditExtTrackingMethod(e.target.value)} style={inputStyle}>
+              {TRACKING_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>Time Saved per Use</label>
@@ -668,15 +711,35 @@ export default function ImpactDashboard() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', color: '#475569' }}>
+        <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', color: '#475569', flexWrap: 'wrap', alignItems: 'center' }}>
           <span><strong>{s.total_uses}</strong> uses</span>
           <span>
-            {renderTimeEditor(s)}
-            {' '}/use
+            {editingTool !== s.tool_id && (
+              <>
+                {renderTimeEditor(s)}
+                {' '}/use
+              </>
+            )}
           </span>
-          <span>Tracking: {s.tracking_method}</span>
+          {editingTool !== s.tool_id && (
+            <span
+              onClick={() => {
+                const total = s.minutes_per_use;
+                setEditDays(String(Math.floor(total / (24 * 60))));
+                setEditHours(String(Math.floor((total % (24 * 60)) / 60)));
+                setEditMinutes(String(total % 60));
+                setEditTrackingMethod(s.tracking_method || 'per_use');
+                setEditingTool(s.tool_id);
+              }}
+              style={{ cursor: 'pointer', borderBottom: '1px dashed #94a3b8' }}
+              title="Click to edit"
+            >
+              Tracking: {TRACKING_METHOD_OPTIONS.find((option) => option.value === s.tracking_method)?.label || s.tracking_method}
+            </span>
+          )}
           {s.last_used && <span>Last used: {new Date(s.last_used).toLocaleDateString()}</span>}
         </div>
+        {editingTool === s.tool_id && renderTimeEditor(s)}
 
         {/* Stats row */}
         {renderStatsRow(s)}
@@ -862,8 +925,21 @@ export default function ImpactDashboard() {
               </div>
             </div>
 
-            <div style={{ marginTop: '1rem' }}>
-              <label style={labelStyle}>Time Saved per Use</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              <div>
+                <label style={labelStyle}>Tracking Method</label>
+                <select
+                  value={newTrackingMethod}
+                  onChange={(e) => setNewTrackingMethod(e.target.value)}
+                  style={inputStyle}
+                >
+                  {TRACKING_METHOD_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Time Saved per Use</label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <input type="number" min="0" value={newDays} onChange={(e) => setNewDays(e.target.value)} style={{ ...inputStyle, width: '60px', textAlign: 'center' }} />
@@ -878,6 +954,8 @@ export default function ImpactDashboard() {
                   <span style={{ fontSize: '12px', color: '#64748b' }}>min</span>
                 </div>
               </div>
+            </div>
+
             </div>
 
             <div style={{ marginTop: '1rem' }}>

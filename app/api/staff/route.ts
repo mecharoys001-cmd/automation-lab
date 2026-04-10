@@ -32,10 +32,9 @@ export async function GET(request: NextRequest) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('staff') as any)
-        .select('*')
+        .select('*, program:programs(*)')
         .ilike('email', email.trim())
-        .eq('is_active', true)
-        .limit(1);
+        .eq('is_active', true);
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

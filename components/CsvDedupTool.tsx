@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { parseCSV, toCSV, toTSV, deduplicate, decodeEntities, DedupResult, CsvRow } from "@/lib/csvDedup";
 import { DEDUP_MODES, DEFAULT_MODE_ID, getModeById, DedupMode } from "@/lib/dedupModes";
 import * as XLSX from "xlsx";
-import { trackToolUsage, hashCSVContent, startToolSession } from "@/lib/usage-tracking";
+import { hashCSVContent, startToolSession } from "@/lib/usage-tracking";
 
 const ACCENT = "#6366f1";
 type ExportFormat = ".csv" | ".tsv" | ".txt" | ".xlsx" | ".xls";
@@ -71,6 +71,21 @@ export default function CsvDedupTool() {
       });
       const approvals: Record<number, boolean> = {};
       result.groups.forEach((_, i) => { approvals[i] = true; });
+
+      // Complete the tracking session for the initial auto-dedup
+      hashCSVContent(rawCsv).then((hash) => {
+        if (toolSession.current) {
+          toolSession.current.complete({
+            contentHash: hash,
+            metadata: {
+              total_rows: rows.length,
+              duplicates_found: result.removed,
+            },
+          });
+          toolSession.current = null;
+        }
+      });
+
       return {
         ...p, headers, rows, fileName, rawCsv,
         nameCols, addrCols,
@@ -149,27 +164,17 @@ export default function CsvDedupTool() {
     result.groups.forEach((_, i) => { approvals[i] = true; });
     setS(p => ({ ...p, result, approvals, error: null }));
 
-    // Complete the session with hash for dedup tracking
+    // Start a fresh session for re-analysis and complete it immediately
+    const rerunSession = startToolSession('csv-dedup');
     hashCSVContent(s.rawCsv).then((hash) => {
-      if (toolSession.current) {
-        toolSession.current.complete({
-          contentHash: hash,
-          metadata: {
-            total_rows: s.rows.length,
-            duplicates_found: result.removed,
-          },
-        });
-        toolSession.current = null;
-      } else {
-        // Fallback for backward compat
-        trackToolUsage('csv-dedup', {
-          contentHash: hash,
-          metadata: {
-            total_rows: s.rows.length,
-            duplicates_found: result.removed,
-          },
-        });
-      }
+      rerunSession.complete({
+        contentHash: hash,
+        metadata: {
+          total_rows: s.rows.length,
+          duplicates_found: result.removed,
+          rerun: true,
+        },
+      });
     });
   };
 

@@ -183,7 +183,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tool_id, display_name, minutes_per_use, description, is_active, tracking_notes, run_frequency, run_interval_days, first_run_date, visibility } = body;
+    const { tool_id, display_name, minutes_per_use, tracking_method, description, is_active, tracking_notes, run_frequency, run_interval_days, first_run_date, visibility } = body;
+
+    const validTrackingMethods = ['per_use', 'per_csv_upload', 'per_schedule_run'];
+    if (tracking_method !== undefined && !validTrackingMethods.includes(tracking_method)) {
+      return NextResponse.json(
+        { error: 'tracking_method must be one of: ' + validTrackingMethods.join(', ') },
+        { status: 400 }
+      );
+    }
 
     if (visibility !== undefined && !['public', 'restricted', 'hidden'].includes(visibility)) {
       return NextResponse.json(
@@ -199,6 +207,7 @@ export async function PUT(request: NextRequest) {
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (display_name !== undefined) updates.display_name = display_name;
     if (minutes_per_use !== undefined) updates.minutes_per_use = minutes_per_use;
+    if (tracking_method !== undefined) updates.tracking_method = tracking_method;
     if (description !== undefined) updates.description = description;
     if (is_active !== undefined) updates.is_active = is_active;
     if (tracking_notes !== undefined) updates.tracking_notes = tracking_notes;

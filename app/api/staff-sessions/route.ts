@@ -18,13 +18,14 @@ export async function GET(request: NextRequest) {
 
     // program_id mode: fetch all sessions for a program (staff can view their program's full schedule)
     if (programId && !instructorId && !email) {
-      // Staff can only request programs they belong to (have sessions in)
+      // Staff can only request programs they have an active membership in
       if (auth.user.orgRole === 'staff') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: membership } = await (supabase.from('sessions') as any)
+        const { data: membership } = await (supabase.from('staff') as any)
           .select('id')
-          .eq('staff_id', auth.user.id)
+          .eq('id', auth.user.id)
           .eq('program_id', programId)
+          .eq('is_active', true)
           .limit(1);
 
         if (!membership || membership.length === 0) {
