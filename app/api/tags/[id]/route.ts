@@ -96,7 +96,10 @@ export async function PATCH(
     let v2ColumnsSkipped = false;
     if (error && (hasDescription || hasEmoji || hasCategory) && (error.code === '42703' || error.message?.includes('column'))) {
       console.warn('[PATCH /api/tags] v2 columns missing — falling back without emoji/description/category');
-      const { description: _d, emoji: _e, category: _c, ...updateBasic } = updateData;
+      const updateBasic = { ...updateData };
+      delete updateBasic.description;
+      delete updateBasic.emoji;
+      delete updateBasic.category;
       if (Object.keys(updateBasic).length === 0) {
         return NextResponse.json({
           tag: null,

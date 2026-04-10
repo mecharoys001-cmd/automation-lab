@@ -337,7 +337,7 @@ export default function TagsPage() {
           } else {
             successCount++;
           }
-        } catch (err) {
+        } catch {
           failedTags.push(`${tagName} (failed)`);
         }
       }
@@ -625,7 +625,7 @@ export default function TagsPage() {
           } else {
             successCount++;
           }
-        } catch (err) {
+        } catch {
           failedTags.push(`${tagName} (failed)`);
         }
       }
