@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
-import { getLockedTagReason, isLockedTagCategory } from '@/lib/tag-locking';
+
 
 export async function PATCH(
   request: NextRequest,
@@ -36,22 +36,6 @@ export async function PATCH(
     if (accessErr) return accessErr;
 
     const body = await request.json();
-
-    // Enforce locked category: block name and category changes but allow emoji/description
-    if (isLockedTagCategory(tag.category)) {
-      if (body.name && body.name.trim() !== tag.name) {
-        return NextResponse.json(
-          { error: getLockedTagReason(tag.category) },
-          { status: 403 }
-        );
-      }
-      if ('category' in body && body.category !== tag.category) {
-        return NextResponse.json(
-          { error: `Tags in "${tag.category}" cannot be moved to another category` },
-          { status: 403 }
-        );
-      }
-    }
     console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
 
     const updateData: { name?: string; description?: string | null; emoji?: string | null; category?: string | null } = {};
@@ -161,13 +145,6 @@ export async function DELETE(
 
     if (!tagToDelete?.program_id) {
       return NextResponse.json({ error: 'Tag not found or has no program association' }, { status: 403 });
-    }
-
-    if (isLockedTagCategory(tagToDelete.category)) {
-      return NextResponse.json(
-        { error: getLockedTagReason(tagToDelete.category) },
-        { status: 403 }
-      );
     }
 
     const accessErr = await requireProgramAccess(auth.user, tagToDelete.program_id);

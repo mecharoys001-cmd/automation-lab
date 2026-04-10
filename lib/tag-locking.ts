@@ -18,20 +18,24 @@ export function normalizeTagCategory(category: string | null | undefined): strin
   return normalized ?? trimmed;
 }
 
+/**
+ * Returns true if the given category NAME is protected and cannot be renamed or deleted.
+ * Individual tags within these categories CAN still be edited/deleted.
+ */
 export function isLockedTagCategory(category: string | null | undefined): boolean {
   const normalized = normalizeTagCategory(category);
   return LOCKED_TAG_CATEGORIES.includes(normalized as (typeof LOCKED_TAG_CATEGORIES)[number]);
 }
 
-export function getLockedTagReason(category: string | null | undefined): string {
+export function getLockedCategoryReason(category: string | null | undefined): string {
   const normalized = normalizeTagCategory(category);
   if (normalized === 'Event Type') {
-    return 'Locked because Event Type tags are tied to core scheduler fields.';
+    return 'The "Event Type" category name is protected and cannot be renamed or deleted.';
   }
 
   if (normalized === 'Space Types') {
-    return 'Locked because Space Type tags are tied to core scheduler fields.';
+    return 'The "Space Types" category name is protected and cannot be renamed or deleted.';
   }
 
-  return 'Locked because this tag is tied to a core scheduler field.';
+  return 'This category name is protected and cannot be renamed or deleted.';
 }

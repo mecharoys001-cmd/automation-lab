@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical, Lock } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -9,7 +9,7 @@ import { EmojiPicker } from '../../components/ui/EmojiPicker';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
-import { getLockedTagReason, isLockedTagCategory, normalizeTagCategory } from '@/lib/tag-locking';
+import { getLockedCategoryReason, isLockedTagCategory, normalizeTagCategory } from '@/lib/tag-locking';
 
 // ── Toast Notification ───────────────────────────────────────
 
@@ -173,6 +173,11 @@ export default function TagsPage() {
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [customCategories, setCustomCategories] = useState<string[]>([]); // Track user-created categories
+
+  // Category rename state
+  const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
+  const [renameCategoryValue, setRenameCategoryValue] = useState('');
+  const [renameCategoryLoading, setRenameCategoryLoading] = useState(false);
 
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
@@ -539,12 +544,6 @@ export default function TagsPage() {
     const sourceCategory = normalizeTagCategory(tag.category || 'General');
     if (sourceCategory === targetCategory) return; // Same category — no-op
 
-    // Prevent moving locked tags
-    if (isLockedTagCategory(tag.category)) {
-      showToast(getLockedTagReason(tag.category), 'error');
-      return;
-    }
-
     // Optimistic update
     const previousTags = [...tags];
     setTags(prev => prev.map(t => t.id === tagId ? { ...t, category: targetCategory } : t));
@@ -574,6 +573,44 @@ export default function TagsPage() {
     setDragTagId(null);
     setDragOverCategory(null);
     if (dragExpandTimer.current) { clearTimeout(dragExpandTimer.current); dragExpandTimer.current = null; }
+  };
+
+  // Rename category via bulk API
+  const handleCategoryRename = async (oldName: string) => {
+    const trimmed = renameCategoryValue.trim();
+    if (!trimmed || trimmed === oldName) {
+      setRenamingCategory(null);
+      return;
+    }
+    if (isLockedTagCategory(oldName)) {
+      showToast(getLockedCategoryReason(oldName), 'error');
+      return;
+    }
+    if (isLockedTagCategory(trimmed)) {
+      showToast(`${getLockedCategoryReason(trimmed)} Choose a different category name.`, 'error');
+      return;
+    }
+    setRenameCategoryLoading(true);
+    try {
+      const res = await fetch('/api/tags/categories/rename', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldName, newName: trimmed, program_id: selectedProgramId }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+      requestCache.invalidate(/\/api\/tags/);
+      await fetchTags();
+      setCustomCategories(prev => prev.map(c => c === oldName ? trimmed : c));
+      showToast(`Category renamed to "${trimmed}"`, 'success');
+      setRenamingCategory(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to rename category', 'error');
+    } finally {
+      setRenameCategoryLoading(false);
+    }
   };
 
   // Quick add tag(s) to specific category (supports comma-separated values)
@@ -884,6 +921,33 @@ export default function TagsPage() {
               >
                 {/* Category Header */}
                 <div className="bg-slate-50 border-b border-slate-200">
+                  {renamingCategory === category ? (
+                    <div className="flex items-center gap-2 px-5 py-3">
+                      <input
+                        type="text"
+                        value={renameCategoryValue}
+                        onChange={(e) => setRenameCategoryValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCategoryRename(category);
+                          if (e.key === 'Escape') setRenamingCategory(null);
+                        }}
+                        className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                        autoFocus
+                        disabled={renameCategoryLoading}
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleCategoryRename(category)}
+                        disabled={renameCategoryLoading || !renameCategoryValue.trim()}
+                      >
+                        {renameCategoryLoading ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => setRenamingCategory(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
                   <button
                     onClick={() => toggleCategory(category)}
                     className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition-colors"
@@ -895,20 +959,38 @@ export default function TagsPage() {
                         {categoryTags.length}
                       </span>
                     </div>
-                    <Tooltip text={`Add tag to ${category}`}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCategoryQuickAdd(category);
-                          setCategoryQuickAddValue('');
-                        }}
-                        className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
-                        aria-label="Add new tag to this category"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </Tooltip>
+                    <div className="flex items-center gap-1">
+                      {!isLockedTagCategory(category) && (
+                        <Tooltip text="Rename category">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRenamingCategory(category);
+                              setRenameCategoryValue(category);
+                            }}
+                            className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                            aria-label="Rename category"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </Tooltip>
+                      )}
+                      <Tooltip text={`Add tag to ${category}`}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCategoryQuickAdd(category);
+                            setCategoryQuickAddValue('');
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                          aria-label="Add new tag to this category"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
+                    </div>
                   </button>
+                  )}
                   
                   {/* Quick Add Field for this category */}
                   {categoryQuickAdd === category && (
@@ -985,9 +1067,7 @@ export default function TagsPage() {
                       const isDeleting = deletingId === tag.id;
                       const sessionCount = sessionCounts[tag.id] || 0;
                       const isDragging = dragTagId === tag.id;
-                      const locked = isLockedTagCategory(tag.category);
-                      const lockedReason = getLockedTagReason(tag.category);
-                      const canDrag = !isEditing && !isDeleting && !locked;
+                      const canDrag = !isEditing && !isDeleting;
 
                       return (
                         <div
@@ -1051,68 +1131,43 @@ export default function TagsPage() {
                           ) : (
                             // View Mode
                             <div className="flex items-center gap-3">
-                              {locked ? (
-                                <Tooltip text={lockedReason}>
-                                  <span className="text-slate-200 shrink-0 cursor-not-allowed" aria-label="Locked — cannot drag">
-                                    <Lock className="w-4 h-4" />
-                                  </span>
-                                </Tooltip>
-                              ) : (
-                                <Tooltip text="Drag to move to another category">
-                                  <span
-                                    className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
-                                    aria-label="Drag to reorder"
-                                  >
-                                    <GripVertical className="w-4 h-4" />
-                                  </span>
-                                </Tooltip>
-                              )}
+                              <Tooltip text="Drag to move to another category">
+                                <span
+                                  className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
+                                  aria-label="Drag to reorder"
+                                >
+                                  <GripVertical className="w-4 h-4" />
+                                </span>
+                              </Tooltip>
                               <span className="text-2xl shrink-0">{tag.emoji || '🎵'}</span>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
-                                  {locked && (
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                                      Core
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
                                 {getDescriptionForTag(tag) && (
                                   <p className="text-xs text-slate-600 mt-0.5">{getDescriptionForTag(tag)}</p>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                {locked ? (
-                                  <Tooltip text={lockedReason}>
-                                    <span className="p-1.5 text-slate-200 cursor-not-allowed" aria-label="Locked">
-                                      <Lock className="w-3.5 h-3.5" />
-                                    </span>
-                                  </Tooltip>
-                                ) : (
-                                  <>
-                                    <Tooltip text="Edit tag">
-                                      <button
-                                        onClick={() => startEdit(tag)}
-                                        className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-700"
-                                      >
-                                        <Pencil className="w-4 h-4" />
-                                      </button>
-                                    </Tooltip>
-                                    <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} event${sessionCount === 1 ? '' : 's'} — click to delete` : 'Delete tag'}>
-                                      <button
-                                        onClick={() => deleteTag(tag.id, tag.name)}
-                                        disabled={isDeleting}
-                                        className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        {isDeleting ? (
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                          <Trash2 className="w-4 h-4" />
-                                        )}
-                                      </button>
-                                    </Tooltip>
-                                  </>
-                                )}
+                                <Tooltip text="Edit tag">
+                                  <button
+                                    onClick={() => startEdit(tag)}
+                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-700"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} event${sessionCount === 1 ? '' : 's'} — click to delete` : 'Delete tag'}>
+                                  <button
+                                    onClick={() => deleteTag(tag.id, tag.name)}
+                                    disabled={isDeleting}
+                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isDeleting ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </Tooltip>
                               </div>
                             </div>
                           )}
