@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Tooltip } from './Tooltip';
 
 const EMOJI_CATEGORIES = {
@@ -22,7 +22,10 @@ interface EmojiPickerProps {
 export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<keyof typeof EMOJI_CATEGORIES>('symbols');
+  const [openUpward, setOpenUpward] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
   useEffect(() => {
@@ -34,6 +37,32 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open || !containerRef.current || !panelRef.current) return;
+
+    const updatePosition = () => {
+      if (!containerRef.current || !panelRef.current) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const panelRect = panelRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const margin = 12;
+
+      setAlignRight(containerRect.left + panelRect.width > viewportWidth - margin);
+      setOpenUpward(containerRect.bottom + 8 + panelRect.height > viewportHeight - margin && containerRect.top - 8 - panelRect.height > margin);
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
   }, [open]);
 
   const handleSelect = (emoji: string) => {
@@ -54,7 +83,12 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
       </Tooltip>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-3 z-50">
+        <div
+          ref={panelRef}
+          className={`absolute w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-xl border border-slate-200 p-3 z-50 ${
+            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+          } ${alignRight ? 'right-0' : 'left-0'}`}
+        >
           {/* Category tabs */}
           <div className="flex gap-1 mb-3 border-b border-slate-200 pb-2">
             {(Object.keys(EMOJI_CATEGORIES) as Array<keyof typeof EMOJI_CATEGORIES>).map((cat) => (
