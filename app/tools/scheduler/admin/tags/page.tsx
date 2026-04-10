@@ -205,6 +205,10 @@ export default function TagsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; sessionCount: number } | null>(null);
 
+  // Category delete state
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<{ category: string; tagCount: number } | null>(null);
+  const [deleteCategoryLoading, setDeleteCategoryLoading] = useState(false);
+
   // CSV Import
   const [csvImportOpen, setCsvImportOpen] = useState(false);
 
@@ -493,6 +497,30 @@ export default function TagsPage() {
     quickAddRef.current?.focus();
   };
 
+  // Delete entire category and all its tags
+  const executeCategoryDelete = async (category: string) => {
+    setDeleteCategoryLoading(true);
+    try {
+      const res = await fetch('/api/tags/categories/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, program_id: selectedProgramId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      // Remove from custom categories if present
+      setCustomCategories(prev => prev.filter(c => c !== category));
+      requestCache.invalidate(/\/api\/tags/);
+      await fetchTags();
+      showToast(`Category "${category}" and ${json.deleted} tag${json.deleted !== 1 ? 's' : ''} deleted`, 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete category', 'error');
+    } finally {
+      setDeleteCategoryLoading(false);
+      setDeleteCategoryConfirm(null);
+    }
+  };
+
   // ── Drag-and-drop category reassignment ─────────────────────
   const handleDragStart = (e: React.DragEvent, tagId: string) => {
     setDragTagId(tagId);
@@ -766,6 +794,39 @@ export default function TagsPage() {
         </div>
       )}
 
+      {/* Category Delete Confirmation Dialog */}
+      {deleteCategoryConfirm && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-700" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Delete &ldquo;{deleteCategoryConfirm.category}&rdquo; category?</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-5">
+              This will permanently delete the category and{' '}
+              <span className="font-semibold text-slate-900">
+                all {deleteCategoryConfirm.tagCount} tag{deleteCategoryConfirm.tagCount !== 1 ? 's' : ''}
+              </span>{' '}
+              in it. Tags will be removed from any sessions, venues, or staff they are assigned to. This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => setDeleteCategoryConfirm(null)}>
+                Cancel
+              </Button>
+              <button
+                onClick={() => executeCategoryDelete(deleteCategoryConfirm.category)}
+                disabled={deleteCategoryLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleteCategoryLoading ? 'Deleting...' : 'Delete Category & All Tags'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white px-4 sm:px-8 py-5 border-b border-slate-200 shrink-0">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -961,19 +1022,33 @@ export default function TagsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       {!isLockedTagCategory(category) && (
-                        <Tooltip text="Rename category">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRenamingCategory(category);
-                              setRenameCategoryValue(category);
-                            }}
-                            className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
-                            aria-label="Rename category"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        </Tooltip>
+                        <>
+                          <Tooltip text="Rename category">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRenamingCategory(category);
+                                setRenameCategoryValue(category);
+                              }}
+                              className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
+                              aria-label="Rename category"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip text="Delete category and all its tags">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteCategoryConfirm({ category, tagCount: categoryTags.length });
+                              }}
+                              className="p-1.5 rounded hover:bg-red-100 transition-colors text-slate-700 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus:outline-none"
+                              aria-label="Delete category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </Tooltip>
+                        </>
                       )}
                       <Tooltip text={`Add tag to ${category}`}>
                         <button
