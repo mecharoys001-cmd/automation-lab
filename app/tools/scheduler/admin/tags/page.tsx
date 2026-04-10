@@ -233,6 +233,11 @@ export default function TagsPage() {
   const spaceTypeCount = tags.filter(t => t.category === 'Space Types').length;
 
   const installDefaults = async () => {
+    if (!selectedProgramId) {
+      showToast('Please select a program first', 'error');
+      return;
+    }
+
     setInstallDefaultsLoading(true);
     try {
       const res = await fetch(`/api/seed/ensure-defaults?program_id=${selectedProgramId}`, { method: 'POST' });
@@ -249,6 +254,14 @@ export default function TagsPage() {
   };
 
   const fetchTags = useCallback(async () => {
+    if (!selectedProgramId) {
+      setTags([]);
+      setSessionCounts({});
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -265,8 +278,9 @@ export default function TagsPage() {
   }, [selectedProgramId]);
 
   useEffect(() => {
+    if (!selectedProgramId) return;
     fetchTags();
-  }, [fetchTags]);
+  }, [fetchTags, selectedProgramId]);
 
   // Load custom categories from localStorage on mount
   useEffect(() => {
