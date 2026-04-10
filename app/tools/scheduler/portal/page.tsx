@@ -104,6 +104,18 @@ export default function InstructorPortalPage() {
       const resolvedInstructor = instructors[0] as Instructor;
       setInstructor(resolvedInstructor);
 
+      // Derive programs from staff memberships (not sessions) so programs
+      // without published sessions still appear as toggle buttons
+      const uniquePrograms = Array.from(
+        new Map(
+          (instructors as (Instructor & { program: Program | null })[])
+            .filter((i) => i.program != null)
+            .map((i) => [i.program!.id, i.program!])
+        ).values()
+      );
+      setPrograms(uniquePrograms);
+      setActiveProgramIds(new Set(uniquePrograms.map(p => p.id)));
+
       // Fetch sessions using email to get sessions across ALL programs
       const sessParams = new URLSearchParams({
         email: authData.email,
@@ -119,13 +131,6 @@ export default function InstructorPortalPage() {
       const { sessions: sessionData } = await sessRes.json();
       const typedSessions = (sessionData as SessionDisplay[]) ?? [];
       setSessions(typedSessions);
-
-      // Derive unique programs from session data
-      const uniquePrograms = Array.from(
-        new Map(typedSessions.map((s: SessionDisplay) => [s.program_id, s.program])).values()
-      ).filter((p): p is Program => p != null);
-      setPrograms(uniquePrograms);
-      setActiveProgramIds(new Set(uniquePrograms.map(p => p.id)));
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
