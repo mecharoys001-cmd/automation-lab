@@ -454,15 +454,6 @@ export default function ImpactDashboard() {
           </div>
         </div>
 
-        <div style={{ marginTop: '1rem' }}>
-          <label style={labelStyle}>Tracking Method</label>
-          <select value={editExtTrackingMethod} onChange={(e) => setEditExtTrackingMethod(e.target.value)} style={{ ...inputStyle, maxWidth: '220px' }}>
-            <option value="per_use">per_use</option>
-            <option value="per_csv_upload">per_csv_upload</option>
-            <option value="per_schedule_run">per_schedule_run</option>
-          </select>
-        </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
           <div>
             <label style={labelStyle}>Run Frequency</label>
