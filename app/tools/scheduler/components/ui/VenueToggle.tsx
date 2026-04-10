@@ -3,6 +3,7 @@
 export interface VenueOption {
   id: string;
   name: string;
+  label?: string;
 }
 
 interface VenueToggleProps {
@@ -46,7 +47,7 @@ export function VenueToggle({
           <button
             key={venue.id}
             onClick={() => handleToggle(venue.id)}
-            title={venue.name}
+            title={venue.label ?? venue.name}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer max-w-[160px] ${
               isActive
                 ? 'text-white shadow-sm'
@@ -58,7 +59,7 @@ export function VenueToggle({
               className="inline-block w-2 h-2 rounded-full flex-shrink-0"
               style={{ backgroundColor: isActive ? '#FFFFFF' : color.dot }}
             />
-            <span className="truncate">{venue.name}</span>
+            <span className="truncate">{venue.label ?? venue.name}</span>
           </button>
         );
       })}

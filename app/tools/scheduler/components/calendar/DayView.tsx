@@ -235,7 +235,16 @@ export function DayView({
   // Use DB venues if provided, otherwise derive from event data
   const allVenues: VenueOption[] = useMemo(() => {
     if (venuesProp && venuesProp.length > 0) {
-      return venuesProp.map((v) => ({ id: v.name, name: v.name }));
+      const nameCounts = new Map<string, number>();
+      for (const venue of venuesProp) {
+        nameCounts.set(venue.name, (nameCounts.get(venue.name) ?? 0) + 1);
+      }
+
+      return venuesProp.map((v) => ({
+        id: v.id,
+        name: v.name,
+        label: (nameCounts.get(v.name) ?? 0) > 1 ? `${v.name} (${v.id.slice(0, 8)})` : v.name,
+      }));
     }
     const seen = new Map<string, string>();
     for (const event of events) {
@@ -243,7 +252,7 @@ export function DayView({
         seen.set(event.venue, event.venue);
       }
     }
-    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name, label: name }));
   }, [venuesProp, events]);
 
   // Always sync selectedVenues to include all available venues on view/data change
@@ -255,6 +264,12 @@ export function DayView({
   }, [allVenues]);
 
   const multiLane = selectedVenues.length > 1;
+  const hasDbVenues = !!(venuesProp && venuesProp.length > 0);
+  const venueLabelById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const v of allVenues) m.set(v.id, v.label ?? v.name);
+    return m;
+  }, [allVenues]);
 
   const { popoverState, showPopover, hidePopover, pinPopover, closePopover, handleEventClick } = useEventPopover();
   const [eventDetails, setEventDetails] = useState<Record<string, unknown> | null>(null);
@@ -346,9 +361,13 @@ export function DayView({
   // Filter events to only selected venues
   const filteredEvents = useMemo(
     () => multiLane
-      ? dayEvents.filter((e) => !e.venue || selectedVenues.includes(e.venue))
+      ? dayEvents.filter((e) =>
+          hasDbVenues
+            ? e.venueId ? selectedVenues.includes(e.venueId) : true
+            : !e.venue || selectedVenues.includes(e.venue),
+        )
       : dayEvents,
-    [dayEvents, multiLane, selectedVenues],
+    [dayEvents, multiLane, selectedVenues, hasDbVenues],
   );
 
   // Render grid starting 15 minutes (0.25 hours) before the visible start time
@@ -495,7 +514,7 @@ export function DayView({
                       laneIdx < selectedVenues.length - 1 ? 'border-r border-slate-100' : ''
                     }`}
                   >
-                    {venueId}
+                    {venueLabelById.get(venueId) ?? venueId}
                   </div>
                 ))}
               </div>
@@ -564,7 +583,7 @@ export function DayView({
               <div className="absolute inset-0 flex">
                 {selectedVenues.map((venueId, laneIdx) => {
                   const laneEvents = filteredEvents.filter(
-                    (e) => e.venue === venueId,
+                    (e) => hasDbVenues ? e.venueId === venueId : e.venue === venueId,
                   );
                   return (
                     <div
