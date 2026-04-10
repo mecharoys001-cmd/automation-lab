@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { getLockedTagReason, isLockedTagCategory } from '@/lib/tag-locking';
 
 export async function PATCH(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function PATCH(
     // Verify program access
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tag } = await (supabase.from('tags') as any)
-      .select('program_id')
+      .select('program_id, category')
       .eq('id', id)
       .single();
 
@@ -36,6 +37,21 @@ export async function PATCH(
 
     const body = await request.json();
 
+    // Enforce locked category: block name and category changes but allow emoji/description
+    if (isLockedTagCategory(tag.category)) {
+      if (body.name && body.name.trim() !== tag.name) {
+        return NextResponse.json(
+          { error: getLockedTagReason(tag.category) },
+          { status: 403 }
+        );
+      }
+      if ('category' in body && body.category !== tag.category) {
+        return NextResponse.json(
+          { error: `Tags in "${tag.category}" cannot be moved to another category` },
+          { status: 403 }
+        );
+      }
+    }
     console.log('[PATCH /api/tags] received body:', JSON.stringify(body));
 
     const updateData: { name?: string; description?: string | null; emoji?: string | null; category?: string | null } = {};
@@ -136,12 +152,19 @@ export async function DELETE(
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tagToDelete } = await (supabase.from('tags') as any)
-      .select('program_id')
+      .select('program_id, category')
       .eq('id', id)
       .single();
 
     if (!tagToDelete?.program_id) {
       return NextResponse.json({ error: 'Tag not found or has no program association' }, { status: 403 });
+    }
+
+    if (isLockedTagCategory(tagToDelete.category)) {
+      return NextResponse.json(
+        { error: getLockedTagReason(tagToDelete.category) },
+        { status: 403 }
+      );
     }
 
     const accessErr = await requireProgramAccess(auth.user, tagToDelete.program_id);
@@ -171,16 +194,36 @@ export async function DELETE(
       );
     }
 
-    // If force deleting, remove from session_tags first (DB cascade would handle it,
-    // but being explicit ensures clarity)
-    if (usageCount > 0 && force) {
+    // If force deleting, remove from all junction tables first
+    if (force) {
+      if (usageCount > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: unlinkError } = await (supabase.from('session_tags') as any)
+          .delete()
+          .eq('tag_id', id);
+
+        if (unlinkError) {
+          return NextResponse.json({ error: `Failed to unlink sessions: ${unlinkError.message}` }, { status: 500 });
+        }
+      }
+
+      // Clean up staff_tags if the table exists
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: unlinkError } = await (supabase.from('session_tags') as any)
+      const { error: staffErr } = await (supabase.from('staff_tags') as any)
         .delete()
         .eq('tag_id', id);
+      if (staffErr && staffErr.code !== '42P01') {
+        // 42P01 = relation does not exist — ignore if table not yet created
+        console.warn('[DELETE /api/tags] staff_tags cleanup warning:', staffErr.message);
+      }
 
-      if (unlinkError) {
-        return NextResponse.json({ error: `Failed to unlink sessions: ${unlinkError.message}` }, { status: 500 });
+      // Clean up venue_tags if the table exists
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: venueErr } = await (supabase.from('venue_tags') as any)
+        .delete()
+        .eq('tag_id', id);
+      if (venueErr && venueErr.code !== '42P01') {
+        console.warn('[DELETE /api/tags] venue_tags cleanup warning:', venueErr.message);
       }
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical, Lock } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +9,7 @@ import { EmojiPicker } from '../../components/ui/EmojiPicker';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
+import { getLockedTagReason, isLockedTagCategory, normalizeTagCategory } from '@/lib/tag-locking';
 
 // ── Toast Notification ───────────────────────────────────────
 
@@ -275,17 +276,9 @@ export default function TagsPage() {
     }
   }, [customCategories]);
 
-  // Normalize category names — consolidate singular/plural variants
-  const normalizeCategory = (cat: string): string => {
-    const lower = cat.toLowerCase().trim();
-    if (lower === 'subject' || lower === 'subjects' || lower === 'event types') return 'Event Type';
-    if (lower === 'event type') return 'Event Type';
-    return cat;
-  };
-
   // Get all unique categories (from tags + custom ones)
-  const categoriesFromTags = Array.from(new Set(tags.map(t => normalizeCategory(t.category || 'General'))));
-  const categories = Array.from(new Set([...categoriesFromTags, ...customCategories.map(normalizeCategory)])).sort();
+  const categoriesFromTags = Array.from(new Set(tags.map(t => normalizeTagCategory(t.category || 'General'))));
+  const categories = Array.from(new Set([...categoriesFromTags, ...customCategories.map(normalizeTagCategory)])).sort();
 
   // Resolve the tag object being dragged (for ghost preview)
   const draggedTag = useMemo(() => dragTagId ? tags.find(t => t.id === dragTagId) ?? null : null, [dragTagId, tags]);
@@ -317,7 +310,7 @@ export default function TagsPage() {
 
       // Create tags sequentially
       let successCount = 0;
-      let failedTags: string[] = [];
+      const failedTags: string[] = [];
 
       for (const tagName of tagNames) {
         try {
@@ -543,8 +536,14 @@ export default function TagsPage() {
     const tag = tags.find(t => t.id === tagId);
     if (!tag) return;
 
-    const sourceCategory = normalizeCategory(tag.category || 'General');
+    const sourceCategory = normalizeTagCategory(tag.category || 'General');
     if (sourceCategory === targetCategory) return; // Same category — no-op
+
+    // Prevent moving locked tags
+    if (isLockedTagCategory(tag.category)) {
+      showToast(getLockedTagReason(tag.category), 'error');
+      return;
+    }
 
     // Optimistic update
     const previousTags = [...tags];
@@ -599,7 +598,7 @@ export default function TagsPage() {
 
       // Create tags sequentially
       let successCount = 0;
-      let failedTags: string[] = [];
+      const failedTags: string[] = [];
 
       for (const tagName of tagNames) {
         try {
@@ -868,7 +867,7 @@ export default function TagsPage() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
         <div className="space-y-4">
           {categories.map(category => {
-            const categoryTags = tags.filter(t => normalizeCategory(t.category || 'General') === category);
+            const categoryTags = tags.filter(t => normalizeTagCategory(t.category || 'General') === category);
             const isCollapsed = collapsedCategories.has(category);
 
             return (
@@ -955,7 +954,7 @@ export default function TagsPage() {
                       <div className={`px-5 py-6 text-center border-t border-slate-100 transition-colors ${
                         dragOverCategory === category ? 'bg-blue-50' : ''
                       }`}>
-                        {draggedTag && dragOverCategory === category && normalizeCategory(draggedTag.category || 'General') !== category ? (
+                        {draggedTag && dragOverCategory === category && normalizeTagCategory(draggedTag.category || 'General') !== category ? (
                           <div className="flex items-center gap-3 px-5 py-3 border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-lg mx-auto max-w-md animate-pulse-subtle">
                             <span className="text-2xl shrink-0 opacity-50">{draggedTag.emoji || '🎵'}</span>
                             <span className="text-sm font-semibold text-blue-700 opacity-70">{draggedTag.name}</span>
@@ -986,7 +985,9 @@ export default function TagsPage() {
                       const isDeleting = deletingId === tag.id;
                       const sessionCount = sessionCounts[tag.id] || 0;
                       const isDragging = dragTagId === tag.id;
-                      const canDrag = !isEditing && !isDeleting;
+                      const locked = isLockedTagCategory(tag.category);
+                      const lockedReason = getLockedTagReason(tag.category);
+                      const canDrag = !isEditing && !isDeleting && !locked;
 
                       return (
                         <div
@@ -1050,45 +1051,68 @@ export default function TagsPage() {
                           ) : (
                             // View Mode
                             <div className="flex items-center gap-3">
-                              <Tooltip text="Drag to move to another category">
-                                <span
-                                  className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
-                                  aria-label="Drag to reorder"
-                                >
-                                  <GripVertical className="w-4 h-4" />
-                                </span>
-                              </Tooltip>
+                              {locked ? (
+                                <Tooltip text={lockedReason}>
+                                  <span className="text-slate-200 shrink-0 cursor-not-allowed" aria-label="Locked — cannot drag">
+                                    <Lock className="w-4 h-4" />
+                                  </span>
+                                </Tooltip>
+                              ) : (
+                                <Tooltip text="Drag to move to another category">
+                                  <span
+                                    className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
+                                    aria-label="Drag to reorder"
+                                  >
+                                    <GripVertical className="w-4 h-4" />
+                                  </span>
+                                </Tooltip>
+                              )}
                               <span className="text-2xl shrink-0">{tag.emoji || '🎵'}</span>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-semibold text-slate-900">{tag.name}</span>
+                                  {locked && (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                                      Core
+                                    </span>
+                                  )}
                                 </div>
                                 {getDescriptionForTag(tag) && (
                                   <p className="text-xs text-slate-600 mt-0.5">{getDescriptionForTag(tag)}</p>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <Tooltip text="Edit tag">
-                                  <button
-                                    onClick={() => startEdit(tag)}
-                                    className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-700"
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </button>
-                                </Tooltip>
-                                <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} event${sessionCount === 1 ? '' : 's'} — click to delete` : 'Delete tag'}>
-                                  <button
-                                    onClick={() => deleteTag(tag.id, tag.name)}
-                                    disabled={isDeleting}
-                                    className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {isDeleting ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="w-4 h-4" />
-                                    )}
-                                  </button>
-                                </Tooltip>
+                                {locked ? (
+                                  <Tooltip text={lockedReason}>
+                                    <span className="p-1.5 text-slate-200 cursor-not-allowed" aria-label="Locked">
+                                      <Lock className="w-3.5 h-3.5" />
+                                    </span>
+                                  </Tooltip>
+                                ) : (
+                                  <>
+                                    <Tooltip text="Edit tag">
+                                      <button
+                                        onClick={() => startEdit(tag)}
+                                        className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-700 hover:text-blue-700"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                      </button>
+                                    </Tooltip>
+                                    <Tooltip text={sessionCount > 0 ? `Used in ${sessionCount} event${sessionCount === 1 ? '' : 's'} — click to delete` : 'Delete tag'}>
+                                      <button
+                                        onClick={() => deleteTag(tag.id, tag.name)}
+                                        disabled={isDeleting}
+                                        className="p-1.5 rounded hover:bg-red-50 transition-colors text-slate-700 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        {isDeleting ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </Tooltip>
+                                  </>
+                                )}
                               </div>
                             </div>
                           )}
@@ -1096,7 +1120,7 @@ export default function TagsPage() {
                       );
                     })}
                         {/* Ghost card preview for the tag being dragged into this category */}
-                        {draggedTag && dragOverCategory === category && normalizeCategory(draggedTag.category || 'General') !== category && (
+                        {draggedTag && dragOverCategory === category && normalizeTagCategory(draggedTag.category || 'General') !== category && (
                           <div className="px-5 py-3 bg-blue-50/60 border-2 border-dashed border-blue-300 transition-all">
                             <div className="flex items-center gap-3 opacity-60">
                               <span className="text-slate-300 shrink-0">
