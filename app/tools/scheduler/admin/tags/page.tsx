@@ -182,6 +182,7 @@ export default function TagsPage() {
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
   const [quickAddCategory, setQuickAddCategory] = useState('Event Type');
+  const [quickAddEmoji, setQuickAddEmoji] = useState('🏷️');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [quickAddSuccess, setQuickAddSuccess] = useState(false);
@@ -198,6 +199,7 @@ export default function TagsPage() {
   // Per-category quick add
   const [categoryQuickAdd, setCategoryQuickAdd] = useState<string | null>(null);
   const [categoryQuickAddValue, setCategoryQuickAddValue] = useState('');
+  const [categoryQuickAddEmoji, setCategoryQuickAddEmoji] = useState('🏷️');
   const [categoryQuickAddLoading, setCategoryQuickAddLoading] = useState(false);
 
   // Delete state
@@ -323,7 +325,7 @@ export default function TagsPage() {
 
       for (const tagName of tagNames) {
         try {
-          const emoji = getEmojiForTag(tagName);
+          const emoji = quickAddEmoji !== '🏷️' ? quickAddEmoji : getEmojiForTag(tagName);
           const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
 
           const payload: Record<string, string> = {
@@ -373,6 +375,7 @@ export default function TagsPage() {
       }
 
       setQuickAddValue('');
+      setQuickAddEmoji('🏷️');
     } catch (err) {
       setQuickAddError(err instanceof Error ? err.message : 'Failed to create tags');
     } finally {
@@ -667,7 +670,7 @@ export default function TagsPage() {
 
       for (const tagName of tagNames) {
         try {
-          const emoji = getEmojiForTag(tagName);
+          const emoji = quickAddEmoji !== '🏷️' ? quickAddEmoji : getEmojiForTag(tagName);
           const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
 
           const payload: Record<string, string> = {
@@ -717,6 +720,7 @@ export default function TagsPage() {
       }
 
       setCategoryQuickAddValue('');
+      setCategoryQuickAddEmoji('🏷️');
       setCategoryQuickAdd(null);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to create tags', 'error');
@@ -875,6 +879,13 @@ export default function TagsPage() {
       {/* Quick Add */}
       <div className="bg-white px-4 sm:px-8 py-4 border-b border-slate-200 shrink-0">
         <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+              Icon
+            </label>
+            <EmojiPicker value={quickAddEmoji} onChange={setQuickAddEmoji} />
+          </div>
+
           <div className="flex-1">
             <label htmlFor="quick-add-tag" className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
               Quick Add Tag
@@ -1056,6 +1067,7 @@ export default function TagsPage() {
                             e.stopPropagation();
                             setCategoryQuickAdd(category);
                             setCategoryQuickAddValue('');
+                            setCategoryQuickAddEmoji('🏷️');
                           }}
                           className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
                           aria-label="Add new tag to this category"
@@ -1069,7 +1081,13 @@ export default function TagsPage() {
                   
                   {/* Quick Add Field for this category */}
                   {categoryQuickAdd === category && (
-                    <div className="px-5 pb-3 flex gap-2">
+                    <div className="px-5 pb-3 flex gap-2 items-end">
+                      <div className="shrink-0">
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                          Icon
+                        </label>
+                        <EmojiPicker value={categoryQuickAddEmoji} onChange={setCategoryQuickAddEmoji} className="[&>button]:w-9 [&>button]:h-9 [&>button]:text-2xl" />
+                      </div>
                       <input
                         type="text"
                         value={categoryQuickAddValue}
@@ -1126,6 +1144,7 @@ export default function TagsPage() {
                               onClick={() => {
                                 setCategoryQuickAdd(category);
                                 setCategoryQuickAddValue('');
+                                setCategoryQuickAddEmoji('🏷️');
                               }}
                               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                             >
