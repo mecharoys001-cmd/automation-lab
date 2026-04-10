@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: membership } = await (supabase.from('staff') as any)
           .select('id')
-          .eq('id', auth.user.id)
+          .ilike('email', auth.user.email)
           .eq('program_id', programId)
           .eq('is_active', true)
           .limit(1);
