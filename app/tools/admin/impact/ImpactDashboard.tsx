@@ -67,6 +67,12 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.03em',
 };
 
+const TRACKING_METHOD_OPTIONS = [
+  { value: 'per_use', label: 'Per Use' },
+  { value: 'per_csv_upload', label: 'Per CSV Upload' },
+  { value: 'per_schedule_run', label: 'Per Schedule Run' },
+] as const;
+
 export default function ImpactDashboard() {
   const [stats, setStats] = useState<ToolUsageStats[]>([]);
   const [configs, setConfigs] = useState<ToolConfig[]>([]);
@@ -113,6 +119,7 @@ export default function ImpactDashboard() {
   const [newHours, setNewHours] = useState('0');
   const [newMinutes, setNewMinutes] = useState('0');
   const [newTrackingNotes, setNewTrackingNotes] = useState('');
+  const [newTrackingMethod, setNewTrackingMethod] = useState('per_use');
   const [newDescription, setNewDescription] = useState('');
   const [newRunFrequency, setNewRunFrequency] = useState('');
   const [newCustomInterval, setNewCustomInterval] = useState('30');
@@ -301,7 +308,7 @@ export default function ImpactDashboard() {
           tool_id: newToolId,
           display_name: newDisplayName,
           minutes_per_use: minutes,
-          tracking_method: 'per_use',
+          tracking_method: newTrackingMethod,
           description: newDescription || null,
           is_external: true,
           tracking_notes: newTrackingNotes || null,
@@ -321,6 +328,7 @@ export default function ImpactDashboard() {
       setNewHours('0');
       setNewMinutes('0');
       setNewTrackingNotes('');
+      setNewTrackingMethod('per_use');
       setNewDescription('');
       setNewRunFrequency('');
       setNewCustomInterval('30');
@@ -378,9 +386,9 @@ export default function ImpactDashboard() {
               onChange={(e) => setEditTrackingMethod(e.target.value)}
               style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#1a1a2e', padding: '3px 8px', fontSize: '12px' }}
             >
-              <option value="per_use">per_use</option>
-              <option value="per_csv_upload">per_csv_upload</option>
-              <option value="per_schedule_run">per_schedule_run</option>
+              {TRACKING_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </div>
           <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
@@ -400,7 +408,7 @@ export default function ImpactDashboard() {
         setEditDays(String(Math.floor(total / (24 * 60))));
         setEditHours(String(Math.floor((total % (24 * 60)) / 60)));
         setEditMinutes(String(total % 60));
-        setEditTrackingMethod(s.tracking_method);
+        setEditTrackingMethod(s.tracking_method || 'per_use');
         setEditingTool(s.tool_id);
       }} style={{ cursor: 'pointer', borderBottom: '1px dashed #94a3b8' }} title="Click to edit time/use and tracking method">
         <strong>{formatMinutesPerUse(s.minutes_per_use)}</strong>
@@ -420,6 +428,14 @@ export default function ImpactDashboard() {
             <input type="text" value={editExtDisplayName} onChange={(e) => setEditExtDisplayName(e.target.value)} style={inputStyle} />
           </div>
           <div>
+            <label style={labelStyle}>Tracking Method</label>
+            <select value={editExtTrackingMethod} onChange={(e) => setEditExtTrackingMethod(e.target.value)} style={inputStyle}>
+              {TRACKING_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label style={labelStyle}>Time Saved per Use</label>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -436,15 +452,6 @@ export default function ImpactDashboard() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div style={{ marginTop: '1rem' }}>
-          <label style={labelStyle}>Tracking Method</label>
-          <select value={editExtTrackingMethod} onChange={(e) => setEditExtTrackingMethod(e.target.value)} style={{ ...inputStyle, maxWidth: '220px' }}>
-            <option value="per_use">per_use</option>
-            <option value="per_csv_upload">per_csv_upload</option>
-            <option value="per_schedule_run">per_schedule_run</option>
-          </select>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
@@ -721,13 +728,13 @@ export default function ImpactDashboard() {
                 setEditDays(String(Math.floor(total / (24 * 60))));
                 setEditHours(String(Math.floor((total % (24 * 60)) / 60)));
                 setEditMinutes(String(total % 60));
-                setEditTrackingMethod(s.tracking_method);
+                setEditTrackingMethod(s.tracking_method || 'per_use');
                 setEditingTool(s.tool_id);
               }}
               style={{ cursor: 'pointer', borderBottom: '1px dashed #94a3b8' }}
               title="Click to edit"
             >
-              Tracking: {s.tracking_method}
+              Tracking: {TRACKING_METHOD_OPTIONS.find((option) => option.value === s.tracking_method)?.label || s.tracking_method}
             </span>
           )}
           {s.last_used && <span>Last used: {new Date(s.last_used).toLocaleDateString()}</span>}
@@ -918,8 +925,21 @@ export default function ImpactDashboard() {
               </div>
             </div>
 
-            <div style={{ marginTop: '1rem' }}>
-              <label style={labelStyle}>Time Saved per Use</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              <div>
+                <label style={labelStyle}>Tracking Method</label>
+                <select
+                  value={newTrackingMethod}
+                  onChange={(e) => setNewTrackingMethod(e.target.value)}
+                  style={inputStyle}
+                >
+                  {TRACKING_METHOD_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Time Saved per Use</label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <input type="number" min="0" value={newDays} onChange={(e) => setNewDays(e.target.value)} style={{ ...inputStyle, width: '60px', textAlign: 'center' }} />
@@ -934,6 +954,8 @@ export default function ImpactDashboard() {
                   <span style={{ fontSize: '12px', color: '#64748b' }}>min</span>
                 </div>
               </div>
+            </div>
+
             </div>
 
             <div style={{ marginTop: '1rem' }}>
