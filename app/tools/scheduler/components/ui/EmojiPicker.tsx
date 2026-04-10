@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Tooltip } from './Tooltip';
 
 const EMOJI_CATEGORIES = {
@@ -22,16 +23,25 @@ interface EmojiPickerProps {
 export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<keyof typeof EMOJI_CATEGORIES>('symbols');
-  const [openUpward, setOpenUpward] = useState(false);
-  const [alignRight, setAlignRight] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 320 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   // Close on click outside
   useEffect(() => {
     if (!open) return;
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        panelRef.current && !panelRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     };
@@ -40,19 +50,31 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open || !containerRef.current || !panelRef.current) return;
+    if (!open || !buttonRef.current || !panelRef.current) return;
 
     const updatePosition = () => {
-      if (!containerRef.current || !panelRef.current) return;
+      if (!buttonRef.current || !panelRef.current) return;
 
-      const containerRect = containerRef.current.getBoundingClientRect();
+      const buttonRect = buttonRef.current.getBoundingClientRect();
       const panelRect = panelRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const margin = 12;
+      const gap = 8;
 
-      setAlignRight(containerRect.left + panelRect.width > viewportWidth - margin);
-      setOpenUpward(containerRect.bottom + 8 + panelRect.height > viewportHeight - margin && containerRect.top - 8 - panelRect.height > margin);
+      let left = buttonRect.left;
+      if (left + panelRect.width > viewportWidth - margin) {
+        left = viewportWidth - panelRect.width - margin;
+      }
+      left = Math.max(margin, left);
+
+      let top = buttonRect.bottom + gap;
+      if (top + panelRect.height > viewportHeight - margin && buttonRect.top - gap - panelRect.height > margin) {
+        top = buttonRect.top - panelRect.height - gap;
+      }
+      top = Math.max(margin, Math.min(top, viewportHeight - panelRect.height - margin));
+
+      setPanelStyle({ top, left, width: Math.min(320, viewportWidth - margin * 2) });
     };
 
     updatePosition();
@@ -74,6 +96,7 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
     <div ref={containerRef} className={`relative inline-block ${className}`}>
       <Tooltip text="Click to change emoji">
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => setOpen(!open)}
           className="w-16 h-16 rounded-lg border-2 border-slate-200 hover:border-blue-400 bg-white flex items-center justify-center text-4xl transition-colors cursor-pointer"
@@ -82,12 +105,11 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
         </button>
       </Tooltip>
 
-      {open && (
+      {open && portalReady && createPortal(
         <div
           ref={panelRef}
-          className={`absolute w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-xl border border-slate-200 p-3 z-50 ${
-            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
-          } ${alignRight ? 'right-0' : 'left-0'}`}
+          className="fixed bg-white rounded-lg shadow-xl border border-slate-200 p-3 z-[9999]"
+          style={{ top: panelStyle.top, left: panelStyle.left, width: panelStyle.width, maxWidth: 'calc(100vw - 1.5rem)' }}
         >
           {/* Category tabs */}
           <div className="flex gap-1 mb-3 border-b border-slate-200 pb-2">
@@ -125,13 +147,13 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
             ))}
           </div>
 
-          {/* Quick search (optional - can add later) */}
           <div className="mt-2 pt-2 border-t border-slate-200">
             <p className="text-xs text-slate-700 text-center">
               Click an emoji to select
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
