@@ -134,7 +134,35 @@ export async function DELETE(
       );
     }
 
-    // 4. staff / instructors
+    // 4. notification_log rows for this program's staff
+    const { data: staffRows, error: staffLookupErr } = await sb
+      .from('staff')
+      .select('id')
+      .eq('program_id', id);
+
+    if (staffLookupErr) {
+      return NextResponse.json(
+        { error: `Failed to load staff before deletion: ${staffLookupErr.message}` },
+        { status: 500 },
+      );
+    }
+
+    const staffIds = (staffRows ?? []).map((row: { id: string }) => row.id);
+    if (staffIds.length > 0) {
+      const { error: notifErr } = await sb
+        .from('notification_log')
+        .delete()
+        .in('instructor_id', staffIds);
+
+      if (notifErr) {
+        return NextResponse.json(
+          { error: `Failed to delete notification log rows: ${notifErr.message}` },
+          { status: 500 },
+        );
+      }
+    }
+
+    // 5. staff / instructors
     const { error: staffErr } = await sb
       .from('staff')
       .delete()
@@ -147,7 +175,7 @@ export async function DELETE(
       );
     }
 
-    // 5. venues
+    // 6. venues
     const { error: venueErr } = await sb
       .from('venues')
       .delete()
