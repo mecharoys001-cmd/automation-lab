@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Picker from 'emoji-picker-react';
+import Picker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import { Tooltip } from './Tooltip';
 
@@ -106,9 +106,11 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
             searchPlaceholder="Search icons"
             width={350}
             height={420}
+            theme={Theme.LIGHT}
+            emojiStyle={EmojiStyle.NATIVE}
             previewConfig={{ showPreview: false }}
             skinTonesDisabled
-            lazyLoadEmojis
+            lazyLoadEmojis={false}
             autoFocusSearch={false}
           />
         </div>,
