@@ -19,6 +19,8 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const displayValue = value?.trim() || '🙂';
+  const isPlaceholder = !value?.trim();
 
   useEffect(() => {
     setPortalReady(true);
@@ -89,9 +91,14 @@ export function EmojiPicker({ value, onChange, className = '' }: EmojiPickerProp
           ref={buttonRef}
           type="button"
           onClick={() => setOpen(!open)}
-          className="w-16 h-16 rounded-lg border-2 border-slate-200 hover:border-blue-400 bg-white flex items-center justify-center text-4xl transition-colors cursor-pointer"
+          className={`w-16 h-16 rounded-lg border-2 bg-white flex items-center justify-center transition-colors cursor-pointer ${
+            isPlaceholder
+              ? 'border-dashed border-slate-300 text-3xl text-slate-400 hover:border-blue-400 hover:text-blue-500'
+              : 'border-slate-200 hover:border-blue-400 text-4xl'
+          }`}
+          aria-label={isPlaceholder ? 'Choose an emoji icon' : `Selected emoji ${displayValue}`}
         >
-          {value}
+          {displayValue}
         </button>
       </Tooltip>
 
