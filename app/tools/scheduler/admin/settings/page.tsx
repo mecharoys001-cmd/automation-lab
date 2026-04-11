@@ -438,7 +438,10 @@ export default function SettingsPage() {
     setConfirmDeleteProgram(null);
     try {
       const res = await fetch(`/api/programs/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete program');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || 'Failed to delete program');
+      }
       await refetchPrograms();
     } catch (err) {
       setProgramError(err instanceof Error ? err.message : 'Delete failed');
