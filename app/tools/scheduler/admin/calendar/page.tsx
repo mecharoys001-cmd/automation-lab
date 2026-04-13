@@ -1103,7 +1103,7 @@ export default function CalendarPage() {
       <div className="h-full flex items-center justify-center p-8">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center max-w-md">
           <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-slate-900 mb-2">School Calendar</h1>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Program Calendar</h1>
           <p className="text-sm text-slate-600">
             Select a program to manage its calendar entries.
           </p>
@@ -1225,7 +1225,7 @@ export default function CalendarPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Calendar</h1>
+              <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">Program Calendar</h1>
               <p className="text-sm text-slate-600 mt-1">
                 Manage blackout dates, early dismissals, and staff exceptions.
               </p>
@@ -1827,7 +1827,7 @@ export default function CalendarPage() {
       <CsvImportDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        title="Import School Calendar from CSV"
+        title="Import Program Calendar from CSV"
         columns={CALENDAR_CSV_COLUMNS}
         validateRow={validateCalendarCsvRow}
         onImport={async (csvRows: CsvRow[]) => {

@@ -41,7 +41,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Calendar',         href: adminPath(),              icon: Calendar,       tooltip: 'View and manage session calendar' },
   { label: 'Tags',             href: adminPath('tags'),        icon: Tags,           tooltip: 'Create and manage session tags' },
   { label: 'Staff & Venues',   href: adminPath('people'),      icon: Users,          tooltip: 'Manage staff, venues, and availability' },
-  { label: 'School Calendar',  href: adminPath('calendar'),    icon: Clock,          tooltip: 'Manage school events and special dates' },
+  { label: 'Program Calendar',  href: adminPath('calendar'),    icon: Clock,          tooltip: 'Manage program events and special dates' },
   { label: 'Exceptions',       href: adminPath('exceptions'),  icon: AlertTriangle,  tooltip: 'Review and resolve session conflicts' },
   { label: 'Reports',          href: adminPath('reports'),     icon: BarChart2,      tooltip: 'View session reports and export data' },
   { label: 'Versions',         href: adminPath('versions'),    icon: History,        tooltip: 'Save, publish, and revert schedules' },

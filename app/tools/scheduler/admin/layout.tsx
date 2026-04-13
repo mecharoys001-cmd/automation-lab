@@ -46,7 +46,7 @@ const adminNavItems: AdminNavItem[] = [
   { href: '/admin/event-templates', label: 'Event Templates', icon: GraduationCap, tooltip: 'Event Templates', minRole: 'standard' },
   { href: '/admin/tags', label: 'Tags', icon: Tags, tooltip: 'Tags', minRole: 'standard' },
   { href: '/admin/people', label: 'Staff & Venues', icon: Users, tooltip: 'Staff & Venues', minRole: 'standard' },
-  { href: '/admin/calendar', label: 'School Calendar', icon: Calendar, tooltip: 'School Calendar', minRole: 'standard' },
+  { href: '/admin/calendar', label: 'Program Calendar', icon: Calendar, tooltip: 'Program Calendar', minRole: 'standard' },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3, tooltip: 'Reports', minRole: 'standard' },
   { href: '/admin/versions', label: 'Versions', icon: GitBranch, tooltip: 'Versions', minRole: 'standard' },
 
