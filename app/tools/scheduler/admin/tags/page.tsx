@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Check, AlertTriangle, Plus, ChevronDown, FolderOpen, X, Download, Upload, GripVertical, Square, CheckSquare, MinusSquare } from 'lucide-react';
 import { useProgram } from '../ProgramContext';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Button } from '../../components/ui/Button';
 import { EmojiPicker } from '../../components/ui/EmojiPicker';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
+import { Modal, ModalButton } from '../../components/ui/Modal';
 import type { CsvRow } from '@/lib/csvDedup';
 import { requestCache } from '@/lib/requestCache';
 import { getLockedCategoryReason, isLockedTagCategory, normalizeTagCategory } from '@/lib/tag-locking';
@@ -215,6 +216,12 @@ export default function TagsPage() {
 
   // CSV Import
   const [csvImportOpen, setCsvImportOpen] = useState(false);
+
+  // Bulk selection
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteForce, setBulkDeleteForce] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   // Install defaults
   const [installDefaultsLoading, setInstallDefaultsLoading] = useState(false);
@@ -625,6 +632,82 @@ export default function TagsPage() {
     if (dragExpandTimer.current) { clearTimeout(dragExpandTimer.current); dragExpandTimer.current = null; }
   };
 
+  // ── Bulk selection helpers ────────────────────────────────────
+  const toggleTagSelection = (tagId: string) => {
+    setSelectedTagIds(prev => {
+      const next = new Set(prev);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+  };
+
+  const toggleCategorySelection = (category: string) => {
+    const categoryTags = tags.filter(t => normalizeTagCategory(t.category || 'General') === category);
+    const categoryIds = categoryTags.map(t => t.id);
+    const allSelected = categoryIds.length > 0 && categoryIds.every(id => selectedTagIds.has(id));
+
+    setSelectedTagIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        categoryIds.forEach(id => next.delete(id));
+      } else {
+        categoryIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedTagIds(new Set());
+
+  const selectedTagsInUseCount = useMemo(() => {
+    let count = 0;
+    for (const id of selectedTagIds) {
+      if ((sessionCounts[id] || 0) > 0) count++;
+    }
+    return count;
+  }, [selectedTagIds, sessionCounts]);
+
+  const selectedTotalSessionLinks = useMemo(() => {
+    let total = 0;
+    for (const id of selectedTagIds) {
+      total += sessionCounts[id] || 0;
+    }
+    return total;
+  }, [selectedTagIds, sessionCounts]);
+
+  const executeBulkDelete = async () => {
+    setBulkDeleteLoading(true);
+    try {
+      const res = await fetch('/api/tags/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tag_ids: Array.from(selectedTagIds),
+          program_id: selectedProgramId,
+          force: bulkDeleteForce,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+      requestCache.invalidate(/\/api\/tags/);
+      await fetchTags();
+
+      const removedMsg = json.removedFromSessions > 0
+        ? ` and removed from ${json.removedFromSessions} session assignment${json.removedFromSessions === 1 ? '' : 's'}`
+        : '';
+      showToast(`${json.deleted} tag${json.deleted === 1 ? '' : 's'} deleted${removedMsg}`, 'success');
+      clearSelection();
+      setBulkDeleteModalOpen(false);
+      setBulkDeleteForce(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Bulk delete failed', 'error');
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  };
+
   // Rename category via bulk API
   const handleCategoryRename = async (oldName: string) => {
     const trimmed = renameCategoryValue.trim();
@@ -1010,6 +1093,91 @@ export default function TagsPage() {
         )}
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedTagIds.size > 0 && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 sm:px-8 py-3 shrink-0 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">
+              {selectedTagIds.size} tag{selectedTagIds.size === 1 ? '' : 's'} selected
+            </span>
+            <button
+              onClick={clearSelection}
+              className="text-xs text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear selection
+            </button>
+          </div>
+          <button
+            onClick={() => { setBulkDeleteForce(false); setBulkDeleteModalOpen(true); }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Selected
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal
+        open={bulkDeleteModalOpen}
+        onClose={() => { setBulkDeleteModalOpen(false); setBulkDeleteForce(false); }}
+        title={`Delete ${selectedTagIds.size} Tag${selectedTagIds.size === 1 ? '' : 's'}?`}
+        width="480px"
+        footer={
+          <>
+            <ModalButton variant="secondary" onClick={() => { setBulkDeleteModalOpen(false); setBulkDeleteForce(false); }}>
+              Cancel
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              loading={bulkDeleteLoading}
+              onClick={executeBulkDelete}
+              disabled={selectedTagsInUseCount > 0 && !bulkDeleteForce}
+            >
+              {bulkDeleteLoading
+                ? 'Deleting...'
+                : bulkDeleteForce
+                  ? `Delete ${selectedTagIds.size} Tag${selectedTagIds.size === 1 ? '' : 's'} & Remove from Sessions`
+                  : `Delete ${selectedTagIds.size} Tag${selectedTagIds.size === 1 ? '' : 's'}`}
+            </ModalButton>
+          </>
+        }
+      >
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-slate-600">
+            You are about to permanently delete{' '}
+            <span className="font-semibold text-slate-900">{selectedTagIds.size} tag{selectedTagIds.size === 1 ? '' : 's'}</span>.
+            This action cannot be undone.
+          </p>
+
+          {selectedTagsInUseCount > 0 && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-900">
+                    {selectedTagsInUseCount} of the selected tag{selectedTagsInUseCount === 1 ? ' is' : 's are'} currently used by sessions
+                    ({selectedTotalSessionLinks} total session assignment{selectedTotalSessionLinks === 1 ? '' : 's'}).
+                  </p>
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkDeleteForce}
+                      onChange={(e) => setBulkDeleteForce(e.target.checked)}
+                      className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="text-sm text-amber-800">
+                      Force delete: remove these tags from all sessions before deleting
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
       {/* Tags List (Grouped by Category) */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
         <div className="space-y-4">
@@ -1058,16 +1226,33 @@ export default function TagsPage() {
                       </Button>
                     </div>
                   ) : (
-                  <button
-                    onClick={() => toggleCategory(category)}
+                  <div
                     className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <ChevronDown className={`w-4 h-4 text-slate-700 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
-                      <h3 className="text-sm font-bold text-slate-900">{category}</h3>
-                      <span className="text-xs text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
-                        {categoryTags.length}
-                      </span>
+                      {/* Select-all checkbox for category */}
+                      {categoryTags.length > 0 && (() => {
+                        const catIds = categoryTags.map(t => t.id);
+                        const allSelected = catIds.every(id => selectedTagIds.has(id));
+                        const someSelected = !allSelected && catIds.some(id => selectedTagIds.has(id));
+                        const Icon = allSelected ? CheckSquare : someSelected ? MinusSquare : Square;
+                        return (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleCategorySelection(category); }}
+                            className="p-0.5 rounded hover:bg-slate-200 transition-colors text-slate-400 hover:text-blue-600 shrink-0"
+                            aria-label={`Select all tags in ${category}`}
+                          >
+                            <Icon className="w-4 h-4" />
+                          </button>
+                        );
+                      })()}
+                      <button onClick={() => toggleCategory(category)} className="flex items-center gap-3">
+                        <ChevronDown className={`w-4 h-4 text-slate-700 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                        <h3 className="text-sm font-bold text-slate-900">{category}</h3>
+                        <span className="text-xs text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full font-medium">
+                          {categoryTags.length}
+                        </span>
+                      </button>
                     </div>
                     <div className="flex items-center gap-1">
                       {!isLockedTagCategory(category) && (
@@ -1115,9 +1300,9 @@ export default function TagsPage() {
                         </button>
                       </Tooltip>
                     </div>
-                  </button>
+                  </div>
                   )}
-                  
+
                   {/* Quick Add Field for this category */}
                   {categoryQuickAdd === category && (
                     <div className="px-5 pb-3 flex flex-col gap-2">
@@ -1278,6 +1463,15 @@ export default function TagsPage() {
                           ) : (
                             // View Mode
                             <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => toggleTagSelection(tag.id)}
+                                className="p-0.5 rounded hover:bg-slate-200 transition-colors text-slate-400 hover:text-blue-600 shrink-0"
+                                aria-label={selectedTagIds.has(tag.id) ? 'Deselect tag' : 'Select tag'}
+                              >
+                                {selectedTagIds.has(tag.id)
+                                  ? <CheckSquare className="w-4 h-4 text-blue-600" />
+                                  : <Square className="w-4 h-4" />}
+                              </button>
                               <Tooltip text="Drag to move to another category">
                                 <span
                                   className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
