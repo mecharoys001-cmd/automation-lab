@@ -119,6 +119,15 @@ export function InstructorEditModal({
     if (key === 'start_year') setStartYearError('');
   }
 
+  const staffTypeTags = form.additional_tags.filter((tag) => tag !== '' && tag != null);
+
+  function setStaffTypeTags(tags: string[]) {
+    setForm((prev) => {
+      const otherTags = prev.additional_tags.filter((tag) => !staffTypeTags.includes(tag));
+      return { ...prev, additional_tags: [...tags, ...otherTags] };
+    });
+  }
+
   const validateAndSave = () => {
     if (form.email.trim() && !isValidEmail(form.email)) {
       setEmailError('Please enter a valid email address');
@@ -310,6 +319,21 @@ export function InstructorEditModal({
           </Tooltip>
         </div>
 
+        {/* Staff Type */}
+        <div>
+          <label htmlFor="instructor-staff-type" className="block text-xs font-semibold text-slate-600 mb-2">Staff Type</label>
+          <Tooltip text="Select the staff type tags for this staff member">
+            <TagSelector
+              id="instructor-staff-type"
+              value={staffTypeTags}
+              onChange={setStaffTypeTags}
+              programId={selectedProgramId ?? ''}
+              category="Staff Type"
+              placeholder="Select staff type..."
+            />
+          </Tooltip>
+        </div>
+
         {/* Event Type */}
         <div>
           <label htmlFor="instructor-event-type" className="block text-xs font-semibold text-slate-600 mb-2">Event Type</label>
@@ -333,7 +357,7 @@ export function InstructorEditModal({
             value={form.additional_tags}
             onChange={(tags) => setField('additional_tags', tags)}
             programId={selectedProgramId ?? ''}
-            excludeCategories={['Space Types']}
+            excludeCategories={['Space Types', 'Staff Type']}
             placeholder="Select optional tags..."
           />
         </div>
