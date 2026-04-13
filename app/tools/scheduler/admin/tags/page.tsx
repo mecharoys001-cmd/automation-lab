@@ -181,6 +181,7 @@ export default function TagsPage() {
 
   // Quick-add state
   const [quickAddValue, setQuickAddValue] = useState('');
+  const [quickAddDescription, setQuickAddDescription] = useState('');
   const [quickAddCategory, setQuickAddCategory] = useState('Event Type');
   const [quickAddEmoji, setQuickAddEmoji] = useState('🏷️');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
@@ -200,6 +201,7 @@ export default function TagsPage() {
   const [categoryQuickAdd, setCategoryQuickAdd] = useState<string | null>(null);
   const [categoryQuickAddValue, setCategoryQuickAddValue] = useState('');
   const [categoryQuickAddEmoji, setCategoryQuickAddEmoji] = useState('🏷️');
+  const [categoryQuickAddDescription, setCategoryQuickAddDescription] = useState('');
   const [categoryQuickAddLoading, setCategoryQuickAddLoading] = useState(false);
 
   // Delete state
@@ -337,10 +339,12 @@ export default function TagsPage() {
       let successCount = 0;
       const failedTags: string[] = [];
 
+      const userDescription = quickAddDescription.trim();
+
       for (const tagName of tagNames) {
         try {
           const emoji = quickAddEmoji !== '🏷️' ? quickAddEmoji : getEmojiForTag(tagName);
-          const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
+          const description = userDescription || TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
 
           const payload: Record<string, string> = {
             name: tagName,
@@ -389,6 +393,7 @@ export default function TagsPage() {
       }
 
       setQuickAddValue('');
+      setQuickAddDescription('');
       setQuickAddEmoji('🏷️');
     } catch (err) {
       setQuickAddError(err instanceof Error ? err.message : 'Failed to create tags');
@@ -682,10 +687,12 @@ export default function TagsPage() {
       let successCount = 0;
       const failedTags: string[] = [];
 
+      const userDescription = categoryQuickAddDescription.trim();
+
       for (const tagName of tagNames) {
         try {
-          const emoji = quickAddEmoji !== '🏷️' ? quickAddEmoji : getEmojiForTag(tagName);
-          const description = TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
+          const emoji = categoryQuickAddEmoji !== '🏷️' ? categoryQuickAddEmoji : getEmojiForTag(tagName);
+          const description = userDescription || TAG_DESCRIPTIONS[tagName.toLowerCase()] || '';
 
           const payload: Record<string, string> = {
             name: tagName,
@@ -734,6 +741,7 @@ export default function TagsPage() {
       }
 
       setCategoryQuickAddValue('');
+      setCategoryQuickAddDescription('');
       setCategoryQuickAddEmoji('🏷️');
       setCategoryQuickAdd(null);
     } catch (err) {
@@ -919,6 +927,22 @@ export default function TagsPage() {
             {quickAddSuccess && <p className="text-xs text-emerald-800 mt-1">✓ Tag created</p>}
           </div>
 
+          <div className="flex-1">
+            <label htmlFor="quick-add-description" className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+              Description
+            </label>
+            <input
+              id="quick-add-description"
+              type="text"
+              value={quickAddDescription}
+              onChange={(e) => setQuickAddDescription(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+              placeholder="Optional description for the tag(s)"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-colors"
+              disabled={quickAddLoading}
+            />
+          </div>
+
           <div className="w-full sm:w-48">
             <label htmlFor="quick-add-category" className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
               Category
@@ -1081,6 +1105,7 @@ export default function TagsPage() {
                             e.stopPropagation();
                             setCategoryQuickAdd(category);
                             setCategoryQuickAddValue('');
+                            setCategoryQuickAddDescription('');
                             setCategoryQuickAddEmoji('🏷️');
                           }}
                           className="p-1.5 rounded hover:bg-slate-200 transition-colors text-slate-700 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:outline-none"
@@ -1095,43 +1120,57 @@ export default function TagsPage() {
                   
                   {/* Quick Add Field for this category */}
                   {categoryQuickAdd === category && (
-                    <div className="px-5 pb-3 flex gap-2 items-end">
-                      <div className="shrink-0">
-                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
-                          Icon
-                        </label>
-                        <EmojiPicker value={categoryQuickAddEmoji} onChange={setCategoryQuickAddEmoji} className="[&>button]:w-9 [&>button]:h-9 [&>button]:text-2xl" />
+                    <div className="px-5 pb-3 flex flex-col gap-2">
+                      <div className="flex gap-2 items-end">
+                        <div className="shrink-0">
+                          <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                            Icon
+                          </label>
+                          <EmojiPicker value={categoryQuickAddEmoji} onChange={setCategoryQuickAddEmoji} className="[&>button]:w-9 [&>button]:h-9 [&>button]:text-2xl" />
+                        </div>
+                        <input
+                          type="text"
+                          value={categoryQuickAddValue}
+                          onChange={(e) => setCategoryQuickAddValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleCategoryQuickAdd(category);
+                            if (e.key === 'Escape') setCategoryQuickAdd(null);
+                          }}
+                          placeholder={`Add tag to ${category} (comma-separated for bulk)...`}
+                          className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                          autoFocus
+                          disabled={categoryQuickAddLoading}
+                        />
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleCategoryQuickAdd(category)}
+                          disabled={categoryQuickAddLoading || !categoryQuickAddValue.trim()}
+                          icon={categoryQuickAddLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        >
+                          Add
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setCategoryQuickAdd(null)}
+                          icon={<X className="w-4 h-4" />}
+                        >
+                          Cancel
+                        </Button>
                       </div>
                       <input
                         type="text"
-                        value={categoryQuickAddValue}
-                        onChange={(e) => setCategoryQuickAddValue(e.target.value)}
+                        value={categoryQuickAddDescription}
+                        onChange={(e) => setCategoryQuickAddDescription(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleCategoryQuickAdd(category);
                           if (e.key === 'Escape') setCategoryQuickAdd(null);
                         }}
-                        placeholder={`Add tag to ${category} (comma-separated for bulk)...`}
+                        placeholder="Optional description for the tag(s)"
                         className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                        autoFocus
                         disabled={categoryQuickAddLoading}
                       />
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleCategoryQuickAdd(category)}
-                        disabled={categoryQuickAddLoading || !categoryQuickAddValue.trim()}
-                        icon={categoryQuickAddLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      >
-                        Add
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setCategoryQuickAdd(null)}
-                        icon={<X className="w-4 h-4" />}
-                      >
-                        Cancel
-                      </Button>
                     </div>
                   )}
                 </div>
