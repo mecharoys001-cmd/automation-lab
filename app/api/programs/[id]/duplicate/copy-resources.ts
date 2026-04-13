@@ -34,7 +34,7 @@ export async function copyResources(
   if (options.copy_staff) {
     const { data: staff, error: fetchErr } = await supabase
       .from('staff')
-      .select('id, first_name, last_name, email, phone, skills, availability_json, is_active, on_call, notes, bio, start_year')
+      .select('id, first_name, last_name, email, phone, skills, availability_json, is_active, on_call, public_notes, admin_notes, bio, start_year')
       .eq('program_id', sourceProgramId);
 
     if (fetchErr) {
@@ -69,7 +69,7 @@ export async function copyResources(
   if (options.copy_venues) {
     const { data: venues, error: fetchErr } = await supabase
       .from('venues')
-      .select('id, name, space_type, max_capacity, address, is_virtual, amenities, description, availability_json, notes, min_booking_duration_minutes, max_booking_duration_minutes, buffer_minutes, advance_booking_days, cancellation_window_hours, cost_per_hour, max_concurrent_bookings, blackout_dates, is_wheelchair_accessible, subjects')
+      .select('id, name, space_type, max_capacity, address, is_virtual, amenities, description, availability_json, public_notes, admin_notes, min_booking_duration_minutes, max_booking_duration_minutes, buffer_minutes, advance_booking_days, cancellation_window_hours, cost_per_hour, max_concurrent_bookings, blackout_dates, is_wheelchair_accessible, subjects')
       .eq('program_id', sourceProgramId);
 
     if (fetchErr) {
@@ -147,7 +147,7 @@ export async function copyResources(
   if (options.copy_templates) {
     const { data: templates, error: fetchErr } = await supabase
       .from('session_templates')
-      .select('name, template_type, rotation_mode, instructor_id, day_of_week, grade_groups, start_time, end_time, duration_minutes, venue_id, required_skills, additional_tags, sort_order, is_active, week_cycle_length, week_in_cycle, scheduling_mode, starts_on, ends_on, duration_weeks, session_count, within_weeks, sessions_per_week')
+      .select('name, template_type, rotation_mode, instructor_id, day_of_week, grade_groups, start_time, end_time, duration_minutes, venue_id, required_skills, additional_tags, sort_order, is_active, public_notes, admin_notes, week_cycle_length, week_in_cycle, scheduling_mode, starts_on, ends_on, duration_weeks, session_count, within_weeks, sessions_per_week')
       .eq('program_id', sourceProgramId);
 
     if (fetchErr) {

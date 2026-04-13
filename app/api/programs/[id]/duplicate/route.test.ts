@@ -79,7 +79,8 @@ const sourceStaff = [
     availability_json: null,
     is_active: true,
     on_call: false,
-    notes: null,
+    public_notes: null,
+    admin_notes: 'Senior staff',
     bio: 'Experienced teacher',
     start_year: 2020,
   },
@@ -93,7 +94,8 @@ const sourceStaff = [
     availability_json: null,
     is_active: true,
     on_call: false,
-    notes: 'Part-time',
+    public_notes: 'Part-time',
+    admin_notes: null,
     bio: null,
     start_year: null,
   },
@@ -154,7 +156,7 @@ describe('copyResources — staff duplication', () => {
     ).rejects.toThrow('Failed to copy staff');
   });
 
-  it('should include bio and start_year in the staff SELECT', async () => {
+  it('should include public/admin notes, bio and start_year in the staff SELECT', async () => {
     setTableResult('staff', {
       selectData: sourceStaff,
       insertData: [{ id: 'new-staff-1' }, { id: 'new-staff-2' }],
@@ -170,10 +172,12 @@ describe('copyResources — staff duplication', () => {
     const result = await copyResources(makeSupabase(), 'source-1', 'new-1', opts);
     expect(result.counts.staff).toBe(2);
 
-    // Verify the SELECT column list includes bio and start_year
+    // Verify the SELECT column list includes notes split fields, bio and start_year
     const staffSelect = calls.find((c) => c.table === 'staff' && c.method === 'select');
     expect(staffSelect).toBeDefined();
     const cols = staffSelect!.args![0] as string;
+    expect(cols).toContain('public_notes');
+    expect(cols).toContain('admin_notes');
     expect(cols).toContain('bio');
     expect(cols).toContain('start_year');
   });
@@ -214,7 +218,7 @@ describe('copyResources — staff duplication', () => {
     expect(result.staffIdMap.get('staff-2')).toBe('new-staff-2');
   });
 
-  it('should propagate bio and start_year values in inserted rows', async () => {
+  it('should propagate notes, bio and start_year values in inserted rows', async () => {
     setTableResult('staff', {
       selectData: sourceStaff,
       insertData: [{ id: 'new-staff-1' }, { id: 'new-staff-2' }],
@@ -233,8 +237,12 @@ describe('copyResources — staff duplication', () => {
     const insertCall = calls.find((c) => c.table === 'staff' && c.method === 'insert');
     expect(insertCall).toBeDefined();
     const rows = insertCall!.args![0] as Record<string, unknown>[];
+    expect(rows[0]).toHaveProperty('public_notes', null);
+    expect(rows[0]).toHaveProperty('admin_notes', 'Senior staff');
     expect(rows[0]).toHaveProperty('bio', 'Experienced teacher');
     expect(rows[0]).toHaveProperty('start_year', 2020);
+    expect(rows[1]).toHaveProperty('public_notes', 'Part-time');
+    expect(rows[1]).toHaveProperty('admin_notes', null);
     expect(rows[1]).toHaveProperty('bio', null);
     expect(rows[1]).toHaveProperty('start_year', null);
     // old IDs should NOT be in the payload
