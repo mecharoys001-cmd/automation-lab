@@ -200,7 +200,7 @@ export function AvailabilityEditor({
               const isHalfHour = slotStart % 60 !== 0;
               return (
                 <div key={slotStart} className="contents">
-                  <Tooltip text={`${minutesToHHMM(slotStart)} – ${minutesToHHMM(slotStart + 30)}`}>
+                  <Tooltip text={`${minutesToHHMM(slotStart)} – ${minutesToHHMM(slotStart + 30)}`} style={{ display: 'contents' }}>
                     <div className={`flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-5 border-t border-slate-200 ${isHalfHour ? 'opacity-60' : ''}`}>
                       {formatSlotLabel(slotStart)}
                     </div>
@@ -208,7 +208,7 @@ export function AvailabilityEditor({
                   {EDITOR_DAYS.map((d) => {
                     const active = isCellActive(d.key, slotStart);
                     return (
-                      <Tooltip key={`${d.key}-${slotStart}`} text={`${d.short} ${minutesToHHMM(slotStart)}–${minutesToHHMM(slotStart + 30)}`}>
+                      <Tooltip key={`${d.key}-${slotStart}`} text={`${d.short} ${minutesToHHMM(slotStart)}–${minutesToHHMM(slotStart + 30)}`} style={{ display: 'contents' }}>
                         <div
                           role="gridcell"
                           tabIndex={0}
