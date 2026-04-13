@@ -1412,7 +1412,6 @@ export function WeekView({
           pinned={popoverState.pinned}
           onPin={pinPopover}
           onClose={closePopover}
-          onViewDetails={onEventClick}
           onCancel={handleCancelSession}
           onCancelFuture={(eventId: string) => {
             closePopover();

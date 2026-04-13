@@ -74,8 +74,6 @@ export interface EventPopoverProps {
   onReplaceInstructor?: (eventId: string, substituteId?: string) => void;
   /** Callback when user wants to replace entire event */
   onReplaceEvent?: (eventId: string, templateId?: string) => void;
-  /** Open full event details */
-  onViewDetails?: (event: CalendarEvent) => void;
   /** Open the edit modal for this event */
   onOpenEditPanel?: (event: CalendarEvent) => void;
   /** Callback when user cancels all future sessions */
@@ -96,7 +94,6 @@ export function EventPopover({
   onCancel,
   onReplaceInstructor,
   onReplaceEvent,
-  onViewDetails,
   onOpenEditPanel,
   onCancelFuture,
 }: EventPopoverProps) {
@@ -837,15 +834,6 @@ export function EventPopover({
               </button>
             </Tooltip>
           )}
-          <Tooltip text="Open full event details">
-            <button
-              onClick={(e) => { e.stopPropagation(); onViewDetails?.(event); }}
-              className="text-[11px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
-              aria-label="View event details"
-            >
-              View Details
-            </button>
-          </Tooltip>
         </div>
       )}
     </div>,

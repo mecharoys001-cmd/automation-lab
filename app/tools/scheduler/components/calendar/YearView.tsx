@@ -909,7 +909,6 @@ export function YearView({
           pinned={popoverState.pinned}
           onPin={pinPopover}
           onClose={closePopover}
-          onViewDetails={onEventClick}
           onCancel={handleCancelSession}
           onReplaceInstructor={handleReplaceInstructor}
           onReplaceEvent={handleReplaceEvent}
