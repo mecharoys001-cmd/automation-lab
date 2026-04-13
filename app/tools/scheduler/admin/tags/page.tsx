@@ -1093,31 +1093,6 @@ export default function TagsPage() {
         )}
       </div>
 
-      {/* Bulk Action Bar */}
-      {selectedTagIds.size > 0 && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 sm:px-8 py-3 shrink-0 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <CheckSquare className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900">
-              {selectedTagIds.size} tag{selectedTagIds.size === 1 ? '' : 's'} selected
-            </span>
-            <button
-              onClick={clearSelection}
-              className="text-xs text-blue-600 hover:text-blue-800 underline"
-            >
-              Clear selection
-            </button>
-          </div>
-          <button
-            onClick={() => { setBulkDeleteForce(false); setBulkDeleteModalOpen(true); }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete Selected
-          </button>
-        </div>
-      )}
-
       {/* Bulk Delete Confirmation Modal */}
       <Modal
         open={bulkDeleteModalOpen}
@@ -1179,7 +1154,7 @@ export default function TagsPage() {
       </Modal>
 
       {/* Tags List (Grouped by Category) */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+      <div className={`flex-1 overflow-y-auto px-4 sm:px-8 py-6 ${selectedTagIds.size > 0 ? 'pb-20' : ''}`}>
         <div className="space-y-4">
           {categories.map(category => {
             const categoryTags = tags.filter(t => normalizeTagCategory(t.category || 'General') === category);
@@ -1545,6 +1520,33 @@ export default function TagsPage() {
           )}
         </div>
       </div>
+
+      {/* Sticky Bulk Action Bar */}
+      {selectedTagIds.size > 0 && (
+        <div className="shrink-0 border-t border-slate-700 bg-slate-800 px-4 sm:px-8 py-3 flex items-center justify-between gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium text-slate-100">
+              {selectedTagIds.size} tag{selectedTagIds.size === 1 ? '' : 's'} selected
+            </span>
+            <button
+              onClick={clearSelection}
+              className="text-xs text-blue-400 hover:text-blue-300 underline"
+            >
+              Clear selection
+            </button>
+          </div>
+          <Tooltip text={`Permanently delete ${selectedTagIds.size} selected tag${selectedTagIds.size === 1 ? '' : 's'}`}>
+            <button
+              onClick={() => { setBulkDeleteForce(false); setBulkDeleteModalOpen(true); }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Selected
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
       {/* ── Tag CSV Import Dialog ───────────────────────────── */}
       <CsvImportDialog
