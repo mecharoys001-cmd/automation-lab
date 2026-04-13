@@ -15,7 +15,7 @@ import { Pill } from '../../components/ui/Pill';
 import { Avatar } from '../../components/ui/Avatar';
 import { ClickToCopy } from '../../components/ui/ClickToCopy';
 import { TagSelector } from '../../components/ui/TagSelector';
-import { AvailabilityEditor, isHourAvailable, formatHourLabel } from '../../components/ui/AvailabilityEditor';
+import { AvailabilityEditor, isSlotAvailable, formatSlotLabel, EDITOR_SLOTS } from '../../components/ui/AvailabilityEditor';
 import { CsvImportDialog, type CsvColumnDef, type ValidationError } from '../../components/ui/CsvImportDialog';
 import { InstructorEditModal } from '../../components/modals/InstructorEditModal';
 import { Modal, ModalButton } from '../../components/ui/Modal';
@@ -54,7 +54,7 @@ const ALL_DAYS: { key: DayOfWeek; short: string }[] = [
   { key: 'friday', short: 'Fri' }, { key: 'saturday', short: 'Sat' },
   { key: 'sunday', short: 'Sun' },
 ];
-const GRID_HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
+const GRID_SLOTS = EDITOR_SLOTS;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -280,7 +280,7 @@ function avatarColor(name: string): string {
 
 /**
  * Calculate availability for a time period (morning or afternoon)
- * Returns: 'full' (all hours covered), 'partial' (some hours covered), or 'none'
+ * Returns: 'full' (all 30-min slots covered), 'partial' (some covered), or 'none'
  */
 function getTimePeriodAvailability(
   blocks: TimeBlock[],
@@ -288,18 +288,18 @@ function getTimePeriodAvailability(
   periodEnd: number,   // hour (e.g., 12)
 ): 'full' | 'partial' | 'none' {
   if (!blocks || blocks.length === 0) return 'none';
-  
-  const totalHours = periodEnd - periodStart;
-  let coveredHours = 0;
-  
-  for (let hour = periodStart; hour < periodEnd; hour++) {
-    if (isHourAvailable(hour, blocks)) {
-      coveredHours++;
+
+  const totalSlots = (periodEnd - periodStart) * 2; // 30-min slots
+  let coveredSlots = 0;
+
+  for (let mins = periodStart * 60; mins < periodEnd * 60; mins += 30) {
+    if (isSlotAvailable(mins, blocks)) {
+      coveredSlots++;
     }
   }
-  
-  if (coveredHours === 0) return 'none';
-  if (coveredHours === totalHours) return 'full';
+
+  if (coveredSlots === 0) return 'none';
+  if (coveredSlots === totalSlots) return 'full';
   return 'partial';
 }
 
@@ -611,23 +611,26 @@ function AvailabilityGrid({ availability }: { availability: AvailabilityJson | n
               {d.short}
             </div>
           ))}
-          {GRID_HOURS.map((hour) => (
-            <div key={hour} className="contents">
-              <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-6 border-t border-slate-200">
-                {formatHourLabel(hour)}
+          {GRID_SLOTS.map((slotStart) => {
+            const isHalfHour = slotStart % 60 !== 0;
+            return (
+              <div key={slotStart} className="contents">
+                <div className={`flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-5 border-t border-slate-200 ${isHalfHour ? 'opacity-60' : ''}`}>
+                  {formatSlotLabel(slotStart)}
+                </div>
+                {ALL_DAYS.map((d) => {
+                  const blocks = availability[d.key] ?? [];
+                  const avail = isSlotAvailable(slotStart, blocks);
+                  return (
+                    <div
+                      key={`${d.key}-${slotStart}`}
+                      className={`h-5 border-t border-l border-slate-200 ${avail ? 'bg-emerald-500/40' : 'bg-white'} ${isHalfHour ? 'border-t-slate-100' : ''}`}
+                    />
+                  );
+                })}
               </div>
-              {ALL_DAYS.map((d) => {
-                const blocks = availability[d.key] ?? [];
-                const avail = isHourAvailable(hour, blocks);
-                return (
-                  <div
-                    key={`${d.key}-${hour}`}
-                    className={`h-6 border-t border-l border-slate-200 ${avail ? 'bg-emerald-500/40' : 'bg-white'}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

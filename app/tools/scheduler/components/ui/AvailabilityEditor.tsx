@@ -6,14 +6,30 @@ import type { AvailabilityJson, DayOfWeek, TimeBlock } from '@/types/database';
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
-export function formatHourLabel(h: number): string {
-  const h12 = h === 0 || h === 12 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12} ${h >= 12 ? 'PM' : 'AM'}`;
+/** Format minutes-from-midnight into a display label. On-the-hour → "8 AM", half-hour → "8:30" */
+export function formatSlotLabel(minutes: number): string {
+  const h24 = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const h12 = h24 === 0 || h24 === 12 ? 12 : h24 > 12 ? h24 - 12 : h24;
+  if (m === 0) return `${h12} ${h24 >= 12 ? 'PM' : 'AM'}`;
+  return `${h12}:${String(m).padStart(2, '0')}`;
 }
 
-export function isHourAvailable(hour: number, blocks: TimeBlock[]): boolean {
-  const slotStart = hour * 60;
-  const slotEnd = (hour + 1) * 60;
+/** @deprecated Use formatSlotLabel instead */
+export function formatHourLabel(h: number): string {
+  return formatSlotLabel(h * 60);
+}
+
+/** Convert minutes-from-midnight to "HH:MM" string */
+function minutesToHHMM(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/** Check whether a 30-minute slot (starting at `slotStart` minutes from midnight) overlaps any block */
+export function isSlotAvailable(slotStart: number, blocks: TimeBlock[]): boolean {
+  const slotEnd = slotStart + 30;
   return blocks.some((b) => {
     const [sh, sm] = b.start.split(':').map(Number);
     const [eh, em] = b.end.split(':').map(Number);
@@ -23,13 +39,39 @@ export function isHourAvailable(hour: number, blocks: TimeBlock[]): boolean {
   });
 }
 
+/** @deprecated Use isSlotAvailable instead */
+export function isHourAvailable(hour: number, blocks: TimeBlock[]): boolean {
+  return isSlotAvailable(hour * 60, blocks);
+}
+
+/** Merge a set of 30-min slot start-minutes into contiguous TimeBlock[] */
+export function buildBlocksFromSlots(slots: Set<number>): TimeBlock[] {
+  if (slots.size === 0) return [];
+  const sorted = [...slots].sort((a, b) => a - b);
+  const blocks: TimeBlock[] = [];
+  let start = sorted[0];
+  let end = sorted[0] + 30;
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end) {
+      end = sorted[i] + 30;
+    } else {
+      blocks.push({ start: minutesToHHMM(start), end: minutesToHHMM(end) });
+      start = sorted[i];
+      end = sorted[i] + 30;
+    }
+  }
+  blocks.push({ start: minutesToHHMM(start), end: minutesToHHMM(end) });
+  return blocks;
+}
+
 const EDITOR_DAYS: { key: DayOfWeek; short: string }[] = [
   { key: 'monday', short: 'Mon' }, { key: 'tuesday', short: 'Tue' },
   { key: 'wednesday', short: 'Wed' }, { key: 'thursday', short: 'Thu' },
   { key: 'friday', short: 'Fri' }, { key: 'saturday', short: 'Sat' },
   { key: 'sunday', short: 'Sun' },
 ];
-const EDITOR_HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM – 8 PM
+/** 30-minute slots from 8:00 AM to 19:30 (minutes from midnight) */
+export const EDITOR_SLOTS = Array.from({ length: 24 }, (_, i) => 480 + i * 30);
 
 /* ── Component ────────────────────────────────────────────── */
 
@@ -50,37 +92,18 @@ export function AvailabilityEditor({
     return blocks !== undefined && blocks.length > 0;
   };
 
-  const isCellActive = (day: DayOfWeek, hour: number) => {
+  const isCellActive = (day: DayOfWeek, slotStart: number) => {
     const blocks = avail[day];
     if (!blocks) return false;
-    return isHourAvailable(hour, blocks);
+    return isSlotAvailable(slotStart, blocks);
   };
 
-  const buildBlocks = (day: DayOfWeek, hours: Set<number>): TimeBlock[] => {
-    if (hours.size === 0) return [];
-    const sorted = [...hours].sort((a, b) => a - b);
-    const blocks: TimeBlock[] = [];
-    let start = sorted[0];
-    let end = sorted[0] + 1;
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i] === end) {
-        end = sorted[i] + 1;
-      } else {
-        blocks.push({ start: `${String(start).padStart(2, '0')}:00`, end: `${String(end).padStart(2, '0')}:00` });
-        start = sorted[i];
-        end = sorted[i] + 1;
-      }
-    }
-    blocks.push({ start: `${String(start).padStart(2, '0')}:00`, end: `${String(end).padStart(2, '0')}:00` });
-    return blocks;
-  };
-
-  const getActiveHours = (day: DayOfWeek): Set<number> => {
-    const hours = new Set<number>();
-    EDITOR_HOURS.forEach((h) => {
-      if (isCellActive(day, h)) hours.add(h);
+  const getActiveSlots = (day: DayOfWeek): Set<number> => {
+    const active = new Set<number>();
+    EDITOR_SLOTS.forEach((s) => {
+      if (isCellActive(day, s)) active.add(s);
     });
-    return hours;
+    return active;
   };
 
   const toggleDay = (day: DayOfWeek) => {
@@ -93,31 +116,31 @@ export function AvailabilityEditor({
     onChange(Object.keys(next).length > 0 ? next : null);
   };
 
-  const toggleCell = (day: DayOfWeek, hour: number) => {
-    const hours = getActiveHours(day);
-    if (hours.has(hour)) {
-      hours.delete(hour);
+  const toggleCell = (day: DayOfWeek, slotStart: number) => {
+    const slots = getActiveSlots(day);
+    if (slots.has(slotStart)) {
+      slots.delete(slotStart);
     } else {
-      hours.add(hour);
+      slots.add(slotStart);
     }
     const next = { ...avail };
-    next[day] = buildBlocks(day, hours);
+    next[day] = buildBlocksFromSlots(slots);
     onChange(next);
   };
 
   const [dragging, setDragging] = useState<{ painting: boolean } | null>(null);
 
-  const handleMouseDown = (day: DayOfWeek, hour: number) => {
-    const painting = !isCellActive(day, hour);
+  const handleMouseDown = (day: DayOfWeek, slotStart: number) => {
+    const painting = !isCellActive(day, slotStart);
     setDragging({ painting });
-    toggleCell(day, hour);
+    toggleCell(day, slotStart);
   };
 
-  const handleMouseEnter = (day: DayOfWeek, hour: number) => {
+  const handleMouseEnter = (day: DayOfWeek, slotStart: number) => {
     if (!dragging) return;
-    const active = isCellActive(day, hour);
-    if (dragging.painting && !active) toggleCell(day, hour);
-    if (!dragging.painting && active) toggleCell(day, hour);
+    const active = isCellActive(day, slotStart);
+    if (dragging.painting && !active) toggleCell(day, slotStart);
+    if (!dragging.painting && active) toggleCell(day, slotStart);
   };
 
   const handleMouseUp = () => setDragging(null);
@@ -145,7 +168,7 @@ export function AvailabilityEditor({
         </button>
       </div>
 
-      <p className="text-[11px] text-slate-700">Click or drag cells to mark available times. Green = available.</p>
+      <p className="text-[11px] text-slate-700">Click or drag cells to mark available 30-min slots. Green = available.</p>
 
       {/* Grid */}
       <div className="overflow-x-auto">
@@ -172,37 +195,43 @@ export function AvailabilityEditor({
               </Tooltip>
             ))}
 
-            {/* Hour rows */}
-            {EDITOR_HOURS.map((hour) => (
-              <div key={hour} className="contents">
-                <div className="flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-6 border-t border-slate-200">
-                  {formatHourLabel(hour)}
+            {/* 30-minute slot rows */}
+            {EDITOR_SLOTS.map((slotStart) => {
+              const isHalfHour = slotStart % 60 !== 0;
+              return (
+                <div key={slotStart} className="contents">
+                  <Tooltip text={`${minutesToHHMM(slotStart)} – ${minutesToHHMM(slotStart + 30)}`}>
+                    <div className={`flex items-center justify-end pr-1.5 text-[10px] text-slate-700 bg-white h-5 border-t border-slate-200 ${isHalfHour ? 'opacity-60' : ''}`}>
+                      {formatSlotLabel(slotStart)}
+                    </div>
+                  </Tooltip>
+                  {EDITOR_DAYS.map((d) => {
+                    const active = isCellActive(d.key, slotStart);
+                    return (
+                      <Tooltip key={`${d.key}-${slotStart}`} text={`${d.short} ${minutesToHHMM(slotStart)}–${minutesToHHMM(slotStart + 30)}`}>
+                        <div
+                          role="gridcell"
+                          tabIndex={0}
+                          aria-label={`${d.short} ${formatSlotLabel(slotStart)} — ${active ? 'available' : 'unavailable'}`}
+                          aria-pressed={active}
+                          onMouseDown={() => handleMouseDown(d.key, slotStart)}
+                          onMouseEnter={() => handleMouseEnter(d.key, slotStart)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleCell(d.key, slotStart);
+                            }
+                          }}
+                          className={`h-5 border-t border-l border-slate-200 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset outline-none ${
+                            active ? 'bg-emerald-500/40 hover:bg-emerald-500/60' : 'bg-slate-50 hover:bg-emerald-100'
+                          } ${isHalfHour ? 'border-t-slate-100' : ''}`}
+                        />
+                      </Tooltip>
+                    );
+                  })}
                 </div>
-                {EDITOR_DAYS.map((d) => {
-                  const active = isCellActive(d.key, hour);
-                  return (
-                    <div
-                      key={`${d.key}-${hour}`}
-                      role="gridcell"
-                      tabIndex={0}
-                      aria-label={`${d.short} ${formatHourLabel(hour)} — ${active ? 'available' : 'unavailable'}`}
-                      aria-pressed={active}
-                      onMouseDown={() => handleMouseDown(d.key, hour)}
-                      onMouseEnter={() => handleMouseEnter(d.key, hour)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          toggleCell(d.key, hour);
-                        }
-                      }}
-                      className={`h-6 border-t border-l border-slate-200 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset outline-none ${
-                        active ? 'bg-emerald-500/40 hover:bg-emerald-500/60' : 'bg-slate-50 hover:bg-emerald-100'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
