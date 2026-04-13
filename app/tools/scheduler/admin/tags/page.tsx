@@ -247,7 +247,7 @@ export default function TagsPage() {
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       requestCache.invalidate(/\/api\/tags/);
       await fetchTags();
-      showToast(json.added > 0 ? `Installed ${json.added} default venue tag(s)` : 'All defaults already installed', 'success');
+      showToast(json.added > 0 ? `Installed ${json.added} protected default tag(s)` : 'All defaults already installed', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to install defaults', 'error');
     } finally {

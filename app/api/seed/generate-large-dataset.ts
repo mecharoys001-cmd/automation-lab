@@ -120,7 +120,7 @@ function generateTemplates(count: number) {
   return templates;
 }
 
-import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES, type TagPreset } from './default-tags';
+import { DEFAULT_STAFF_TYPES, DEFAULT_TAGS, DEFAULT_SPACE_TYPES, type TagPreset } from './default-tags';
 
 const subjectTags: TagPreset[] = SUBJECTS.slice(0, 15).map((subject, i) => ({
   name: `${subject} Sessions`,
@@ -128,7 +128,7 @@ const subjectTags: TagPreset[] = SUBJECTS.slice(0, 15).map((subject, i) => ({
 }));
 
 // Merge defaults with subject tags, deduplicating by name
-const allTags = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES, ...subjectTags];
+const allTags = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES, ...DEFAULT_STAFF_TYPES, ...subjectTags];
 const seen = new Set<string>();
 const dedupedTags = allTags.filter(t => {
   if (seen.has(t.name)) return false;

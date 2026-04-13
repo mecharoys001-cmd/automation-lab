@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from '../seed/default-tags';
+import { DEFAULT_STAFF_TYPES, DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from '../seed/default-tags';
 import { requireAdmin, requireMinRole, getAccessibleProgramIds, scopedJsonResponse } from '@/lib/api-auth';
 
 export async function GET() {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       .insert({ admin_id: auth.user.id, program_id: programId });
 
     // Auto-copy default tags and space types into the new program
-    const allDefaults = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES];
+    const allDefaults = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES, ...DEFAULT_STAFF_TYPES];
     const tagRows = allDefaults.map(t => ({
       name: t.name,
       color: t.color,

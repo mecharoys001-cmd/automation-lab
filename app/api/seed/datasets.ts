@@ -10,7 +10,7 @@ import { fullDataset } from './generate-large-dataset';
 import { mergeWithDefaults, type TagPreset } from './default-tags';
 
 export type { TagPreset } from './default-tags';
-export { DEFAULT_TAGS, DEFAULT_SPACE_TYPES, mergeWithDefaults } from './default-tags';
+export { DEFAULT_STAFF_TYPES, DEFAULT_TAGS, DEFAULT_SPACE_TYPES, mergeWithDefaults } from './default-tags';
 
 export interface DatasetPreset {
   name: string;

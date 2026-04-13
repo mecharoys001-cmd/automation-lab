@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
 import { datasets } from './datasets';
-import { DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from './default-tags';
+import { DEFAULT_STAFF_TYPES, DEFAULT_TAGS, DEFAULT_SPACE_TYPES } from './default-tags';
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdmin();
@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     const defaultTagNames = new Set([
       ...DEFAULT_TAGS.map(t => t.name),
       ...DEFAULT_SPACE_TYPES.map(t => t.name),
+      ...DEFAULT_STAFF_TYPES.map(t => t.name),
     ]);
 
     const defaultTagRows = dataset.tags

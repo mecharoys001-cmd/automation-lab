@@ -56,9 +56,16 @@ export const DEFAULT_SPACE_TYPES: TagPreset[] = [
   { name: 'Multipurpose', color: '#84CC16', emoji: '🔄', category: 'Space Types', description: 'Flexible multi-use space' },
 ];
 
+// ── Staff Types ─────────────────────────────────────────
+export const DEFAULT_STAFF_TYPES: TagPreset[] = [
+  { name: 'ASAP! TA', color: '#2563EB', emoji: '🧑‍🏫', category: 'Staff Type', description: 'ASAP! teaching artist' },
+  { name: 'Partner Staff', color: '#7C3AED', emoji: '🤝', category: 'Staff Type', description: 'Partner organization staff member' },
+  { name: 'ASAP! Staff', color: '#DB2777', emoji: '⭐', category: 'Staff Type', description: 'ASAP! staff member' },
+];
+
 /** Merges default tags with preset-specific tags, deduplicating by name (defaults take priority) */
 export function mergeWithDefaults(presetTags: TagPreset[]): TagPreset[] {
-  const all = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES, ...presetTags];
+  const all = [...DEFAULT_TAGS, ...DEFAULT_SPACE_TYPES, ...DEFAULT_STAFF_TYPES, ...presetTags];
   const seen = new Set<string>();
   return all.filter(t => {
     if (seen.has(t.name)) return false;

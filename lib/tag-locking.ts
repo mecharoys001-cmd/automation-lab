@@ -6,9 +6,11 @@ const LOCKED_TAG_CATEGORY_ALIASES = new Map<string, string>([
   ['space type', 'Space Types'],
   ['space types', 'Space Types'],
   ['spaces type', 'Space Types'],
+  ['staff type', 'Staff Type'],
+  ['staff types', 'Staff Type'],
 ]);
 
-export const LOCKED_TAG_CATEGORIES = ['Event Type', 'Space Types'] as const;
+export const LOCKED_TAG_CATEGORIES = ['Event Type', 'Space Types', 'Staff Type'] as const;
 
 export function normalizeTagCategory(category: string | null | undefined): string {
   const trimmed = category?.trim();
@@ -35,6 +37,10 @@ export function getLockedCategoryReason(category: string | null | undefined): st
 
   if (normalized === 'Space Types') {
     return 'The "Space Types" category name is protected and cannot be renamed or deleted.';
+  }
+
+  if (normalized === 'Staff Type') {
+    return 'The "Staff Type" category name is protected and cannot be renamed or deleted.';
   }
 
   return 'This category name is protected and cannot be renamed or deleted.';
