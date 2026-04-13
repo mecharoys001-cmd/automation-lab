@@ -41,7 +41,7 @@ const STATUS_LABELS: Record<CalendarStatusType, string> = {
   no_school: 'No School',
   early_dismissal: 'Early Dismissal',
   instructor_exception: 'Staff Exception',
-  asap_exception: 'ASAP Exception',
+  asap_exception: 'ASAP! Exception',
 };
 
 const STATUS_COLORS: Record<CalendarStatusType, { badge: string; dot: string; cell: string }> = {
@@ -71,7 +71,7 @@ const STATUS_TOOLTIPS: Record<CalendarStatusType, string> = {
   no_school: 'No events on this date',
   early_dismissal: 'Events end earlier than usual',
   instructor_exception: 'Schedule exception for a specific staff member',
-  asap_exception: 'ASAP program exception',
+  asap_exception: 'ASAP! program exception',
 };
 
 const CALENDAR_CSV_COLUMNS: CsvColumnDef[] = [
@@ -1092,7 +1092,7 @@ export default function CalendarPage() {
     no_school: 'No School',
     early_dismissal: 'Early Dismissal',
     instructor_exception: 'Staff Exception',
-    asap_exception: 'ASAP Exception',
+    asap_exception: 'ASAP! Exception',
     clear: 'Clear Status',
   };
 

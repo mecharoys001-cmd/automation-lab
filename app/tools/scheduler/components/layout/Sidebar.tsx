@@ -36,7 +36,7 @@ interface SidebarProps {
   user?: UserProfile;
   /** Base path prefix for all nav hrefs */
   basePath?: string;
-  /** Custom header content (replaces the default ASAP logo) */
+  /** Custom header content (replaces the default ASAP! logo) */
   header?: React.ReactNode;
   /** Callback when user clicks the logout button */
   onLogout?: () => void;
@@ -120,7 +120,7 @@ export function Sidebar({
         <div className="flex-shrink-0">
           {header ?? (
             <div className="flex items-center pb-6">
-              <img src="/images/asap-logo.svg" alt="ASAP" className="h-12 flex-shrink-0 brightness-0 invert" />
+              <img src="/images/asap-logo.svg" alt="ASAP!" className="h-12 flex-shrink-0 brightness-0 invert" />
             </div>
           )}
         </div>
