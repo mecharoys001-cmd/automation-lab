@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds, scopedJsonResponse } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,6 +74,21 @@ export async function POST(request: NextRequest) {
     }
 
     trackScheduleChange();
+    const description = (data?.description as string | undefined) ?? null;
+    const statusType = (data?.status_type as string | undefined) ?? null;
+    const date = (data?.date as string | undefined) ?? null;
+    const entityName = description
+      ? `${description}${date ? ` (${date})` : ''}`
+      : statusType && date
+        ? `${statusType} (${date})`
+        : (date ?? statusType ?? null);
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'create_calendar_entry',
+      entityName,
+      programId: body.program_id ?? null,
+      metadata: { status_type: statusType, date },
+    });
     return NextResponse.json({ entry: data }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

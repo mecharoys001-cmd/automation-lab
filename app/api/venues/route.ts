@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess, scopedJsonResponse } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,7 +38,8 @@ export async function GET(request: NextRequest) {
       const tagNames = ((v.venue_tags as any[]) ?? [])
         .map((vt: { tags: { name: string } | null }) => vt.tags?.name)
         .filter(Boolean);
-      const { venue_tags: _, ...rest } = v;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { venue_tags: _venueTags, ...rest } = v;
       return { ...rest, additional_tags: tagNames };
     });
 
@@ -170,6 +172,13 @@ export async function POST(request: NextRequest) {
           .insert(tags.map((t: { id: string }) => ({ venue_id: data.id, tag_id: t.id })));
       }
     }
+
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'create_venue',
+      entityName: data?.name ?? null,
+      programId: body.program_id,
+    });
 
     return NextResponse.json({ venue: { ...data, additional_tags: tagNames } }, { status: 201 });
   } catch (err) {

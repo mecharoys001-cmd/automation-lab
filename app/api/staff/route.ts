@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireMasterAdmin, requireProgramAccess, scopedJsonResponse } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,7 +92,8 @@ export async function GET(request: NextRequest) {
       const tagNames = ((s.staff_tags as any[]) ?? [])
         .map((st: { tags: { name: string } | null }) => st.tags?.name)
         .filter(Boolean);
-      const { staff_tags: _, ...rest } = s;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { staff_tags: _staffTags, ...rest } = s;
       return { ...rest, additional_tags: tagNames };
     });
 
@@ -232,6 +234,14 @@ export async function POST(request: NextRequest) {
           .insert(tags.map((t: { id: string }) => ({ staff_id: data.id, tag_id: t.id })));
       }
     }
+
+    const fullName = [data?.first_name, data?.last_name].filter(Boolean).join(' ').trim();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'create_staff',
+      entityName: fullName || data?.email || null,
+      programId: body.program_id,
+    });
 
     return NextResponse.json({ instructor: { ...data, additional_tags: tagNames }, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) }, { status: 201 });
   } catch (err) {

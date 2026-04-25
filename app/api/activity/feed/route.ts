@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       usageQuery = usageQuery.eq('status', 'completed');
     } else if (eventFilter === 'tool_error') {
       usageQuery = usageQuery.eq('status', 'error');
-    } else if (eventFilter === 'login') {
-      // Don't include tool_usage events when filtering for logins only
+    } else if (eventFilter === 'login' || eventFilter === 'scheduler_action') {
+      // Don't include tool_usage events when filtering for logins or scheduler-only
       usageQuery = null;
     }
 

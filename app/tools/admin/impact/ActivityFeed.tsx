@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ActivityFeedItem, ActivityFeedResponse } from '@/types/activity';
 import { useImpactRealtime, type ConnectionStatus } from './useImpactRealtime';
 
-type FilterType = 'all' | 'login' | 'tool' | 'error';
+type FilterType = 'all' | 'login' | 'tool' | 'scheduler' | 'error';
 
 const EVENT_COLORS: Record<string, string> = {
   login: '#2563eb',
@@ -12,7 +12,41 @@ const EVENT_COLORS: Record<string, string> = {
   tool_complete: '#10b981',
   tool_error: '#ef4444',
   tool_open: '#9ca3af',
+  scheduler_action: '#7c3aed',
 };
+
+const SCHEDULER_ACTION_LABELS: Record<string, { verb: string; noun: string }> = {
+  create_staff: { verb: 'Added', noun: 'staff member' },
+  create_venue: { verb: 'Added', noun: 'venue' },
+  create_template: { verb: 'Added', noun: 'event template' },
+  create_session: { verb: 'Added', noun: 'session' },
+  create_calendar_entry: { verb: 'Added', noun: 'program calendar entry' },
+  generate_sessions: { verb: 'Generated', noun: 'sessions' },
+};
+
+function describeSchedulerAction(metadata: Record<string, unknown>): string {
+  const action = metadata?.action as string | undefined;
+  const entityName = metadata?.entity_name as string | undefined;
+  const count = (metadata?.count as number | undefined) ?? 1;
+  const label = action ? SCHEDULER_ACTION_LABELS[action] : undefined;
+
+  if (!label) {
+    return action ? `Scheduler: ${action}` : 'Scheduler activity';
+  }
+
+  if (action === 'generate_sessions') {
+    return `${label.verb} ${count} ${count === 1 ? 'session' : label.noun}`;
+  }
+
+  if (count > 1) {
+    const plural = label.noun.endsWith('s') ? label.noun : `${label.noun}s`;
+    const namePart = entityName ? ` "${entityName}"` : '';
+    return `${label.verb} ${count} ${plural}${namePart}`;
+  }
+
+  const namePart = entityName ? ` "${entityName}"` : '';
+  return `${label.verb} ${label.noun}${namePart}`;
+}
 
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -38,6 +72,8 @@ function eventDescription(item: ActivityFeedItem): string {
       return `Completed ${item.tool_name || item.tool_id || 'a tool'}`;
     case 'tool_error':
       return `Error in ${item.tool_name || item.tool_id || 'a tool'}`;
+    case 'scheduler_action':
+      return describeSchedulerAction(item.metadata || {});
     default:
       return item.event_type;
   }
@@ -47,6 +83,7 @@ function filterToParam(filter: FilterType): string | undefined {
   switch (filter) {
     case 'login': return 'login';
     case 'tool': return 'tool_complete';
+    case 'scheduler': return 'scheduler_action';
     case 'error': return 'tool_error';
     default: return undefined;
   }
@@ -119,6 +156,7 @@ export default function ActivityFeed() {
     { label: 'All', value: 'all' },
     { label: 'Logins', value: 'login' },
     { label: 'Tool Usage', value: 'tool' },
+    { label: 'Scheduler', value: 'scheduler' },
     { label: 'Errors', value: 'error' },
   ];
 
