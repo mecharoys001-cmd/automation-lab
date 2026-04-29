@@ -66,6 +66,25 @@ export async function middleware(request: NextRequest) {
   const nonce = generateNonce()
   const path = request.nextUrl.pathname
 
+  // ── Recovery error fallback ────────────────────────────────────────────
+  // When a Supabase recovery link is expired/invalid AND its redirect target
+  // is not whitelisted, Supabase falls back to the Site URL with error params
+  // appended (e.g. /?error=access_denied&error_code=otp_expired). Forward
+  // those landings to the forgot-password screen so users see a recovery
+  // path instead of the marketing homepage.
+  if (path === '/') {
+    const errorParam = request.nextUrl.searchParams.get('error')
+    const errorCode = request.nextUrl.searchParams.get('error_code')
+    if (errorCode === 'otp_expired' || errorParam === 'access_denied') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/forgot-password'
+      url.search = '?error=expired_link'
+      const redirect = NextResponse.redirect(url)
+      applySecurityHeaders(redirect, nonce)
+      return redirect
+    }
+  }
+
   // ── Non-tools routes: just apply security headers, no auth ─────────────
   if (!path.startsWith('/tools')) {
     const response = NextResponse.next({ request })

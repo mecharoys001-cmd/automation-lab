@@ -1,43 +1,74 @@
 'use client'
 
-import { Suspense, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-function ForgotPasswordContent() {
+function ResetPasswordContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const expired = searchParams.get('error') === 'expired_link'
-  const [email, setEmail] = useState('')
+  const queryError = searchParams.get('error')
+
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      try {
+        const res = await fetch('/api/auth/session', { cache: 'no-store' })
+        if (cancelled) return
+        const data = await res.json().catch(() => ({}))
+        setHasSession(!!data?.authenticated)
+      } catch {
+        if (!cancelled) setHasSession(false)
+      } finally {
+        if (!cancelled) setCheckingSession(false)
+      }
+    }
+    check()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSubmit() {
     setError(null)
 
-    if (!email) {
-      setError('Please enter your email address.')
+    if (!password || !confirmPassword) {
+      setError('Please enter and confirm your new password.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
       return
     }
 
     setLoading(true)
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await fetch('/api/auth/update-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          redirectTo: window.location.origin + '/auth/callback?next=' + encodeURIComponent('/reset-password') + '&type=recovery',
-        }),
+        body: JSON.stringify({ password }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error || 'Something went wrong. Please try again.')
+        setError(data.error || 'We could not update your password. Please try again.')
         setLoading(false)
-      } else {
-        setSuccess(true)
-        setLoading(false)
+        return
       }
+      setSuccess(true)
+      setLoading(false)
+      setTimeout(() => router.push('/login'), 1500)
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
@@ -107,7 +138,7 @@ function ForgotPasswordContent() {
               margin: '0 0 4px',
             }}
           >
-            Reset Password
+            Set a New Password
           </h1>
           <p
             style={{
@@ -123,7 +154,54 @@ function ForgotPasswordContent() {
           </p>
         </div>
 
-        {success ? (
+        {checkingSession ? (
+          <p
+            style={{
+              textAlign: 'center',
+              color: '#666',
+              fontSize: '14px',
+              margin: 0,
+              fontFamily: "'Montserrat', sans-serif",
+            }}
+          >
+            Verifying your reset link...
+          </p>
+        ) : !hasSession ? (
+          <div
+            style={{
+              background: '#fff5f5',
+              border: '1px solid #fca5a5',
+              borderRadius: '8px',
+              padding: '20px 16px',
+              color: '#9b2226',
+              fontSize: '14px',
+              textAlign: 'center',
+              fontFamily: "'Montserrat', sans-serif",
+              lineHeight: 1.6,
+            }}
+          >
+            <p style={{ margin: '0 0 12px', fontWeight: 700 }}>
+              {queryError === 'expired_link'
+                ? 'That reset link has expired.'
+                : 'Your reset link is invalid or has expired.'}
+            </p>
+            <p style={{ margin: '0 0 12px' }}>Please request a new password reset email.</p>
+            <Link
+              href="/forgot-password"
+              style={{
+                display: 'inline-block',
+                padding: '10px 16px',
+                background: '#0F7490',
+                color: '#fff',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Request a new link
+            </Link>
+          </div>
+        ) : success ? (
           <div
             style={{
               background: '#f0fff4',
@@ -137,27 +215,10 @@ function ForgotPasswordContent() {
               lineHeight: 1.6,
             }}
           >
-            If an account exists for that email, we sent a reset link. Check your inbox.
+            Password updated. Redirecting to sign in...
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {expired && (
-              <p
-                style={{
-                  background: '#fff5f5',
-                  border: '1px solid #fca5a5',
-                  borderRadius: '8px',
-                  padding: '10px 12px',
-                  color: '#9b2226',
-                  fontSize: '13px',
-                  margin: 0,
-                  fontFamily: "'Montserrat', sans-serif",
-                  lineHeight: 1.5,
-                }}
-              >
-                That reset link has expired. Enter your email below to request a new one.
-              </p>
-            )}
             <p
               style={{
                 fontSize: '13px',
@@ -166,17 +227,25 @@ function ForgotPasswordContent() {
                 fontFamily: "'Montserrat', sans-serif",
               }}
             >
-              Enter your email and we&#39;ll send you a link to reset your password.
+              Enter a new password for your account.
             </p>
             <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="password"
+              placeholder="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+              disabled={loading}
+              autoFocus
+            />
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               style={inputStyle}
               disabled={loading}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              autoFocus
             />
 
             {error && (
@@ -198,7 +267,7 @@ function ForgotPasswordContent() {
 
             <button
               onClick={handleSubmit}
-              disabled={loading || !email}
+              disabled={loading || !password || !confirmPassword}
               style={{
                 width: '100%',
                 padding: '12px',
@@ -209,13 +278,13 @@ function ForgotPasswordContent() {
                 fontSize: '15px',
                 fontWeight: 700,
                 fontFamily: "'Montserrat', sans-serif",
-                cursor: loading || !email ? 'wait' : 'pointer',
-                opacity: loading || !email ? 0.7 : 1,
+                cursor: loading || !password || !confirmPassword ? 'wait' : 'pointer',
+                opacity: loading || !password || !confirmPassword ? 0.7 : 1,
                 transition: 'opacity 0.2s',
                 marginTop: '4px',
               }}
             >
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? 'Saving...' : 'Update Password'}
             </button>
           </div>
         )}
@@ -238,7 +307,7 @@ function ForgotPasswordContent() {
   )
 }
 
-export default function ForgotPasswordPage() {
+export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
@@ -247,7 +316,7 @@ export default function ForgotPasswordPage() {
         </div>
       }
     >
-      <ForgotPasswordContent />
+      <ResetPasswordContent />
     </Suspense>
   )
 }
