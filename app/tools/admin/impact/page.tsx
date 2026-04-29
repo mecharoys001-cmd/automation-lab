@@ -21,7 +21,6 @@ function getStoredTab(): Tab {
 export default function ImpactPage() {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
 
-  // Restore persisted tab on mount
   useEffect(() => {
     setActiveTab(getStoredTab());
   }, []);
@@ -40,35 +39,47 @@ export default function ImpactPage() {
   ];
 
   return (
-    <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc', color: '#1a1a2e', fontFamily: "'Montserrat', sans-serif" }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-        {/* Header */}
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
-          Impact Dashboard
-        </h1>
-        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
-          Track time savings across all automation tools.
+    <div className="al-report" style={{ paddingTop: '80px', minHeight: '100vh' }}>
+      {/* Page runner — print-style top-of-page indicator */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.5rem' }}>
+        <div className="al-runner">
+          <span>artsnwct.org / automation-lab</span>
+          <span>Internal Platform · Phase 2 Pilot</span>
+        </div>
+      </div>
+
+      {/* Gold phase banner */}
+      <div style={{ maxWidth: '1100px', margin: '24px auto 0', padding: '0 1.5rem' }}>
+        <div className="al-banner">Phase 2: Pilot Projects · Impact Measurement</div>
+      </div>
+
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+        {/* Hero — eyebrow + title with gold rule + lead */}
+        <div className="al-title-rule" style={{ marginBottom: '1.25rem' }}>
+          <div className="al-eyebrow" style={{ marginBottom: '8px' }}>
+            Automation Lab · Internal Dashboard
+          </div>
+          <h1 className="al-display">Impact Dashboard</h1>
+        </div>
+
+        <p className="al-lead" style={{ marginBottom: '2.5rem' }}>
+          The Automation Lab is a research- and service-driven pilot of the
+          Northwest Connecticut Arts Council. This dashboard records the
+          administrative time returned to participating cultural nonprofits as
+          each automation moves from prototype to deployment, so the Phase&nbsp;2
+          pilot can be evaluated against the burden documented in our Phase&nbsp;1
+          research.
         </p>
 
-        {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '0px', borderBottom: '2px solid #e2e8f0', marginBottom: '2rem' }}>
+        {/* Tabs */}
+        <div className="al-tabs" role="tablist">
           {tabs.map((tab) => (
             <button
               key={tab.key}
+              role="tab"
+              aria-selected={activeTab === tab.key}
               onClick={() => handleTabChange(tab.key)}
-              style={{
-                padding: '10px 20px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 700,
-                fontFamily: "'Montserrat', sans-serif",
-                color: activeTab === tab.key ? '#0F7490' : '#94a3b8',
-                borderBottom: activeTab === tab.key ? '2px solid #0F7490' : '2px solid transparent',
-                marginBottom: '-2px',
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
+              className={`al-tab${activeTab === tab.key ? ' is-active' : ''}`}
             >
               {tab.label}
             </button>

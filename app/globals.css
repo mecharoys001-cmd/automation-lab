@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -724,4 +725,234 @@ a:hover { text-decoration: underline; }
 .tool-card-hover:hover {
   box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
   transform: translateY(-2px);
+}
+
+/* ─────────────────────────────────────────────
+   AUTOMATION LAB — REPORT BRAND KIT
+   Scoped under .al-report so the rest of the
+   site is untouched. Mirrors the tokens defined
+   in design-kit/colors_and_type.css.
+───────────────────────────────────────────── */
+.al-report {
+  --al-gold-900: #7A6A40;
+  --al-gold-700: #A3915F;
+  --al-gold-600: #CFBD90;
+  --al-gold-500: #DBCBA6;
+  --al-gold-200: #EDE3C7;
+  --al-gold-100: #F7F1DF;
+
+  --al-ink-900: #1F1F1F;
+  --al-ink-800: #2B2B2B;
+  --al-ink-700: #404040;
+  --al-ink-500: #6B6B6B;
+  --al-ink-300: #C9C9C9;
+  --al-ink-200: #E4E4E4;
+  --al-ink-100: #F2F1EE;
+  --al-paper:   #FAF8F3;
+
+  --al-blue:      #304078;
+  --al-blue-soft: #1282A2;
+
+  --font-display: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-body:    'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  background: var(--al-paper);
+  color: var(--al-ink-900);
+  font-family: var(--font-body);
+}
+
+.al-report .al-runner {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--al-ink-500);
+  border-bottom: 1px solid var(--al-ink-200);
+  padding: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+
+.al-report .al-banner {
+  background: var(--al-gold-600);
+  color: var(--al-ink-900);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 14px 24px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.al-report .al-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--al-ink-500);
+  display: inline-block;
+}
+
+.al-report .al-title-rule {
+  border-left: 4px solid var(--al-gold-600);
+  padding-left: 18px;
+}
+
+.al-report .al-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+  color: var(--al-ink-900);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.al-report .al-lead {
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--al-ink-900);
+  max-width: 720px;
+}
+
+.al-report .al-lead em {
+  font-style: italic;
+  color: var(--al-ink-500);
+}
+
+.al-report .al-section-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.al-report .al-section-title h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--al-ink-900);
+  margin: 0;
+}
+
+.al-report .al-section-title .al-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--al-ink-200);
+}
+
+.al-report .al-card {
+  background: #ffffff;
+  border: 1px solid var(--al-ink-200);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(31,31,31,.04);
+}
+
+.al-report .al-stat-card {
+  background: #ffffff;
+  border: 1px solid var(--al-ink-200);
+  border-radius: 10px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.al-report .al-stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--al-gold-600);
+}
+
+.al-report .al-stat-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--al-gold-700);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.al-report .al-stat-num .al-unit {
+  font-size: 28px;
+  margin-left: 4px;
+  color: var(--al-gold-700);
+}
+
+.al-report .al-stat-caption {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--al-ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-top: 10px;
+}
+
+.al-report .al-dark-panel {
+  background: var(--al-ink-800);
+  color: #ffffff;
+  padding: 22px 26px;
+  border-radius: 6px;
+}
+
+.al-report .al-dark-panel .al-eyebrow {
+  color: var(--al-gold-500);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.al-report .al-dark-panel-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.88);
+  max-width: 640px;
+}
+
+.al-report .al-tab {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--al-ink-500);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.al-report .al-tab:hover {
+  color: var(--al-gold-700);
+}
+
+.al-report .al-tab.is-active {
+  color: var(--al-ink-900);
+  border-bottom-color: var(--al-gold-600);
+}
+
+.al-report .al-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--al-ink-200);
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
 }
