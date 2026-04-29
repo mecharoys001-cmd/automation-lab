@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function PATCH(
   request: NextRequest,
@@ -117,6 +118,14 @@ export async function PATCH(
       }
     }
 
+    const fullName = [data?.first_name, data?.last_name].filter(Boolean).join(' ').trim();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'update_staff',
+      entityName: fullName || data?.email || null,
+      programId: instructor.program_id,
+    });
+
     return NextResponse.json({ instructor: { ...data, ...(tagNames !== undefined ? { additional_tags: tagNames } : {}) }, ...(duplicateNameWarning ? { warning: duplicateNameWarning } : {}) });
   } catch (err) {
     return NextResponse.json(
@@ -143,7 +152,7 @@ export async function DELETE(
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: inst } = await (supabase.from('staff') as any)
-      .select('program_id')
+      .select('program_id, first_name, last_name, email')
       .eq('id', id)
       .single();
 
@@ -160,6 +169,14 @@ export async function DELETE(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    const fullName = [inst?.first_name, inst?.last_name].filter(Boolean).join(' ').trim();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'delete_staff',
+      entityName: fullName || inst?.email || null,
+      programId: inst?.program_id ?? null,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -52,7 +53,17 @@ export async function DELETE(request: NextRequest) {
     }
 
     trackScheduleChange();
-    return NextResponse.json({ success: true, deleted: deleted?.length ?? 0 });
+    const deletedCount = deleted?.length ?? 0;
+    if (deletedCount > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'delete_future_sessions',
+        count: deletedCount,
+        programId: session.program_id ?? null,
+        metadata: { from_date: session.date, template_id: session.template_id },
+      });
+    }
+    return NextResponse.json({ success: true, deleted: deletedCount });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch } from '@/lib/scheduler/utils';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(
   _request: NextRequest,
@@ -168,6 +169,12 @@ export async function PATCH(
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'update_template',
+      entityName: data?.name ?? existing.name ?? null,
+      programId: existing.program_id,
+    });
     return NextResponse.json({ template: data });
   } catch (err) {
     return NextResponse.json(
@@ -193,7 +200,7 @@ export async function DELETE(
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tmpl } = await (supabase.from('session_templates') as any)
-      .select('program_id')
+      .select('program_id, name')
       .eq('id', id)
       .single();
 
@@ -220,6 +227,12 @@ export async function DELETE(
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'delete_template',
+      entityName: tmpl.name ?? null,
+      programId: tmpl.program_id,
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(

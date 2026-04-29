@@ -13,6 +13,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { availabilityCoversWindow, toTimeWindow, parseDate } from '@/lib/scheduler/utils';
 import { requireAdmin, requireMinRole, getAccessibleProgramIds } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 const MAX_BATCH_SIZE = 5000;
 
@@ -117,6 +118,14 @@ export async function POST(request: NextRequest) {
     }
 
     trackScheduleChange();
+    if (updated > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'bulk_assign_sessions',
+        count: updated,
+        metadata: { failed },
+      });
+    }
     return NextResponse.json({ updated, failed });
   } catch (err) {
     return NextResponse.json(

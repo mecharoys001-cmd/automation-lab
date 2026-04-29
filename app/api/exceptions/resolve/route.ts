@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 import type { Session, Instructor } from '@/types/database';
 
 type ResolutionType = 'substitute' | 'cancel' | 'cancel_reschedule';
@@ -209,6 +210,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        logSchedulerActivity({
+          user: auth.user,
+          action: 'resolve_exception',
+          entityName: `${instructor.first_name} ${instructor.last_name}`.trim(),
+          programId: session.program_id,
+          metadata: { resolution_type: 'substitute', session_id, date: session.date },
+        });
+
         return NextResponse.json({
           success: true,
           resolution_type: 'substitute',
@@ -236,6 +245,13 @@ export async function POST(request: NextRequest) {
             { status: 500 }
           );
         }
+
+        logSchedulerActivity({
+          user: auth.user,
+          action: 'resolve_exception',
+          programId: session.program_id,
+          metadata: { resolution_type: 'cancel', session_id, date: session.date },
+        });
 
         return NextResponse.json({
           success: true,
@@ -308,6 +324,18 @@ export async function POST(request: NextRequest) {
             { status: 500 }
           );
         }
+
+        logSchedulerActivity({
+          user: auth.user,
+          action: 'resolve_exception',
+          programId: session.program_id,
+          metadata: {
+            resolution_type: 'cancel_reschedule',
+            session_id,
+            date: session.date,
+            makeup_date,
+          },
+        });
 
         return NextResponse.json({
           success: true,

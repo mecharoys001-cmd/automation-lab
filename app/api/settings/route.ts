@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET() {
   try {
@@ -84,6 +85,11 @@ export async function PUT(request: NextRequest) {
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'update_settings',
+      metadata: { buffer_time_enabled, buffer_time_minutes },
+    });
     return NextResponse.json({ settings: data });
   } catch (err) {
     return NextResponse.json(

@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, availabilityCoversWindow, toTimeWindow, dayIndexToName, parseDate } from '@/lib/scheduler/utils';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function PATCH(
   request: NextRequest,
@@ -215,6 +216,13 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'update_session',
+      entityName: (data as { name?: string } | null)?.name ?? null,
+      programId: sessionToCheck.program_id ?? null,
+    });
+
     // Sync session_tags if tag_names was provided
     if (tagNames !== undefined) {
       // Delete existing session_tags for this session
@@ -296,7 +304,7 @@ export async function DELETE(
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sess } = await (supabase.from('sessions') as any)
-      .select('program_id')
+      .select('program_id, name')
       .eq('id', id)
       .single();
 
@@ -315,6 +323,12 @@ export async function DELETE(
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'delete_session',
+      entityName: sess?.name ?? null,
+      programId: sess?.program_id ?? null,
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(

@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 function hourToTimeString(hour: number): string {
   const h = Math.floor(hour);
@@ -113,7 +114,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ sessions_created: created?.length ?? 0 }, { status: 201 });
+    const sessionsCreated = created?.length ?? 0;
+    if (sessionsCreated > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'publish_placements',
+        count: sessionsCreated,
+        programId: program_id,
+      });
+    }
+
+    return NextResponse.json({ sessions_created: sessionsCreated }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

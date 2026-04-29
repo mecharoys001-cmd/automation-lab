@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export const maxDuration = 60;
 
@@ -76,6 +77,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     const count = deleted?.length ?? 0;
+
+    if (count > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'delete_draft_sessions',
+        count,
+        programId,
+        metadata: { date: targetDate },
+      });
+    }
 
     return NextResponse.json({
       success: true,

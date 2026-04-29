@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 import type { SchoolCalendar } from '@/types/database';
 
 export async function POST(request: NextRequest) {
@@ -99,6 +100,16 @@ export async function POST(request: NextRequest) {
     }
 
     const flaggedIds = (updated ?? []).map((row: { id: string }) => row.id);
+
+    if (flaggedIds.length > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'flag_sessions',
+        count: flaggedIds.length,
+        programId: entry.program_id,
+        metadata: { status_type: entry.status_type, date: entry.date },
+      });
+    }
 
     return NextResponse.json({
       success: true,

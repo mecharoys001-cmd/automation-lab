@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(
   _request: NextRequest,
@@ -164,6 +165,13 @@ export async function PATCH(
       }
     }
 
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'update_venue',
+      entityName: data?.name ?? currentVenue.name ?? null,
+      programId: currentVenue.program_id,
+    });
+
     return NextResponse.json({ venue: { ...data, ...(tagNames !== undefined ? { additional_tags: tagNames } : {}) } });
   } catch (err) {
     return NextResponse.json(
@@ -190,7 +198,7 @@ export async function DELETE(
     // Verify program access before deleting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: venue } = await (supabase.from('venues') as any)
-      .select('program_id')
+      .select('program_id, name')
       .eq('id', id)
       .single();
 
@@ -211,6 +219,13 @@ export async function DELETE(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'delete_venue',
+      entityName: venue.name ?? null,
+      programId: venue.program_id ?? null,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

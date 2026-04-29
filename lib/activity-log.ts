@@ -2,11 +2,33 @@ import { createServiceClient } from '@/lib/supabase-service';
 
 export type SchedulerActivityAction =
   | 'create_staff'
+  | 'update_staff'
+  | 'delete_staff'
   | 'create_venue'
+  | 'update_venue'
+  | 'delete_venue'
   | 'create_template'
+  | 'update_template'
+  | 'delete_template'
   | 'create_session'
+  | 'update_session'
+  | 'delete_session'
   | 'create_calendar_entry'
-  | 'generate_sessions';
+  | 'update_calendar_entry'
+  | 'delete_calendar_entry'
+  | 'generate_sessions'
+  | 'bulk_update_sessions'
+  | 'bulk_assign_sessions'
+  | 'delete_draft_sessions'
+  | 'cancel_future_sessions'
+  | 'delete_future_sessions'
+  | 'publish_placements'
+  | 'publish_schedule'
+  | 'flag_sessions'
+  | 'resolve_exception'
+  | 'update_settings'
+  | 'save_version'
+  | 'revert_version';
 
 interface LogSchedulerActivityArgs {
   user: { id: string; email: string };

@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { ScheduleSnapshot } from '@/types/database';
 import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function POST(request: NextRequest) {
   try {
@@ -114,6 +115,14 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'save_version',
+      entityName: `v${nextSlot} (${year})`,
+      programId: programId,
+      metadata: { year, version_number: nextSlot, status },
+    });
 
     return NextResponse.json({ version }, { status: 201 });
   } catch (err) {

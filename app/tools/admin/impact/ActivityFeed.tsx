@@ -17,12 +17,46 @@ const EVENT_COLORS: Record<string, string> = {
 
 const SCHEDULER_ACTION_LABELS: Record<string, { verb: string; noun: string }> = {
   create_staff: { verb: 'Added', noun: 'staff member' },
+  update_staff: { verb: 'Updated', noun: 'staff member' },
+  delete_staff: { verb: 'Deleted', noun: 'staff member' },
   create_venue: { verb: 'Added', noun: 'venue' },
+  update_venue: { verb: 'Updated', noun: 'venue' },
+  delete_venue: { verb: 'Deleted', noun: 'venue' },
   create_template: { verb: 'Added', noun: 'event template' },
+  update_template: { verb: 'Updated', noun: 'event template' },
+  delete_template: { verb: 'Deleted', noun: 'event template' },
   create_session: { verb: 'Added', noun: 'session' },
+  update_session: { verb: 'Updated', noun: 'session' },
+  delete_session: { verb: 'Deleted', noun: 'session' },
   create_calendar_entry: { verb: 'Added', noun: 'program calendar entry' },
+  update_calendar_entry: { verb: 'Updated', noun: 'program calendar entry' },
+  delete_calendar_entry: { verb: 'Deleted', noun: 'program calendar entry' },
   generate_sessions: { verb: 'Generated', noun: 'sessions' },
+  bulk_update_sessions: { verb: 'Bulk-edited', noun: 'sessions' },
+  bulk_assign_sessions: { verb: 'Bulk-assigned', noun: 'sessions' },
+  delete_draft_sessions: { verb: 'Cleared', noun: 'draft sessions' },
+  cancel_future_sessions: { verb: 'Canceled', noun: 'future sessions' },
+  delete_future_sessions: { verb: 'Deleted', noun: 'future sessions' },
+  publish_placements: { verb: 'Published', noun: 'placements' },
+  publish_schedule: { verb: 'Published', noun: 'schedule' },
+  flag_sessions: { verb: 'Flagged', noun: 'sessions for resolution' },
+  resolve_exception: { verb: 'Resolved', noun: 'exception' },
+  update_settings: { verb: 'Updated', noun: 'scheduler settings' },
+  save_version: { verb: 'Saved', noun: 'schedule version' },
+  revert_version: { verb: 'Reverted to', noun: 'schedule version' },
 };
+
+const COUNT_FIRST_ACTIONS = new Set([
+  'generate_sessions',
+  'bulk_update_sessions',
+  'bulk_assign_sessions',
+  'delete_draft_sessions',
+  'cancel_future_sessions',
+  'delete_future_sessions',
+  'flag_sessions',
+  'publish_placements',
+  'publish_schedule',
+]);
 
 function describeSchedulerAction(metadata: Record<string, unknown>): string {
   const action = metadata?.action as string | undefined;
@@ -34,8 +68,9 @@ function describeSchedulerAction(metadata: Record<string, unknown>): string {
     return action ? `Scheduler: ${action}` : 'Scheduler activity';
   }
 
-  if (action === 'generate_sessions') {
-    return `${label.verb} ${count} ${count === 1 ? 'session' : label.noun}`;
+  if (action && COUNT_FIRST_ACTIONS.has(action)) {
+    const plural = label.noun.endsWith('s') ? label.noun : `${label.noun}s`;
+    return `${label.verb} ${count} ${count === 1 && !label.noun.endsWith('s') ? label.noun : plural}`;
   }
 
   if (count > 1) {

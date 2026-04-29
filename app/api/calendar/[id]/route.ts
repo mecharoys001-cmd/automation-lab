@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(
   _request: NextRequest,
@@ -79,6 +80,13 @@ export async function PATCH(
     }
 
     trackScheduleChange();
+    const updatedRow = data as { description?: string | null; date?: string } | null;
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'update_calendar_entry',
+      entityName: updatedRow?.description || updatedRow?.date || null,
+      programId: existing?.program_id ?? null,
+    });
     return NextResponse.json({ entry: data });
   } catch (err) {
     return NextResponse.json(
@@ -105,7 +113,7 @@ export async function DELETE(
     // Fetch existing entry to verify program access
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase.from('school_calendar') as any)
-      .select('program_id')
+      .select('program_id, description, date')
       .eq('id', id)
       .single();
 
@@ -124,6 +132,12 @@ export async function DELETE(
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'delete_calendar_entry',
+      entityName: existing?.name ?? existing?.date ?? null,
+      programId: existing?.program_id ?? null,
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(

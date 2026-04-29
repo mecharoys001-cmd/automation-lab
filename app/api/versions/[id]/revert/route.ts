@@ -26,6 +26,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import type { ScheduleSnapshot } from '@/types/database';
 import { requireAdmin, requireMasterAdmin } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function POST(
   _request: NextRequest,
@@ -271,6 +272,13 @@ export async function POST(
     if (!hasEntityData) {
       warnings.push('old snapshot format — instructors/venues/tags left as-is');
     }
+
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'revert_version',
+      entityName: `v${version.version_number} (${year})`,
+      metadata: { year, version_number: version.version_number, status: version.status },
+    });
 
     return NextResponse.json({
       success: true,

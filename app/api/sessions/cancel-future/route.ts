@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -53,7 +54,17 @@ export async function PATCH(request: NextRequest) {
     }
 
     trackScheduleChange();
-    return NextResponse.json({ success: true, canceled: canceled?.length ?? 0 });
+    const canceledCount = canceled?.length ?? 0;
+    if (canceledCount > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'cancel_future_sessions',
+        count: canceledCount,
+        programId: session.program_id ?? null,
+        metadata: { from_date: session.date, template_id: session.template_id },
+      });
+    }
+    return NextResponse.json({ success: true, canceled: canceledCount });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
