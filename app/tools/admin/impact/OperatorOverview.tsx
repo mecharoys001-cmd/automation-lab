@@ -156,41 +156,71 @@ export default function OperatorOverview() {
   useImpactRealtime({ onEvent: fetchAll, debounceMs: 2000 });
 
   const {
-    monthlyHours,
+    totalHoursSaved,
     activeCount,
     configuredCount,
-    recentRuns30d,
+    trackedRuns,
     barRows,
     statusRows,
+    barTotalHours,
+    barHasFallback,
   } = useMemo(() => {
     const now = Date.now();
-    const configuredCount = configs.length;
-    const activeCount = stats.filter(s => {
-      if (!s.last_used) return false;
+
+    // Eligible tools = configured & active & not hidden. This is the union
+    // baseline so every real tool gets a row, regardless of whether anyone
+    // set a run cadence.
+    const eligibleConfigs = configs.filter(c => {
+      if (c.is_active === false) return false;
+      if (c.visibility === 'hidden') return false;
+      return true;
+    });
+    const configuredCount = eligibleConfigs.length;
+
+    const statByTool = new Map<string, ToolUsageStats>();
+    for (const s of stats) statByTool.set(s.tool_id, s);
+
+    const activeCount = eligibleConfigs.filter(c => {
+      const s = statByTool.get(c.tool_id);
+      if (!s?.last_used) return false;
       return now - new Date(s.last_used).getTime() <= DAYS_30_MS;
     }).length;
-    const recentRuns30d = stats
-      .filter(s => s.last_used && now - new Date(s.last_used).getTime() <= DAYS_30_MS)
-      .reduce((sum, s) => sum + (s.total_uses || 0), 0);
 
-    // Per-tool monthly hours estimate (the "Tool Usage By Category" bars).
-    const withHours = stats
-      .map(s => ({ stat: s, hrs: hoursPerMonth(s) }))
-      .filter(r => r.hrs > 0)
-      .sort((a, b) => b.hrs - a.hrs);
-    const monthlyHours = withHours.reduce((sum, r) => sum + r.hrs, 0);
-    const maxHrs = withHours[0]?.hrs || 1;
-    const barRows = withHours.slice(0, 6).map(r => ({
-      tool_id: r.stat.tool_id,
-      label: r.stat.display_name,
-      hours: r.hrs,
-      pct: Math.max(6, Math.round((r.hrs / maxHrs) * 100)),
-      external: !!r.stat.is_external,
+    // Tracked runs: every recorded use across every tool. We can't compute a
+    // true 30-day window from the stats endpoint, so this is the honest label.
+    const trackedRuns = stats.reduce((sum, s) => sum + (s.total_uses || 0), 0);
+
+    // Total tracked hours saved across every tool — drives the headline KPI.
+    const totalHoursSaved = stats.reduce((sum, s) => sum + (s.total_hours_saved || 0), 0);
+
+    // Bar rows: one per eligible tool. Prefer cadence-based monthly estimate;
+    // fall back to total tracked hours so in-platform tools without cadence
+    // still appear with a real number instead of disappearing.
+    const rowsRaw = eligibleConfigs.map(c => {
+      const stat = statByTool.get(c.tool_id);
+      const cadenceHrs = stat ? hoursPerMonth(stat) : 0;
+      const trackedHrs = stat?.total_hours_saved ?? 0;
+      const hours = cadenceHrs > 0 ? cadenceHrs : trackedHrs;
+      return {
+        tool_id: c.tool_id,
+        label: c.display_name,
+        hours,
+        external: !!c.is_external,
+        usedFallback: cadenceHrs <= 0 && trackedHrs > 0,
+      };
+    });
+    rowsRaw.sort((a, b) => b.hours - a.hours);
+    const barTotalHours = rowsRaw.reduce((sum, r) => sum + r.hours, 0);
+    const barHasFallback = rowsRaw.some(r => r.usedFallback);
+    const maxHrs = rowsRaw[0]?.hours || 1;
+    const barRows = rowsRaw.map(r => ({
+      ...r,
+      pct: r.hours > 0 ? Math.max(6, Math.round((r.hours / maxHrs) * 100)) : 0,
     }));
 
     // System Status: per configured tool, derive a health row.
-    const statusRows = configs.map(c => {
-      const stat = stats.find(s => s.tool_id === c.tool_id);
+    const statusRows = eligibleConfigs.map(c => {
+      const stat = statByTool.get(c.tool_id);
       const placeholder: ToolUsageStats = stat ?? {
         tool_id: c.tool_id,
         display_name: c.display_name,
@@ -231,12 +261,14 @@ export default function OperatorOverview() {
     });
 
     return {
-      monthlyHours,
+      totalHoursSaved,
       activeCount,
       configuredCount,
-      recentRuns30d,
+      trackedRuns,
       barRows,
-      statusRows: statusRows.slice(0, 6),
+      statusRows,
+      barTotalHours,
+      barHasFallback,
     };
   }, [stats, configs]);
 
@@ -285,15 +317,15 @@ export default function OperatorOverview() {
       {/* KPI row */}
       <div className="al-op-kpis">
         <div className="al-op-kpi">
-          <div className="al-op-kpi-label">Hours Saved / Mo</div>
+          <div className="al-op-kpi-label">Hours Saved</div>
           <div className="al-op-kpi-value">
-            {monthlyHours > 0 ? Math.round(monthlyHours * 10) / 10 : '—'}
-            {monthlyHours > 0 && <span className="al-op-kpi-unit">h</span>}
+            {totalHoursSaved > 0 ? Math.round(totalHoursSaved * 10) / 10 : '—'}
+            {totalHoursSaved > 0 && <span className="al-op-kpi-unit">h</span>}
           </div>
           <div className="al-op-kpi-foot">
-            {monthlyHours > 0
-              ? `≈ $${Math.round(monthlyHours * 20).toLocaleString()} returned @ $20/hr`
-              : 'No cadence data yet'}
+            {totalHoursSaved > 0
+              ? `≈ $${Math.round(totalHoursSaved * 20).toLocaleString()} returned @ $20/hr`
+              : 'No tracked runs yet'}
           </div>
         </div>
         <div className="al-op-kpi">
@@ -305,9 +337,9 @@ export default function OperatorOverview() {
           <div className="al-op-kpi-foot">Run in the last 30 days</div>
         </div>
         <div className="al-op-kpi">
-          <div className="al-op-kpi-label">Runs · 30d</div>
-          <div className="al-op-kpi-value">{recentRuns30d.toLocaleString()}</div>
-          <div className="al-op-kpi-foot">From active automations</div>
+          <div className="al-op-kpi-label">Tracked Runs</div>
+          <div className="al-op-kpi-value">{trackedRuns.toLocaleString()}</div>
+          <div className="al-op-kpi-foot">All recorded tool uses</div>
         </div>
         <div className="al-op-kpi">
           <div className="al-op-kpi-label">Tracked Tools</div>
@@ -318,18 +350,27 @@ export default function OperatorOverview() {
 
       {/* Middle: usage bars + system status */}
       <div className="al-op-mid">
-        {/* Tool Usage By Category (Hrs/Mo) */}
+        {/* Tool Usage By Category (Tracked Hrs) */}
         <section className="al-op-card">
           <header className="al-op-card-header">
-            <h2 className="al-op-card-title">Tool Usage By Category (Hrs / Mo)</h2>
-            <span className="al-op-card-meta">
-              {monthlyHours > 0 ? `${Math.round(monthlyHours * 10) / 10}h total / mo` : 'No cadence'}
+            <h2 className="al-op-card-title">Tool Usage By Category (Tracked Hrs)</h2>
+            <span
+              className="al-op-card-meta"
+              title={
+                barHasFallback
+                  ? 'Tools without a run cadence fall back to total tracked hours saved.'
+                  : 'Cadence-based monthly estimate.'
+              }
+            >
+              {barTotalHours > 0
+                ? `${Math.round(barTotalHours * 10) / 10}h total`
+                : 'No tracked hours'}
             </span>
           </header>
           <div className="al-op-card-body">
             {barRows.length === 0 ? (
               <div className="al-op-empty">
-                No run cadence or first-run data yet — set a run frequency on tools to populate this chart.
+                No tools configured yet.
               </div>
             ) : barRows.map((row) => (
               <div key={row.tool_id} className="al-op-bar-row">
@@ -350,7 +391,7 @@ export default function OperatorOverview() {
         <section className="al-op-card">
           <header className="al-op-card-header">
             <h2 className="al-op-card-title">System Status</h2>
-            <span className="al-op-card-meta">{statusRows.length} of {configuredCount}</span>
+            <span className="al-op-card-meta">{configuredCount} tools</span>
           </header>
           <div className="al-op-card-body">
             {statusRows.length === 0 ? (
