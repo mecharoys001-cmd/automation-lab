@@ -23,6 +23,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch, parseDate, formatDate } from '@/lib/scheduler/utils';
 import { requireAdmin, requireMinRole, requireProgramAccess, getAccessibleProgramIds, scopedJsonResponse } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(request: NextRequest) {
   try {
@@ -357,6 +358,14 @@ export async function POST(request: NextRequest) {
       }
 
       trackScheduleChange();
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'create_session',
+        entityName: body.name ?? null,
+        count: data?.length ?? 0,
+        programId: body.program_id ?? null,
+        metadata: { recurrence: recurrence.type ?? null },
+      });
       return NextResponse.json(
         { sessions: data, count: data?.length ?? 0 },
         { status: 201 }
@@ -377,6 +386,12 @@ export async function POST(request: NextRequest) {
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'create_session',
+      entityName: data?.name ?? body.name ?? null,
+      programId: body.program_id ?? null,
+    });
     return NextResponse.json({ session: data }, { status: 201 });
   } catch (err) {
     console.error('Sessions POST error:', err);

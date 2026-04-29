@@ -776,49 +776,58 @@ export default function ImpactDashboard() {
         </div>
       )}
 
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2.5rem' }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F7490', fontFamily: "'Montserrat', sans-serif" }}>
-            {totalUses}
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px', fontWeight: 600 }}>
-            Total Tool Uses
-          </div>
+      {/* Summary stat callouts — gold numerals over tracked-caps captions */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.75rem' }}>
+        <div className="al-stat-card">
+          <div className="al-stat-num">{totalUses}</div>
+          <div className="al-stat-caption">Tool Runs Logged</div>
         </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#6366f1', fontFamily: "'Montserrat', sans-serif" }}>
-            {Math.round(totalHours * 10) / 10}
+        <div className="al-stat-card">
+          <div className="al-stat-num">
+            {Math.round(totalHours * 10) / 10}<span className="al-unit">h</span>
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px', fontWeight: 600 }}>
-            Total Hours Saved
-          </div>
+          <div className="al-stat-caption">Administrative Time Returned</div>
         </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', fontFamily: "'Montserrat', sans-serif" }}>
-            ${Math.round(totalHours * 20)}
+        <div className="al-stat-card">
+          <div className="al-stat-num">
+            <span className="al-unit" style={{ marginLeft: 0, marginRight: 4 }}>$</span>{Math.round(totalHours * 20)}
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px', fontWeight: 600 }}>
-            Est. Cost Savings (@$20/hr)
-          </div>
+          <div className="al-stat-caption">Estimated Value @ $20/hr</div>
+        </div>
+      </div>
+
+      {/* Methodology / what-this-tracks dark inset — Phase 1 report cadence */}
+      <div className="al-dark-panel" style={{ marginBottom: '2.5rem' }}>
+        <div className="al-eyebrow">What This Tracks</div>
+        <div className="al-dark-panel-body">
+          Each automation reports a per-use minute estimate calibrated against
+          the manual workflow it replaces. Hours saved are the product of those
+          per-use estimates and observed runs — they are an institutional
+          measurement of returned administrative capacity, not a marketing
+          claim. Estimates are conservative and tied to specific, sourced
+          workflows.
         </div>
       </div>
 
       {/* Internal tools */}
-      <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
-        By Tool
-      </h2>
+      <div className="al-section-title">
+        <h2>Pilot Tools — In&nbsp;Platform</h2>
+        <span className="al-rule" />
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {internalStats.map((s) => renderToolCard(s, false))}
       </div>
 
       {/* External Tools Section */}
       <div style={{ marginTop: '3rem' }}>
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '4px', fontFamily: "'Montserrat', sans-serif", color: '#1a1a2e' }}>
-          External &amp; Offline Tools
-        </h2>
-        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '1.5rem' }}>
-          Track tools that run outside the website
+        <div className="al-section-title">
+          <h2>External &amp; Offline Tools</h2>
+          <span className="al-rule" />
+        </div>
+        <p style={{ fontSize: '13px', color: 'var(--al-ink-500, #6B6B6B)', marginBottom: '1.5rem', maxWidth: '640px' }}>
+          Automations that run outside the platform — typically batch jobs,
+          spreadsheets, or scheduled scripts — are recorded here so their
+          contribution to returned time is captured alongside in-platform tools.
         </p>
 
         {saveSuccess && (

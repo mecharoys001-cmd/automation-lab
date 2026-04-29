@@ -31,6 +31,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { requireAdmin, requireMinRole, requireProgramAccess } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -327,6 +328,16 @@ export async function POST(request: NextRequest) {
       ...s,
       template: templateMap.get(s.template_id) ?? null,
     }));
+
+    if (sessionsWithTemplate.length > 0) {
+      logSchedulerActivity({
+        user: auth.user,
+        action: 'generate_sessions',
+        count: sessionsWithTemplate.length,
+        programId: program_id,
+        metadata: { program_name: program?.name ?? null },
+      });
+    }
 
     return NextResponse.json(
       { sessions: sessionsWithTemplate, total_generated: sessionsWithTemplate.length },

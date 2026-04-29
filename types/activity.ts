@@ -5,7 +5,8 @@ export type ActivityEventType =
   | 'logout'
   | 'tool_open'
   | 'tool_complete'
-  | 'tool_error';
+  | 'tool_error'
+  | 'scheduler_action';
 
 export interface ActivityLogEvent {
   id: string;

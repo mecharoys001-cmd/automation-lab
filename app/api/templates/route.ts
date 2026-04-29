@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { trackScheduleChange } from '@/lib/track-change';
 import { skillsMatch } from '@/lib/scheduler/utils';
 import { requireAdmin, requireMinRole, requireProgramAccess, scopedJsonResponse } from '@/lib/api-auth';
+import { logSchedulerActivity } from '@/lib/activity-log';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Debug: log venue assignments
-    const venueStats = (data ?? []).reduce((acc: Record<string, number>, t: any) => {
+    const venueStats = (data ?? []).reduce((acc: Record<string, number>, t: { venue?: { name?: string } | null }) => {
       const venueName = t.venue?.name ?? 'NULL';
       acc[venueName] = (acc[venueName] ?? 0) + 1;
       return acc;
@@ -209,6 +210,12 @@ export async function POST(request: NextRequest) {
     }
 
     trackScheduleChange();
+    logSchedulerActivity({
+      user: auth.user,
+      action: 'create_template',
+      entityName: data?.name ?? null,
+      programId: body.program_id,
+    });
     return NextResponse.json({ template: data }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
