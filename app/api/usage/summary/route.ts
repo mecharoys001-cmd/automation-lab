@@ -1,6 +1,10 @@
-// Public endpoint returning aggregate usage stats (no auth required)
+// Public endpoint returning aggregate usage stats (no auth required).
+// Restricted to tools listed on the site Tools page so the homepage savings
+// bar reflects what visitors can actually use — not prototype/external
+// configs that exist in tool_config but aren't shipped on /tools.
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { SITE_TOOL_IDS } from '@/app/tools/tool-catalog';
 
 export async function GET() {
   try {
@@ -8,8 +12,9 @@ export async function GET() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: configs, error: configError } = await (svc.from('tool_config') as any)
-      .select('tool_id, minutes_per_use')
-      .eq('is_active', true);
+      .select('tool_id, minutes_per_use, is_external')
+      .eq('is_active', true)
+      .in('tool_id', SITE_TOOL_IDS as unknown as string[]);
 
     if (configError) throw configError;
 
@@ -17,6 +22,7 @@ export async function GET() {
     let totalMinutes = 0;
 
     for (const config of configs || []) {
+      if (config.is_external) continue;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count } = await (svc.from('tool_usage') as any)
         .select('*', { count: 'exact', head: true })

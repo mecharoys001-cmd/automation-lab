@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ToolUsageStats, ToolConfig } from '@/types/usage';
 import type { ActivityFeedItem, ActivityFeedResponse } from '@/types/activity';
 import { useImpactRealtime } from './useImpactRealtime';
+import { SITE_TOOL_IDS } from '../../tool-catalog';
 
 const DAYS_30_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -167,14 +168,17 @@ export default function OperatorOverview() {
   } = useMemo(() => {
     const now = Date.now();
 
-    // Eligible tools = configured & active & not hidden. This is the union
-    // baseline so every real tool gets a row, regardless of whether anyone
-    // set a run cadence.
+    // Operator Overview is scoped to "site tools" — i.e. tools actually
+    // listed on /tools. External and prototype configs may exist in
+    // tool_config (managed in Impact Stats) but should not appear here.
+    const siteToolIds = new Set(SITE_TOOL_IDS);
     const eligibleConfigs = configs.filter(c => {
       if (c.is_active === false) return false;
       if (c.visibility === 'hidden') return false;
-      return true;
+      if (c.is_external) return false;
+      return siteToolIds.has(c.tool_id);
     });
+    const eligibleIds = new Set(eligibleConfigs.map(c => c.tool_id));
     const configuredCount = eligibleConfigs.length;
 
     const statByTool = new Map<string, ToolUsageStats>();
@@ -186,12 +190,11 @@ export default function OperatorOverview() {
       return now - new Date(s.last_used).getTime() <= DAYS_30_MS;
     }).length;
 
-    // Tracked runs: every recorded use across every tool. We can't compute a
-    // true 30-day window from the stats endpoint, so this is the honest label.
-    const trackedRuns = stats.reduce((sum, s) => sum + (s.total_uses || 0), 0);
-
-    // Total tracked hours saved across every tool — drives the headline KPI.
-    const totalHoursSaved = stats.reduce((sum, s) => sum + (s.total_hours_saved || 0), 0);
+    // Tracked runs / hours: only count stats for eligible site tools so the
+    // KPI row matches the bars + status table below it.
+    const eligibleStats = stats.filter(s => eligibleIds.has(s.tool_id));
+    const trackedRuns = eligibleStats.reduce((sum, s) => sum + (s.total_uses || 0), 0);
+    const totalHoursSaved = eligibleStats.reduce((sum, s) => sum + (s.total_hours_saved || 0), 0);
 
     // Bar rows: one per eligible tool. Prefer cadence-based monthly estimate;
     // fall back to total tracked hours so in-platform tools without cadence
@@ -339,12 +342,12 @@ export default function OperatorOverview() {
         <div className="al-op-kpi">
           <div className="al-op-kpi-label">Tracked Runs</div>
           <div className="al-op-kpi-value">{trackedRuns.toLocaleString()}</div>
-          <div className="al-op-kpi-foot">All recorded tool uses</div>
+          <div className="al-op-kpi-foot">Recorded uses on site tools</div>
         </div>
         <div className="al-op-kpi">
-          <div className="al-op-kpi-label">Tracked Tools</div>
+          <div className="al-op-kpi-label">Site Tools</div>
           <div className="al-op-kpi-value">{configuredCount}</div>
-          <div className="al-op-kpi-foot">In-platform &amp; external</div>
+          <div className="al-op-kpi-foot">Tools listed on /tools</div>
         </div>
       </div>
 
@@ -391,7 +394,7 @@ export default function OperatorOverview() {
         <section className="al-op-card">
           <header className="al-op-card-header">
             <h2 className="al-op-card-title">System Status</h2>
-            <span className="al-op-card-meta">{configuredCount} tools</span>
+            <span className="al-op-card-meta">{configuredCount} site tools</span>
           </header>
           <div className="al-op-card-body">
             {statusRows.length === 0 ? (
