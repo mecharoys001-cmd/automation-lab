@@ -6,6 +6,7 @@ import type { ActivityFeedItem, ActivityFeedResponse } from '@/types/activity';
 import { useImpactRealtime } from './useImpactRealtime';
 
 const DAYS_30_MS = 30 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function relativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Never run';
@@ -21,18 +22,6 @@ function relativeTime(dateStr: string | null): string {
   if (days < 30) return `${days}d ago`;
   const months = Math.floor(days / 30);
   return `${months}mo ago`;
-}
-
-function activityLabel(item: ActivityFeedItem): string {
-  switch (item.event_type) {
-    case 'login': return 'Operator Signed In';
-    case 'logout': return 'Operator Signed Out';
-    case 'tool_open': return 'Tool Opened';
-    case 'tool_complete': return 'Automation Run';
-    case 'tool_error': return 'Run Errored';
-    case 'scheduler_action': return 'Scheduler Update';
-    default: return item.event_type;
-  }
 }
 
 function activityBody(item: ActivityFeedItem): string {
@@ -63,95 +52,72 @@ function activityBody(item: ActivityFeedItem): string {
   }
 }
 
-const card: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid var(--al-ink-200, #E4E4E4)',
-  borderRadius: '10px',
-  overflow: 'hidden',
-};
-
-const panelHeader: React.CSSProperties = {
-  padding: '16px 20px',
-  borderBottom: '1px solid var(--al-ink-200, #E4E4E4)',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-};
-
-const panelHeaderTitle: React.CSSProperties = {
-  margin: 0,
-  fontFamily: "'Montserrat', sans-serif",
-  fontSize: '14px',
-  fontWeight: 700,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  color: 'var(--al-ink-900, #1F1F1F)',
-};
-
-const kpiCard: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid var(--al-ink-200, #E4E4E4)',
-  borderRadius: '10px',
-  padding: '18px 20px',
-};
-
-const kpiLabel: React.CSSProperties = {
-  fontFamily: "'Montserrat', sans-serif",
-  fontSize: '10px',
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: 'var(--al-ink-500, #6B6B6B)',
-  fontWeight: 700,
-};
-
-const kpiNum: React.CSSProperties = {
-  fontFamily: "'Montserrat', sans-serif",
-  fontSize: '36px',
-  fontWeight: 700,
-  color: 'var(--al-ink-900, #1F1F1F)',
-  marginTop: '8px',
-  lineHeight: 1,
-  letterSpacing: '-0.01em',
-  fontVariantNumeric: 'tabular-nums',
-};
-
-const kpiSub: React.CSSProperties = {
-  fontFamily: "'Montserrat', sans-serif",
-  fontSize: '11px',
-  fontWeight: 700,
-  marginTop: '8px',
-  letterSpacing: '0.06em',
-};
-
-function StatusPill({ kind, label }: { kind: 'run' | 'draft' | 'review'; label: string }) {
-  const palette = {
-    run: { bg: 'rgba(95,127,79,0.14)', color: '#4A6B3F' },
-    draft: { bg: 'var(--al-ink-100, #F2F1EE)', color: 'var(--al-ink-700, #404040)' },
-    review: { bg: 'rgba(197,139,43,0.16)', color: '#96661E' },
-  }[kind];
-  return (
-    <span style={{
-      fontFamily: "'Montserrat', sans-serif",
-      fontSize: '10px',
-      fontWeight: 700,
-      letterSpacing: '0.14em',
-      textTransform: 'uppercase',
-      padding: '4px 10px',
-      borderRadius: '999px',
-      background: palette.bg,
-      color: palette.color,
-      whiteSpace: 'nowrap',
-    }}>
-      {label}
-    </span>
-  );
+function avatarSeed(item: ActivityFeedItem): string {
+  if (item.user_email) {
+    const local = item.user_email.split('@')[0] || '';
+    const parts = local.split(/[._\-+]/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return local.slice(0, 2).toUpperCase();
+  }
+  if (item.tool_name) {
+    const words = item.tool_name.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return item.tool_name.slice(0, 2).toUpperCase();
+  }
+  return 'AL';
 }
 
-function statusFor(s: ToolUsageStats): { kind: 'run' | 'draft' | 'review'; label: string } {
-  if (s.total_uses === 0) return { kind: 'draft', label: 'Draft' };
+function avatarColor(seed: string): string {
+  // Stable hash → muted palette
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) & 0xffffffff;
+  const palette = [
+    { bg: '#EEE6CF', fg: '#7A6A40' },
+    { bg: '#E5EAE0', fg: '#4A6B3F' },
+    { bg: '#E4E2EC', fg: '#3F4A78' },
+    { bg: '#F1E5DA', fg: '#7A4F2C' },
+    { bg: '#E0EAEC', fg: '#1F5E72' },
+    { bg: '#EFE0E1', fg: '#8A3F47' },
+  ];
+  return JSON.stringify(palette[Math.abs(h) % palette.length]);
+}
+
+function hoursPerMonth(s: ToolUsageStats): number {
+  // Prefer declared run cadence — most honest.
+  if (s.run_frequency) {
+    const runsPerMonth =
+      s.run_frequency === 'daily' ? 30 :
+      s.run_frequency === 'weekly' ? 30 / 7 :
+      s.run_frequency === 'monthly' ? 1 :
+      s.run_frequency === 'custom' && s.run_interval_days && s.run_interval_days > 0 ? 30 / s.run_interval_days :
+      0;
+    return (runsPerMonth * s.minutes_per_use) / 60;
+  }
+  // Otherwise: amortise total hours saved across active months.
+  if (s.first_run_date && s.total_uses > 0) {
+    const days = Math.max(1, (Date.now() - new Date(s.first_run_date).getTime()) / DAY_MS);
+    const monthsActive = Math.max(1, days / 30);
+    return s.total_hours_saved / monthsActive;
+  }
+  return 0;
+}
+
+type SystemStatus = {
+  kind: 'running' | 'review' | 'draft';
+  label: string;
+  color: string;
+};
+
+function systemStatusFor(s: ToolUsageStats): SystemStatus {
+  if (s.total_uses === 0) {
+    return { kind: 'draft', label: 'No runs yet', color: '#B5B5B5' };
+  }
   const last = s.last_used ? new Date(s.last_used).getTime() : 0;
-  if (Date.now() - last > DAYS_30_MS) return { kind: 'review', label: 'Review' };
-  return { kind: 'run', label: 'Running' };
+  const idle = Date.now() - last;
+  if (idle > DAYS_30_MS) {
+    return { kind: 'review', label: 'Idle · review', color: '#C58B2B' };
+  }
+  return { kind: 'running', label: 'Running', color: '#5F7F4F' };
 }
 
 export default function OperatorOverview() {
@@ -190,71 +156,87 @@ export default function OperatorOverview() {
   useImpactRealtime({ onEvent: fetchAll, debounceMs: 2000 });
 
   const {
-    totalHours,
-    totalRuns,
+    monthlyHours,
     activeCount,
     configuredCount,
-    needsReviewCount,
     recentRuns30d,
-    sortedAutomations,
-    insight,
+    barRows,
+    statusRows,
   } = useMemo(() => {
     const now = Date.now();
-    const totalHours = stats.reduce((sum, s) => sum + (s.total_hours_saved || 0), 0);
-    const totalRuns = stats.reduce((sum, s) => sum + (s.total_uses || 0), 0);
     const configuredCount = configs.length;
     const activeCount = stats.filter(s => {
       if (!s.last_used) return false;
       return now - new Date(s.last_used).getTime() <= DAYS_30_MS;
     }).length;
-    const needsReviewCount = configs.filter(c => {
-      const stat = stats.find(s => s.tool_id === c.tool_id);
-      if (!stat || stat.total_uses === 0) return true;
-      if (!stat.last_used) return true;
-      return now - new Date(stat.last_used).getTime() > DAYS_30_MS;
-    }).length;
     const recentRuns30d = stats
       .filter(s => s.last_used && now - new Date(s.last_used).getTime() <= DAYS_30_MS)
       .reduce((sum, s) => sum + (s.total_uses || 0), 0);
-    const sortedAutomations = [...stats].sort((a, b) => {
+
+    // Per-tool monthly hours estimate (the "Tool Usage By Category" bars).
+    const withHours = stats
+      .map(s => ({ stat: s, hrs: hoursPerMonth(s) }))
+      .filter(r => r.hrs > 0)
+      .sort((a, b) => b.hrs - a.hrs);
+    const monthlyHours = withHours.reduce((sum, r) => sum + r.hrs, 0);
+    const maxHrs = withHours[0]?.hrs || 1;
+    const barRows = withHours.slice(0, 6).map(r => ({
+      tool_id: r.stat.tool_id,
+      label: r.stat.display_name,
+      hours: r.hrs,
+      pct: Math.max(6, Math.round((r.hrs / maxHrs) * 100)),
+      external: !!r.stat.is_external,
+    }));
+
+    // System Status: per configured tool, derive a health row.
+    const statusRows = configs.map(c => {
+      const stat = stats.find(s => s.tool_id === c.tool_id);
+      const placeholder: ToolUsageStats = stat ?? {
+        tool_id: c.tool_id,
+        display_name: c.display_name,
+        minutes_per_use: c.minutes_per_use,
+        tracking_method: c.tracking_method,
+        description: c.description,
+        is_external: c.is_external,
+        tracking_notes: c.tracking_notes,
+        run_frequency: c.run_frequency,
+        run_interval_days: c.run_interval_days,
+        first_run_date: c.first_run_date,
+        next_run_date: c.next_run_date,
+        historical_runs_seeded: c.historical_runs_seeded ?? false,
+        total_uses: 0,
+        total_minutes_saved: 0,
+        total_hours_saved: 0,
+        last_used: null,
+        unique_users: 0,
+        repeat_users: 0,
+        completion_rate: 0,
+        avg_duration_seconds: 0,
+      };
+      return {
+        tool_id: c.tool_id,
+        label: c.display_name,
+        sub: c.is_external ? 'External tool' : 'In-platform tool',
+        last_used: placeholder.last_used,
+        status: systemStatusFor(placeholder),
+      };
+    });
+    statusRows.sort((a, b) => {
+      const order = { running: 0, review: 1, draft: 2 } as const;
+      const d = order[a.status.kind] - order[b.status.kind];
+      if (d !== 0) return d;
       const at = a.last_used ? new Date(a.last_used).getTime() : 0;
       const bt = b.last_used ? new Date(b.last_used).getTime() : 0;
-      if (bt !== at) return bt - at;
-      return (b.total_hours_saved || 0) - (a.total_hours_saved || 0);
-    }).slice(0, 6);
-
-    // Deterministic readiness insight
-    const externalUnused = configs.filter(c => {
-      if (!c.is_external) return false;
-      const stat = stats.find(s => s.tool_id === c.tool_id);
-      return !stat || stat.total_uses === 0;
-    }).length;
-    const highValue = stats
-      .filter(s => (s.total_hours_saved || 0) >= 10)
-      .sort((a, b) => (b.total_hours_saved || 0) - (a.total_hours_saved || 0));
-    let insight = '';
-    if (configs.length === 0) {
-      insight = 'No automations configured yet. Add an external tool or activate an in-platform tool to start measuring returned administrative time.';
-    } else if (externalUnused >= 2) {
-      insight = `${externalUnused} external tools are configured but have no recorded runs yet. Backfill historical activity or log a first run so their saved time shows up alongside in-platform automations.`;
-    } else if (needsReviewCount >= 2) {
-      insight = `${needsReviewCount} configured tools have no activity in the last 30 days. Review whether those workflows are still active or paused so the dashboard reflects real operator capacity.`;
-    } else if (highValue.length > 0) {
-      const top = highValue[0];
-      insight = `${top.display_name} alone has returned ${Math.round((top.total_hours_saved || 0) * 10) / 10}h of administrative capacity. Look for adjacent workflows in the same category — they are typically the highest-leverage candidates for the next pilot.`;
-    } else {
-      insight = 'Pilot is in early measurement. Hours saved compound as more workflows move from prototype to deployment — log usage frequently to keep the impact picture accurate.';
-    }
+      return bt - at;
+    });
 
     return {
-      totalHours,
-      totalRuns,
+      monthlyHours,
       activeCount,
       configuredCount,
-      needsReviewCount,
       recentRuns30d,
-      sortedAutomations,
-      insight,
+      barRows,
+      statusRows: statusRows.slice(0, 6),
     };
   }, [stats, configs]);
 
@@ -274,216 +256,161 @@ export default function OperatorOverview() {
     );
   }
 
+  const fmtHours = (h: number) => {
+    if (h >= 100) return `${Math.round(h)}h`;
+    if (h >= 10) return `${(Math.round(h * 10) / 10).toFixed(1)}h`;
+    return `${(Math.round(h * 10) / 10).toFixed(1)}h`;
+  };
+
   return (
-    <div>
+    <div className="al-op">
+      {/* Compact dashboard header */}
+      <header className="al-op-header">
+        <div className="al-op-brand">
+          <div className="al-op-mark" aria-hidden="true">AL</div>
+          <div className="al-op-brand-text">
+            <div className="al-op-brand-title">Automation Lab</div>
+            <div className="al-op-brand-sub">Northwest CT Arts Council</div>
+          </div>
+        </div>
+        <div className="al-op-header-right">
+          <span className="al-op-phase-pill">
+            <span className="al-op-phase-dot" /> Phase 2 Active
+          </span>
+          <button type="button" className="al-op-kebab" aria-label="Overview options">⋯</button>
+        </div>
+      </header>
+      <div className="al-op-divider" />
+
       {/* KPI row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '14px',
-        marginBottom: '28px',
-      }}>
-        <div style={kpiCard}>
-          <div style={kpiLabel}>Hours Saved · Lifetime</div>
-          <div style={{ ...kpiNum, color: 'var(--al-gold-700, #A3915F)' }}>
-            {Math.round(totalHours * 10) / 10}
-            <span style={{ fontSize: '20px', marginLeft: 4 }}>h</span>
+      <div className="al-op-kpis">
+        <div className="al-op-kpi">
+          <div className="al-op-kpi-label">Hours Saved / Mo</div>
+          <div className="al-op-kpi-value">
+            {monthlyHours > 0 ? Math.round(monthlyHours * 10) / 10 : '—'}
+            {monthlyHours > 0 && <span className="al-op-kpi-unit">h</span>}
           </div>
-          <div style={{ ...kpiSub, color: '#5F7F4F' }}>
-            ≈ ${Math.round(totalHours * 20).toLocaleString()} @ $20/hr
+          <div className="al-op-kpi-foot">
+            {monthlyHours > 0
+              ? `≈ $${Math.round(monthlyHours * 20).toLocaleString()} returned @ $20/hr`
+              : 'No cadence data yet'}
           </div>
         </div>
-        <div style={kpiCard}>
-          <div style={kpiLabel}>Active Automations</div>
-          <div style={kpiNum}>
-            {activeCount}<span style={{ color: 'var(--al-ink-300, #C9C9C9)' }}> / {configuredCount}</span>
+        <div className="al-op-kpi">
+          <div className="al-op-kpi-label">Active Workflows</div>
+          <div className="al-op-kpi-value">
+            {activeCount}
+            <span className="al-op-kpi-of"> / {configuredCount}</span>
           </div>
-          <div style={{ ...kpiSub, color: 'var(--al-ink-500, #6B6B6B)' }}>
-            Active in last 30 days
-          </div>
+          <div className="al-op-kpi-foot">Run in the last 30 days</div>
         </div>
-        <div style={kpiCard}>
-          <div style={kpiLabel}>Runs · Lifetime</div>
-          <div style={kpiNum}>{totalRuns.toLocaleString()}</div>
-          <div style={{ ...kpiSub, color: '#5F7F4F' }}>
-            {recentRuns30d.toLocaleString()} in last 30 days
-          </div>
+        <div className="al-op-kpi">
+          <div className="al-op-kpi-label">Runs · 30d</div>
+          <div className="al-op-kpi-value">{recentRuns30d.toLocaleString()}</div>
+          <div className="al-op-kpi-foot">From active automations</div>
         </div>
-        <div style={kpiCard}>
-          <div style={kpiLabel}>Needs Review</div>
-          <div style={{ ...kpiNum, color: needsReviewCount > 0 ? '#C58B2B' : 'var(--al-ink-900, #1F1F1F)' }}>
-            {needsReviewCount}
-          </div>
-          <div style={{ ...kpiSub, color: needsReviewCount > 0 ? '#C58B2B' : 'var(--al-ink-500, #6B6B6B)' }}>
-            {needsReviewCount > 0 ? 'Idle or never-run tools' : 'All clear'}
-          </div>
+        <div className="al-op-kpi">
+          <div className="al-op-kpi-label">Tracked Tools</div>
+          <div className="al-op-kpi-value">{configuredCount}</div>
+          <div className="al-op-kpi-foot">In-platform &amp; external</div>
         </div>
       </div>
 
-      {/* Two columns */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.55fr) minmax(0, 1fr)',
-        gap: '20px',
-        alignItems: 'flex-start',
-      }} className="al-overview-cols">
-        {/* Left: Active Automations + Insight */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={card}>
-            <div style={panelHeader}>
-              <h2 style={panelHeaderTitle}>Active Automations</h2>
-              <span style={{
-                fontFamily: "'Montserrat', sans-serif",
-                fontSize: '11px',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-                color: 'var(--al-gold-700, #A3915F)',
-              }}>
-                {sortedAutomations.length} of {configuredCount}
-              </span>
-            </div>
-            {sortedAutomations.length === 0 ? (
-              <div style={{ padding: '28px 22px', textAlign: 'center', color: 'var(--al-ink-500, #6B6B6B)', fontSize: '14px' }}>
-                No automations configured yet.
+      {/* Middle: usage bars + system status */}
+      <div className="al-op-mid">
+        {/* Tool Usage By Category (Hrs/Mo) */}
+        <section className="al-op-card">
+          <header className="al-op-card-header">
+            <h2 className="al-op-card-title">Tool Usage By Category (Hrs / Mo)</h2>
+            <span className="al-op-card-meta">
+              {monthlyHours > 0 ? `${Math.round(monthlyHours * 10) / 10}h total / mo` : 'No cadence'}
+            </span>
+          </header>
+          <div className="al-op-card-body">
+            {barRows.length === 0 ? (
+              <div className="al-op-empty">
+                No run cadence or first-run data yet — set a run frequency on tools to populate this chart.
               </div>
-            ) : sortedAutomations.map((s) => {
-              const status = statusFor(s);
-              const sub = s.tracking_notes || s.description || (s.is_external ? 'External tool' : 'In-platform tool');
-              return (
-                <div key={s.tool_id} style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) auto auto auto',
-                  gap: '14px',
-                  alignItems: 'center',
-                  padding: '14px 20px',
-                  borderBottom: '1px solid var(--al-ink-100, #F2F1EE)',
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{
-                      fontFamily: "'Montserrat', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      color: 'var(--al-ink-900, #1F1F1F)',
-                      letterSpacing: '0.01em',
-                    }}>
-                      {s.display_name}
-                    </div>
-                    <div style={{
-                      fontSize: '12px',
-                      color: 'var(--al-ink-500, #6B6B6B)',
-                      marginTop: '2px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                    }}>
-                      {sub}
-                    </div>
-                  </div>
-                  <StatusPill kind={status.kind} label={status.label} />
-                  <div style={{
-                    fontSize: '12px',
-                    color: 'var(--al-ink-500, #6B6B6B)',
-                    fontVariantNumeric: 'tabular-nums',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {relativeTime(s.last_used)}
-                  </div>
-                  <div style={{
-                    fontFamily: "'Montserrat', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    fontVariantNumeric: 'tabular-nums',
-                    color: 'var(--al-ink-900, #1F1F1F)',
-                    textAlign: 'right',
-                    minWidth: '64px',
-                  }}>
-                    {s.total_uses} {s.total_uses === 1 ? 'run' : 'runs'}
+            ) : barRows.map((row) => (
+              <div key={row.tool_id} className="al-op-bar-row">
+                <div className="al-op-bar-label" title={row.label}>{row.label}</div>
+                <div className="al-op-bar-track">
+                  <div
+                    className={`al-op-bar-fill${row.external ? ' al-op-bar-fill--ext' : ''}`}
+                    style={{ width: `${row.pct}%` }}
+                  />
+                </div>
+                <div className="al-op-bar-value">{fmtHours(row.hours)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* System Status */}
+        <section className="al-op-card">
+          <header className="al-op-card-header">
+            <h2 className="al-op-card-title">System Status</h2>
+            <span className="al-op-card-meta">{statusRows.length} of {configuredCount}</span>
+          </header>
+          <div className="al-op-card-body">
+            {statusRows.length === 0 ? (
+              <div className="al-op-empty">
+                No tools configured yet.
+              </div>
+            ) : statusRows.map((row) => (
+              <div key={row.tool_id} className="al-op-status-row">
+                <div className="al-op-status-text">
+                  <div className="al-op-status-name">{row.label}</div>
+                  <div className="al-op-status-sub">
+                    {row.sub}
+                    {row.last_used ? ` · ${relativeTime(row.last_used)}` : ' · No runs'}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Readiness Insight (dark panel — derived from real data) */}
-          <div style={{
-            background: 'var(--al-ink-800, #2B2B2B)',
-            color: '#ffffff',
-            padding: '20px 24px',
-            borderRadius: '10px',
-          }}>
-            <div style={{
-              fontFamily: "'Montserrat', sans-serif",
-              fontSize: '10px',
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              fontWeight: 700,
-              color: 'var(--al-gold-500, #DBCBA6)',
-              marginBottom: '8px',
-            }}>
-              Readiness Insight
-            </div>
-            <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'rgba(255,255,255,0.92)' }}>
-              {insight}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Recent Activity */}
-        <div style={card}>
-          <div style={panelHeader}>
-            <h2 style={panelHeaderTitle}>Recent Activity</h2>
-            <span style={{
-              fontFamily: "'Montserrat', sans-serif",
-              fontSize: '11px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              fontWeight: 700,
-              color: 'var(--al-gold-700, #A3915F)',
-            }}>
-              Last {activity.length}
-            </span>
-          </div>
-          {activity.length === 0 ? (
-            <div style={{ padding: '28px 22px', textAlign: 'center', color: 'var(--al-ink-500, #6B6B6B)', fontSize: '14px' }}>
-              No recent activity recorded.
-            </div>
-          ) : activity.map((item) => (
-            <div key={item.id} style={{
-              padding: '14px 20px',
-              borderBottom: '1px solid var(--al-ink-100, #F2F1EE)',
-              fontSize: '13px',
-              lineHeight: 1.45,
-            }}>
-              <div style={{
-                fontFamily: "'Montserrat', sans-serif",
-                fontWeight: 700,
-                fontSize: '11px',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--al-gold-700, #A3915F)',
-                marginBottom: '4px',
-              }}>
-                {activityLabel(item)}
+                <div className="al-op-status-tag">
+                  <span className="al-op-status-dot" style={{ background: row.status.color }} />
+                  <span className="al-op-status-label">{row.status.label}</span>
+                </div>
               </div>
-              <div style={{ color: 'var(--al-ink-900, #1F1F1F)' }}>
-                {activityBody(item)}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: 'var(--al-ink-500, #6B6B6B)',
-                marginTop: '4px',
-                letterSpacing: '0.02em',
-              }}>
-                {relativeTime(item.created_at)}
-                {item.user_email ? ` · ${item.user_email}` : ''}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
+
+      {/* Recent Activity full-width */}
+      <section className="al-op-card al-op-activity">
+        <header className="al-op-card-header">
+          <h2 className="al-op-card-title">Recent Activity</h2>
+          <span className="al-op-card-meta">Last {activity.length}</span>
+        </header>
+        <div className="al-op-card-body">
+          {activity.length === 0 ? (
+            <div className="al-op-empty">No recent activity recorded.</div>
+          ) : activity.map((item) => {
+            const seed = avatarSeed(item);
+            const palette = JSON.parse(avatarColor(seed)) as { bg: string; fg: string };
+            return (
+              <div key={item.id} className="al-op-activity-row">
+                <div
+                  className="al-op-avatar"
+                  style={{ background: palette.bg, color: palette.fg }}
+                  aria-hidden="true"
+                >
+                  {seed}
+                </div>
+                <div className="al-op-activity-text">
+                  <div className="al-op-activity-body">{activityBody(item)}</div>
+                  {item.user_email && (
+                    <div className="al-op-activity-sub">{item.user_email}</div>
+                  )}
+                </div>
+                <div className="al-op-activity-time">
+                  {relativeTime(item.created_at)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

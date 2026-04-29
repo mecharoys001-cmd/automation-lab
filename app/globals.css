@@ -981,3 +981,424 @@ a:hover { text-decoration: underline; }
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* ─────────────────────────────────────────────
+   OPERATOR OVERVIEW — compact dashboard view
+   Card-based, muted beige, distinct from the
+   long-form report styling above.
+───────────────────────────────────────────── */
+.al-report .al-op {
+  font-family: var(--font-body);
+  color: var(--al-ink-900);
+}
+
+.al-report .al-op-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 2px 14px;
+}
+
+.al-report .al-op-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.al-report .al-op-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--al-ink-900);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.al-report .al-op-brand-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--al-ink-900);
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+
+.al-report .al-op-brand-sub {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--al-ink-500);
+  margin-top: 3px;
+}
+
+.al-report .al-op-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.al-report .al-op-phase-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #4A6B3F;
+  background: rgba(95, 127, 79, 0.12);
+  border: 1px solid rgba(95, 127, 79, 0.25);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.al-report .al-op-phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5F7F4F;
+  box-shadow: 0 0 0 2px rgba(95, 127, 79, 0.18);
+}
+
+.al-report .al-op-kebab {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--al-ink-200);
+  background: #ffffff;
+  color: var(--al-ink-500);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.al-report .al-op-kebab:hover {
+  color: var(--al-ink-900);
+  border-color: var(--al-ink-300);
+}
+
+.al-report .al-op-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--al-gold-600) 20%, var(--al-gold-600) 80%, transparent);
+  opacity: 0.85;
+  margin-bottom: 22px;
+}
+
+.al-report .al-op-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.al-report .al-op-kpi {
+  background: #ffffff;
+  border: 1px solid var(--al-ink-200);
+  border-radius: 12px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 1px 2px rgba(31, 31, 31, 0.03);
+}
+
+.al-report .al-op-kpi-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--al-ink-500);
+}
+
+.al-report .al-op-kpi-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--al-ink-900);
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.al-report .al-op-kpi-unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--al-gold-700);
+  margin-left: 2px;
+}
+
+.al-report .al-op-kpi-of {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--al-ink-300);
+  letter-spacing: 0;
+}
+
+.al-report .al-op-kpi-foot {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--al-ink-500);
+  margin-top: 8px;
+}
+
+.al-report .al-op-mid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.al-report .al-op-card {
+  background: #ffffff;
+  border: 1px solid var(--al-ink-200);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(31, 31, 31, 0.03);
+}
+
+.al-report .al-op-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--al-ink-100);
+  border-bottom: 1px solid var(--al-ink-200);
+}
+
+.al-report .al-op-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--al-ink-900);
+}
+
+.al-report .al-op-card-meta {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--al-gold-700);
+}
+
+.al-report .al-op-card-body {
+  padding: 6px 0;
+}
+
+.al-report .al-op-empty {
+  padding: 24px 22px;
+  text-align: center;
+  color: var(--al-ink-500);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Bar rows */
+.al-report .al-op-bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 28%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--al-ink-100);
+}
+
+.al-report .al-op-bar-row:last-child {
+  border-bottom: none;
+}
+
+.al-report .al-op-bar-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--al-ink-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.al-report .al-op-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--al-ink-100);
+  overflow: hidden;
+}
+
+.al-report .al-op-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--al-gold-600);
+}
+
+.al-report .al-op-bar-fill--ext {
+  background: var(--al-blue-soft);
+  opacity: 0.75;
+}
+
+.al-report .al-op-bar-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--al-ink-900);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 56px;
+}
+
+/* Status rows */
+.al-report .al-op-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--al-ink-100);
+}
+
+.al-report .al-op-status-row:last-child {
+  border-bottom: none;
+}
+
+.al-report .al-op-status-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.al-report .al-op-status-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--al-ink-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.al-report .al-op-status-sub {
+  font-size: 11px;
+  color: var(--al-ink-500);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.al-report .al-op-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--al-ink-700);
+  white-space: nowrap;
+}
+
+.al-report .al-op-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.al-report .al-op-status-label {
+  color: var(--al-ink-700);
+}
+
+/* Activity rows */
+.al-report .al-op-activity {
+  margin-top: 0;
+}
+
+.al-report .al-op-activity-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--al-ink-100);
+}
+
+.al-report .al-op-activity-row:last-child {
+  border-bottom: none;
+}
+
+.al-report .al-op-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.al-report .al-op-activity-text {
+  min-width: 0;
+}
+
+.al-report .al-op-activity-body {
+  font-size: 13px;
+  color: var(--al-ink-900);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.al-report .al-op-activity-sub {
+  font-size: 11px;
+  color: var(--al-ink-500);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.al-report .al-op-activity-time {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--al-ink-500);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .al-report .al-op-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .al-report .al-op-mid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 540px) {
+  .al-report .al-op-kpis { grid-template-columns: minmax(0, 1fr); }
+  .al-report .al-op-bar-row { grid-template-columns: minmax(100px, 36%) minmax(0, 1fr) auto; }
+  .al-report .al-op-header { flex-wrap: wrap; }
+}
