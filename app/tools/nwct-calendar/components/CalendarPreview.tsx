@@ -11,7 +11,9 @@ import type {
   ProcessedEvent,
   Sponsor,
 } from "../lib/types";
+import { interCalendar, oswaldCalendar } from "../lib/fonts";
 import { PrintLayout } from "./print/PrintLayout";
+import "../nwct-calendar.css";
 
 interface Props {
   data: GroupedEvents;
@@ -147,7 +149,7 @@ export default function CalendarPreview({
 
       <div
         id="nwct-calendar-print-root"
-        className="overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4 print:border-0 print:bg-white print:p-0"
+        className={`${interCalendar.variable} ${oswaldCalendar.variable} nwct-calendar-fonts overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4 print:border-0 print:bg-white print:p-0`}
       >
         <PrintLayout
           data={data}

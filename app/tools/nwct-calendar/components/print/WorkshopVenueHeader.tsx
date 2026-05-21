@@ -51,7 +51,7 @@ export function WorkshopVenueHeader({
     >
       {!showEditMode ? (
         <>
-          <h4 className="font-bold text-black leading-none text-[12px] uppercase tracking-wide pr-5">
+          <h4 className="header-font font-bold text-black leading-none text-[12px] uppercase tracking-wide pr-5">
             {venue}
             {isContinuation ? " (Cont.)" : ""}
           </h4>
@@ -77,7 +77,7 @@ export function WorkshopVenueHeader({
           <input
             value={formData.venue}
             onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-            className="w-full text-[11px] font-bold uppercase bg-white border-b border-gray-300 outline-none px-1 text-gray-900"
+            className="header-font w-full text-[11px] font-bold uppercase bg-white border-b border-gray-300 outline-none px-1 text-gray-900"
             autoFocus
           />
           <div className="flex gap-1">

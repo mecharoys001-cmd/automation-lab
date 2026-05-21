@@ -75,13 +75,13 @@ export function CoverPage({ config, onUpdate }: Props) {
       />
 
       <div className="absolute top-0 left-0 w-full p-8 z-10 flex flex-col items-center">
-        <h1 className="text-white font-bold text-[42px] uppercase text-center drop-shadow-lg w-full">
+        <h1 className="header-font text-white font-bold text-[42px] uppercase text-center drop-shadow-lg w-full">
           {config.title}
         </h1>
         <input
           value={config.month}
           onChange={(e) => onUpdate({ ...config, month: e.target.value })}
-          className="bg-transparent text-white font-bold text-[24px] uppercase text-center w-full outline-none mt-2 placeholder-white/50 drop-shadow-md"
+          className="header-font bg-transparent text-white font-bold text-[24px] uppercase text-center w-full outline-none mt-2 placeholder-white/50 drop-shadow-md"
           placeholder="DECEMBER 2025"
         />
       </div>
@@ -91,16 +91,16 @@ export function CoverPage({ config, onUpdate }: Props) {
           <textarea
             value={config.credit}
             onChange={(e) => onUpdate({ ...config, credit: e.target.value })}
-            className="bg-transparent text-white text-[14px] uppercase font-bold w-full outline-none resize-none overflow-hidden placeholder-white/50 drop-shadow-md"
+            className="header-font bg-transparent text-white text-[14px] uppercase font-bold w-full outline-none resize-none overflow-hidden placeholder-white/50 drop-shadow-md"
             rows={3}
             placeholder="Photo by: ..."
           />
         </div>
         <div className="text-right">
-          <div className="text-white text-[24px] font-bold uppercase leading-tight drop-shadow-md">
+          <div className="header-font text-white text-[24px] font-bold uppercase leading-tight drop-shadow-md">
             {config.subtitle1}
           </div>
-          <div className="text-white text-[24px] font-bold uppercase leading-tight drop-shadow-md">
+          <div className="header-font text-white text-[24px] font-bold uppercase leading-tight drop-shadow-md">
             {config.subtitle2}
           </div>
         </div>

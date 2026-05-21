@@ -147,13 +147,13 @@ function MainHeaderBlock({ title, color }: { title: string; color: string }) {
     <div ref={containerRef} className="flex flex-col justify-start w-full overflow-hidden">
       <h1
         ref={textRef}
-        className="font-bold uppercase tracking-tighter leading-none mb-1 whitespace-nowrap"
+        className="header-font font-bold uppercase tracking-tighter leading-none mb-1 whitespace-nowrap"
         style={{ color, fontSize: "48px" }}
       >
         {title}
       </h1>
       <h2
-        className="text-sm font-bold opacity-70 uppercase tracking-widest leading-tight"
+        className="header-font text-sm font-bold opacity-70 uppercase tracking-widest leading-tight"
         style={{ color }}
       >
         Online &amp; In-Person Events
@@ -185,7 +185,7 @@ function DateHeader({
         minHeight: `${Math.max(20, 24 + padding * 2)}px`,
       }}
     >
-      <h3 className="text-lg font-bold uppercase tracking-widest leading-none m-0 whitespace-nowrap">
+      <h3 className="header-font text-lg font-bold uppercase tracking-widest leading-none m-0 whitespace-nowrap">
         {text}
       </h3>
     </div>
@@ -215,7 +215,7 @@ function SectionHeader({
         minHeight: `${Math.max(20, 24 + padding * 2)}px`,
       }}
     >
-      <h3 className="text-lg font-bold uppercase tracking-widest leading-none m-0 text-center">
+      <h3 className="header-font text-lg font-bold uppercase tracking-widest leading-none m-0 text-center">
         {text}
       </h3>
     </div>
@@ -227,7 +227,7 @@ function BrandingBlock({ linkColor }: { linkColor: string }) {
     <div className="flex items-stretch justify-end gap-3 w-full h-full select-none pointer-events-none">
       <div className="text-right h-full flex flex-col justify-center py-1 gap-3">
         <div className="flex flex-col items-end text-gray-900 leading-none">
-          <p className="text-[15px] font-bold text-black tracking-tight mb-0.5">
+          <p className="header-font text-[15px] font-bold text-black tracking-tight mb-0.5">
             NWCT Arts Council
           </p>
           <p className="text-[11px] font-medium text-gray-600 leading-tight">
@@ -241,7 +241,10 @@ function BrandingBlock({ linkColor }: { linkColor: string }) {
           <p className="text-[12px] font-medium text-gray-800 tracking-wide mb-0.5">
             860.618.0075
           </p>
-          <p className="text-[15px] font-bold tracking-wide" style={{ color: linkColor }}>
+          <p
+            className="header-font text-[15px] font-bold tracking-wide"
+            style={{ color: linkColor }}
+          >
             artsnwct.org
           </p>
         </div>
@@ -312,11 +315,11 @@ function FooterSegment({
       <div className="relative group w-full h-full flex items-center gap-3 justify-start bg-transparent">
         <QrPlaceholder label="QR" />
         <div className="flex flex-col justify-center">
-          <h4 className="font-bold text-black uppercase text-lg leading-none tracking-tight mb-0.5 whitespace-nowrap">
+          <h4 className="header-font font-bold text-black uppercase text-lg leading-none tracking-tight mb-0.5 whitespace-nowrap">
             MORE DETAILS
           </h4>
           <p
-            className="font-bold text-sm leading-none tracking-wide uppercase"
+            className="header-font font-bold text-sm leading-none tracking-wide uppercase"
             style={{ color: linkColor }}
           >
             ARTSNWCT.ORG/EVENTS-1
@@ -330,11 +333,11 @@ function FooterSegment({
     return (
       <div className="relative group w-full h-full flex items-center gap-3 justify-end bg-transparent">
         <div className="flex flex-col items-end justify-center">
-          <h4 className="font-bold text-black uppercase text-lg leading-none tracking-tight mb-0.5 whitespace-nowrap text-right">
+          <h4 className="header-font font-bold text-black uppercase text-lg leading-none tracking-tight mb-0.5 whitespace-nowrap text-right">
             DONATE TO THE COUNCIL
           </h4>
           <p
-            className="font-bold text-sm leading-none tracking-wide uppercase text-right"
+            className="header-font font-bold text-sm leading-none tracking-wide uppercase text-right"
             style={{ color: linkColor }}
           >
             ARTSNWCT.ORG/DONATE
