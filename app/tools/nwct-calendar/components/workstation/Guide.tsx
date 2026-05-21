@@ -108,6 +108,14 @@ export default function Guide({ onClose }: Props) {
                   </span>
                 </li>
                 <li className="flex gap-2">
+                  <span className="min-w-[80px] font-bold text-slate-900">Images:</span>
+                  <span>
+                    Inside an event card editor, paste an image URL or use the upload
+                    button to attach a photo. Drag the top/bottom handles to crop, or
+                    drag the image itself to reposition.
+                  </span>
+                </li>
+                <li className="flex gap-2">
                   <span className="min-w-[80px] font-bold text-slate-900">
                     Undo / Redo:
                   </span>

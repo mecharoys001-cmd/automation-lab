@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowDownUp,
   CheckCircle2,
   Check,
+  Move,
   Pencil,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import type { CardStyles, ProcessedEvent } from "../../lib/types";
@@ -149,6 +151,9 @@ function EventCardInner({
     venue: string;
     town: string;
     website: string;
+    imageUrl: string;
+    imageHeight: number | undefined;
+    imagePosition: number;
   };
 
   const snapshotEvent = (e: ProcessedEvent): FormData => ({
@@ -157,6 +162,9 @@ function EventCardInner({
     venue: e.venue,
     town: e.town,
     website: e.website,
+    imageUrl: e.imageUrl ?? "",
+    imageHeight: e.imageHeight,
+    imagePosition: e.imagePosition ?? 50,
   });
 
   // formData is null when the card is not being edited. When the user
@@ -164,6 +172,15 @@ function EventCardInner({
   // reset cleanly on cancel without needing to sync via useEffect.
   const [formData, setFormData] = useState<FormData | null>(null);
   const isEditing = formData !== null;
+
+  // Refs for image crop/pan interactions. Kept at top-level so hook order
+  // stays stable regardless of edit state.
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{ y: number; h: number; p: number }>({
+    y: 0,
+    h: 0,
+    p: 50,
+  });
 
   const computedStyle = useMemo<React.CSSProperties>(() => {
     if (!cardStyles) return {};
@@ -200,7 +217,17 @@ function EventCardInner({
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!formData) return;
-    onUpdate({ ...event, ...formData });
+    onUpdate({
+      ...event,
+      title: formData.title,
+      formattedTime: formData.formattedTime,
+      venue: formData.venue,
+      town: formData.town,
+      website: formData.website,
+      imageUrl: formData.imageUrl || undefined,
+      imageHeight: formData.imageHeight,
+      imagePosition: formData.imagePosition,
+    });
     setFormData(null);
   };
 
@@ -217,6 +244,92 @@ function EventCardInner({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => (prev ? { ...prev, [name]: value } : prev));
+  };
+
+  const processFile = (file: File) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) =>
+        prev
+          ? {
+              ...prev,
+              imageUrl: reader.result as string,
+              imageHeight: undefined,
+              imagePosition: 50,
+            }
+          : prev,
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+    // Reset value so re-uploading the same file works.
+    e.target.value = "";
+  };
+
+  const handleResizeStart = (
+    e: React.MouseEvent,
+    direction: "top" | "bottom",
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!imageContainerRef.current || !formData) return;
+    dragStartRef.current = {
+      y: e.clientY,
+      h: imageContainerRef.current.offsetHeight,
+      p: formData.imagePosition,
+    };
+
+    const onMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - dragStartRef.current.y;
+      const newHeight =
+        direction === "bottom"
+          ? Math.max(30, dragStartRef.current.h + deltaY)
+          : Math.max(30, dragStartRef.current.h - deltaY);
+      setFormData((prev) => (prev ? { ...prev, imageHeight: newHeight } : prev));
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const handlePanStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!formData || !formData.imageUrl) return;
+    dragStartRef.current = {
+      y: e.clientY,
+      h: 0,
+      p: formData.imagePosition,
+    };
+
+    const onMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - dragStartRef.current.y;
+      const shift = deltaY * 0.5;
+      const newPos = Math.min(
+        100,
+        Math.max(0, dragStartRef.current.p - shift),
+      );
+      setFormData((prev) => (prev ? { ...prev, imagePosition: newPos } : prev));
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   };
 
   return (
@@ -302,6 +415,107 @@ function EventCardInner({
               placeholder="Website"
               onClick={(e) => e.stopPropagation()}
             />
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <input
+              name="imageUrl"
+              value={formData.imageUrl}
+              onChange={handleChange}
+              className="flex-1 text-[10px] text-gray-500 border-b border-gray-200 focus:border-blue-500 outline-none bg-transparent italic"
+              placeholder="Image URL (paste or upload)"
+              onClick={(e) => e.stopPropagation()}
+              title="Paste an image URL or use the upload button"
+            />
+            <label
+              className="cursor-pointer p-1.5 bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded transition-colors border border-gray-100 flex items-center justify-center h-[26px] w-[26px]"
+              title="Upload image from computer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Upload size={14} className="pointer-events-none" />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+            </label>
+          </div>
+
+          <div
+            ref={imageContainerRef}
+            className="mt-2 w-full bg-gray-50 rounded border border-dashed border-gray-300 relative group/preview flex items-center justify-center select-none"
+            style={{
+              height: formData.imageHeight ? `${formData.imageHeight}px` : "auto",
+              minHeight: "80px",
+              overflow: "hidden",
+            }}
+          >
+            {formData.imageUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.imageUrl}
+                  className="w-full absolute inset-0 object-cover cursor-move"
+                  style={{
+                    height: "100%",
+                    objectPosition: `center ${formData.imagePosition}%`,
+                  }}
+                  alt="Preview"
+                  onMouseDown={handlePanStart}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.opacity = "0.2";
+                  }}
+                />
+
+                <div className="absolute top-1 right-1 z-30">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFormData((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              imageUrl: "",
+                              imageHeight: undefined,
+                              imagePosition: 50,
+                            }
+                          : prev,
+                      );
+                    }}
+                    className="bg-white/80 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-full p-1 transition-colors"
+                    title="Remove image"
+                  >
+                    <X size={12} className="pointer-events-none" />
+                  </button>
+                </div>
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover/preview:opacity-100 transition-opacity bg-black/50 text-white rounded-full p-2">
+                  <Move size={16} />
+                </div>
+
+                <div
+                  className="absolute top-0 left-0 w-full h-3 bg-blue-500/0 hover:bg-blue-500/40 cursor-ns-resize flex items-center justify-center z-20 transition-colors group/resize"
+                  onMouseDown={(e) => handleResizeStart(e, "top")}
+                  title="Drag to crop from the top"
+                >
+                  <div className="w-8 h-1 bg-white/50 rounded-full group-hover/resize:bg-white shadow-sm" />
+                </div>
+
+                <div
+                  className="absolute bottom-0 left-0 w-full h-3 bg-blue-500/0 hover:bg-blue-500/40 cursor-ns-resize flex items-center justify-center z-20 transition-colors group/resize"
+                  onMouseDown={(e) => handleResizeStart(e, "bottom")}
+                  title="Drag to crop from the bottom"
+                >
+                  <div className="w-8 h-1 bg-white/50 rounded-full group-hover/resize:bg-white shadow-sm" />
+                </div>
+              </>
+            ) : (
+              <div className="text-[10px] text-gray-400 p-2 text-center pointer-events-none">
+                No image — paste a URL above or upload a file.
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between items-center mt-2 border-t pt-2 border-gray-100">
