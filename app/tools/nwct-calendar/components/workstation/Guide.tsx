@@ -218,18 +218,22 @@ export default function Guide({ onClose }: Props) {
                     Footer:
                   </span>
                   <span>
-                    Drag logo files into the footer slots on each calendar page. Use
-                    the trash to free up space; the restore button brings the slot
-                    back.
+                    Drag logo files into the footer slots on each calendar page —
+                    drop multiple at once to fill subsequent slots. Drag a slot
+                    onto another to swap them. Use the trash to free up space;
+                    the restore button brings the slot back.
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="min-w-[80px] font-bold text-slate-900">
                     Inline:
                   </span>
-                  <span className="italic text-slate-400">
-                    Bulk sponsor uploads and in-flow sponsor blocks arrive in a later
-                    parity patch.
+                  <span>
+                    Use{" "}
+                    <span className="font-bold text-slate-700">Add Sponsors</span>{" "}
+                    in the toolbar to bulk-upload sponsor images as in-flow blocks.
+                    If exactly one event is selected, new sponsors anchor after that
+                    event; otherwise they append at the end of the calendar flow.
                   </span>
                 </li>
               </ul>

@@ -514,19 +514,41 @@ export default function NwctCalendarTool() {
 
   const handleFooterSlotUpload = useCallback(
     (index: number, files: File[]) => {
-      const file = files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      if (imageFiles.length === 0) return;
+      Promise.all(
+        imageFiles.map(
+          (file) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => resolve(ev.target?.result as string);
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(file);
+            }),
+        ),
+      ).then((dataUrls) => {
         recordHistory();
         setLayout((prev) => {
           const next = prev.footerSlots.slice();
-          next[index] = { type: "image", content: dataUrl };
+          let cursor = index;
+          for (const url of dataUrls) {
+            // Find the next slot that can receive an image — start at the
+            // target slot, then walk forward through image / empty slots.
+            while (
+              cursor < next.length &&
+              next[cursor] &&
+              next[cursor].type !== "image" &&
+              next[cursor].type !== "empty"
+            ) {
+              cursor += 1;
+            }
+            if (cursor >= next.length) break;
+            next[cursor] = { type: "image", content: url };
+            cursor += 1;
+          }
           return { ...prev, footerSlots: next };
         });
-      };
-      reader.readAsDataURL(file);
+      });
     },
     [recordHistory],
   );
@@ -549,6 +571,28 @@ export default function NwctCalendarTool() {
       setLayout((prev) => {
         const next = prev.footerSlots.slice();
         next[index] = { type: "image" };
+        return { ...prev, footerSlots: next };
+      });
+    },
+    [recordHistory],
+  );
+
+  const handleFooterSlotMove = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      recordHistory();
+      setLayout((prev) => {
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= prev.footerSlots.length ||
+          toIndex >= prev.footerSlots.length
+        )
+          return prev;
+        const next = prev.footerSlots.slice();
+        const tmp = next[fromIndex];
+        next[fromIndex] = next[toIndex];
+        next[toIndex] = tmp;
         return { ...prev, footerSlots: next };
       });
     },
@@ -649,9 +693,50 @@ export default function NwctCalendarTool() {
     },
     [recordHistory],
   );
-  const handleAddSponsorsPlaceholder = useCallback(() => {
-    notImplemented("Add Sponsors");
-  }, [notImplemented]);
+  const handleAddSponsors = useCallback(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.multiple = true;
+    input.onchange = (e) => {
+      const fileList = (e.target as HTMLInputElement).files;
+      if (!fileList || fileList.length === 0) return;
+      const files = Array.from(fileList);
+      Promise.all(
+        files.map(
+          (file) =>
+            new Promise<{ url: string; name: string }>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (ev) =>
+                resolve({
+                  url: ev.target?.result as string,
+                  name: file.name.replace(/\.[^.]+$/, ""),
+                });
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(file);
+            }),
+        ),
+      ).then((results) => {
+        if (results.length === 0) return;
+        const sel = selectedRef.current;
+        const afterId = sel.size === 1 ? sel.values().next().value : undefined;
+        recordHistory();
+        setLayout((prev) => ({
+          ...prev,
+          sponsors: [
+            ...prev.sponsors,
+            ...results.map(({ url, name }) => ({
+              id: generateId(),
+              imageUrl: url,
+              name,
+              ...(afterId ? { afterId } : {}),
+            })),
+          ],
+        }));
+      });
+    };
+    input.click();
+  }, [recordHistory]);
   const handleSaveImagesPlaceholder = useCallback(() => {
     notImplemented("Save Images");
   }, [notImplemented]);
@@ -793,7 +878,7 @@ export default function NwctCalendarTool() {
           onUndo={handleUndo}
           onRedo={handleRedo}
           onAddEvent={handleOpenAddEvent}
-          onAddSponsors={handleAddSponsorsPlaceholder}
+          onAddSponsors={handleAddSponsors}
           onToggleGuide={handleToggleGuide}
           onToggleStyle={handleToggleStyle}
           onSaveImages={handleSaveImagesPlaceholder}
@@ -812,6 +897,7 @@ export default function NwctCalendarTool() {
           onFooterSlotUpload={handleFooterSlotUpload}
           onFooterSlotDelete={handleFooterSlotDelete}
           onFooterSlotRestore={handleFooterSlotRestore}
+          onFooterSlotMove={handleFooterSlotMove}
           onBack={() => setStep("edit")}
           onPrint={handlePrint}
           onExportPdf={handleExportPdf}

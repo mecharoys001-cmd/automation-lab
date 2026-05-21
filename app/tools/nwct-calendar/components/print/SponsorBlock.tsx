@@ -8,6 +8,7 @@ interface Props {
   onDelete: (id: string) => void;
   paddingTop?: number;
   paddingBottom?: number;
+  isExporting?: boolean;
 }
 
 export function SponsorBlock({
@@ -15,6 +16,7 @@ export function SponsorBlock({
   onDelete,
   paddingTop = 0,
   paddingBottom = 16,
+  isExporting = false,
 }: Props) {
   return (
     <div
@@ -30,16 +32,18 @@ export function SponsorBlock({
         alt={sponsor.name ?? "Sponsor"}
         className="w-full h-auto object-contain border border-transparent rounded-sm"
       />
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(sponsor.id);
-        }}
-        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 shadow-sm hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
-        title="Remove Sponsor"
-      >
-        <Trash2 size={14} />
-      </button>
+      {!isExporting && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(sponsor.id);
+          }}
+          className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 shadow-sm hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+          title="Remove sponsor from the calendar"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 }

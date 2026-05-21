@@ -128,7 +128,7 @@ export default function WorkstationToolbar({
           type="button"
           onClick={onAddSponsors}
           className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:bg-background"
-          title="Upload sponsor images to insert into the layout (coming soon)"
+          title="Upload one or more sponsor images. If a single event is selected, sponsors anchor after that event; otherwise they append to the end of the flow."
         >
           <ImagePlus size={14} />
           <span className="hidden sm:inline">Add Sponsors</span>

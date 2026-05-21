@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent as ReactDragEvent,
 } from "react";
 import { Image as ImageIcon, PlusCircle, X } from "lucide-react";
 import type {
@@ -38,6 +39,7 @@ interface PrintLayoutProps {
   onFooterSlotUpload: (index: number, files: File[]) => void;
   onFooterSlotDelete: (index: number) => void;
   onFooterSlotRestore: (index: number) => void;
+  onFooterSlotMove: (fromIndex: number, toIndex: number) => void;
   calendarPageCount: number;
   coverConfig: CoverConfig;
   onCoverUpdate: (c: CoverConfig) => void;
@@ -270,21 +272,32 @@ function QrPlaceholder({ label }: { label: string }) {
   );
 }
 
+interface FooterDragHandlers {
+  draggable: boolean;
+  onDragStart: (e: ReactDragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: ReactDragEvent<HTMLDivElement>) => void;
+  onDragLeave: (e: ReactDragEvent<HTMLDivElement>) => void;
+  onDrop: (e: ReactDragEvent<HTMLDivElement>) => void;
+}
+
 function FooterSegment({
   slot,
   linkColor,
   onDelete,
   onRestore,
   onUpload,
+  dragHandlers,
 }: {
   slot: FooterSlot;
   linkColor: string;
   onDelete: () => void;
   onRestore: () => void;
   onUpload: (files: File[]) => void;
+  dragHandlers: FooterDragHandlers;
 }) {
   const renderDeleteButton = () => (
     <button
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
         onDelete();
@@ -351,9 +364,10 @@ function FooterSegment({
   const hasImage = slot.type === "image" && slot.content;
   return (
     <div
+      {...dragHandlers}
       className={`h-[58px] w-full flex flex-col items-center justify-center relative group overflow-hidden rounded-lg border-2 ${
         hasImage
-          ? "border-transparent bg-transparent"
+          ? "border-transparent bg-transparent cursor-grab active:cursor-grabbing"
           : "border-dashed border-gray-200 bg-gray-50/50 hover:bg-blue-50/50 hover:border-blue-300 print:border-transparent print:bg-transparent"
       }`}
     >
@@ -400,6 +414,7 @@ function PageFooter({
   onUpload,
   onDelete,
   onRestore,
+  onMove,
 }: {
   slots: FooterSlot[];
   linkColor: string;
@@ -407,7 +422,62 @@ function PageFooter({
   onUpload: (index: number, files: File[]) => void;
   onDelete: (index: number) => void;
   onRestore: (index: number) => void;
+  onMove: (fromIndex: number, toIndex: number) => void;
 }) {
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (
+    e: ReactDragEvent<HTMLDivElement>,
+    globalIndex: number,
+  ) => {
+    e.dataTransfer.setData("application/x-footer-index", String(globalIndex));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (
+    e: ReactDragEvent<HTMLDivElement>,
+    localOffset: number,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(localOffset);
+  };
+
+  const handleDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget)
+    )
+      return;
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (
+    e: ReactDragEvent<HTMLDivElement>,
+    localOffset: number,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(null);
+    const targetGlobalIndex = startIndex + localOffset;
+    const sourceIndexStr = e.dataTransfer.getData("application/x-footer-index");
+    if (sourceIndexStr) {
+      const sourceIndex = parseInt(sourceIndexStr, 10);
+      if (!Number.isNaN(sourceIndex) && sourceIndex !== targetGlobalIndex) {
+        onMove(sourceIndex, targetGlobalIndex);
+      }
+      return;
+    }
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files).filter((f) =>
+        f.type.startsWith("image/"),
+      );
+      if (files.length > 0) onUpload(targetGlobalIndex, files);
+    }
+  };
+
   return (
     <div
       className="page-footer-dropzone w-full grid grid-cols-3 items-center pointer-events-none"
@@ -415,10 +485,21 @@ function PageFooter({
     >
       {slots.map((slot, idx) => {
         const globalIdx = startIndex + idx;
+        const isDragOver = dragOverIndex === idx;
+        const isDraggable = slot.type !== "empty" && slot.type !== "removed";
+        const dragHandlers: FooterDragHandlers = {
+          draggable: isDraggable,
+          onDragStart: (e) => handleDragStart(e, globalIdx),
+          onDragOver: (e) => handleDragOver(e, idx),
+          onDragLeave: handleDragLeave,
+          onDrop: (e) => handleDrop(e, idx),
+        };
         return (
           <div
             key={idx}
-            className="flex items-center justify-center h-full w-full pointer-events-auto"
+            className={`flex items-center justify-center h-full w-full pointer-events-auto ${
+              isDragOver ? "ring-2 ring-blue-500 rounded-lg bg-blue-50" : ""
+            }`}
           >
             <FooterSegment
               slot={slot}
@@ -426,6 +507,7 @@ function PageFooter({
               onDelete={() => onDelete(globalIdx)}
               onRestore={() => onRestore(globalIdx)}
               onUpload={(files) => onUpload(globalIdx, files)}
+              dragHandlers={dragHandlers}
             />
           </div>
         );
@@ -451,6 +533,7 @@ export function PrintLayout({
   onFooterSlotUpload,
   onFooterSlotDelete,
   onFooterSlotRestore,
+  onFooterSlotMove,
   calendarPageCount,
   coverConfig,
   onCoverUpdate,
@@ -768,6 +851,7 @@ export function PrintLayout({
             onDelete={onDeleteSponsor}
             paddingTop={cardStyles.sponsorPaddingTop}
             paddingBottom={cardStyles.sponsorPaddingBottom}
+            isExporting={isExporting}
           />
         );
       default:
@@ -891,6 +975,7 @@ export function PrintLayout({
               onUpload={onFooterSlotUpload}
               onDelete={onFooterSlotDelete}
               onRestore={onFooterSlotRestore}
+              onMove={onFooterSlotMove}
             />
           </div>
         </div>

@@ -65,6 +65,7 @@ interface Props {
   onFooterSlotUpload: (index: number, files: File[]) => void;
   onFooterSlotDelete: (index: number) => void;
   onFooterSlotRestore: (index: number) => void;
+  onFooterSlotMove: (fromIndex: number, toIndex: number) => void;
 
   // Top-level actions
   onBack: () => void;
@@ -109,6 +110,7 @@ export default function CalendarPreview({
   onFooterSlotUpload,
   onFooterSlotDelete,
   onFooterSlotRestore,
+  onFooterSlotMove,
   onBack,
   onPrint,
   onExportPdf,
@@ -199,12 +201,14 @@ export default function CalendarPreview({
           onFooterSlotUpload={onFooterSlotUpload}
           onFooterSlotDelete={onFooterSlotDelete}
           onFooterSlotRestore={onFooterSlotRestore}
+          onFooterSlotMove={onFooterSlotMove}
           calendarPageCount={calendarPageCount}
           coverConfig={coverConfig}
           onCoverUpdate={onCoverUpdate}
           adPages={adPages}
           onAdPageUpdate={onAdPageUpdate}
           onAdPageDelete={onAdPageDelete}
+          isExporting={exporting}
         />
       </div>
     </div>
