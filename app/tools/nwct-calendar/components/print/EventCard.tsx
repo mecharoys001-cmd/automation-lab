@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Check, Pencil, Trash2, X } from "lucide-react";
+import {
+  ArrowDownUp,
+  CheckCircle2,
+  Check,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { CardStyles, ProcessedEvent } from "../../lib/types";
 
 interface EventCardProps {
@@ -15,7 +22,118 @@ interface EventCardProps {
   fillHeight?: boolean;
 }
 
-export function EventCard({
+// Spacer is rendered by a dedicated sub-component so it does not share hook
+// state with the rich event editor below it. That keeps the hook order
+// stable per mounted card instance and avoids any rules-of-hooks issues
+// when a spacer is swapped in/out by add/delete/undo.
+function SpacerCard({
+  event,
+  onUpdate,
+  onDelete,
+  isExporting,
+  fillHeight,
+}: {
+  event: ProcessedEvent;
+  onUpdate: (e: ProcessedEvent) => void;
+  onDelete: (id: string) => void;
+  isExporting: boolean;
+  fillHeight: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const height = event.spacerHeight ?? 32;
+
+  return (
+    <div
+      className={`relative w-full group transition-all ${
+        !isExporting ? "hover:bg-gray-50" : ""
+      } ${fillHeight ? "h-full min-h-[32px]" : ""}`}
+      style={{ height: fillHeight ? "auto" : `${height}px` }}
+      onClick={() => {
+        if (!isExporting) setIsEditing(true);
+      }}
+      title={
+        isExporting
+          ? undefined
+          : `Layout spacer (${height}px) — click to edit height or delete`
+      }
+    >
+      {isEditing && !isExporting ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center border border-blue-300 bg-white px-2 shadow-sm">
+          <ArrowDownUp size={16} className="mr-2 text-gray-400" />
+          <input
+            type="range"
+            min={10}
+            max={300}
+            step={2}
+            value={height}
+            onChange={(e) =>
+              onUpdate({ ...event, spacerHeight: parseInt(e.target.value, 10) })
+            }
+            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600"
+            title={`Spacer height: ${height}px`}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <span className="ml-2 w-10 font-mono text-[10px] text-gray-500">
+            {height}px
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(event.id);
+            }}
+            className="ml-2 p-1 text-red-500 hover:text-red-700"
+            title="Delete spacer"
+          >
+            <Trash2 size={12} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(false);
+            }}
+            className="ml-1 p-1 text-blue-500 hover:text-blue-700"
+            title="Done"
+          >
+            <Check size={14} />
+          </button>
+        </div>
+      ) : (
+        <div
+          className={`flex h-full w-full items-center justify-center ${
+            !isExporting
+              ? "border-2 border-dashed border-transparent group-hover:border-gray-200 print:border-transparent"
+              : ""
+          }`}
+        >
+          {!isExporting && (
+            <span className="select-none text-[9px] font-bold uppercase text-gray-300 opacity-0 group-hover:opacity-100">
+              Spacer {fillHeight ? "(Auto Fill)" : `(${height}px)`}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function EventCard(props: EventCardProps) {
+  if (props.event.isSpacer) {
+    return (
+      <SpacerCard
+        event={props.event}
+        onUpdate={props.onUpdate}
+        onDelete={props.onDelete}
+        isExporting={props.isExporting ?? false}
+        fillHeight={props.fillHeight ?? false}
+      />
+    );
+  }
+  return <EventCardInner {...props} />;
+}
+
+function EventCardInner({
   event,
   isSelected,
   onToggle,

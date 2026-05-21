@@ -11,7 +11,12 @@ import {
   toEditorRows,
 } from "../lib/csv";
 import { applyMapping, suggestMapping } from "../lib/normalize";
-import { processRows } from "../lib/processEvents";
+import {
+  addEventToGrouped,
+  buildEventFromInput,
+  processRows,
+  type NewEventInput,
+} from "../lib/processEvents";
 import {
   clearAutosave,
   fromProjectJson,
@@ -47,6 +52,7 @@ import { SAMPLE_RAW_EVENTS } from "../lib/sampleFixture";
 import { formatMonthYear } from "../lib/dateFormat";
 import StyleControls from "./workstation/StyleControls";
 import Guide from "./workstation/Guide";
+import AddEventModal from "./workstation/AddEventModal";
 
 type Step = "upload" | "map" | "edit" | "preview";
 
@@ -102,6 +108,7 @@ export default function NwctCalendarTool() {
   const [exporting, setExporting] = useState(false);
   const [showStyle, setShowStyle] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [showAddEvent, setShowAddEvent] = useState(false);
 
   // --- Undo / redo history -------------------------------------------------
   const [past, setPast] = useState<WorkstationSnapshot[]>([]);
@@ -561,9 +568,32 @@ export default function NwctCalendarTool() {
     setError(`${feature} is coming in a later parity patch.`);
   }, []);
 
-  const handleAddEventPlaceholder = useCallback(() => {
-    notImplemented("Add Event");
-  }, [notImplemented]);
+  const handleOpenAddEvent = useCallback(() => {
+    setShowAddEvent(true);
+  }, []);
+  const handleAddEventSubmit = useCallback(
+    (input: NewEventInput) => {
+      const evt = buildEventFromInput(input);
+      if (!evt) {
+        setError("Could not add event — start date is invalid.");
+        return;
+      }
+      recordHistory();
+      setBuilt((prev) => {
+        const base = prev ?? {
+          shortRuns: {},
+          longRuns: [],
+          workshops: [],
+          sortedDateKeys: [],
+          monthTitle: formatMonthYear(evt.startAt).toUpperCase(),
+        };
+        return addEventToGrouped(base, evt);
+      });
+      setError(null);
+      setShowAddEvent(false);
+    },
+    [recordHistory],
+  );
   const handleAddSponsorsPlaceholder = useCallback(() => {
     notImplemented("Add Sponsors");
   }, [notImplemented]);
@@ -707,7 +737,7 @@ export default function NwctCalendarTool() {
           canRedo={future.length > 0}
           onUndo={handleUndo}
           onRedo={handleRedo}
-          onAddEvent={handleAddEventPlaceholder}
+          onAddEvent={handleOpenAddEvent}
           onAddSponsors={handleAddSponsorsPlaceholder}
           onToggleGuide={handleToggleGuide}
           onToggleStyle={handleToggleStyle}
@@ -747,6 +777,13 @@ export default function NwctCalendarTool() {
       )}
 
       {showGuide && <Guide onClose={() => setShowGuide(false)} />}
+
+      {step === "preview" && showAddEvent && (
+        <AddEventModal
+          onClose={() => setShowAddEvent(false)}
+          onAdd={handleAddEventSubmit}
+        />
+      )}
     </div>
   );
 }

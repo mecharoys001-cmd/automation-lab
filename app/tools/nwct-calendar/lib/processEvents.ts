@@ -24,7 +24,7 @@ function normalizeKey(s: string): string {
   return (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function calculateShortRunReferences(
+export function calculateShortRunReferences(
   shortRuns: Record<string, ProcessedEvent[]>,
   sortedKeys: string[],
 ): Record<string, ProcessedEvent[]> {
@@ -232,5 +232,113 @@ export function processRows(rows: EditorRow[]): GroupedEvents {
     workshops,
     sortedDateKeys,
     monthTitle,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Manual add helpers used by the Add Event modal in the workstation. They
+// keep the workstation tool component free of grouping detail.
+// ---------------------------------------------------------------------------
+
+export interface NewEventInput {
+  title: string;
+  category: EventCategory;
+  startAt: string; // ISO-ish datetime-local value
+  endAt: string;
+  venue: string;
+  town: string;
+  website: string;
+  imageUrl?: string;
+  isSpacer?: boolean;
+  spacerHeight?: number;
+}
+
+export function buildEventFromInput(input: NewEventInput): ProcessedEvent | null {
+  const start = new Date(input.startAt);
+  if (!isValidDate(start)) return null;
+  const endRaw = input.endAt ? new Date(input.endAt) : start;
+  const end = isValidDate(endRaw) ? endRaw : start;
+
+  if (input.isSpacer) {
+    return {
+      id: generateId(),
+      title: "Spacer",
+      venue: "",
+      town: "",
+      website: "",
+      startAt: start,
+      endAt: end,
+      formattedTime: "",
+      formattedDateHeader: formatDateHeader(start),
+      category: input.category,
+      isSpacer: true,
+      spacerHeight: input.spacerHeight ?? 32,
+    };
+  }
+
+  const title = cleanEventTitle(input.title, input.venue ?? "");
+  return {
+    id: generateId(),
+    title,
+    venue: (input.venue ?? "").trim(),
+    town: input.town ?? "",
+    website: extractDomain(input.website ?? ""),
+    startAt: start,
+    endAt: end,
+    formattedTime: formatEventTimeRange(start, end),
+    formattedDateHeader: formatDateHeader(start),
+    category: input.category,
+    imageUrl: input.imageUrl || undefined,
+  };
+}
+
+export function addEventToGrouped(
+  grouped: GroupedEvents,
+  evt: ProcessedEvent,
+): GroupedEvents {
+  if (evt.category === "LongRun") {
+    return {
+      ...grouped,
+      longRuns: [...grouped.longRuns, evt],
+    };
+  }
+
+  if (evt.category === "Workshop") {
+    return {
+      ...grouped,
+      workshops: [...grouped.workshops, evt].sort(
+        (a, b) => a.startAt.getTime() - b.startAt.getTime(),
+      ),
+    };
+  }
+
+  // ShortRun: bucket by formattedDateHeader and keep date keys ordered by
+  // the first event in each bucket.
+  const key = evt.formattedDateHeader;
+  const bucket = grouped.shortRuns[key] ?? [];
+  const nextBucket = [...bucket, evt].sort(
+    (a, b) => a.startAt.getTime() - b.startAt.getTime(),
+  );
+  const nextShortRuns: Record<string, ProcessedEvent[]> = {
+    ...grouped.shortRuns,
+    [key]: nextBucket,
+  };
+
+  const nextSortedDateKeys = Object.keys(nextShortRuns).sort((a, b) => {
+    const da = nextShortRuns[a][0]?.startAt;
+    const db = nextShortRuns[b][0]?.startAt;
+    if (!da || !db) return 0;
+    return da.getTime() - db.getTime();
+  });
+
+  // Spacers should not affect see-reference dedup; recalculate refs only
+  // for real events. We pass the full bucket so existing seeReferences are
+  // recomputed across non-spacer items.
+  const withRefs = calculateShortRunReferences(nextShortRuns, nextSortedDateKeys);
+
+  return {
+    ...grouped,
+    shortRuns: withRefs,
+    sortedDateKeys: nextSortedDateKeys,
   };
 }

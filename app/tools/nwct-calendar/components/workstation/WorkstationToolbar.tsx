@@ -63,7 +63,7 @@ export default function WorkstationToolbar({
           type="button"
           onClick={onAddEvent}
           className="flex items-center gap-2 whitespace-nowrap rounded-full bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
-          title="Add a manually entered event to the calendar (coming soon)"
+          title="Add a manually entered event or layout spacer to the calendar"
         >
           <CalendarPlus size={14} />
           <span className="hidden sm:inline">Add Event</span>
