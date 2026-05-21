@@ -14,6 +14,9 @@ import { applyMapping, suggestMapping } from "../lib/normalize";
 import {
   addEventToGrouped,
   buildEventFromInput,
+  deleteEventsFromGrouped,
+  duplicateEventsInGrouped,
+  findEventInGrouped,
   processRows,
   type NewEventInput,
 } from "../lib/processEvents";
@@ -561,6 +564,58 @@ export default function NwctCalendarTool() {
     });
   }, []);
 
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkDelete = useCallback(() => {
+    const ids = selectedRef.current;
+    if (ids.size === 0) return;
+    recordHistory();
+    setBuilt((prev) => (prev ? deleteEventsFromGrouped(prev, ids) : prev));
+    setSelectedIds(new Set());
+  }, [recordHistory]);
+
+  const handleBulkDuplicate = useCallback(() => {
+    const ids = selectedRef.current;
+    if (ids.size === 0) return;
+    const current = builtRef.current;
+    if (!current) return;
+    recordHistory();
+    const { grouped, newIds } = duplicateEventsInGrouped(current, ids);
+    setBuilt(grouped);
+    setSelectedIds(new Set(newIds));
+  }, [recordHistory]);
+
+  const handleAddSelectedToCover = useCallback(() => {
+    const ids = selectedRef.current;
+    if (ids.size !== 1) return;
+    const current = builtRef.current;
+    if (!current) return;
+    const id = ids.values().next().value;
+    if (!id) return;
+    const event = findEventInGrouped(current, id);
+    if (!event) return;
+    recordHistory();
+    const venue = event.venue?.trim() ?? "";
+    const town = event.town?.trim() ?? "";
+    const caption = `${event.title}${venue ? ` at ${venue}` : ""}${
+      town ? `, ${town}` : ""
+    }`;
+    setLayout((prev) => ({
+      ...prev,
+      coverConfig: {
+        ...prev.coverConfig,
+        heroImageUrl: event.imageUrl
+          ? event.imageUrl
+          : prev.coverConfig.heroImageUrl,
+        credit: caption,
+        month: prev.coverConfig.month || current.monthTitle,
+      },
+    }));
+    setSelectedIds(new Set());
+  }, [recordHistory]);
+
   // Placeholder handlers for not-yet-wired toolbar actions. They show a
   // tooltip-aware notice via the error banner so the user knows the button
   // works but the feature is coming in a later patch.
@@ -742,6 +797,10 @@ export default function NwctCalendarTool() {
           onToggleGuide={handleToggleGuide}
           onToggleStyle={handleToggleStyle}
           onSaveImages={handleSaveImagesPlaceholder}
+          onClearSelection={handleClearSelection}
+          onBulkDelete={handleBulkDelete}
+          onBulkDuplicate={handleBulkDuplicate}
+          onAddSelectedToCover={handleAddSelectedToCover}
           onAddAdPage={handleAddAdPage}
           onEventUpdate={handleEventUpdate}
           onDeleteEvent={handleDeleteEvent}

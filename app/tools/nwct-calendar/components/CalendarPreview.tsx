@@ -12,6 +12,7 @@ import type {
 import { interCalendar, oswaldCalendar } from "../lib/fonts";
 import { PrintLayout } from "./print/PrintLayout";
 import WorkstationToolbar from "./workstation/WorkstationToolbar";
+import BulkSelectionToolbar from "./workstation/BulkSelectionToolbar";
 import "../nwct-calendar.css";
 
 interface Props {
@@ -41,6 +42,12 @@ interface Props {
   onToggleGuide: () => void;
   onToggleStyle: () => void;
   onSaveImages: () => void;
+
+  // Bulk selection actions
+  onClearSelection: () => void;
+  onBulkDelete: () => void;
+  onBulkDuplicate: () => void;
+  onAddSelectedToCover: () => void;
 
   // Wired toolbar actions
   onAddAdPage: () => void;
@@ -85,6 +92,10 @@ export default function CalendarPreview({
   onToggleGuide,
   onToggleStyle,
   onSaveImages,
+  onClearSelection,
+  onBulkDelete,
+  onBulkDuplicate,
+  onAddSelectedToCover,
   onAddAdPage,
   onSaveProject,
   onReset,
@@ -161,6 +172,15 @@ export default function CalendarPreview({
           </button>
         </div>
       </div>
+
+      <BulkSelectionToolbar
+        count={selectedIds.size}
+        canAddToCover={selectedIds.size === 1}
+        onClearSelection={onClearSelection}
+        onDeleteSelected={onBulkDelete}
+        onDuplicateSelected={onBulkDuplicate}
+        onAddToCover={onAddSelectedToCover}
+      />
 
       <div
         id="nwct-calendar-print-root"

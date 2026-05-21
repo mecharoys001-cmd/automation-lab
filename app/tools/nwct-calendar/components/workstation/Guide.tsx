@@ -126,6 +126,16 @@ export default function Guide({ onClose }: Props) {
                 </li>
                 <li className="flex gap-2">
                   <span className="min-w-[80px] font-bold text-slate-900">
+                    Select:
+                  </span>
+                  <span>
+                    Click the checkbox on any event card to add it to the selection.
+                    A bulk toolbar appears at the bottom with Duplicate, Delete, and
+                    Add-to-Cover actions for one or more events at a time.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="min-w-[80px] font-bold text-slate-900">
                     Drag &amp; drop:
                   </span>
                   <span className="italic text-slate-400">
@@ -187,7 +197,10 @@ export default function Guide({ onClose }: Props) {
                   <span className="min-w-[80px] font-bold text-slate-900">Cover:</span>
                   <span>
                     Drop a hero image onto page 1 and edit the title, subtitle, and
-                    credit line directly on the cover.
+                    credit line directly on the cover. Select one event and use{" "}
+                    <strong>Cover</strong> in the bulk toolbar to fill the caption
+                    with its title, venue, and town — and use its image if one is
+                    set.
                   </span>
                 </li>
               </ul>

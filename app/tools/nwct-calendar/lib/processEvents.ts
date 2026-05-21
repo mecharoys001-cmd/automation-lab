@@ -292,6 +292,131 @@ export function buildEventFromInput(input: NewEventInput): ProcessedEvent | null
   };
 }
 
+// ---------------------------------------------------------------------------
+// Bulk mutation helpers used by the bulk selection toolbar. They keep the
+// short-run see-reference and sortedDateKeys bookkeeping consistent after
+// removing or cloning multiple events at once.
+// ---------------------------------------------------------------------------
+
+function recomputeShortRunIndex(
+  shortRuns: Record<string, ProcessedEvent[]>,
+): { shortRuns: Record<string, ProcessedEvent[]>; sortedDateKeys: string[] } {
+  const sortedDateKeys = Object.keys(shortRuns).sort((a, b) => {
+    const da = shortRuns[a][0]?.startAt;
+    const db = shortRuns[b][0]?.startAt;
+    if (!da || !db) return 0;
+    return da.getTime() - db.getTime();
+  });
+  return {
+    shortRuns: calculateShortRunReferences(shortRuns, sortedDateKeys),
+    sortedDateKeys,
+  };
+}
+
+export function deleteEventsFromGrouped(
+  grouped: GroupedEvents,
+  ids: ReadonlySet<string> | readonly string[],
+): GroupedEvents {
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  if (idSet.size === 0) return grouped;
+  const keep = (e: ProcessedEvent) => !idSet.has(e.id);
+
+  const shortRuns: Record<string, ProcessedEvent[]> = {};
+  for (const [k, list] of Object.entries(grouped.shortRuns)) {
+    const filtered = list.filter(keep);
+    if (filtered.length > 0) shortRuns[k] = filtered;
+  }
+  const { shortRuns: refsShortRuns, sortedDateKeys } =
+    recomputeShortRunIndex(shortRuns);
+
+  return {
+    ...grouped,
+    shortRuns: refsShortRuns,
+    sortedDateKeys,
+    longRuns: grouped.longRuns.filter(keep),
+    workshops: grouped.workshops.filter(keep),
+  };
+}
+
+// Clone the listed events in place. Each new event gets a fresh id but
+// preserves dates, category, image fields and spacer settings. Returns the
+// updated GroupedEvents and the set of new ids so callers can update the
+// active selection.
+export function duplicateEventsInGrouped(
+  grouped: GroupedEvents,
+  ids: ReadonlySet<string> | readonly string[],
+): { grouped: GroupedEvents; newIds: string[] } {
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  if (idSet.size === 0) return { grouped, newIds: [] };
+
+  const newIds: string[] = [];
+  const cloneWithNewId = (e: ProcessedEvent): ProcessedEvent => {
+    const next: ProcessedEvent = {
+      ...e,
+      id: generateId(),
+      startAt: new Date(e.startAt.getTime()),
+      endAt: new Date(e.endAt.getTime()),
+    };
+    newIds.push(next.id);
+    return next;
+  };
+
+  const shortRuns: Record<string, ProcessedEvent[]> = {};
+  for (const [k, list] of Object.entries(grouped.shortRuns)) {
+    const next: ProcessedEvent[] = [];
+    for (const e of list) {
+      next.push(e);
+      if (idSet.has(e.id)) next.push(cloneWithNewId(e));
+    }
+    shortRuns[k] = next.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+  }
+
+  const longRuns: ProcessedEvent[] = [];
+  for (const e of grouped.longRuns) {
+    longRuns.push(e);
+    if (idSet.has(e.id)) longRuns.push(cloneWithNewId(e));
+  }
+
+  const workshops: ProcessedEvent[] = [];
+  for (const e of grouped.workshops) {
+    workshops.push(e);
+    if (idSet.has(e.id)) workshops.push(cloneWithNewId(e));
+  }
+  workshops.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+
+  const { shortRuns: refsShortRuns, sortedDateKeys } =
+    recomputeShortRunIndex(shortRuns);
+
+  return {
+    grouped: {
+      ...grouped,
+      shortRuns: refsShortRuns,
+      sortedDateKeys,
+      longRuns,
+      workshops,
+    },
+    newIds,
+  };
+}
+
+// Walk all grouped buckets and return the event with a matching id, or null
+// when nothing matches. Used by the Add-to-Cover handler to pull metadata
+// without forcing the caller to know which bucket the event lives in.
+export function findEventInGrouped(
+  grouped: GroupedEvents,
+  id: string,
+): ProcessedEvent | null {
+  for (const list of Object.values(grouped.shortRuns)) {
+    const found = list.find((e) => e.id === id);
+    if (found) return found;
+  }
+  return (
+    grouped.longRuns.find((e) => e.id === id) ??
+    grouped.workshops.find((e) => e.id === id) ??
+    null
+  );
+}
+
 export function addEventToGrouped(
   grouped: GroupedEvents,
   evt: ProcessedEvent,
