@@ -21,6 +21,7 @@ import {
 } from "../lib/projectState";
 import type {
   AdPageConfig,
+  CardStyles,
   ColumnMapping,
   CoverConfig,
   EditorRow,
@@ -42,6 +43,10 @@ import {
   snapshot,
   type WorkstationSnapshot,
 } from "../lib/workstationHistory";
+import { SAMPLE_RAW_EVENTS } from "../lib/sampleFixture";
+import { formatMonthYear } from "../lib/dateFormat";
+import StyleControls from "./workstation/StyleControls";
+import Guide from "./workstation/Guide";
 
 type Step = "upload" | "map" | "edit" | "preview";
 
@@ -95,6 +100,8 @@ export default function NwctCalendarTool() {
   const [layout, setLayout] = useState<LayoutState>(defaultLayoutState);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
+  const [showStyle, setShowStyle] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   // --- Undo / redo history -------------------------------------------------
   const [past, setPast] = useState<WorkstationSnapshot[]>([]);
@@ -560,15 +567,72 @@ export default function NwctCalendarTool() {
   const handleAddSponsorsPlaceholder = useCallback(() => {
     notImplemented("Add Sponsors");
   }, [notImplemented]);
-  const handleToggleGuidePlaceholder = useCallback(() => {
-    notImplemented("Guide");
-  }, [notImplemented]);
-  const handleToggleStylePlaceholder = useCallback(() => {
-    notImplemented("Style editor");
-  }, [notImplemented]);
   const handleSaveImagesPlaceholder = useCallback(() => {
     notImplemented("Save Images");
   }, [notImplemented]);
+
+  const handleToggleGuide = useCallback(() => {
+    setShowGuide((v) => !v);
+  }, []);
+  const handleToggleStyle = useCallback(() => {
+    setShowStyle((v) => !v);
+  }, []);
+
+  const handleStyleChange = useCallback(
+    (next: CardStyles) => {
+      recordHistory();
+      setLayout((prev) => ({ ...prev, cardStyles: next }));
+    },
+    [recordHistory],
+  );
+
+  const handleLoadSample = useCallback(() => {
+    const editorRows = toEditorRows(SAMPLE_RAW_EVENTS);
+    setRows(editorRows);
+    const grouped = processRows(editorRows);
+    setBuilt(grouped);
+    setLayout((prev) => ({
+      ...prev,
+      footerSlots:
+        prev.footerSlots.length === prev.calendarPageCount * 3
+          ? prev.footerSlots
+          : defaultFooterSlotsForPages(prev.calendarPageCount),
+      coverConfig: {
+        ...prev.coverConfig,
+        month: prev.coverConfig.month || grouped.monthTitle,
+      },
+    }));
+    setSelectedIds(new Set());
+    clearHistory();
+    setError(null);
+    setStep("preview");
+  }, [clearHistory]);
+
+  const handleStartBlank = useCallback(() => {
+    setRows([]);
+    const now = new Date();
+    const monthTitle = formatMonthYear(now).toUpperCase();
+    const emptyGrouped: GroupedEvents = {
+      shortRuns: {},
+      longRuns: [],
+      workshops: [],
+      sortedDateKeys: [],
+      monthTitle,
+    };
+    setBuilt(emptyGrouped);
+    setLayout((prev) => ({
+      ...prev,
+      footerSlots:
+        prev.footerSlots.length === prev.calendarPageCount * 3
+          ? prev.footerSlots
+          : defaultFooterSlotsForPages(prev.calendarPageCount),
+      coverConfig: { ...prev.coverConfig, month: prev.coverConfig.month || monthTitle },
+    }));
+    setSelectedIds(new Set());
+    clearHistory();
+    setError(null);
+    setStep("preview");
+  }, [clearHistory]);
 
   const stepBadge = useMemo(() => {
     const labels: Record<Step, string> = {
@@ -603,6 +667,8 @@ export default function NwctCalendarTool() {
           onLoadProject={triggerLoadProject}
           hasAutosave={hasAutosave}
           onRestoreAutosave={restoreAutosave}
+          onLoadSample={handleLoadSample}
+          onStartBlank={handleStartBlank}
           error={error}
         />
       )}
@@ -643,8 +709,8 @@ export default function NwctCalendarTool() {
           onRedo={handleRedo}
           onAddEvent={handleAddEventPlaceholder}
           onAddSponsors={handleAddSponsorsPlaceholder}
-          onToggleGuide={handleToggleGuidePlaceholder}
-          onToggleStyle={handleToggleStylePlaceholder}
+          onToggleGuide={handleToggleGuide}
+          onToggleStyle={handleToggleStyle}
           onSaveImages={handleSaveImagesPlaceholder}
           onAddAdPage={handleAddAdPage}
           onEventUpdate={handleEventUpdate}
@@ -671,6 +737,16 @@ export default function NwctCalendarTool() {
           {error}
         </div>
       )}
+
+      {step === "preview" && showStyle && (
+        <StyleControls
+          styles={layout.cardStyles}
+          onChange={handleStyleChange}
+          onClose={() => setShowStyle(false)}
+        />
+      )}
+
+      {showGuide && <Guide onClose={() => setShowGuide(false)} />}
     </div>
   );
 }

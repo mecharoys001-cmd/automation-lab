@@ -7,6 +7,8 @@ interface Props {
   onLoadProject: () => void;
   hasAutosave: boolean;
   onRestoreAutosave: () => void;
+  onLoadSample: () => void;
+  onStartBlank: () => void;
   error: string | null;
 }
 
@@ -15,6 +17,8 @@ export default function CsvUploadStep({
   onLoadProject,
   hasAutosave,
   onRestoreAutosave,
+  onLoadSample,
+  onStartBlank,
   error,
 }: Props) {
   const [dragOver, setDragOver] = useState(false);
@@ -92,6 +96,20 @@ export default function CsvUploadStep({
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <button
+          onClick={onLoadSample}
+          className="rounded-lg border border-blue-500/40 bg-blue-50 px-4 py-2 text-sm text-blue-900 transition-colors hover:bg-blue-100"
+          title="Load a built-in sample month so you can explore the editor without your own data"
+        >
+          Load Sample
+        </button>
+        <button
+          onClick={onStartBlank}
+          className="rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
+          title="Skip the CSV step and open an empty calendar for layout work"
+        >
+          Start Blank
+        </button>
         <button
           onClick={onLoadProject}
           className="rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
