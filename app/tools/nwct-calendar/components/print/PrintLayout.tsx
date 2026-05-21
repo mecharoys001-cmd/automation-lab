@@ -51,12 +51,11 @@ interface PrintLayoutProps {
 // Geometry constants
 // ---------------------------------------------------------------------------
 
-const PRINT_DPI = 300;
+// Pages are rendered at logical (96 DPI) dimensions on screen and in print —
+// 8.5 x 11in maps natively to 816 x 1056 CSS pixels, so the preview is
+// visible without horizontal scrolling and print() lays out 1:1 on paper.
+// The PDF exporter upscales the capture via html2canvas's `scale` option.
 const LOGICAL_DPI = 96;
-const SCALE_FACTOR = PRINT_DPI / LOGICAL_DPI;
-
-const ACTUAL_PAGE_WIDTH = 8.5 * PRINT_DPI;
-const ACTUAL_PAGE_HEIGHT = 11 * PRINT_DPI;
 
 const LOGICAL_PAGE_WIDTH = 8.5 * LOGICAL_DPI;
 const LOGICAL_PAGE_HEIGHT = 11 * LOGICAL_DPI;
@@ -930,7 +929,7 @@ export function PrintLayout({
 
   return (
     <div
-      className="relative flex flex-col items-center print:block min-w-fit"
+      className="relative flex flex-col items-start print:block min-w-fit"
       style={{ gap: "96px" }}
     >
       {/* Hidden measurement column — kept off-screen but in the document so we
@@ -956,29 +955,20 @@ export function PrintLayout({
         id="page-0"
         className="bg-white relative shadow-2xl print:shadow-none print:m-0 box-border text-gray-900 overflow-hidden print:break-after-page calendar-page-export shrink-0"
         style={{
-          width: `${ACTUAL_PAGE_WIDTH}px`,
-          height: `${ACTUAL_PAGE_HEIGHT}px`,
+          width: `${LOGICAL_PAGE_WIDTH}px`,
+          height: `${LOGICAL_PAGE_HEIGHT}px`,
           padding: 0,
           marginBottom: "96px",
         }}
       >
-        <div
-          style={{
-            transform: `scale(${SCALE_FACTOR})`,
-            transformOrigin: "top left",
-            width: LOGICAL_PAGE_WIDTH,
-            height: LOGICAL_PAGE_HEIGHT,
-          }}
-        >
-          {renderPage(0)}
-        </div>
+        {renderPage(0)}
       </div>
 
       {/* Spreads */}
       {totalPages > 1 && (
         <div
-          className="flex flex-col items-center print:block shrink-0"
-          style={{ width: `${ACTUAL_PAGE_WIDTH * 2}px`, gap: "96px" }}
+          className="flex flex-col items-start print:block shrink-0"
+          style={{ width: `${LOGICAL_PAGE_WIDTH * 2}px`, gap: "96px" }}
         >
           {Array.from({ length: Math.ceil((totalPages - 1) / 2) }).map((_, i) => {
             const spreadIndex = i;
@@ -993,48 +983,30 @@ export function PrintLayout({
                   id={`page-${leftPageIndex}`}
                   className="bg-white relative box-border text-gray-900 overflow-hidden print:break-after-page print:float-left print:border-none calendar-page-export"
                   style={{
-                    width: `${ACTUAL_PAGE_WIDTH}px`,
-                    height: `${ACTUAL_PAGE_HEIGHT}px`,
+                    width: `${LOGICAL_PAGE_WIDTH}px`,
+                    height: `${LOGICAL_PAGE_HEIGHT}px`,
                     padding: 0,
                     boxShadow:
                       "inset -1px 0 0 0 #e5e7eb, inset 0 1px 0 0 #e5e7eb, inset 0 -1px 0 0 #e5e7eb",
                   }}
                 >
                   <div className="absolute inset-y-0 left-0 w-px bg-gray-200" />
-                  <div
-                    style={{
-                      transform: `scale(${SCALE_FACTOR})`,
-                      transformOrigin: "top left",
-                      width: LOGICAL_PAGE_WIDTH,
-                      height: LOGICAL_PAGE_HEIGHT,
-                    }}
-                  >
-                    {renderPage(leftPageIndex)}
-                  </div>
+                  {renderPage(leftPageIndex)}
                 </div>
                 {rightPageIndex < totalPages && (
                   <div
                     id={`page-${rightPageIndex}`}
                     className="bg-white relative box-border text-gray-900 overflow-hidden print:break-after-page print:float-left print:border-none calendar-page-export"
                     style={{
-                      width: `${ACTUAL_PAGE_WIDTH}px`,
-                      height: `${ACTUAL_PAGE_HEIGHT}px`,
+                      width: `${LOGICAL_PAGE_WIDTH}px`,
+                      height: `${LOGICAL_PAGE_HEIGHT}px`,
                       padding: 0,
                       boxShadow:
                         "inset 1px 0 0 0 #e5e7eb, inset 0 1px 0 0 #e5e7eb, inset 0 -1px 0 0 #e5e7eb",
                     }}
                   >
                     <div className="absolute inset-y-0 right-0 w-px bg-gray-200" />
-                    <div
-                      style={{
-                        transform: `scale(${SCALE_FACTOR})`,
-                        transformOrigin: "top left",
-                        width: LOGICAL_PAGE_WIDTH,
-                        height: LOGICAL_PAGE_HEIGHT,
-                      }}
-                    >
-                      {renderPage(rightPageIndex)}
-                    </div>
+                    {renderPage(rightPageIndex)}
                   </div>
                 )}
               </div>

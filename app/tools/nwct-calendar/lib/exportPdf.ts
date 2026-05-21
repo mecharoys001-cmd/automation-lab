@@ -36,9 +36,9 @@ export async function exportPreviewToPdf(
   for (let i = 0; i < targets.length; i++) {
     const el = targets[i];
     const canvas = await html2canvas(el, {
-      // The print pages are rendered at 300dpi already; using scale 1 keeps
-      // memory bounded while still producing a sharp letter-sized image.
-      scale: 1,
+      // Pages render on-screen at 96 DPI (816 x 1056 CSS px). Upscale the
+      // capture to ~300 DPI (2550 x 3300) so the PDF stays print-sharp.
+      scale: 300 / 96,
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
