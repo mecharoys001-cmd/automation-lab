@@ -20,15 +20,58 @@ import {
   toProjectJson,
 } from "../lib/projectState";
 import type {
+  AdPageConfig,
   ColumnMapping,
+  CoverConfig,
   EditorRow,
+  FooterSlot,
   GroupedEvents,
+  LayoutState,
+  ProcessedEvent,
   RawCsvEvent,
 } from "../lib/types";
-import { REQUIRED_FIELDS } from "../lib/types";
+import {
+  defaultFooterSlotsForPages,
+  defaultLayoutState,
+  REQUIRED_FIELDS,
+} from "../lib/types";
 import { exportPreviewToPdf } from "../lib/exportPdf";
 
 type Step = "upload" | "map" | "edit" | "preview";
+
+function updateGroupedEvent(
+  grouped: GroupedEvents,
+  updated: ProcessedEvent,
+): GroupedEvents {
+  const apply = (e: ProcessedEvent) => (e.id === updated.id ? updated : e);
+  const shortRuns: Record<string, ProcessedEvent[]> = {};
+  for (const [k, list] of Object.entries(grouped.shortRuns)) {
+    shortRuns[k] = list.map(apply);
+  }
+  return {
+    ...grouped,
+    shortRuns,
+    longRuns: grouped.longRuns.map(apply),
+    workshops: grouped.workshops.map(apply),
+  };
+}
+
+function deleteGroupedEvent(grouped: GroupedEvents, id: string): GroupedEvents {
+  const reject = (e: ProcessedEvent) => e.id !== id;
+  const shortRuns: Record<string, ProcessedEvent[]> = {};
+  for (const [k, list] of Object.entries(grouped.shortRuns)) {
+    const filtered = list.filter(reject);
+    if (filtered.length > 0) shortRuns[k] = filtered;
+  }
+  const sortedDateKeys = grouped.sortedDateKeys.filter((k) => shortRuns[k]);
+  return {
+    ...grouped,
+    shortRuns,
+    sortedDateKeys,
+    longRuns: grouped.longRuns.filter(reject),
+    workshops: grouped.workshops.filter(reject),
+  };
+}
 
 export default function NwctCalendarTool() {
   const [step, setStep] = useState<Step>("upload");
@@ -38,6 +81,7 @@ export default function NwctCalendarTool() {
   const [csvRowsRaw, setCsvRowsRaw] = useState<Record<string, string>[]>([]);
   const [rows, setRows] = useState<EditorRow[]>([]);
   const [built, setBuilt] = useState<GroupedEvents | null>(null);
+  const [layout, setLayout] = useState<LayoutState>(defaultLayoutState);
   const [exporting, setExporting] = useState(false);
 
   const [hasAutosave, setHasAutosaveState] = useState(false);
@@ -45,21 +89,29 @@ export default function NwctCalendarTool() {
     setHasAutosaveState(!!loadAutosave());
   }, []);
 
-  // Autosave whenever rows change in edit/preview states.
+  // Autosave whenever rows / built / layout change while in edit or preview.
   useEffect(() => {
     if (rows.length === 0) return;
-    saveAutosave(rows);
+    saveAutosave({ rows, data: built, layout });
     setHasAutosaveState(true);
-  }, [rows]);
+  }, [rows, built, layout]);
 
   const restoreAutosave = useCallback(() => {
     const restored = loadAutosave();
-    if (!restored || restored.length === 0) {
+    if (!restored || restored.rows.length === 0) {
       setError("No autosaved session found.");
       return;
     }
-    setRows(restored);
-    setStep("edit");
+    setRows(restored.rows);
+    if (restored.data) {
+      setBuilt(restored.data);
+      setLayout(restored.layout ?? defaultLayoutState());
+      setStep("preview");
+    } else {
+      setBuilt(null);
+      setLayout(defaultLayoutState());
+      setStep("edit");
+    }
     setError(null);
   }, []);
 
@@ -74,35 +126,53 @@ export default function NwctCalendarTool() {
     [csvRowsRaw],
   );
 
-  const handleCsvLoaded = useCallback((text: string) => {
-    setError(null);
-    try {
-      const parsed = parseCsvText(text);
-      if (!parsed.rows.length) {
-        setError("No rows found in the CSV.");
-        return;
-      }
-      setCsvHeaders(parsed.headers);
-      setCsvRowsRaw(parsed.rows);
+  const handleCsvLoaded = useCallback(
+    (text: string) => {
+      setError(null);
+      try {
+        const parsed = parseCsvText(text);
+        if (!parsed.rows.length) {
+          setError("No rows found in the CSV.");
+          return;
+        }
+        setCsvHeaders(parsed.headers);
+        setCsvRowsRaw(parsed.rows);
 
-      // Auto-advance if every required field maps cleanly.
-      const suggested = suggestMapping(parsed.headers);
-      const allRequiredMapped = REQUIRED_FIELDS.every((f) => !!suggested[f]);
-      if (allRequiredMapped) {
-        applyMappingAndAdvance(suggested, parsed.rows);
-      } else {
-        setStep("map");
+        const suggested = suggestMapping(parsed.headers);
+        const allRequiredMapped = REQUIRED_FIELDS.every((f) => !!suggested[f]);
+        if (allRequiredMapped) {
+          applyMappingAndAdvance(suggested, parsed.rows);
+        } else {
+          setStep("map");
+        }
+      } catch (e) {
+        setError(`Failed to parse CSV: ${(e as Error).message}`);
       }
-    } catch (e) {
-      setError(`Failed to parse CSV: ${(e as Error).message}`);
-    }
-  }, [applyMappingAndAdvance]);
+    },
+    [applyMappingAndAdvance],
+  );
 
-  const handleBuild = useCallback((latestRows: EditorRow[]) => {
-    const grouped = processRows(latestRows);
-    setBuilt(grouped);
-    setStep("preview");
-  }, []);
+  const handleBuild = useCallback(
+    (latestRows: EditorRow[]) => {
+      const grouped = processRows(latestRows);
+      setBuilt(grouped);
+      // Reset layout footer slots to match the current page count if the
+      // grouped data has nothing yet, but preserve any existing edits.
+      setLayout((prev) => ({
+        ...prev,
+        footerSlots:
+          prev.footerSlots.length === prev.calendarPageCount * 3
+            ? prev.footerSlots
+            : defaultFooterSlotsForPages(prev.calendarPageCount),
+        coverConfig: {
+          ...prev.coverConfig,
+          month: prev.coverConfig.month || grouped.monthTitle,
+        },
+      }));
+      setStep("preview");
+    },
+    [],
+  );
 
   const triggerLoadProject = useCallback(() => {
     const input = document.createElement("input");
@@ -119,8 +189,16 @@ export default function NwctCalendarTool() {
           setError("Invalid project JSON.");
           return;
         }
-        setRows(restored);
-        setStep("edit");
+        setRows(restored.rows);
+        if (restored.data) {
+          setBuilt(restored.data);
+          setLayout(restored.layout ?? defaultLayoutState());
+          setStep("preview");
+        } else {
+          setBuilt(null);
+          setLayout(defaultLayoutState());
+          setStep("edit");
+        }
         setError(null);
       };
       reader.readAsText(file);
@@ -128,14 +206,17 @@ export default function NwctCalendarTool() {
     input.click();
   }, []);
 
-  const handleSaveProject = useCallback((latestRows: EditorRow[]) => {
-    const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 16);
-    downloadBlob(
-      toProjectJson(latestRows),
-      `nwct-calendar-project-${stamp}.json`,
-      "application/json;charset=utf-8;",
-    );
-  }, []);
+  const handleSaveProject = useCallback(
+    (latestRows: EditorRow[]) => {
+      const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 16);
+      downloadBlob(
+        toProjectJson({ rows: latestRows, data: built, layout }),
+        `nwct-calendar-project-${stamp}.json`,
+        "application/json;charset=utf-8;",
+      );
+    },
+    [built, layout],
+  );
 
   const handleResetUpload = useCallback(() => {
     setStep("upload");
@@ -144,10 +225,14 @@ export default function NwctCalendarTool() {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    if (!confirm("Discard the current session and start over? This clears the autosave.")) return;
+    if (
+      !confirm("Discard the current session and start over? This clears the autosave.")
+    )
+      return;
     clearAutosave();
     setRows([]);
     setBuilt(null);
+    setLayout(defaultLayoutState());
     setCsvHeaders([]);
     setCsvRowsRaw([]);
     setHasAutosaveState(false);
@@ -162,7 +247,8 @@ export default function NwctCalendarTool() {
     if (!built) return;
     setExporting(true);
     try {
-      const slug = built.monthTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "calendar";
+      const slug =
+        built.monthTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "calendar";
       await exportPreviewToPdf("nwct-calendar-print-root", `nwct-calendar-${slug}.pdf`);
     } catch (e) {
       setError(`PDF export failed: ${(e as Error).message}`);
@@ -170,6 +256,89 @@ export default function NwctCalendarTool() {
       setExporting(false);
     }
   }, [built]);
+
+  const handleEventUpdate = useCallback((updated: ProcessedEvent) => {
+    setBuilt((prev) => (prev ? updateGroupedEvent(prev, updated) : prev));
+  }, []);
+
+  const handleDeleteEvent = useCallback((id: string) => {
+    setBuilt((prev) => (prev ? deleteGroupedEvent(prev, id) : prev));
+  }, []);
+
+  const handleDeleteSponsor = useCallback((id: string) => {
+    setLayout((prev) => ({
+      ...prev,
+      sponsors: prev.sponsors.filter((s) => s.id !== id),
+    }));
+  }, []);
+
+  const handleSetCalendarPageCount = useCallback((n: number) => {
+    setLayout((prev) => {
+      const clamped = Math.max(1, Math.min(20, n));
+      const targetCount = clamped * 3;
+      let footerSlots: FooterSlot[];
+      if (prev.footerSlots.length === targetCount) {
+        footerSlots = prev.footerSlots;
+      } else if (prev.footerSlots.length > targetCount) {
+        footerSlots = prev.footerSlots.slice(0, targetCount);
+      } else {
+        footerSlots = [
+          ...prev.footerSlots,
+          ...defaultFooterSlotsForPages(clamped).slice(prev.footerSlots.length),
+        ];
+      }
+      return { ...prev, calendarPageCount: clamped, footerSlots };
+    });
+  }, []);
+
+  const handleCoverUpdate = useCallback((c: CoverConfig) => {
+    setLayout((prev) => ({ ...prev, coverConfig: c }));
+  }, []);
+
+  const handleAdPageUpdate = useCallback((p: AdPageConfig) => {
+    setLayout((prev) => ({
+      ...prev,
+      adPages: prev.adPages.map((a) => (a.id === p.id ? p : a)),
+    }));
+  }, []);
+
+  const handleAdPageDelete = useCallback((id: string) => {
+    setLayout((prev) => ({
+      ...prev,
+      adPages: prev.adPages.filter((a) => a.id !== id),
+    }));
+  }, []);
+
+  const handleFooterSlotUpload = useCallback((index: number, files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setLayout((prev) => {
+        const next = prev.footerSlots.slice();
+        next[index] = { type: "image", content: dataUrl };
+        return { ...prev, footerSlots: next };
+      });
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleFooterSlotDelete = useCallback((index: number) => {
+    setLayout((prev) => {
+      const next = prev.footerSlots.slice();
+      next[index] = { type: "removed" };
+      return { ...prev, footerSlots: next };
+    });
+  }, []);
+
+  const handleFooterSlotRestore = useCallback((index: number) => {
+    setLayout((prev) => {
+      const next = prev.footerSlots.slice();
+      next[index] = { type: "image" };
+      return { ...prev, footerSlots: next };
+    });
+  }, []);
 
   const stepBadge = useMemo(() => {
     const labels: Record<Step, string> = {
@@ -230,6 +399,22 @@ export default function NwctCalendarTool() {
       {step === "preview" && built && (
         <CalendarPreview
           data={built}
+          cardStyles={layout.cardStyles}
+          sponsors={layout.sponsors}
+          footerSlots={layout.footerSlots}
+          calendarPageCount={layout.calendarPageCount}
+          coverConfig={layout.coverConfig}
+          adPages={layout.adPages}
+          onEventUpdate={handleEventUpdate}
+          onDeleteEvent={handleDeleteEvent}
+          onDeleteSponsor={handleDeleteSponsor}
+          onSetCalendarPageCount={handleSetCalendarPageCount}
+          onCoverUpdate={handleCoverUpdate}
+          onAdPageUpdate={handleAdPageUpdate}
+          onAdPageDelete={handleAdPageDelete}
+          onFooterSlotUpload={handleFooterSlotUpload}
+          onFooterSlotDelete={handleFooterSlotDelete}
+          onFooterSlotRestore={handleFooterSlotRestore}
           onBack={() => setStep("edit")}
           onPrint={handlePrint}
           onExportPdf={handleExportPdf}
