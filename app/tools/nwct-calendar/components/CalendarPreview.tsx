@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Minus, Plus } from "lucide-react";
 import type {
   AdPageConfig,
   CardStyles,
@@ -13,6 +11,7 @@ import type {
 } from "../lib/types";
 import { interCalendar, oswaldCalendar } from "../lib/fonts";
 import { PrintLayout } from "./print/PrintLayout";
+import WorkstationToolbar from "./workstation/WorkstationToolbar";
 import "../nwct-calendar.css";
 
 interface Props {
@@ -26,7 +25,29 @@ interface Props {
   coverConfig: CoverConfig;
   adPages: AdPageConfig[];
 
-  // Mutators
+  // Selection (lifted to NwctCalendarTool so undo/redo can capture it)
+  selectedIds: Set<string>;
+  onToggleSelection: (id: string) => void;
+
+  // Undo/redo
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+
+  // Toolbar placeholders for features landing in later patches
+  onAddEvent: () => void;
+  onAddSponsors: () => void;
+  onToggleGuide: () => void;
+  onToggleStyle: () => void;
+  onSaveImages: () => void;
+
+  // Wired toolbar actions
+  onAddAdPage: () => void;
+  onSaveProject: () => void;
+  onReset: () => void;
+
+  // Layout mutators
   onEventUpdate: (e: ProcessedEvent) => void;
   onDeleteEvent: (id: string) => void;
   onDeleteSponsor: (id: string) => void;
@@ -53,6 +74,20 @@ export default function CalendarPreview({
   calendarPageCount,
   coverConfig,
   adPages,
+  selectedIds,
+  onToggleSelection,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  onAddEvent,
+  onAddSponsors,
+  onToggleGuide,
+  onToggleStyle,
+  onSaveImages,
+  onAddAdPage,
+  onSaveProject,
+  onReset,
   onEventUpdate,
   onDeleteEvent,
   onDeleteSponsor,
@@ -68,17 +103,6 @@ export default function CalendarPreview({
   onExportPdf,
   exporting,
 }: Props) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const toggleSelection = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
   const totalEvents =
     data.longRuns.length +
     data.workshops.length +
@@ -88,7 +112,29 @@ export default function CalendarPreview({
     );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <WorkstationToolbar
+        calendarPageCount={calendarPageCount}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        exporting={exporting}
+        onAddEvent={onAddEvent}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        onPageCountDecrement={() =>
+          onSetCalendarPageCount(Math.max(1, calendarPageCount - 1))
+        }
+        onPageCountIncrement={() => onSetCalendarPageCount(calendarPageCount + 1)}
+        onAddAdPage={onAddAdPage}
+        onAddSponsors={onAddSponsors}
+        onToggleGuide={onToggleGuide}
+        onToggleStyle={onToggleStyle}
+        onExportPdf={onExportPdf}
+        onSaveImages={onSaveImages}
+        onSaveProject={onSaveProject}
+        onReset={onReset}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="text-sm text-foreground">
           <span className="font-semibold">{totalEvents}</span> events grouped ·{" "}
@@ -97,32 +143,8 @@ export default function CalendarPreview({
           long runs · {data.workshops.length} workshops
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-muted px-2 py-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
-              Pages
-            </span>
-            <button
-              onClick={() =>
-                onSetCalendarPageCount(Math.max(1, calendarPageCount - 1))
-              }
-              className="rounded p-1 text-foreground hover:bg-background disabled:opacity-50"
-              disabled={calendarPageCount <= 1}
-              title="Remove one calendar page"
-            >
-              <Minus size={14} />
-            </button>
-            <span className="min-w-[20px] text-center text-sm font-bold">
-              {calendarPageCount}
-            </span>
-            <button
-              onClick={() => onSetCalendarPageCount(calendarPageCount + 1)}
-              className="rounded p-1 text-foreground hover:bg-background"
-              title="Add one calendar page"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
           <button
+            type="button"
             onClick={onBack}
             className="rounded-lg border border-border bg-muted px-3 py-1.5 text-sm text-foreground hover:bg-muted/80"
             title="Return to the row editor"
@@ -130,19 +152,12 @@ export default function CalendarPreview({
             ← Back to editor
           </button>
           <button
+            type="button"
             onClick={onPrint}
             className="rounded-lg border border-border bg-muted px-3 py-1.5 text-sm text-foreground hover:bg-muted/80"
             title="Open the browser print dialog — works for paper or system PDF export"
           >
             Print…
-          </button>
-          <button
-            onClick={onExportPdf}
-            disabled={exporting}
-            className="rounded-lg bg-amber-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Render the preview to a multi-page PDF using jsPDF and html2canvas"
-          >
-            {exporting ? "Exporting…" : "Export PDF"}
           </button>
         </div>
       </div>
@@ -156,7 +171,7 @@ export default function CalendarPreview({
           onEventUpdate={onEventUpdate}
           onDeleteEvent={onDeleteEvent}
           selectedIds={selectedIds}
-          onToggleSelection={toggleSelection}
+          onToggleSelection={onToggleSelection}
           cardStyles={cardStyles}
           sponsors={sponsors}
           onDeleteSponsor={onDeleteSponsor}

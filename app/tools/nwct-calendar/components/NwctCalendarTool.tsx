@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CsvUploadStep from "./CsvUploadStep";
 import ColumnMapper from "./ColumnMapper";
 import EventGridEditor from "./EventGridEditor";
@@ -36,8 +36,19 @@ import {
   REQUIRED_FIELDS,
 } from "../lib/types";
 import { exportPreviewToPdf } from "../lib/exportPdf";
+import {
+  HISTORY_LIMIT,
+  restoreSnapshot,
+  snapshot,
+  type WorkstationSnapshot,
+} from "../lib/workstationHistory";
 
 type Step = "upload" | "map" | "edit" | "preview";
+
+function generateId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + Math.random().toString(36).slice(2);
+}
 
 function updateGroupedEvent(
   grouped: GroupedEvents,
@@ -82,8 +93,121 @@ export default function NwctCalendarTool() {
   const [rows, setRows] = useState<EditorRow[]>([]);
   const [built, setBuilt] = useState<GroupedEvents | null>(null);
   const [layout, setLayout] = useState<LayoutState>(defaultLayoutState);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
 
+  // --- Undo / redo history -------------------------------------------------
+  const [past, setPast] = useState<WorkstationSnapshot[]>([]);
+  const [future, setFuture] = useState<WorkstationSnapshot[]>([]);
+
+  // We need the latest data/layout/selectedIds inside a stable recordHistory
+  // without re-creating the callback on every keystroke. Refs do the job.
+  const builtRef = useRef(built);
+  const layoutRef = useRef(layout);
+  const selectedRef = useRef(selectedIds);
+  useEffect(() => {
+    builtRef.current = built;
+  }, [built]);
+  useEffect(() => {
+    layoutRef.current = layout;
+  }, [layout]);
+  useEffect(() => {
+    selectedRef.current = selectedIds;
+  }, [selectedIds]);
+
+  const recordHistory = useCallback(() => {
+    const snap = snapshot(builtRef.current, layoutRef.current, selectedRef.current);
+    setPast((prev) => {
+      const next = [...prev, snap];
+      // Cap stack size to prevent unbounded memory growth.
+      if (next.length > HISTORY_LIMIT) next.shift();
+      return next;
+    });
+    setFuture([]);
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setPast([]);
+    setFuture([]);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    setPast((prev) => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      const previous = next.pop();
+      if (!previous) return prev;
+      const current = snapshot(
+        builtRef.current,
+        layoutRef.current,
+        selectedRef.current,
+      );
+      setFuture((f) => [current, ...f]);
+      const restored = restoreSnapshot(previous);
+      setBuilt(restored.data);
+      setLayout(restored.layout);
+      setSelectedIds(restored.selectedIds);
+      return next;
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    setFuture((prev) => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      const upcoming = next.shift();
+      if (!upcoming) return prev;
+      const current = snapshot(
+        builtRef.current,
+        layoutRef.current,
+        selectedRef.current,
+      );
+      setPast((p) => [...p, current]);
+      const restored = restoreSnapshot(upcoming);
+      setBuilt(restored.data);
+      setLayout(restored.layout);
+      setSelectedIds(restored.selectedIds);
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcuts for undo/redo. Active only when in preview step and
+  // the focus target is not a text input. (Step is read through a ref to
+  // avoid re-binding the listener on every state change.)
+  const stepRef = useRef(step);
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+  useEffect(() => {
+    const isTextTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (target.isContentEditable) return true;
+      return false;
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (stepRef.current !== "preview") return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === "z") {
+        if (isTextTarget(e.target)) return;
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+      } else if (key === "y") {
+        if (isTextTarget(e.target)) return;
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleUndo, handleRedo]);
+
+  // --- Autosave ------------------------------------------------------------
   const [hasAutosave, setHasAutosaveState] = useState(false);
   useEffect(() => {
     setHasAutosaveState(!!loadAutosave());
@@ -103,6 +227,8 @@ export default function NwctCalendarTool() {
       return;
     }
     setRows(restored.rows);
+    setSelectedIds(new Set());
+    clearHistory();
     if (restored.data) {
       setBuilt(restored.data);
       setLayout(restored.layout ?? defaultLayoutState());
@@ -113,7 +239,7 @@ export default function NwctCalendarTool() {
       setStep("edit");
     }
     setError(null);
-  }, []);
+  }, [clearHistory]);
 
   const applyMappingAndAdvance = useCallback(
     (mapping: ColumnMapping, srcRows?: Record<string, string>[]) => {
@@ -152,27 +278,26 @@ export default function NwctCalendarTool() {
     [applyMappingAndAdvance],
   );
 
-  const handleBuild = useCallback(
-    (latestRows: EditorRow[]) => {
-      const grouped = processRows(latestRows);
-      setBuilt(grouped);
-      // Reset layout footer slots to match the current page count if the
-      // grouped data has nothing yet, but preserve any existing edits.
-      setLayout((prev) => ({
-        ...prev,
-        footerSlots:
-          prev.footerSlots.length === prev.calendarPageCount * 3
-            ? prev.footerSlots
-            : defaultFooterSlotsForPages(prev.calendarPageCount),
-        coverConfig: {
-          ...prev.coverConfig,
-          month: prev.coverConfig.month || grouped.monthTitle,
-        },
-      }));
-      setStep("preview");
-    },
-    [],
-  );
+  const handleBuild = useCallback((latestRows: EditorRow[]) => {
+    const grouped = processRows(latestRows);
+    setBuilt(grouped);
+    // Reset layout footer slots to match the current page count if the
+    // grouped data has nothing yet, but preserve any existing edits.
+    setLayout((prev) => ({
+      ...prev,
+      footerSlots:
+        prev.footerSlots.length === prev.calendarPageCount * 3
+          ? prev.footerSlots
+          : defaultFooterSlotsForPages(prev.calendarPageCount),
+      coverConfig: {
+        ...prev.coverConfig,
+        month: prev.coverConfig.month || grouped.monthTitle,
+      },
+    }));
+    setSelectedIds(new Set());
+    clearHistory();
+    setStep("preview");
+  }, [clearHistory]);
 
   const triggerLoadProject = useCallback(() => {
     const input = document.createElement("input");
@@ -190,6 +315,8 @@ export default function NwctCalendarTool() {
           return;
         }
         setRows(restored.rows);
+        setSelectedIds(new Set());
+        clearHistory();
         if (restored.data) {
           setBuilt(restored.data);
           setLayout(restored.layout ?? defaultLayoutState());
@@ -204,7 +331,7 @@ export default function NwctCalendarTool() {
       reader.readAsText(file);
     };
     input.click();
-  }, []);
+  }, [clearHistory]);
 
   const handleSaveProject = useCallback(
     (latestRows: EditorRow[]) => {
@@ -218,11 +345,17 @@ export default function NwctCalendarTool() {
     [built, layout],
   );
 
+  const handleSaveProjectFromPreview = useCallback(() => {
+    handleSaveProject(rows);
+  }, [handleSaveProject, rows]);
+
   const handleResetUpload = useCallback(() => {
     setStep("upload");
     setBuilt(null);
+    setSelectedIds(new Set());
+    clearHistory();
     setError(null);
-  }, []);
+  }, [clearHistory]);
 
   const handleStartOver = useCallback(() => {
     if (
@@ -235,9 +368,11 @@ export default function NwctCalendarTool() {
     setLayout(defaultLayoutState());
     setCsvHeaders([]);
     setCsvRowsRaw([]);
+    setSelectedIds(new Set());
+    clearHistory();
     setHasAutosaveState(false);
     setStep("upload");
-  }, []);
+  }, [clearHistory]);
 
   const handlePrint = useCallback(() => {
     window.print();
@@ -257,22 +392,42 @@ export default function NwctCalendarTool() {
     }
   }, [built]);
 
-  const handleEventUpdate = useCallback((updated: ProcessedEvent) => {
-    setBuilt((prev) => (prev ? updateGroupedEvent(prev, updated) : prev));
-  }, []);
+  // --- Mutations (each records history before mutating) -------------------
 
-  const handleDeleteEvent = useCallback((id: string) => {
-    setBuilt((prev) => (prev ? deleteGroupedEvent(prev, id) : prev));
-  }, []);
+  const handleEventUpdate = useCallback(
+    (updated: ProcessedEvent) => {
+      recordHistory();
+      setBuilt((prev) => (prev ? updateGroupedEvent(prev, updated) : prev));
+    },
+    [recordHistory],
+  );
 
-  const handleDeleteSponsor = useCallback((id: string) => {
-    setLayout((prev) => ({
-      ...prev,
-      sponsors: prev.sponsors.filter((s) => s.id !== id),
-    }));
-  }, []);
+  const handleDeleteEvent = useCallback(
+    (id: string) => {
+      recordHistory();
+      setBuilt((prev) => (prev ? deleteGroupedEvent(prev, id) : prev));
+      setSelectedIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+    [recordHistory],
+  );
 
-  const handleSetCalendarPageCount = useCallback((n: number) => {
+  const handleDeleteSponsor = useCallback(
+    (id: string) => {
+      recordHistory();
+      setLayout((prev) => ({
+        ...prev,
+        sponsors: prev.sponsors.filter((s) => s.id !== id),
+      }));
+    },
+    [recordHistory],
+  );
+
+  const setCalendarPageCountInternal = useCallback((n: number) => {
     setLayout((prev) => {
       const clamped = Math.max(1, Math.min(20, n));
       const targetCount = clamped * 3;
@@ -291,54 +446,129 @@ export default function NwctCalendarTool() {
     });
   }, []);
 
-  const handleCoverUpdate = useCallback((c: CoverConfig) => {
-    setLayout((prev) => ({ ...prev, coverConfig: c }));
-  }, []);
+  const handleSetCalendarPageCount = useCallback(
+    (n: number) => {
+      recordHistory();
+      setCalendarPageCountInternal(n);
+    },
+    [recordHistory, setCalendarPageCountInternal],
+  );
 
-  const handleAdPageUpdate = useCallback((p: AdPageConfig) => {
+  const handleCoverUpdate = useCallback(
+    (c: CoverConfig) => {
+      recordHistory();
+      setLayout((prev) => ({ ...prev, coverConfig: c }));
+    },
+    [recordHistory],
+  );
+
+  const handleAdPageUpdate = useCallback(
+    (p: AdPageConfig) => {
+      recordHistory();
+      setLayout((prev) => ({
+        ...prev,
+        adPages: prev.adPages.map((a) => (a.id === p.id ? p : a)),
+      }));
+    },
+    [recordHistory],
+  );
+
+  const handleAdPageDelete = useCallback(
+    (id: string) => {
+      recordHistory();
+      setLayout((prev) => ({
+        ...prev,
+        adPages: prev.adPages.filter((a) => a.id !== id),
+      }));
+    },
+    [recordHistory],
+  );
+
+  const handleAddAdPage = useCallback(() => {
+    recordHistory();
     setLayout((prev) => ({
       ...prev,
-      adPages: prev.adPages.map((a) => (a.id === p.id ? p : a)),
+      adPages: [
+        ...prev.adPages,
+        { id: generateId(), layout: "full", images: [null] },
+      ],
     }));
-  }, []);
+  }, [recordHistory]);
 
-  const handleAdPageDelete = useCallback((id: string) => {
-    setLayout((prev) => ({
-      ...prev,
-      adPages: prev.adPages.filter((a) => a.id !== id),
-    }));
-  }, []);
+  const handleFooterSlotUpload = useCallback(
+    (index: number, files: File[]) => {
+      const file = files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        recordHistory();
+        setLayout((prev) => {
+          const next = prev.footerSlots.slice();
+          next[index] = { type: "image", content: dataUrl };
+          return { ...prev, footerSlots: next };
+        });
+      };
+      reader.readAsDataURL(file);
+    },
+    [recordHistory],
+  );
 
-  const handleFooterSlotUpload = useCallback((index: number, files: File[]) => {
-    const file = files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
+  const handleFooterSlotDelete = useCallback(
+    (index: number) => {
+      recordHistory();
       setLayout((prev) => {
         const next = prev.footerSlots.slice();
-        next[index] = { type: "image", content: dataUrl };
+        next[index] = { type: "removed" };
         return { ...prev, footerSlots: next };
       });
-    };
-    reader.readAsDataURL(file);
-  }, []);
+    },
+    [recordHistory],
+  );
 
-  const handleFooterSlotDelete = useCallback((index: number) => {
-    setLayout((prev) => {
-      const next = prev.footerSlots.slice();
-      next[index] = { type: "removed" };
-      return { ...prev, footerSlots: next };
+  const handleFooterSlotRestore = useCallback(
+    (index: number) => {
+      recordHistory();
+      setLayout((prev) => {
+        const next = prev.footerSlots.slice();
+        next[index] = { type: "image" };
+        return { ...prev, footerSlots: next };
+      });
+    },
+    [recordHistory],
+  );
+
+  const handleToggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
   }, []);
 
-  const handleFooterSlotRestore = useCallback((index: number) => {
-    setLayout((prev) => {
-      const next = prev.footerSlots.slice();
-      next[index] = { type: "image" };
-      return { ...prev, footerSlots: next };
-    });
+  // Placeholder handlers for not-yet-wired toolbar actions. They show a
+  // tooltip-aware notice via the error banner so the user knows the button
+  // works but the feature is coming in a later patch.
+  const notImplemented = useCallback((feature: string) => {
+    setError(`${feature} is coming in a later parity patch.`);
   }, []);
+
+  const handleAddEventPlaceholder = useCallback(() => {
+    notImplemented("Add Event");
+  }, [notImplemented]);
+  const handleAddSponsorsPlaceholder = useCallback(() => {
+    notImplemented("Add Sponsors");
+  }, [notImplemented]);
+  const handleToggleGuidePlaceholder = useCallback(() => {
+    notImplemented("Guide");
+  }, [notImplemented]);
+  const handleToggleStylePlaceholder = useCallback(() => {
+    notImplemented("Style editor");
+  }, [notImplemented]);
+  const handleSaveImagesPlaceholder = useCallback(() => {
+    notImplemented("Save Images");
+  }, [notImplemented]);
 
   const stepBadge = useMemo(() => {
     const labels: Record<Step, string> = {
@@ -356,7 +586,7 @@ export default function NwctCalendarTool() {
         <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-900">
           {stepBadge}
         </span>
-        {step !== "upload" && (
+        {step !== "upload" && step !== "preview" && (
           <button
             onClick={handleStartOver}
             className="text-xs font-medium text-slate-500 underline-offset-2 hover:text-red-700 hover:underline"
@@ -405,6 +635,18 @@ export default function NwctCalendarTool() {
           calendarPageCount={layout.calendarPageCount}
           coverConfig={layout.coverConfig}
           adPages={layout.adPages}
+          selectedIds={selectedIds}
+          onToggleSelection={handleToggleSelection}
+          canUndo={past.length > 0}
+          canRedo={future.length > 0}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onAddEvent={handleAddEventPlaceholder}
+          onAddSponsors={handleAddSponsorsPlaceholder}
+          onToggleGuide={handleToggleGuidePlaceholder}
+          onToggleStyle={handleToggleStylePlaceholder}
+          onSaveImages={handleSaveImagesPlaceholder}
+          onAddAdPage={handleAddAdPage}
           onEventUpdate={handleEventUpdate}
           onDeleteEvent={handleDeleteEvent}
           onDeleteSponsor={handleDeleteSponsor}
@@ -418,6 +660,8 @@ export default function NwctCalendarTool() {
           onBack={() => setStep("edit")}
           onPrint={handlePrint}
           onExportPdf={handleExportPdf}
+          onSaveProject={handleSaveProjectFromPreview}
+          onReset={handleStartOver}
           exporting={exporting}
         />
       )}
