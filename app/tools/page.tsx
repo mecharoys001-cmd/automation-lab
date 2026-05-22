@@ -46,14 +46,6 @@ export default async function ToolsPage() {
     ? tools.filter((t) => accessibleToolIds!.includes(t.id))
     : tools;
 
-  // Build a reverse map: toolId -> suite name (for badge display)
-  const toolSuiteNameMap: Record<string, string> = {};
-  for (const suite of userSuites) {
-    for (const toolId of suiteToolMap[suite.suite_id] ?? []) {
-      toolSuiteNameMap[toolId] = suite.name;
-    }
-  }
-
   // Group tools by suite
   const hasSuites = userSuites.length > 0;
   type ToolGroup = { label: string | null; accent: string | null; tools: typeof visibleTools; isManager?: boolean };
@@ -79,24 +71,6 @@ export default async function ToolsPage() {
     toolGroups = grouped;
   } else {
     toolGroups = [{ label: null, accent: null, tools: visibleTools }];
-  }
-
-  // For admin badges, fetch visibility from tool_config
-  let visibilityMap: Record<string, string> = {};
-  if (isAdmin) {
-    const { createServiceClient } = await import("@/lib/supabase-service");
-    const svc = createServiceClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: configs } = await (svc.from("tool_config") as any)
-      .select("tool_id, visibility");
-    if (configs) {
-      visibilityMap = Object.fromEntries(
-        configs.map((c: { tool_id: string; visibility: string | null }) => [
-          c.tool_id,
-          c.visibility ?? "public",
-        ]),
-      );
-    }
   }
 
   return (
@@ -291,110 +265,19 @@ export default async function ToolsPage() {
             {/* Accent bar on top */}
             <div style={{ height: "4px", backgroundColor: tool.accent }} />
             <div style={{ padding: "2.5rem" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  flexWrap: "wrap",
-                  gap: "1rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      borderRadius: "14px",
-                      backgroundColor: `${tool.accent}12`,
-                      border: `1px solid ${tool.accent}25`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "28px",
-                    }}
-                  >
-                    {tool.icon}
-                  </div>
-                  <div>
-                    <h2
-                      style={{
-                        fontSize: "22px",
-                        fontWeight: 700,
-                        marginBottom: "4px",
-                        color: "var(--color-navy)",
-                      }}
-                    >
-                      {tool.name}
-                    </h2>
-                    <div style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-                      Best for: {tool.usedBy}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                  {toolSuiteNameMap[tool.id] && (
-                    <span
-                      style={{
-                        backgroundColor: "#eff6ff",
-                        color: "#2563eb",
-                        padding: "4px 10px",
-                        borderRadius: "100px",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      {toolSuiteNameMap[tool.id]}
-                    </span>
-                  )}
-                  {isAdmin && visibilityMap[tool.id] && visibilityMap[tool.id] !== "public" && (
-                    <span
-                      style={{
-                        backgroundColor: visibilityMap[tool.id] === "restricted" ? "#fef3c7" : "#f1f5f9",
-                        color: visibilityMap[tool.id] === "restricted" ? "#d97706" : "#64748b",
-                        padding: "4px 10px",
-                        borderRadius: "100px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {visibilityMap[tool.id]}
-                    </span>
-                  )}
-                  {isAdmin && visibilityMap[tool.id] === "public" && (
-                    <span
-                      style={{
-                        backgroundColor: "#dcfce7",
-                        color: "#16a34a",
-                        padding: "4px 10px",
-                        borderRadius: "100px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Public
-                    </span>
-                  )}
-                  <span
-                    style={{
-                      backgroundColor: `${tool.accent}12`,
-                      color: tool.accent,
-                      padding: "6px 14px",
-                      borderRadius: "100px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    ● Live
-                  </span>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <h2
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 700,
+                    marginBottom: "4px",
+                    color: "var(--color-navy)",
+                  }}
+                >
+                  {tool.name}
+                </h2>
+                <div style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
+                  Best for: {tool.usedBy}
                 </div>
               </div>
 
@@ -408,32 +291,6 @@ export default async function ToolsPage() {
               >
                 {tool.description}
               </p>
-
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
-                  marginBottom: "2rem",
-                }}
-              >
-                {tool.features.map((f) => (
-                  <span
-                    key={f}
-                    style={{
-                      backgroundColor: `${tool.accent}0a`,
-                      color: tool.accent,
-                      border: `1px solid ${tool.accent}20`,
-                      borderRadius: "8px",
-                      padding: "5px 12px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {f}
-                  </span>
-                ))}
-              </div>
 
               <Link
                 href={tool.href}
