@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef } from "react";
 import type {
   AdPageConfig,
   CardStyles,
@@ -132,6 +133,48 @@ export default function CalendarPreview({
       0,
     );
 
+  const totalPages = 1 + calendarPageCount + adPages.length;
+
+  const prevCalendarCountRef = useRef(calendarPageCount);
+  const prevAdCountRef = useRef(adPages.length);
+
+  // Scroll a specific page into view. The preview wrapper is the nearest
+  // scrollable ancestor of #page-N, so scrollIntoView walks up to it and
+  // adjusts both horizontal (right pages of a spread) and vertical position.
+  const scrollPageIntoView = useCallback((pageIndex: number) => {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById(`page-${pageIndex}`);
+    if (!el) return;
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "start",
+    });
+  }, []);
+
+  // Auto-scroll to the newly added page when the count grows. Layout work
+  // inside PrintLayout runs in useLayoutEffect, so we defer one frame so the
+  // DOM node for the new page exists before we try to find it by id.
+  useEffect(() => {
+    if (calendarPageCount > prevCalendarCountRef.current) {
+      const newPageIndex = calendarPageCount; // 1 + (count - 1)
+      const raf = requestAnimationFrame(() => scrollPageIntoView(newPageIndex));
+      prevCalendarCountRef.current = calendarPageCount;
+      return () => cancelAnimationFrame(raf);
+    }
+    prevCalendarCountRef.current = calendarPageCount;
+  }, [calendarPageCount, scrollPageIntoView]);
+
+  useEffect(() => {
+    if (adPages.length > prevAdCountRef.current) {
+      const newPageIndex = 1 + calendarPageCount + adPages.length - 1;
+      const raf = requestAnimationFrame(() => scrollPageIntoView(newPageIndex));
+      prevAdCountRef.current = adPages.length;
+      return () => cancelAnimationFrame(raf);
+    }
+    prevAdCountRef.current = adPages.length;
+  }, [adPages.length, calendarPageCount, scrollPageIntoView]);
+
   return (
     <div className="flex flex-col gap-3">
       <WorkstationToolbar
@@ -192,9 +235,68 @@ export default function CalendarPreview({
         onAddToCover={onAddSelectedToCover}
       />
 
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2 print:hidden">
+        <div className="text-sm text-foreground">
+          <span className="font-semibold">{totalPages}</span> page
+          {totalPages === 1 ? "" : "s"} ·{" "}
+          <span title="The front cover counts as page 1">1 cover</span> ·{" "}
+          <span title="Calendar pages render two columns of events per spread">
+            {calendarPageCount} calendar
+          </span>{" "}
+          ·{" "}
+          <span title="Blank ad pages appear after the calendar pages">
+            {adPages.length} ad
+          </span>
+        </div>
+        <div
+          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+          aria-label="Jump to page"
+        >
+          <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+            Jump to:
+          </span>
+          <button
+            type="button"
+            onClick={() => scrollPageIntoView(0)}
+            className="whitespace-nowrap rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+            title="Scroll the cover page into view"
+          >
+            Cover
+          </button>
+          {Array.from({ length: calendarPageCount }, (_, i) => {
+            const pageIndex = 1 + i;
+            return (
+              <button
+                key={`jump-cal-${i}`}
+                type="button"
+                onClick={() => scrollPageIntoView(pageIndex)}
+                className="whitespace-nowrap rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                title={`Scroll calendar page ${i + 1} of ${calendarPageCount} into view`}
+              >
+                Cal {i + 1}
+              </button>
+            );
+          })}
+          {adPages.map((_, i) => {
+            const pageIndex = 1 + calendarPageCount + i;
+            return (
+              <button
+                key={`jump-ad-${i}`}
+                type="button"
+                onClick={() => scrollPageIntoView(pageIndex)}
+                className="whitespace-nowrap rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                title={`Scroll ad page ${i + 1} of ${adPages.length} into view`}
+              >
+                Ad {i + 1}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div
         id="nwct-calendar-print-root"
-        className={`${interCalendar.variable} ${oswaldCalendar.variable} nwct-calendar-fonts overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4 print:border-0 print:bg-white print:p-0`}
+        className={`${interCalendar.variable} ${oswaldCalendar.variable} nwct-calendar-fonts max-h-[80vh] overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4 print:max-h-none print:overflow-visible print:border-0 print:bg-white print:p-0`}
       >
         <PrintLayout
           data={data}
