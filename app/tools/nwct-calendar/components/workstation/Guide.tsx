@@ -138,8 +138,13 @@ export default function Guide({ onClose }: Props) {
                   <span className="min-w-[80px] font-bold text-slate-900">
                     Drag &amp; drop:
                   </span>
-                  <span className="italic text-slate-400">
-                    Reordering events between sections lands in a later parity patch.
+                  <span>
+                    Drag any event, workshop, spacer, or sponsor card and drop
+                    it on another card to reorder. Drops are constrained to
+                    the same bucket — short-run events stay within their date,
+                    long runs stay in long runs, and workshops stay in
+                    workshops. Sponsors re-anchor to whichever card you drop
+                    them on.
                   </span>
                 </li>
               </ul>

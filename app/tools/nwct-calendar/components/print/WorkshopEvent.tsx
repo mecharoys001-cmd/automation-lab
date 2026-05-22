@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import {
   Check,
   CheckCircle2,
+  GripVertical,
   Move,
   Pencil,
   Trash2,
@@ -12,6 +13,11 @@ import {
 } from "lucide-react";
 import type { CardStyles, ProcessedEvent } from "../../lib/types";
 import { formatShortDate, isValidDate } from "../../lib/dateFormat";
+import {
+  EVENT_DRAG_MIME,
+  SPONSOR_DRAG_MIME,
+  dropPositionFromEvent,
+} from "./EventCard";
 
 interface WorkshopEventProps {
   event: ProcessedEvent;
@@ -22,6 +28,12 @@ interface WorkshopEventProps {
   isExporting?: boolean;
   fillHeight?: boolean;
   cardStyles?: CardStyles;
+  onReorderEvent?: (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => void;
+  onAnchorSponsor?: (sponsorId: string, targetId: string) => void;
 }
 
 function toIsoDateInputValue(d: Date): string {
@@ -54,6 +66,8 @@ export function WorkshopEvent({
   isExporting = false,
   fillHeight = false,
   cardStyles,
+  onReorderEvent,
+  onAnchorSponsor,
 }: WorkshopEventProps) {
   type FormData = {
     title: string;
@@ -240,6 +254,10 @@ export function WorkshopEvent({
 
   const displayDateStr = event.dateRange || defaultDateRange(event);
   const showEditMode = isEditing && !isExporting;
+  const dragEnabled = !showEditMode && !isExporting;
+
+  const [dropPos, setDropPos] = useState<"before" | "after" | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const textStyle = useMemo<React.CSSProperties>(
     () => ({
@@ -248,6 +266,62 @@ export function WorkshopEvent({
     }),
     [cardStyles?.lineHeight, cardStyles?.letterSpacing],
   );
+
+  const handleRowDragStart = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData(EVENT_DRAG_MIME, event.id);
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+  };
+
+  const handleRowDragEnd = () => {
+    setIsDragging(false);
+    setDropPos(null);
+  };
+
+  const handleRowDragOver = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) return;
+    const types = Array.from(e.dataTransfer.types || []);
+    if (
+      !types.includes(EVENT_DRAG_MIME) &&
+      !types.includes(SPONSOR_DRAG_MIME)
+    )
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDropPos(dropPositionFromEvent(e));
+  };
+
+  const handleRowDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget)
+    )
+      return;
+    setDropPos(null);
+  };
+
+  const handleRowDrop = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) return;
+    const eventId = e.dataTransfer.getData(EVENT_DRAG_MIME);
+    const sponsorId = e.dataTransfer.getData(SPONSOR_DRAG_MIME);
+    if (!eventId && !sponsorId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pos = dropPositionFromEvent(e);
+    setDropPos(null);
+    if (sponsorId && onAnchorSponsor) {
+      onAnchorSponsor(sponsorId, event.id);
+      return;
+    }
+    if (eventId && onReorderEvent && eventId !== event.id) {
+      onReorderEvent(eventId, event.id, pos);
+    }
+  };
 
   if (showEditMode && formData) {
     const fd = formData;
@@ -456,13 +530,20 @@ export function WorkshopEvent({
 
   return (
     <div
+      draggable={dragEnabled}
+      onDragStart={handleRowDragStart}
+      onDragEnd={handleRowDragEnd}
+      onDragOver={handleRowDragOver}
+      onDragLeave={handleRowDragLeave}
+      onDrop={handleRowDrop}
       className={`group/event relative text-[10.5px] pl-0 pr-1 py-0 flex flex-col
         ${
           isSelected
             ? "bg-[#bfdbfe] ring-2 ring-[#60a5fa] z-10 rounded-sm"
             : "hover:text-[#1e3a8a]"
         }
-        ${!showEditMode ? "cursor-pointer" : ""}
+        ${!showEditMode ? "cursor-grab active:cursor-grabbing" : ""}
+        ${isDragging ? "opacity-50" : ""}
         ${fillHeight ? "h-full" : ""}
       `}
       style={textStyle}
@@ -470,7 +551,22 @@ export function WorkshopEvent({
         e.stopPropagation();
         onToggle(event.id);
       }}
+      title={dragEnabled ? "Drag to reorder among workshops" : undefined}
     >
+      {dropPos === "before" && (
+        <div className="pointer-events-none absolute -top-px left-0 right-0 h-0.5 bg-blue-500 print:hidden" />
+      )}
+      {dropPos === "after" && (
+        <div className="pointer-events-none absolute -bottom-px left-0 right-0 h-0.5 bg-blue-500 print:hidden" />
+      )}
+      {dragEnabled && (
+        <div
+          className="pointer-events-none absolute -left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/event:opacity-60 print:hidden text-gray-400"
+          title="Drag to reorder"
+        >
+          <GripVertical size={10} />
+        </div>
+      )}
       {isSelected && (
         <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 bg-white rounded-full z-20 print:hidden shadow-sm ring-1 ring-[#dbeafe]">
           <CheckCircle2 size={12} className="text-[#3b82f6] fill-white" />

@@ -47,6 +47,12 @@ interface PrintLayoutProps {
   onAdPageUpdate: (p: AdPageConfig) => void;
   onAdPageDelete: (id: string) => void;
   isExporting?: boolean;
+  onReorderEvent?: (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => void;
+  onAnchorSponsor?: (sponsorId: string, targetId: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -541,6 +547,8 @@ export function PrintLayout({
   onAdPageUpdate,
   onAdPageDelete,
   isExporting = false,
+  onReorderEvent,
+  onAnchorSponsor,
 }: PrintLayoutProps) {
   const measureContainerRef = useRef<HTMLDivElement>(null);
 
@@ -828,6 +836,8 @@ export function PrintLayout({
               isExporting={isExporting}
               fillHeight={shouldFill}
               cardStyles={cardStyles}
+              onReorderEvent={isExporting ? undefined : onReorderEvent}
+              onAnchorSponsor={isExporting ? undefined : onAnchorSponsor}
             />
           </div>
         );
@@ -842,6 +852,8 @@ export function PrintLayout({
             cardStyles={cardStyles}
             isExporting={isExporting}
             fillHeight={shouldFill}
+            onReorderEvent={isExporting ? undefined : onReorderEvent}
+            onAnchorSponsor={isExporting ? undefined : onAnchorSponsor}
           />
         );
       case "sponsor":
@@ -852,6 +864,8 @@ export function PrintLayout({
             paddingTop={cardStyles.sponsorPaddingTop}
             paddingBottom={cardStyles.sponsorPaddingBottom}
             isExporting={isExporting}
+            onAnchorSponsor={isExporting ? undefined : onAnchorSponsor}
+            onReorderEvent={isExporting ? undefined : onReorderEvent}
           />
         );
       default:

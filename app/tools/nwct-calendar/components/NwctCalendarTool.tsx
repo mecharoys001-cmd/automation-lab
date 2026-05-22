@@ -18,6 +18,7 @@ import {
   duplicateEventsInGrouped,
   findEventInGrouped,
   processRows,
+  reorderEventInGrouped,
   type NewEventInput,
 } from "../lib/processEvents";
 import {
@@ -439,6 +440,40 @@ export default function NwctCalendarTool() {
       setLayout((prev) => ({
         ...prev,
         sponsors: prev.sponsors.filter((s) => s.id !== id),
+      }));
+    },
+    [recordHistory],
+  );
+
+  const handleReorderEvent = useCallback(
+    (draggedId: string, targetId: string, position: "before" | "after") => {
+      if (draggedId === targetId) return;
+      const current = builtRef.current;
+      if (!current) return;
+      // No-op if the drag target is a sponsor or the move is otherwise
+      // unsupported (cross-bucket). reorderEventInGrouped returns the same
+      // reference in that case, so we skip recording history.
+      const next = reorderEventInGrouped(current, draggedId, targetId, position);
+      if (next === current) return;
+      recordHistory();
+      setBuilt(next);
+    },
+    [recordHistory],
+  );
+
+  const handleAnchorSponsor = useCallback(
+    (sponsorId: string, targetId: string) => {
+      if (!sponsorId || !targetId || sponsorId === targetId) return;
+      const current = layoutRef.current;
+      const sponsor = current.sponsors.find((s) => s.id === sponsorId);
+      if (!sponsor) return;
+      if ((sponsor.afterId ?? "") === targetId) return;
+      recordHistory();
+      setLayout((prev) => ({
+        ...prev,
+        sponsors: prev.sponsors.map((s) =>
+          s.id === sponsorId ? { ...s, afterId: targetId } : s,
+        ),
       }));
     },
     [recordHistory],
@@ -898,6 +933,8 @@ export default function NwctCalendarTool() {
           onFooterSlotDelete={handleFooterSlotDelete}
           onFooterSlotRestore={handleFooterSlotRestore}
           onFooterSlotMove={handleFooterSlotMove}
+          onReorderEvent={handleReorderEvent}
+          onAnchorSponsor={handleAnchorSponsor}
           onBack={() => setStep("edit")}
           onPrint={handlePrint}
           onExportPdf={handleExportPdf}

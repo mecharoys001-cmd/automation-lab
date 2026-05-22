@@ -66,6 +66,12 @@ interface Props {
   onFooterSlotDelete: (index: number) => void;
   onFooterSlotRestore: (index: number) => void;
   onFooterSlotMove: (fromIndex: number, toIndex: number) => void;
+  onReorderEvent: (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => void;
+  onAnchorSponsor: (sponsorId: string, targetId: string) => void;
 
   // Top-level actions
   onBack: () => void;
@@ -111,6 +117,8 @@ export default function CalendarPreview({
   onFooterSlotDelete,
   onFooterSlotRestore,
   onFooterSlotMove,
+  onReorderEvent,
+  onAnchorSponsor,
   onBack,
   onPrint,
   onExportPdf,
@@ -209,6 +217,8 @@ export default function CalendarPreview({
           onAdPageUpdate={onAdPageUpdate}
           onAdPageDelete={onAdPageDelete}
           isExporting={exporting}
+          onReorderEvent={onReorderEvent}
+          onAnchorSponsor={onAnchorSponsor}
         />
       </div>
     </div>

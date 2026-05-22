@@ -467,3 +467,93 @@ export function addEventToGrouped(
     sortedDateKeys: nextSortedDateKeys,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Drag/drop reordering helper. Only reorders within the bucket the event
+// already lives in — ShortRun events stay in their date bucket, LongRun
+// events stay in longRuns, Workshop events stay in workshops. Cross-bucket
+// drops return the data unchanged so the caller can no-op cleanly.
+// ---------------------------------------------------------------------------
+
+type EventContainer =
+  | { kind: "shortRun"; key: string }
+  | { kind: "longRun" }
+  | { kind: "workshop" };
+
+function findEventContainer(
+  grouped: GroupedEvents,
+  id: string,
+): EventContainer | null {
+  for (const [key, list] of Object.entries(grouped.shortRuns)) {
+    if (list.some((e) => e.id === id)) return { kind: "shortRun", key };
+  }
+  if (grouped.longRuns.some((e) => e.id === id)) return { kind: "longRun" };
+  if (grouped.workshops.some((e) => e.id === id)) return { kind: "workshop" };
+  return null;
+}
+
+function reorderList<T extends { id: string }>(
+  list: T[],
+  draggedId: string,
+  targetId: string,
+  position: "before" | "after",
+): T[] {
+  const fromIdx = list.findIndex((e) => e.id === draggedId);
+  const toIdx = list.findIndex((e) => e.id === targetId);
+  if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return list;
+  const next = list.slice();
+  const [item] = next.splice(fromIdx, 1);
+  let insertAt = next.findIndex((e) => e.id === targetId);
+  if (insertAt < 0) return list;
+  if (position === "after") insertAt += 1;
+  next.splice(insertAt, 0, item);
+  return next;
+}
+
+export function reorderEventInGrouped(
+  grouped: GroupedEvents,
+  draggedId: string,
+  targetId: string,
+  position: "before" | "after" = "before",
+): GroupedEvents {
+  if (draggedId === targetId) return grouped;
+  const src = findEventContainer(grouped, draggedId);
+  const dst = findEventContainer(grouped, targetId);
+  if (!src || !dst) return grouped;
+  if (src.kind !== dst.kind) return grouped;
+  if (src.kind === "shortRun" && dst.kind === "shortRun" && src.key !== dst.key)
+    return grouped;
+
+  if (src.kind === "shortRun" && dst.kind === "shortRun") {
+    const list = grouped.shortRuns[src.key];
+    const reordered = reorderList(list, draggedId, targetId, position);
+    if (reordered === list) return grouped;
+    const nextShortRuns: Record<string, ProcessedEvent[]> = {
+      ...grouped.shortRuns,
+      [src.key]: reordered,
+    };
+    const { shortRuns, sortedDateKeys } = recomputeShortRunIndex(nextShortRuns);
+    return { ...grouped, shortRuns, sortedDateKeys };
+  }
+
+  if (src.kind === "longRun") {
+    const reordered = reorderList(
+      grouped.longRuns,
+      draggedId,
+      targetId,
+      position,
+    );
+    if (reordered === grouped.longRuns) return grouped;
+    return { ...grouped, longRuns: reordered };
+  }
+
+  // workshop
+  const reordered = reorderList(
+    grouped.workshops,
+    draggedId,
+    targetId,
+    position,
+  );
+  if (reordered === grouped.workshops) return grouped;
+  return { ...grouped, workshops: reordered };
+}

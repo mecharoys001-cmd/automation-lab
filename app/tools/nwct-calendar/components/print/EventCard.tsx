@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import {
   ArrowDownUp,
   CheckCircle2,
   Check,
+  GripVertical,
   Move,
   Pencil,
   Trash2,
@@ -12,6 +13,9 @@ import {
   X,
 } from "lucide-react";
 import type { CardStyles, ProcessedEvent } from "../../lib/types";
+
+export const EVENT_DRAG_MIME = "application/x-nwct-event";
+export const SPONSOR_DRAG_MIME = "application/x-nwct-sponsor";
 
 interface EventCardProps {
   event: ProcessedEvent;
@@ -22,6 +26,22 @@ interface EventCardProps {
   cardStyles?: CardStyles;
   isExporting?: boolean;
   fillHeight?: boolean;
+  onReorderEvent?: (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => void;
+  onAnchorSponsor?: (sponsorId: string, targetId: string) => void;
+}
+
+// Pick "before" or "after" based on mouse position relative to the target's
+// vertical midpoint. Used everywhere drag-and-drop reorder is wired up so
+// the indicator and the drop result agree.
+export function dropPositionFromEvent(
+  e: ReactDragEvent<HTMLElement>,
+): "before" | "after" {
+  const rect = e.currentTarget.getBoundingClientRect();
+  return e.clientY < rect.top + rect.height / 2 ? "before" : "after";
 }
 
 // Spacer is rendered by a dedicated sub-component so it does not share hook
@@ -34,15 +54,75 @@ function SpacerCard({
   onDelete,
   isExporting,
   fillHeight,
+  onReorderEvent,
+  onAnchorSponsor,
 }: {
   event: ProcessedEvent;
   onUpdate: (e: ProcessedEvent) => void;
   onDelete: (id: string) => void;
   isExporting: boolean;
   fillHeight: boolean;
+  onReorderEvent?: (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => void;
+  onAnchorSponsor?: (sponsorId: string, targetId: string) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [dropPos, setDropPos] = useState<"before" | "after" | null>(null);
   const height = event.spacerHeight ?? 32;
+  const dragEnabled = !isExporting && !isEditing;
+
+  const handleDragStart = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData(EVENT_DRAG_MIME, event.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (isExporting || isEditing) return;
+    const types = Array.from(e.dataTransfer.types || []);
+    if (
+      !types.includes(EVENT_DRAG_MIME) &&
+      !types.includes(SPONSOR_DRAG_MIME)
+    )
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDropPos(dropPositionFromEvent(e));
+  };
+
+  const handleDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget)
+    )
+      return;
+    setDropPos(null);
+  };
+
+  const handleDrop = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (isExporting || isEditing) return;
+    const eventId = e.dataTransfer.getData(EVENT_DRAG_MIME);
+    const sponsorId = e.dataTransfer.getData(SPONSOR_DRAG_MIME);
+    if (!eventId && !sponsorId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pos = dropPositionFromEvent(e);
+    setDropPos(null);
+    if (sponsorId && onAnchorSponsor) {
+      onAnchorSponsor(sponsorId, event.id);
+      return;
+    }
+    if (eventId && onReorderEvent && eventId !== event.id) {
+      onReorderEvent(eventId, event.id, pos);
+    }
+  };
 
   return (
     <div
@@ -50,15 +130,26 @@ function SpacerCard({
         !isExporting ? "hover:bg-gray-50" : ""
       } ${fillHeight ? "h-full min-h-[32px]" : ""}`}
       style={{ height: fillHeight ? "auto" : `${height}px` }}
+      draggable={dragEnabled}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={() => {
         if (!isExporting) setIsEditing(true);
       }}
       title={
         isExporting
           ? undefined
-          : `Layout spacer (${height}px) — click to edit height or delete`
+          : `Layout spacer (${height}px) — drag to reorder, click to edit height or delete`
       }
     >
+      {dropPos === "before" && (
+        <div className="pointer-events-none absolute -top-0.5 left-0 right-0 h-0.5 bg-blue-500 print:hidden" />
+      )}
+      {dropPos === "after" && (
+        <div className="pointer-events-none absolute -bottom-0.5 left-0 right-0 h-0.5 bg-blue-500 print:hidden" />
+      )}
       {isEditing && !isExporting ? (
         <div className="absolute inset-0 z-20 flex items-center justify-center border border-blue-300 bg-white px-2 shadow-sm">
           <ArrowDownUp size={16} className="mr-2 text-gray-400" />
@@ -129,6 +220,8 @@ export function EventCard(props: EventCardProps) {
         onDelete={props.onDelete}
         isExporting={props.isExporting ?? false}
         fillHeight={props.fillHeight ?? false}
+        onReorderEvent={props.onReorderEvent}
+        onAnchorSponsor={props.onAnchorSponsor}
       />
     );
   }
@@ -144,6 +237,8 @@ function EventCardInner({
   cardStyles,
   isExporting = false,
   fillHeight = false,
+  onReorderEvent,
+  onAnchorSponsor,
 }: EventCardProps) {
   type FormData = {
     title: string;
@@ -332,8 +427,76 @@ function EventCardInner({
     window.addEventListener("mouseup", onUp);
   };
 
+  // Drag/drop reorder. Active only outside edit mode and not while exporting
+  // so it never fights the image crop/pan interactions or the print render.
+  const [dropPos, setDropPos] = useState<"before" | "after" | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragEnabled = !showEditMode && !isExporting;
+
+  const handleCardDragStart = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData(EVENT_DRAG_MIME, event.id);
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+  };
+
+  const handleCardDragEnd = () => {
+    setIsDragging(false);
+    setDropPos(null);
+  };
+
+  const handleCardDragOver = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) return;
+    const types = Array.from(e.dataTransfer.types || []);
+    if (
+      !types.includes(EVENT_DRAG_MIME) &&
+      !types.includes(SPONSOR_DRAG_MIME)
+    )
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDropPos(dropPositionFromEvent(e));
+  };
+
+  const handleCardDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget)
+    )
+      return;
+    setDropPos(null);
+  };
+
+  const handleCardDrop = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!dragEnabled) return;
+    const eventId = e.dataTransfer.getData(EVENT_DRAG_MIME);
+    const sponsorId = e.dataTransfer.getData(SPONSOR_DRAG_MIME);
+    if (!eventId && !sponsorId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pos = dropPositionFromEvent(e);
+    setDropPos(null);
+    if (sponsorId && onAnchorSponsor) {
+      onAnchorSponsor(sponsorId, event.id);
+      return;
+    }
+    if (eventId && onReorderEvent && eventId !== event.id) {
+      onReorderEvent(eventId, event.id, pos);
+    }
+  };
+
   return (
     <div
+      draggable={dragEnabled}
+      onDragStart={handleCardDragStart}
+      onDragEnd={handleCardDragEnd}
+      onDragOver={handleCardDragOver}
+      onDragLeave={handleCardDragLeave}
+      onDrop={handleCardDrop}
       onClick={() => {
         if (!showEditMode) onToggle(event.id);
       }}
@@ -345,10 +508,25 @@ function EventCardInner({
             ? "bg-blue-50 ring-1 ring-blue-400 print:bg-transparent print:ring-0"
             : "hover:bg-gray-50"
         }
-        ${showEditMode ? "cursor-auto bg-white border-blue-300 ring-2 ring-blue-200 z-10 shadow-lg" : "cursor-pointer"}
+        ${showEditMode ? "cursor-auto bg-white border-blue-300 ring-2 ring-blue-200 z-10 shadow-lg" : "cursor-grab active:cursor-grabbing"}
+        ${isDragging ? "opacity-50" : ""}
         ${fillHeight ? "h-full flex flex-col" : ""}
       `}
     >
+      {dropPos === "before" && (
+        <div className="pointer-events-none absolute -top-0.5 left-0 right-0 h-0.5 bg-blue-500 print:hidden" />
+      )}
+      {dropPos === "after" && (
+        <div className="pointer-events-none absolute -bottom-0.5 left-0 right-0 h-0.5 bg-blue-500 print:hidden" />
+      )}
+      {!showEditMode && !isExporting && (
+        <div
+          className="pointer-events-none absolute -left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 print:hidden text-gray-400"
+          title="Drag to reorder"
+        >
+          <GripVertical size={10} />
+        </div>
+      )}
       {isSelected && !showEditMode && (
         <div className="absolute top-1 left-[-4px] text-blue-500 print:hidden z-10">
           <CheckCircle2 size={14} fill="white" />
