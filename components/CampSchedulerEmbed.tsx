@@ -1,8 +1,6 @@
 "use client";
 import { useState } from "react";
-
-const SCHEDULER_URL =
-  "https://script.google.com/macros/s/AKfycbztdub4IHfDhbD2y7Zp3w5wS3oexxhLh54mOeoC8HtVd6PjG9OiU0iGqv9oswbDbXZaMg/exec";
+import { CAMP_SCHEDULER_URL as SCHEDULER_URL } from "@/lib/external-deps";
 
 export default function CampSchedulerEmbed() {
   const [embedFailed, setEmbedFailed] = useState(false);
