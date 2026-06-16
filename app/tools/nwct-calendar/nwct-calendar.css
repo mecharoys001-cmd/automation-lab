@@ -1,0 +1,16 @@
+/* Scoped typography for the NWCT calendar print/preview area.
+   Mirrors the original AI Studio source: Inter for body, Oswald for the
+   `.header-font` elements (titles, date bars, branding, footer labels). */
+.nwct-calendar-fonts {
+  font-family: var(--font-inter-calendar), Inter, system-ui, -apple-system,
+    Segoe UI, Helvetica, Arial, sans-serif;
+}
+
+.nwct-calendar-fonts .header-font,
+.nwct-calendar-fonts h1.header-font,
+.nwct-calendar-fonts h2.header-font,
+.nwct-calendar-fonts h3.header-font,
+.nwct-calendar-fonts h4.header-font {
+  font-family: var(--font-oswald-calendar), Oswald, Impact,
+    "Helvetica Neue Condensed", "Arial Narrow", sans-serif;
+}

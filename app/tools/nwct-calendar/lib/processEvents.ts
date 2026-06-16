@@ -24,7 +24,7 @@ function normalizeKey(s: string): string {
   return (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function calculateShortRunReferences(
+export function calculateShortRunReferences(
   shortRuns: Record<string, ProcessedEvent[]>,
   sortedKeys: string[],
 ): Record<string, ProcessedEvent[]> {
@@ -233,4 +233,327 @@ export function processRows(rows: EditorRow[]): GroupedEvents {
     sortedDateKeys,
     monthTitle,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Manual add helpers used by the Add Event modal in the workstation. They
+// keep the workstation tool component free of grouping detail.
+// ---------------------------------------------------------------------------
+
+export interface NewEventInput {
+  title: string;
+  category: EventCategory;
+  startAt: string; // ISO-ish datetime-local value
+  endAt: string;
+  venue: string;
+  town: string;
+  website: string;
+  imageUrl?: string;
+  isSpacer?: boolean;
+  spacerHeight?: number;
+}
+
+export function buildEventFromInput(input: NewEventInput): ProcessedEvent | null {
+  const start = new Date(input.startAt);
+  if (!isValidDate(start)) return null;
+  const endRaw = input.endAt ? new Date(input.endAt) : start;
+  const end = isValidDate(endRaw) ? endRaw : start;
+
+  if (input.isSpacer) {
+    return {
+      id: generateId(),
+      title: "Spacer",
+      venue: "",
+      town: "",
+      website: "",
+      startAt: start,
+      endAt: end,
+      formattedTime: "",
+      formattedDateHeader: formatDateHeader(start),
+      category: input.category,
+      isSpacer: true,
+      spacerHeight: input.spacerHeight ?? 32,
+    };
+  }
+
+  const title = cleanEventTitle(input.title, input.venue ?? "");
+  return {
+    id: generateId(),
+    title,
+    venue: (input.venue ?? "").trim(),
+    town: input.town ?? "",
+    website: extractDomain(input.website ?? ""),
+    startAt: start,
+    endAt: end,
+    formattedTime: formatEventTimeRange(start, end),
+    formattedDateHeader: formatDateHeader(start),
+    category: input.category,
+    imageUrl: input.imageUrl || undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Bulk mutation helpers used by the bulk selection toolbar. They keep the
+// short-run see-reference and sortedDateKeys bookkeeping consistent after
+// removing or cloning multiple events at once.
+// ---------------------------------------------------------------------------
+
+function recomputeShortRunIndex(
+  shortRuns: Record<string, ProcessedEvent[]>,
+): { shortRuns: Record<string, ProcessedEvent[]>; sortedDateKeys: string[] } {
+  const sortedDateKeys = Object.keys(shortRuns).sort((a, b) => {
+    const da = shortRuns[a][0]?.startAt;
+    const db = shortRuns[b][0]?.startAt;
+    if (!da || !db) return 0;
+    return da.getTime() - db.getTime();
+  });
+  return {
+    shortRuns: calculateShortRunReferences(shortRuns, sortedDateKeys),
+    sortedDateKeys,
+  };
+}
+
+export function deleteEventsFromGrouped(
+  grouped: GroupedEvents,
+  ids: ReadonlySet<string> | readonly string[],
+): GroupedEvents {
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  if (idSet.size === 0) return grouped;
+  const keep = (e: ProcessedEvent) => !idSet.has(e.id);
+
+  const shortRuns: Record<string, ProcessedEvent[]> = {};
+  for (const [k, list] of Object.entries(grouped.shortRuns)) {
+    const filtered = list.filter(keep);
+    if (filtered.length > 0) shortRuns[k] = filtered;
+  }
+  const { shortRuns: refsShortRuns, sortedDateKeys } =
+    recomputeShortRunIndex(shortRuns);
+
+  return {
+    ...grouped,
+    shortRuns: refsShortRuns,
+    sortedDateKeys,
+    longRuns: grouped.longRuns.filter(keep),
+    workshops: grouped.workshops.filter(keep),
+  };
+}
+
+// Clone the listed events in place. Each new event gets a fresh id but
+// preserves dates, category, image fields and spacer settings. Returns the
+// updated GroupedEvents and the set of new ids so callers can update the
+// active selection.
+export function duplicateEventsInGrouped(
+  grouped: GroupedEvents,
+  ids: ReadonlySet<string> | readonly string[],
+): { grouped: GroupedEvents; newIds: string[] } {
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  if (idSet.size === 0) return { grouped, newIds: [] };
+
+  const newIds: string[] = [];
+  const cloneWithNewId = (e: ProcessedEvent): ProcessedEvent => {
+    const next: ProcessedEvent = {
+      ...e,
+      id: generateId(),
+      startAt: new Date(e.startAt.getTime()),
+      endAt: new Date(e.endAt.getTime()),
+    };
+    newIds.push(next.id);
+    return next;
+  };
+
+  const shortRuns: Record<string, ProcessedEvent[]> = {};
+  for (const [k, list] of Object.entries(grouped.shortRuns)) {
+    const next: ProcessedEvent[] = [];
+    for (const e of list) {
+      next.push(e);
+      if (idSet.has(e.id)) next.push(cloneWithNewId(e));
+    }
+    shortRuns[k] = next.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+  }
+
+  const longRuns: ProcessedEvent[] = [];
+  for (const e of grouped.longRuns) {
+    longRuns.push(e);
+    if (idSet.has(e.id)) longRuns.push(cloneWithNewId(e));
+  }
+
+  const workshops: ProcessedEvent[] = [];
+  for (const e of grouped.workshops) {
+    workshops.push(e);
+    if (idSet.has(e.id)) workshops.push(cloneWithNewId(e));
+  }
+  workshops.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+
+  const { shortRuns: refsShortRuns, sortedDateKeys } =
+    recomputeShortRunIndex(shortRuns);
+
+  return {
+    grouped: {
+      ...grouped,
+      shortRuns: refsShortRuns,
+      sortedDateKeys,
+      longRuns,
+      workshops,
+    },
+    newIds,
+  };
+}
+
+// Walk all grouped buckets and return the event with a matching id, or null
+// when nothing matches. Used by the Add-to-Cover handler to pull metadata
+// without forcing the caller to know which bucket the event lives in.
+export function findEventInGrouped(
+  grouped: GroupedEvents,
+  id: string,
+): ProcessedEvent | null {
+  for (const list of Object.values(grouped.shortRuns)) {
+    const found = list.find((e) => e.id === id);
+    if (found) return found;
+  }
+  return (
+    grouped.longRuns.find((e) => e.id === id) ??
+    grouped.workshops.find((e) => e.id === id) ??
+    null
+  );
+}
+
+export function addEventToGrouped(
+  grouped: GroupedEvents,
+  evt: ProcessedEvent,
+): GroupedEvents {
+  if (evt.category === "LongRun") {
+    return {
+      ...grouped,
+      longRuns: [...grouped.longRuns, evt],
+    };
+  }
+
+  if (evt.category === "Workshop") {
+    return {
+      ...grouped,
+      workshops: [...grouped.workshops, evt].sort(
+        (a, b) => a.startAt.getTime() - b.startAt.getTime(),
+      ),
+    };
+  }
+
+  // ShortRun: bucket by formattedDateHeader and keep date keys ordered by
+  // the first event in each bucket.
+  const key = evt.formattedDateHeader;
+  const bucket = grouped.shortRuns[key] ?? [];
+  const nextBucket = [...bucket, evt].sort(
+    (a, b) => a.startAt.getTime() - b.startAt.getTime(),
+  );
+  const nextShortRuns: Record<string, ProcessedEvent[]> = {
+    ...grouped.shortRuns,
+    [key]: nextBucket,
+  };
+
+  const nextSortedDateKeys = Object.keys(nextShortRuns).sort((a, b) => {
+    const da = nextShortRuns[a][0]?.startAt;
+    const db = nextShortRuns[b][0]?.startAt;
+    if (!da || !db) return 0;
+    return da.getTime() - db.getTime();
+  });
+
+  // Spacers should not affect see-reference dedup; recalculate refs only
+  // for real events. We pass the full bucket so existing seeReferences are
+  // recomputed across non-spacer items.
+  const withRefs = calculateShortRunReferences(nextShortRuns, nextSortedDateKeys);
+
+  return {
+    ...grouped,
+    shortRuns: withRefs,
+    sortedDateKeys: nextSortedDateKeys,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Drag/drop reordering helper. Only reorders within the bucket the event
+// already lives in — ShortRun events stay in their date bucket, LongRun
+// events stay in longRuns, Workshop events stay in workshops. Cross-bucket
+// drops return the data unchanged so the caller can no-op cleanly.
+// ---------------------------------------------------------------------------
+
+type EventContainer =
+  | { kind: "shortRun"; key: string }
+  | { kind: "longRun" }
+  | { kind: "workshop" };
+
+function findEventContainer(
+  grouped: GroupedEvents,
+  id: string,
+): EventContainer | null {
+  for (const [key, list] of Object.entries(grouped.shortRuns)) {
+    if (list.some((e) => e.id === id)) return { kind: "shortRun", key };
+  }
+  if (grouped.longRuns.some((e) => e.id === id)) return { kind: "longRun" };
+  if (grouped.workshops.some((e) => e.id === id)) return { kind: "workshop" };
+  return null;
+}
+
+function reorderList<T extends { id: string }>(
+  list: T[],
+  draggedId: string,
+  targetId: string,
+  position: "before" | "after",
+): T[] {
+  const fromIdx = list.findIndex((e) => e.id === draggedId);
+  const toIdx = list.findIndex((e) => e.id === targetId);
+  if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return list;
+  const next = list.slice();
+  const [item] = next.splice(fromIdx, 1);
+  let insertAt = next.findIndex((e) => e.id === targetId);
+  if (insertAt < 0) return list;
+  if (position === "after") insertAt += 1;
+  next.splice(insertAt, 0, item);
+  return next;
+}
+
+export function reorderEventInGrouped(
+  grouped: GroupedEvents,
+  draggedId: string,
+  targetId: string,
+  position: "before" | "after" = "before",
+): GroupedEvents {
+  if (draggedId === targetId) return grouped;
+  const src = findEventContainer(grouped, draggedId);
+  const dst = findEventContainer(grouped, targetId);
+  if (!src || !dst) return grouped;
+  if (src.kind !== dst.kind) return grouped;
+  if (src.kind === "shortRun" && dst.kind === "shortRun" && src.key !== dst.key)
+    return grouped;
+
+  if (src.kind === "shortRun" && dst.kind === "shortRun") {
+    const list = grouped.shortRuns[src.key];
+    const reordered = reorderList(list, draggedId, targetId, position);
+    if (reordered === list) return grouped;
+    const nextShortRuns: Record<string, ProcessedEvent[]> = {
+      ...grouped.shortRuns,
+      [src.key]: reordered,
+    };
+    const { shortRuns, sortedDateKeys } = recomputeShortRunIndex(nextShortRuns);
+    return { ...grouped, shortRuns, sortedDateKeys };
+  }
+
+  if (src.kind === "longRun") {
+    const reordered = reorderList(
+      grouped.longRuns,
+      draggedId,
+      targetId,
+      position,
+    );
+    if (reordered === grouped.longRuns) return grouped;
+    return { ...grouped, longRuns: reordered };
+  }
+
+  // workshop
+  const reordered = reorderList(
+    grouped.workshops,
+    draggedId,
+    targetId,
+    position,
+  );
+  if (reordered === grouped.workshops) return grouped;
+  return { ...grouped, workshops: reordered };
 }
